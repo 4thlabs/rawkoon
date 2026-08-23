@@ -2,7 +2,12 @@ import { Elysia, t } from "elysia";
 
 import { requireUser } from "@rawkoon/api/middleware/auth";
 import { prisma } from "@rawkoon/api/db";
-import { badRequest, conflict, notFound } from "@rawkoon/api/errors";
+import {
+  badRequest,
+  conflict,
+  notFound,
+  serverError,
+} from "@rawkoon/api/errors";
 import {
   grabBookRelease,
   searchAndGrabBook,
@@ -45,30 +50,35 @@ export const bookGrabRoutes = new Elysia()
   .post(
     "/:id/editions/:kind/grab",
     async ({ params, body, set }) => {
-      const edition = await prisma.bookEdition.findUnique({
-        where: { bookId_kind: { bookId: params.id, kind: params.kind } },
-        select: { id: true },
-      });
-      if (!edition) return notFound(set, "Edition not found");
+      try {
+        const edition = await prisma.bookEdition.findUnique({
+          where: { bookId_kind: { bookId: params.id, kind: params.kind } },
+          select: { id: true },
+        });
+        if (!edition) return notFound(set, "Edition not found");
 
-      const url = body.download_url?.trim() || body.magnet_url?.trim();
-      if (!url) {
-        return badRequest(set, "download_url or magnet_url is required");
+        const url = body.download_url?.trim() || body.magnet_url?.trim();
+        if (!url) {
+          return badRequest(set, "download_url or magnet_url is required");
+        }
+
+        const result = await grabBookRelease({
+          editionId: edition.id,
+          downloadUrl: url,
+          releaseTitle: body.release_title,
+          indexer: body.indexer ?? null,
+        });
+
+        // Refusals use the shared conflict() helper: the whole app returns
+        // { error } on failure, and the web client's error extractor reads
+        // exactly that field. Returning { reason } instead lost the message and
+        // surfaced a bare "HTTP error! status: 409".
+        if (!result.grabbed) return conflict(set, result.reason);
+        return { grabbed: true, release_title: result.releaseTitle };
+      } catch (err) {
+        console.error("Book grab error:", err);
+        return serverError(set, "Grab failed");
       }
-
-      const result = await grabBookRelease({
-        editionId: edition.id,
-        downloadUrl: url,
-        releaseTitle: body.release_title,
-        indexer: body.indexer ?? null,
-      });
-
-      // Refusals use the shared conflict() helper: the whole app returns
-      // { error } on failure, and the web client's error extractor reads
-      // exactly that field. Returning { reason } instead lost the message and
-      // surfaced a bare "HTTP error! status: 409".
-      if (!result.grabbed) return conflict(set, result.reason);
-      return { grabbed: true, release_title: result.releaseTitle };
     },
     {
       params: t.Object({
@@ -87,15 +97,20 @@ export const bookGrabRoutes = new Elysia()
   .post(
     "/:id/editions/:kind/auto",
     async ({ params, set }) => {
-      const edition = await prisma.bookEdition.findUnique({
-        where: { bookId_kind: { bookId: params.id, kind: params.kind } },
-        select: { id: true },
-      });
-      if (!edition) return notFound(set, "Edition not found");
+      try {
+        const edition = await prisma.bookEdition.findUnique({
+          where: { bookId_kind: { bookId: params.id, kind: params.kind } },
+          select: { id: true },
+        });
+        if (!edition) return notFound(set, "Edition not found");
 
-      const result = await searchAndGrabBook(edition.id);
-      if (!result.grabbed) return conflict(set, result.reason);
-      return { grabbed: true, release_title: result.releaseTitle };
+        const result = await searchAndGrabBook(edition.id);
+        if (!result.grabbed) return conflict(set, result.reason);
+        return { grabbed: true, release_title: result.releaseTitle };
+      } catch (err) {
+        console.error("Book auto-grab error:", err);
+        return serverError(set, "Grab failed");
+      }
     },
     {
       params: t.Object({
