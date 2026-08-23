@@ -333,23 +333,33 @@ export async function grabBookRelease(opts: {
     return { grabbed: false, reason: handoff.reason };
   }
 
-  await prisma.downloadHistory.update({
-    where: { id: dhRow.id },
-    data: { torrentHash: handoff.torrentHash },
-  });
+  // The torrent is already sitting in the download client at this point — a
+  // failure past this line must never surface as a failed grab, mirroring
+  // mediaGrabberGrab.grabRelease's grabCommittedOk handling for the media path.
+  try {
+    await prisma.downloadHistory.update({
+      where: { id: dhRow.id },
+      data: { torrentHash: handoff.torrentHash },
+    });
 
-  const updated = await prisma.bookEdition.update({
-    where: { id: opts.editionId },
-    data: {
-      // An upgrade keeps the file it is replacing, so it is not "downloading"
-      // from nothing — revertToWantedIfNoActiveGrabs relies on the distinction
-      // to put a failed upgrade back to downloaded rather than wanted.
-      status: opts.isUpgrade ? "upgrading" : "downloading",
-      searchAttempts: { increment: 1 },
-    },
-    select: { bookId: true },
-  });
-  emitBookUpdate(updated.bookId);
+    const updated = await prisma.bookEdition.update({
+      where: { id: opts.editionId },
+      data: {
+        // An upgrade keeps the file it is replacing, so it is not "downloading"
+        // from nothing — revertToWantedIfNoActiveGrabs relies on the distinction
+        // to put a failed upgrade back to downloaded rather than wanted.
+        status: opts.isUpgrade ? "upgrading" : "downloading",
+        searchAttempts: { increment: 1 },
+      },
+      select: { bookId: true },
+    });
+    emitBookUpdate(updated.bookId);
+  } catch (e) {
+    console.warn(
+      `[bookGrabber] Post-handoff update failed for DH ${dhRow.id} (torrent already queued):`,
+      e,
+    );
+  }
 
   try {
     await notifyAdminsBookGrabbed(opts.editionId, releaseTitle);
