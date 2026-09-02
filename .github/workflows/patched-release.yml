@@ -1,0 +1,97 @@
+name: Patched Release
+
+# Rebuilds the latest upstream release tag with this fork's patches on top and
+# publishes it as <version>-patched. Run it by hand after upstream cuts a tag.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/rawkoon
+
+concurrency:
+  group: "${{ github.workflow }}"
+  cancel-in-progress: false
+
+jobs:
+  patched-release:
+    name: Patch latest upstream tag and push image
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch upstream tags
+        run: |
+          git remote add upstream https://github.com/samuelloranger/rawkoon.git
+          git fetch upstream '+refs/tags/v*:refs/tags/v*' '+refs/heads/main:refs/remotes/upstream/main'
+          TAG=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          [ -n "$TAG" ] || { echo "no upstream release tag found"; exit 1; }
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "VERSION=${TAG#v}-patched" >> "$GITHUB_ENV"
+
+      - name: Apply patches onto $TAG
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "patched/$TAG" "$TAG"
+
+          # The patch set is whatever the dispatched branch carries on top of
+          # upstream, minus the fork-only CI plumbing and FORK_PATCHES.md.
+          PATCHES=""
+          for c in $(git rev-list --reverse --no-merges "upstream/main..$GITHUB_SHA"); do
+            git show --pretty= --name-only "$c" \
+              | grep -qvE '^(\.github/|FORK_PATCHES\.md$)' && PATCHES="$PATCHES $c"
+          done
+          [ -n "$PATCHES" ] || { echo "no patches to apply"; exit 1; }
+
+          echo "applying:"; git log --oneline --no-walk $PATCHES
+          git cherry-pick $PATCHES
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          generate-routes: "true"
+
+      - name: Test
+        run: |
+          cd apps/web && bun run test --run
+          cd ../api && bun run test
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.VERSION }}
+            type=raw,value=patched
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_VERSION=${{ env.VERSION }}
+            GITHUB_RELEASES_REPO=${{ github.repository }}
+
+      - name: Push patched branch
+        run: git push -f origin "patched/$TAG"
