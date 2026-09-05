@@ -9,7 +9,9 @@ new fork-only patch lands or an old one gets upstreamed.
 Remotes: `origin` = `git@github.com:4thlabs/rawkoon.git` (this fork),
 `upstream` = `git@github.com:samuelloranger/rawkoon.git`.
 
-Last synced with upstream: 2026-09-02, `upstream/main` @ `1d2f26d` (v1.13.1).
+Last synced with upstream: 2026-09-06, `upstream/main` @ `203d338`, newest
+release tag `v1.19.1` (`5cded30`, one README-screenshots commit behind
+`upstream/main`).
 `main` is **rebased** on top of that commit — this fork keeps a linear history
 and never merges upstream into `main`, so the SHAs below change on every sync
 and get refreshed here as part of it. There is no `develop` branch any more:
@@ -26,7 +28,7 @@ qBittorrent-parsing bug report is about real qBittorrent.
 
 ### 1. fix(books): don't fail a grab after the torrent is already queued
 
-- Commit: `a62bf3e`
+- Commit: `6a04384`
 - Files: `apps/api/src/services/books/bookGrabber.ts`,
   `apps/api/src/routes/books/bookGrabRoutes.ts`
 - Problem: the book grab path had no error-recovery net past the
@@ -51,7 +53,7 @@ qBittorrent-parsing bug report is about real qBittorrent.
 
 ### 2. fix(qbittorrent): don't misparse a genuinely successful torrent add
 
-- Commit: `6d3c5a8`
+- Commit: `8874520`
 - Files: `apps/api/src/services/qbittorrent/parseAddResponse.ts` (+ colocated
   test `parseAddResponse.test.ts`)
 - Problem: two independent ways a successful `/api/v2/torrents/add` came back
@@ -83,7 +85,7 @@ qBittorrent-parsing bug report is about real qBittorrent.
 
 ### 3. ci: publish a patched image of the latest upstream release
 
-- Commit: `3a0547e`
+- Commit: `6a6279a`
 - Files: `.github/workflows/patched-release.yml` (new)
 - Purpose: **fork-only infrastructure, not meant for upstream.** Lets this
   fork run upstream's latest release with our fixes on top, in a homelab,
@@ -118,8 +120,8 @@ If this fork ever needs to be rebuilt from scratch:
 
 1. Fork `samuelloranger/rawkoon` on GitHub, clone it, add both remotes as
    described above.
-2. Cherry-pick, in order: `6d3c5a8` and `a62bf3e` (bug fixes — try these
-   upstream first; skip any already merged there), then `3a0547e` (CI —
+2. Cherry-pick, in order: `8874520` and `6a04384` (bug fixes — try these
+   upstream first; skip any already merged there), then `6a6279a` (CI —
    always needed since it's fork-only).
 3. Re-add repo secrets used by the workflows: `GITHUB_TOKEN` is automatic;
    `DEPLOYER_WEBHOOK_URL`/`DEPLOYER_WEBHOOK_SECRET` are optional (see
