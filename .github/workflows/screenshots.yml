@@ -80,8 +80,24 @@ jobs:
       - name: Capture screenshots
         run: bun scripts/screenshot/shots.ts
 
+      # Rebase-and-retry rather than a plain push: main can advance between
+      # checkout and here (the release commit is often followed quickly by
+      # other pushes), which made a bare push non-fast-forward and failed.
       - name: Commit and push screenshots
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'docs: update README screenshots [skip ci]'
-          file_pattern: 'docs/screenshots/*.png'
+        run: |
+          set -euo pipefail
+          branch="${{ github.event.repository.default_branch }}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- docs/screenshots; then
+            echo "No screenshot changes to commit"; exit 0
+          fi
+          git add docs/screenshots/*.png
+          git commit -m 'docs: update README screenshots [skip ci]'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin "$branch" && git push origin "HEAD:$branch"; then
+              exit 0
+            fi
+            echo "push attempt $attempt failed, retrying"; sleep $((RANDOM % 5 + 2))
+          done
+          echo "push failed after 5 attempts"; exit 1
