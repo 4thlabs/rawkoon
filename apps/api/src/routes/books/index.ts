@@ -24,7 +24,7 @@ export { authorRoutes } from "./authorRoutes";
 /**
  * Books router — thin orchestrator, same shape as routes/library/index.ts.
  *   bookListeningStatsRoutes — GET /listening-stats (before /:id routes)
- *   bookListRoutes    — GET /, GET /search, GET /:id, POST /, DELETE /:id
+ *   bookListRoutes    — GET /, GET /search, GET /:id, PUT /:id/read, POST /, DELETE /:id
  *   bookMetadata*     — refresh a book's metadata, read/reorder the sources
  *   bookOverrides     — PATCH /:id/overrides, manual field edits
  *   bookEditionRoutes — PATCH /:id/editions/:kind, POST /:id/editions, files
