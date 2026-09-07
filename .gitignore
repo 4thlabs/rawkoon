@@ -96,3 +96,7 @@ apps/ios/*.xcodeproj
 apps/ios/build/
 apps/ios/.build/
 apps/ios/Rawkoon/Info.plist
+apps/ios/.impeccable/
+
+# Local preview scratch
+preview/
