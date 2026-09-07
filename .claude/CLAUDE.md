@@ -25,11 +25,12 @@ controls are why this is native rather than a PWA.
   `main`, not by an upload. The `testflight` job is gated on a published GitHub
   release, and publishing one in this repo also triggers `docker-publish.yml`,
   which auto-redeploys the production container through `DEPLOYER_WEBHOOK_URL` —
-  so a release is an outward-facing act with production consequences: confirm
-  the intent to release with the user first, then it may be cut (by an agent
-  too). Never bump the version, tag, or publish a release to satisfy a
-  verification gate; if a gate can only be met by releasing, the gate is wrong
-  — say so and stop.
+  so a release is an outward-facing act with production consequences. Only the
+  main interactive agent may cut one, and only after confirming the intent to
+  release with the user; a subagent, background, or other non-interactive
+  session must never cut a release. Never bump the version, tag, or publish a
+  release to satisfy a verification gate; if a gate can only be met by
+  releasing, the gate is wrong — say so and stop.
 - **Tech stack**: SwiftUI, iOS 18 deployment target, Xcode 26 SDK, XcodeGen,
   Swift 6 with `SWIFT_STRICT_CONCURRENCY: complete`. Readium 3.11.0 is pinned
   (`project.yml` `exactVersion`) for the EPUB reader. No new third-party
