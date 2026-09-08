@@ -45,7 +45,7 @@ export const QUERY_DEFAULTS: DefaultOptions = {
   },
 };
 
-export function createMutationCache(): MutationCache {
+function createMutationCache(): MutationCache {
   return new MutationCache({
     onError: (error, _variables, _context, mutation) => {
       if (mutation.meta?.silent) return;

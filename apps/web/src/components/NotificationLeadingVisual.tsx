@@ -64,7 +64,7 @@ const typeConfig: Record<NotificationType, TypeStyle> = {
   test: { icon: <Bell size={16} />, bg: "bg-primary-900/30" },
 };
 
-export function getTypeStyle(notification: {
+function getTypeStyle(notification: {
   type: NotificationType;
   metadata?: Record<string, unknown> | null;
 }): TypeStyle {

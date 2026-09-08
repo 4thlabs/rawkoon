@@ -13,5 +13,4 @@ export * from "./releases";
 export * from "./search";
 export * from "./settings";
 export * from "./requests";
-export * from "./system";
 export * from "./users";

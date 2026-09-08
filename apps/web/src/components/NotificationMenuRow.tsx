@@ -1,11 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { NotificationType } from "@rawkoon/shared/types";
-import {
-  getTypeStyle,
-  NotificationLeadingVisual,
-} from "@/components/NotificationLeadingVisual";
-
-export { getTypeStyle };
+import { NotificationLeadingVisual } from "@/components/NotificationLeadingVisual";
 
 interface NotificationMenuRowProps {
   type: NotificationType;

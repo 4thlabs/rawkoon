@@ -3,7 +3,7 @@ import type {
   BookReadingProgress,
 } from "@rawkoon/shared/types";
 
-export type ContinueKind = "audiobook" | "ebook";
+type ContinueKind = "audiobook" | "ebook";
 
 export interface ContinueItem {
   kind: ContinueKind;

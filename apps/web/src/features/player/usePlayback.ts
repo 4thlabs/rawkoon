@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api/client";
 import { getQueryClient } from "@/lib/api/queryClient";
 import { BOOKS_ENDPOINTS } from "@/lib/endpoints";
@@ -25,14 +25,6 @@ export function useReadingProgress() {
     queryKey: queryKeys.books.readingProgress(),
     queryFn: () =>
       fetchApi<BookReadingProgressResponse>(BOOKS_ENDPOINTS.READING_PROGRESS),
-  });
-}
-
-export function useManifest(editionId: number | null) {
-  return useQuery({
-    queryKey: queryKeys.books.manifest(editionId ?? 0),
-    queryFn: () => fetchApi<BookManifest>(BOOKS_ENDPOINTS.MANIFEST(editionId!)),
-    enabled: editionId != null && editionId > 0,
   });
 }
 
@@ -77,29 +69,4 @@ export async function putReadingProgress(
       body: JSON.stringify(body),
     },
   );
-}
-
-export function usePutReadingProgress() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      editionId,
-      body,
-    }: {
-      editionId: number;
-      body: BookReadingProgressRequest;
-    }) =>
-      fetchApi<{ applied: boolean }>(
-        BOOKS_ENDPOINTS.PUT_READING_PROGRESS(editionId),
-        {
-          method: "PUT",
-          body: JSON.stringify(body),
-        },
-      ),
-    onSuccess: () => {
-      void qc.invalidateQueries({
-        queryKey: queryKeys.books.readingProgress(),
-      });
-    },
-  });
 }
