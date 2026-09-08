@@ -1,4 +1,3 @@
-import RawkoonKit
 import SwiftUI
 
 /// Download-client completion hook (admin). camelCase wire — plain-casing helpers.

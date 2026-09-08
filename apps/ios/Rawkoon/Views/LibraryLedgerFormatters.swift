@@ -38,34 +38,4 @@ enum LibraryLedgerFormatters {
         }
         return "480p"
     }
-
-    static func formatCodec(_ codec: String?) -> String? {
-        guard let codec, !codec.isEmpty else { return nil }
-        let normalized = codec.lowercased().replacingOccurrences(
-            of: "[.\\s-]", with: "", options: .regularExpression
-        )
-        if normalized.contains("hevc") || normalized.contains("h265") {
-            return "H.265"
-        }
-        if normalized.contains("avc") || normalized.contains("h264") {
-            return "H.264"
-        }
-        if normalized == "av1" {
-            return "AV1"
-        }
-        if normalized == "vp9" {
-            return "VP9"
-        }
-        return codec.uppercased()
-    }
-
-    static func formatDuration(_ secs: Double?) -> String? {
-        guard let secs, secs >= 60 else { return nil }
-        let h = Int(secs) / 3600
-        let m = (Int(secs) % 3600) / 60
-        if h > 0 {
-            return String(localized: "\(h)h \(m)m")
-        }
-        return String(localized: "\(m)m")
-    }
 }

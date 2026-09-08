@@ -206,33 +206,6 @@ actor APIClient {
         return login.token
     }
 
-    func libraryAudiobooks() async throws -> [LibrarySummary] {
-        let request = try makeRequest(path: "/api/books", method: "GET", requiresAuth: true)
-        let (data, response) = try await perform(request)
-        try checkStatus(data, response)
-
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let payload: LibraryResponse = try decodeJSON(data, decoder: decoder)
-
-        var out: [LibrarySummary] = []
-        for book in payload.items {
-            for edition in book.editions where edition.kind == "audiobook" {
-                out.append(
-                    LibrarySummary(
-                        editionId: edition.id,
-                        bookId: book.id,
-                        title: book.title,
-                        author: book.authors.first,
-                        coverURL: resolveURL(book.coverUrl),
-                        durationSecs: edition.durationSecs
-                    )
-                )
-            }
-        }
-        return out
-    }
-
     /// All books, merged: audiobooks and ebooks in one list (like the web app).
     func libraryBooks() async throws -> [BookListItem] {
         var page = 1
@@ -652,13 +625,6 @@ actor APIClient {
         return try await perform(request)
     }
 
-    /// Authenticated PUT returning a decoded `T` (most `PUT /api/integrations/*`).
-    func put<T: Decodable>(_ path: String, body: some Encodable) async throws -> T {
-        let (data, response) = try await sendPut(path, body: body)
-        try checkStatus(data, response)
-        return try decodeJSON(data)
-    }
-
     /// Authenticated PUT that only cares whether the server accepted it (2xx).
     func putExpectOK(_ path: String, body: some Encodable) async throws {
         let (data, response) = try await sendPut(path, body: body)
@@ -676,14 +642,6 @@ actor APIClient {
         let request = try makeRequest(path: pathWithQuery(path, query), method: "DELETE", requiresAuth: true)
         let (data, response) = try await perform(request)
         try checkStatus(data, response)
-    }
-
-    /// Authenticated DELETE returning a decoded body.
-    func delete<T: Decodable>(_ path: String) async throws -> T {
-        let request = try makeRequest(path: path, method: "DELETE", requiresAuth: true)
-        let (data, response) = try await perform(request)
-        try checkStatus(data, response)
-        return try decodeJSON(data)
     }
 
     // MARK: Plain-casing helpers (no snake↔camel conversion — Download-Client Hook wire)
@@ -830,11 +788,6 @@ actor APIClient {
         return q.isEmpty ? path : "\(path)?\(q)"
     }
 
-    /// Discover
-    func explore() async throws -> ExploreFeed {
-        try await get("/api/medias/explore")
-    }
-
     func tmdbSearch(q: String, kind: String? = nil) async throws -> TmdbSearchResponse {
         try await get("/api/medias/tmdb-search", query: ["q": q, "kind": kind])
     }
@@ -851,10 +804,6 @@ actor APIClient {
     func dismissDiscover(tmdbId: Int, type: String) async throws {
         nonisolated struct Body: Encodable { let tmdbId: Int; let type: String }
         try await postExpectOK("/api/medias/discover/dismiss", body: Body(tmdbId: tmdbId, type: type))
-    }
-
-    func undismissDiscover(tmdbId: Int, type: String) async throws {
-        try await deleteExpectOK("/api/medias/discover/dismiss/\(tmdbId)", query: ["type": type])
     }
 
     /// Explore filter grid
@@ -930,14 +879,6 @@ actor APIClient {
         let response: LibraryItemResponse = try await patch(
             "/api/library/\(id)/monitored",
             body: UpdateLibraryMonitoredBody(monitored: monitored)
-        )
-        return response.item
-    }
-
-    func updateLibraryStatus(id: Int, status: String) async throws -> LibraryMedia {
-        let response: LibraryItemResponse = try await patch(
-            "/api/library/\(id)/status",
-            body: UpdateLibraryStatusBody(status: status)
         )
         return response.item
     }
@@ -1080,12 +1021,6 @@ actor APIClient {
 
     func remuxFileStatus(fileId: Int) async throws -> RemuxFileStatus {
         try await get("/api/library/files/\(fileId)/remux/status")
-    }
-
-    /// Manual release search + grab (movies). `searchQuery` nil lets the server
-    /// fall back to its own title-based queries.
-    func searchLibraryItem(id: Int, searchQuery: String? = nil) async throws -> LibrarySearchResponse {
-        try await post("/api/library/\(id)/search", body: LibrarySearchBody(searchQuery: searchQuery))
     }
 
     /// Manual release search + grab for a whole season (best season pack).

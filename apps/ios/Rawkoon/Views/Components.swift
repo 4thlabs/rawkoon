@@ -195,20 +195,6 @@ struct MediaPosterCard<Overlay: View>: View {
     }
 }
 
-/// The in-library / add flag used on discover posters.
-struct PosterFlag: View {
-    let inLibrary: Bool
-    var body: some View {
-        ZStack {
-            Circle().fill(inLibrary ? Theme.seed : Theme.apricot)
-                .frame(width: 22, height: 22)
-            Image(systemName: inLibrary ? "checkmark" : "plus")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(inLibrary ? Color(hex: 0x10231A) : Theme.onAccent)
-        }
-    }
-}
-
 /// Shared by LibraryView and BookView. A second copy would drift; `.searchable`
 /// would change a screen that currently works.
 func searchField(_ placeholder: LocalizedStringKey, text: Binding<String>) -> some View {

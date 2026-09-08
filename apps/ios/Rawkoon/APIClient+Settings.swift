@@ -289,10 +289,6 @@ extension APIClient {
         try await deleteExpectOK("/api/admin/sessions/\(id)")
     }
 
-    func revokeUserSessions(userId: String) async throws {
-        try await deleteExpectOK("/api/admin/sessions/user/\(userId)")
-    }
-
     func adminWebPush() async throws -> AdminWebPushResponse {
         try await get("/api/admin/web-push")
     }

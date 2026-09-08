@@ -247,16 +247,6 @@ struct EbookReaderSheet: View {
         }
     }
 
-    private var navigationTitle: String {
-        if case let .ready(session) = state,
-           let title = session.publication.metadata.title,
-           !title.isEmpty
-        {
-            return title
-        }
-        return document.title
-    }
-
     @ViewBuilder private var content: some View {
         switch state {
         case .opening:

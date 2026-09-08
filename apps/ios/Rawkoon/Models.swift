@@ -23,36 +23,6 @@ nonisolated struct TmdbSearchItem: Decodable, Identifiable, Hashable, Sendable {
     let libraryId: Int?
 }
 
-nonisolated struct ExploreFeed: Decodable, Sendable {
-    let trending: [TmdbSearchItem]?
-    let popularMovies: [TmdbSearchItem]?
-    let popularShows: [TmdbSearchItem]?
-    let upcomingMovies: [TmdbSearchItem]?
-    let nowPlaying: [TmdbSearchItem]?
-    let topRatedMovies: [TmdbSearchItem]?
-    let topRatedShows: [TmdbSearchItem]?
-    let recommended: [TmdbSearchItem]?
-
-    /// Named sections in a sensible display order, empty ones dropped.
-    /// `id` exists because `LocalizedStringKey` is not Hashable (`ForEach` needs it).
-    var sections: [(id: String, title: LocalizedStringKey, items: [TmdbSearchItem])] {
-        let rails: [(String, LocalizedStringKey, [TmdbSearchItem]?)] = [
-            ("trending", "Trending", trending),
-            ("popularMovies", "Popular movies", popularMovies),
-            ("popularShows", "Popular shows", popularShows),
-            ("nowPlaying", "Now playing", nowPlaying),
-            ("upcoming", "Upcoming", upcomingMovies),
-            ("topRatedMovies", "Top rated movies", topRatedMovies),
-            ("topRatedShows", "Top rated shows", topRatedShows),
-            ("recommended", "Recommended", recommended),
-        ]
-        return rails.compactMap { id, name, items in
-            guard let items, !items.isEmpty else { return nil }
-            return (id, name, items)
-        }
-    }
-}
-
 nonisolated struct TmdbSearchResponse: Decodable, Sendable {
     let enabled: Bool?
     let items: [TmdbSearchItem]

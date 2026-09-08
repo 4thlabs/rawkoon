@@ -32,17 +32,3 @@ struct ShimmerView: View {
             .accessibilityHidden(true)
     }
 }
-
-extension View {
-    /// Overlays a `ShimmerView` on top of this view while `active`, hiding the
-    /// content underneath — the warm-skeleton equivalent of `.redacted`.
-    @ViewBuilder
-    func redactedShimmer(_ active: Bool) -> some View {
-        if active {
-            ShimmerView()
-                .accessibilityHidden(true)
-        } else {
-            self
-        }
-    }
-}

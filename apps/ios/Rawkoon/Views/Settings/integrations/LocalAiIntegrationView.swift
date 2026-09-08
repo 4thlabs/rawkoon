@@ -1,4 +1,3 @@
-import RawkoonKit
 import SwiftUI
 
 /// Local AI integration (admin). `GET/PUT /api/integrations/local-ai` + a test
