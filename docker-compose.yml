@@ -20,25 +20,25 @@ services:
       retries: 5
       start_period: 10s
 
-  redis:
-    image: redis:7-alpine
-    container_name: rawkoon-redis-dev
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: rawkoon-valkey-dev
     restart: unless-stopped
     ports:
-      - "${REDIS_HOST_PORT:-6380}:6379"
+      - "${VALKEY_HOST_PORT:-${REDIS_HOST_PORT:-6380}}:6379"
     volumes:
-      - redis_data_dev:/data
+      - valkey_data_dev:/data
     command: >
       sh -c "
-      if [ -n \"$$REDIS_PASSWORD\" ]; then
-        redis-server --requirepass \"$$REDIS_PASSWORD\"
+      if [ -n \"$$VALKEY_PASSWORD\" ]; then
+        valkey-server --requirepass \"$$VALKEY_PASSWORD\"
       else
-        redis-server
+        valkey-server
       fi
       "
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - VALKEY_PASSWORD=${VALKEY_PASSWORD:-${REDIS_PASSWORD:-}}
 
 volumes:
   db_data_dev:
-  redis_data_dev:
+  valkey_data_dev:

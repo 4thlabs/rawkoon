@@ -53,12 +53,19 @@ const envSchema = z.object({
   // ── Database ──────────────────────────────────────────
   DATABASE_URL: databaseUrl,
 
-  // ── Redis ─────────────────────────────────────────────
+  // ── Valkey (Redis-compatible) ─────────────────────────
+  // VALKEY_* is canonical; REDIS_* is kept as a fallback so an environment
+  // not yet migrated (e.g. an existing prod .env) keeps working.
+  VALKEY_URL: z.string().optional(),
+  VALKEY_HOST: z.string().optional(),
+  VALKEY_PORT: portNumber.optional(),
+  VALKEY_PASSWORD: z.string().optional(),
+  VALKEY_DB: z.coerce.number().int().min(0).optional(),
   REDIS_URL: z.string().optional(),
-  REDIS_HOST: z.string().optional().default("redis"),
-  REDIS_PORT: portNumber.optional().default(6379),
+  REDIS_HOST: z.string().optional(),
+  REDIS_PORT: portNumber.optional(),
   REDIS_PASSWORD: z.string().optional(),
-  REDIS_DB: z.coerce.number().int().min(0).optional().default(0),
+  REDIS_DB: z.coerce.number().int().min(0).optional(),
 
   // ── Image Storage ─────────────────────────────────────
   IMAGE_STORAGE_DIR: z.string().optional().default("./data/images"),
@@ -111,13 +118,19 @@ export function getBaseUrl(): string {
   return loadConfig().BASE_URL;
 }
 
-export function getRedisUrl(): string {
+export function getValkeyUrl(): string {
   const env = loadConfig();
-  if (env.REDIS_URL) return env.REDIS_URL;
-  if (env.REDIS_PASSWORD) {
-    return `redis://:${encodeURIComponent(env.REDIS_PASSWORD)}@${env.REDIS_HOST}:${env.REDIS_PORT}/${env.REDIS_DB}`;
+  const url = env.VALKEY_URL ?? env.REDIS_URL;
+  if (url) return url;
+  const host = env.VALKEY_HOST ?? env.REDIS_HOST ?? "valkey";
+  const port = env.VALKEY_PORT ?? env.REDIS_PORT ?? 6379;
+  const db = env.VALKEY_DB ?? env.REDIS_DB ?? 0;
+  const password = env.VALKEY_PASSWORD ?? env.REDIS_PASSWORD;
+  // Valkey speaks the Redis wire protocol; the redis:// URL scheme is correct.
+  if (password) {
+    return `redis://:${encodeURIComponent(password)}@${host}:${port}/${db}`;
   }
-  return `redis://${env.REDIS_HOST}:${env.REDIS_PORT}/${env.REDIS_DB}`;
+  return `redis://${host}:${port}/${db}`;
 }
 
 export function getWebAuthnConfig(): {

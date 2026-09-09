@@ -22,5 +22,5 @@ features:
   - title: Your integrations
     details: Connect TMDB, Google Books, Audnexus, Open Library, qBittorrent, Transmission or Deluge, Prowlarr or Jackett, Jellyfin, and optional OIDC providers.
   - title: Built to run at home
-    details: One production container, PostgreSQL, Redis, and a documented full-instance backup and recovery procedure.
+    details: One production container, PostgreSQL, Valkey, and a documented full-instance backup and recovery procedure.
 ---

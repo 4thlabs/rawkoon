@@ -11,7 +11,7 @@ Start from <code>docker-compose.prod-example.yml</code>, copy it to
 
     docker compose -f docker-compose.prod.yml up -d
 
-The image expects PostgreSQL and Redis. Mount these directories from the
+The image expects PostgreSQL and Valkey (Redis-compatible). Mount these directories from the
 example compose file:
 
 - <code>data/</code> for image storage and application file operations.

@@ -63,15 +63,18 @@ services:
       retries: 5
       start_period: 10s
 
-  redis:
-    image: redis:7-alpine
-    container_name: rawkoon-redis
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: rawkoon-valkey
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD} --bind 0.0.0.0 --protected-mode yes
+    command: valkey-server --requirepass ${VALKEY_PASSWORD} --bind 0.0.0.0 --protected-mode yes
     volumes:
-      - redis_data:/data
+      - valkey_data:/data
     networks:
-      - rawkoon-network
+      rawkoon-network:
+        # Alias so a VALKEY_HOST/REDIS_HOST of "redis" still resolves.
+        aliases:
+          - redis
 
 networks:
   rawkoon-network:
@@ -79,7 +82,7 @@ networks:
 
 volumes:
   db_data:
-  redis_data:
+  valkey_data:
 ```
 
 ---
@@ -98,12 +101,12 @@ POSTGRES_PASSWORD=choose_a_strong_password
 DATABASE_URL=postgresql://rawkoon:choose_a_strong_password@db:5432/rawkoon
 
 # -----------------------------------------------------------------------------
-# Redis Setup
+# Valkey Setup (Redis-compatible; the old REDIS_* names still work as a fallback)
 # -----------------------------------------------------------------------------
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_DB=0
-REDIS_PASSWORD=choose_a_redis_password
+VALKEY_HOST=valkey
+VALKEY_PORT=6379
+VALKEY_DB=0
+VALKEY_PASSWORD=choose_a_valkey_password
 
 # -----------------------------------------------------------------------------
 # App Secrets
