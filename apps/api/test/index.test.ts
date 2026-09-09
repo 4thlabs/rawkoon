@@ -7,18 +7,18 @@ describe("Elysia Server", () => {
     expect(response.status).toBe(404);
   });
 
-  it("returns db and redis status on /api/health", async () => {
+  it("returns db and valkey status on /api/health", async () => {
     const response = await app.handle(
       new Request("http://localhost/api/health"),
     );
     const json = (await response.json()) as {
       status: string;
       db: boolean;
-      redis: boolean;
+      valkey: boolean;
     };
     expect(json).toHaveProperty("status");
     expect(json).toHaveProperty("db");
-    expect(json).toHaveProperty("redis");
+    expect(json).toHaveProperty("valkey");
     expect(["ok", "degraded"]).toContain(json.status);
     if (json.status === "ok") expect(response.status).toBe(200);
     else expect(response.status).toBe(503);

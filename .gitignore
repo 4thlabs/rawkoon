@@ -100,3 +100,4 @@ apps/ios/.impeccable/
 
 # Local preview scratch
 preview/
+.preview/

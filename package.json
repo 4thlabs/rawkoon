@@ -2,7 +2,7 @@
   "name": "rawkoon-monorepo",
   "private": true,
   "license": "GPL-3.0-or-later",
-  "packageManager": "bun@1.4.0",
+  "packageManager": "bun@1.4.2",
   "scripts": {
     "install:all": "bun install",
     "build": "bun run build:web",
@@ -39,24 +39,24 @@
     "apps/*"
   ],
   "devDependencies": {
-    "@biomejs/biome": "^2.5.3",
-    "@types/react": "~19.2.17",
-    "elysia": "^1.4.29",
+    "@biomejs/biome": "^2.5.12",
+    "@types/react": "~19.2.18",
+    "elysia": "^1.4.30",
     "husky": "^9.1.7",
-    "knip": "^6.17.1",
+    "knip": "^6.35.0",
     "typescript": "^7.0.2",
     "vitepress": "1.6.4"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.101.0",
-    "i18next": "^26.3.1",
-    "react": "19.2.7",
-    "react-i18next": "^17.0.8",
+    "@tanstack/react-query": "^5.102.8",
+    "i18next": "^26.4.2",
+    "react": "19.2.8",
+    "react-i18next": "^17.0.13",
     "recharts": "3.8.1",
-    "sharp": "^0.35.1"
+    "sharp": "^0.35.4"
   },
   "overrides": {
-    "@better-auth/core": "1.6.19"
+    "@better-auth/core": "1.7.3"
   },
   "version": "1.21.0"
 }

@@ -42,7 +42,7 @@ async function getStoredAppVersion(): Promise<string | null> {
 async function storeAppVersion(version: string): Promise<void> {
   // Store with a very long TTL (e.g., 1 year) as this is semi-permanent state
   await setJsonCache(APP_VERSION_KEY, version, 365 * 24 * 60 * 60);
-  console.log(`Stored app version in Redis: ${version}`);
+  console.log(`Stored app version in Valkey: ${version}`);
 }
 
 async function sendAppUpdateNotifications(newVersion?: string): Promise<void> {
@@ -98,7 +98,7 @@ export async function checkAndNotifyVersionChange(): Promise<void> {
     const currentVersion = getAppVersion();
 
     // Dev builds (no APP_VERSION build-arg) get a fresh boot-time stamp every
-    // restart. Comparing those against Redis would log activity and notify all
+    // restart. Comparing those against Valkey would log activity and notify all
     // subscribers on every container restart — skip the whole path.
     if (!isReleaseVersion(currentVersion)) {
       console.log(`Dev build (${currentVersion}); skipping version notify`);
@@ -109,7 +109,7 @@ export async function checkAndNotifyVersionChange(): Promise<void> {
 
     if (storedVersion === null) {
       console.log(
-        `First startup or Redis empty. Storing current version and notifying: ${currentVersion}`,
+        `First startup or Valkey empty. Storing current version and notifying: ${currentVersion}`,
       );
       await storeAppVersion(currentVersion);
       await sendAppUpdateNotifications(currentVersion);

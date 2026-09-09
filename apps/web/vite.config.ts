@@ -182,11 +182,11 @@ export default defineConfig(({ mode }) => {
       environment: "happy-dom",
       setupFiles: ["./src/test/setup.ts"],
       exclude: ["e2e/**", "node_modules/**"],
-      poolOptions: {
-        forks: {
-          execArgv: ["--max-old-space-size=1024"],
-        },
-      },
+      // Vitest 5 flattened poolOptions.forks.execArgv to top-level execArgv.
+      execArgv: ["--max-old-space-size=1024"],
+      // Vitest 5 defaults clearMocks to true; keep the v4 behavior so this
+      // bump stays behavior-neutral (flip in a separate change if wanted).
+      clearMocks: false,
     },
   };
 });

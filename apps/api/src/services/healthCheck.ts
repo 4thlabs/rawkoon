@@ -1,5 +1,5 @@
 import { prisma } from "@rawkoon/api/db";
-import { redis } from "@rawkoon/api/db/redis";
+import { valkey } from "@rawkoon/api/db/valkey";
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -20,26 +20,26 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 export type HealthPayload = {
   status: "ok" | "degraded";
   db: boolean;
-  redis: boolean;
+  valkey: boolean;
 };
 
-/** Prisma SELECT 1 + redis.ping, each bounded so a hung dependency cannot stall probes. */
+/** Prisma SELECT 1 + valkey.ping, each bounded so a hung dependency cannot stall probes. */
 export async function checkHealth(timeoutMs = 2000): Promise<HealthPayload> {
   const pingDb = Promise.resolve().then(() => prisma.$queryRaw`SELECT 1`);
-  const pingRedis = Promise.resolve().then(() => redis.ping());
+  const pingValkey = Promise.resolve().then(() => valkey.ping());
 
-  const [db, redisOk] = await Promise.all([
+  const [db, valkeyOk] = await Promise.all([
     withTimeout(pingDb, timeoutMs)
       .then(() => true)
       .catch(() => false),
-    withTimeout(pingRedis, timeoutMs)
+    withTimeout(pingValkey, timeoutMs)
       .then((reply) => reply === "PONG")
       .catch(() => false),
   ]);
 
   return {
-    status: db && redisOk ? "ok" : "degraded",
+    status: db && valkeyOk ? "ok" : "degraded",
     db,
-    redis: redisOk,
+    valkey: valkeyOk,
   };
 }

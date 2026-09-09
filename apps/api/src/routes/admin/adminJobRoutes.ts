@@ -31,7 +31,7 @@ const getQueueStats = async (name: string, queue: Queue) => {
 };
 
 const fetchRepeatableJobsList = async () => {
-  const repeatableJobs = await scheduledTasksQueue.getRepeatableJobs();
+  const repeatableJobs = await scheduledTasksQueue.getJobSchedulers();
   const jobInstances = await scheduledTasksQueue.getJobs(
     ["active", "waiting", "failed", "completed"],
     0,

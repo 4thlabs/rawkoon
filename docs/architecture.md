@@ -1,7 +1,7 @@
 # Architecture
 
 Rawkoon is one application with a React web interface, a Bun API, PostgreSQL
-for durable state, and Redis-backed work queues. In production, the API and
+for durable state, and Valkey-backed work queues. In production, the API and
 web interface ship in the same container.
 
 ## System map
@@ -16,7 +16,7 @@ web interface ship in the same container.
       │
       └── Rawkoon API
             ├── PostgreSQL: users, library, settings, history, integrations
-            ├── Redis/BullMQ: scheduled and background work
+            ├── Valkey/BullMQ: scheduled and background work
             ├── TMDB: movie/TV discovery
             ├── Google Books, Audnexus, Open Library: book metadata
             ├── Prowlarr or Jackett: release search
@@ -116,7 +116,7 @@ list instead of silently disappearing.
 
 ## Background work
 
-Redis and BullMQ keep slow work away from HTTP requests. Rawkoon has separate
+Valkey and BullMQ keep slow work away from HTTP requests. Rawkoon has separate
 queues for notifications/activity, scheduled tasks, library migration,
 language reindexing, and remuxing.
 

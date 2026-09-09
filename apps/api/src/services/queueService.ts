@@ -5,7 +5,7 @@ import {
   type QueueOptions,
   type JobsOptions,
 } from "bullmq";
-import { redisConnection } from "@rawkoon/api/db/redis";
+import { valkeyConnection } from "@rawkoon/api/db/valkey";
 import {
   PERF_TIMING_ENABLED,
   recordJobDuration,
@@ -50,7 +50,7 @@ export const NOTIFICATION_JOB_NAMES = {
 export const POST_PROCESS_JOB_NAME = "post-process";
 
 const defaultQueueOptions: QueueOptions = {
-  connection: redisConnection,
+  connection: valkeyConnection,
   defaultJobOptions: {
     attempts: 3,
     backoff: {
@@ -196,7 +196,7 @@ export function initWorkers() {
         );
         return processNotificationJob(job);
       },
-      { connection: redisConnection, concurrency: 10 },
+      { connection: valkeyConnection, concurrency: 10 },
     ),
     QUEUE_NAMES.EXPRESS,
   );
@@ -211,7 +211,7 @@ export function initWorkers() {
         );
         return processScheduledJob(job);
       },
-      { connection: redisConnection, concurrency: 3 }, // Allow a few scheduled tasks at once
+      { connection: valkeyConnection, concurrency: 3 }, // Allow a few scheduled tasks at once
     ),
     QUEUE_NAMES.SCHEDULED_TASKS,
   );
@@ -226,7 +226,7 @@ export function initWorkers() {
         );
         return processLibraryMigrateJob(job);
       },
-      { connection: redisConnection, concurrency: 1 },
+      { connection: valkeyConnection, concurrency: 1 },
     ),
     QUEUE_NAMES.LIBRARY_MIGRATE,
   );
@@ -241,7 +241,7 @@ export function initWorkers() {
         );
         return processLibraryReindexLanguagesJob(job);
       },
-      { connection: redisConnection, concurrency: 1 },
+      { connection: valkeyConnection, concurrency: 1 },
     ),
     QUEUE_NAMES.LIBRARY_REINDEX_LANGUAGES,
   );
@@ -256,7 +256,7 @@ export function initWorkers() {
         );
         return processLibraryRemuxFileJob(job);
       },
-      { connection: redisConnection, concurrency: 1 },
+      { connection: valkeyConnection, concurrency: 1 },
     ),
     QUEUE_NAMES.LIBRARY_REMUX,
   );
@@ -271,7 +271,7 @@ export function initWorkers() {
         );
         return processPostProcessJob(job);
       },
-      { connection: redisConnection, concurrency: 1 },
+      { connection: valkeyConnection, concurrency: 1 },
     ),
     QUEUE_NAMES.LIBRARY_POST_PROCESS,
   );
@@ -337,18 +337,19 @@ export async function setupScheduledJobs() {
     },
   ];
 
-  const repeatableJobs = await scheduledTasksQueue.getRepeatableJobs();
-  for (const job of repeatableJobs) {
-    await scheduledTasksQueue.removeRepeatableByKey(job.key);
+  // Prune existing schedulers, then (re)register each idempotently by id
+  // (its job name). BullMQ 6 removed the legacy repeatable-jobs API in favor
+  // of Job Schedulers; upsertJobScheduler is the 1:1 replacement.
+  const schedulers = await scheduledTasksQueue.getJobSchedulers();
+  for (const scheduler of schedulers) {
+    await scheduledTasksQueue.removeJobScheduler(scheduler.key);
   }
 
   for (const job of jobs) {
-    await scheduledTasksQueue.add(
+    await scheduledTasksQueue.upsertJobScheduler(
       job.name,
-      {},
-      {
-        repeat: { pattern: job.pattern },
-      },
+      { pattern: job.pattern },
+      { name: job.name, data: {} },
     );
     console.log(`   - Scheduled ${job.name} with pattern ${job.pattern}`);
   }
