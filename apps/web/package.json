@@ -46,7 +46,7 @@
     "fflate": "^0.8.3",
     "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^1.43.0",
-    "motion": "^12.43.0",
+    "motion": "^13.2.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.87.0",
