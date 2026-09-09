@@ -181,7 +181,9 @@ export const mobileAuthRoutes = new Elysia({ name: "auth/mobile" })
     }
     const base = getBaseUrl();
     const initRes = await betterAuth.handler(
-      new Request(`${base}/api/auth/sign-in/oauth2`, {
+      // better-auth 1.7 folded generic OAuth into the social flow:
+      // /sign-in/oauth2 { providerId } -> /sign-in/social { provider }.
+      new Request(`${base}/api/auth/sign-in/social`, {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -190,7 +192,7 @@ export const mobileAuthRoutes = new Elysia({ name: "auth/mobile" })
           cookie: request.headers.get("cookie") ?? "",
         },
         body: JSON.stringify({
-          providerId: provider,
+          provider,
           callbackURL: `${base}/api/mobile/auth-callback`,
         }),
       }),
