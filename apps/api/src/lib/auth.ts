@@ -242,12 +242,12 @@ export const auth = betterAuth({
           let providerId: string | null = null;
           if (ctx.path === "/sign-in/email") {
             providerId = "credential";
-          } else if (ctx.path.startsWith("/oauth2/callback/")) {
+          } else if (ctx.path.startsWith("/callback/")) {
+            // better-auth 1.7: OIDC providers use the social callback path
+            // /callback/:providerId (was /oauth2/callback/:providerId).
             const params = (ctx as { params?: { providerId?: string } }).params;
             providerId =
-              params?.providerId ??
-              ctx.path.split("/oauth2/callback/")[1] ??
-              null;
+              params?.providerId ?? ctx.path.split("/callback/")[1] ?? null;
           }
           if (providerId) {
             await prisma.baSession

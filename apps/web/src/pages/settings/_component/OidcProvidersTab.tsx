@@ -79,7 +79,7 @@ function ProviderForm({
   const iconUrl = watch("icon_url");
   const enabled = watch("enabled");
   const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
-  const redirectUri = slug ? `${apiBase}/api/auth/oauth2/callback/${slug}` : "";
+  const redirectUri = slug ? `${apiBase}/api/auth/callback/${slug}` : "";
 
   const onSubmit = (data: OidcProviderFormValues) => {
     onSave(data);

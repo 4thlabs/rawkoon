@@ -152,8 +152,8 @@ export function LoginForm() {
             key={provider.slug}
             type="button"
             onClick={() =>
-              authClient.signIn.oauth2({
-                providerId: provider.slug,
+              authClient.signIn.social({
+                provider: provider.slug,
                 callbackURL: "/",
               })
             }
