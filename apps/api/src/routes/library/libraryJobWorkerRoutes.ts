@@ -219,7 +219,7 @@ export const libraryJobWorkerRoutes = new Elysia()
       const [lastRun, history, repeatableJobs] = await Promise.all([
         getLastRssRun(),
         getRssRunHistory(),
-        scheduledTasksQueue.getRepeatableJobs(),
+        scheduledTasksQueue.getJobSchedulers(),
       ]);
       const rssJob = repeatableJobs.find(
         (j) => j.name === SCHEDULED_JOB_NAMES.POLL_INDEXER_RSS,

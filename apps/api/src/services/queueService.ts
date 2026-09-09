@@ -337,18 +337,19 @@ export async function setupScheduledJobs() {
     },
   ];
 
-  const repeatableJobs = await scheduledTasksQueue.getRepeatableJobs();
-  for (const job of repeatableJobs) {
-    await scheduledTasksQueue.removeRepeatableByKey(job.key);
+  // Prune existing schedulers, then (re)register each idempotently by id
+  // (its job name). BullMQ 6 removed the legacy repeatable-jobs API in favor
+  // of Job Schedulers; upsertJobScheduler is the 1:1 replacement.
+  const schedulers = await scheduledTasksQueue.getJobSchedulers();
+  for (const scheduler of schedulers) {
+    await scheduledTasksQueue.removeJobScheduler(scheduler.key);
   }
 
   for (const job of jobs) {
-    await scheduledTasksQueue.add(
+    await scheduledTasksQueue.upsertJobScheduler(
       job.name,
-      {},
-      {
-        repeat: { pattern: job.pattern },
-      },
+      { pattern: job.pattern },
+      { name: job.name, data: {} },
     );
     console.log(`   - Scheduled ${job.name} with pattern ${job.pattern}`);
   }

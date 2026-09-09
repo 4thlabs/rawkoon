@@ -43,7 +43,7 @@
     "@prisma/client": "7.10.0",
     "@rawkoon/shared": "workspace:*",
     "better-auth": "1.6.19",
-    "bullmq": "^5.81.4",
+    "bullmq": "^6.3.4",
     "elysia": "^1.4.30",
     "elysia-rate-limit": "^4.6.3",
     "ioredis": "^5.11.1",
