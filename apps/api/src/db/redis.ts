@@ -13,6 +13,9 @@ export const redisConnection = {
   db: redisDb,
   // BullMQ needs these settings for stability
   maxRetriesPerRequest: null,
+  // ioredis 6 defaults to RESP3; pin RESP2 to keep the v5 wire behavior for
+  // both this client and every BullMQ connection built from these options.
+  protocol: 2 as const,
 };
 
 export const redis = new Redis(redisConnection);
