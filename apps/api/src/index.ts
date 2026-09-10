@@ -1,12 +1,10 @@
-import { existsSync } from "node:fs";
-import * as nodePath from "node:path";
-import { Elysia } from "elysia";
-import { swagger } from "@elysiajs/swagger";
-import { staticPlugin } from "@elysiajs/static";
-import { notFound } from "@rawkoon/api/errors";
-import { isApiPath } from "@rawkoon/api/utils/isApiPath";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
 
-import { cors } from "@elysiajs/cors";
+import { notFound, ok } from "@rawkoon/api/errors";
+import { type Env, honoOnError } from "@rawkoon/api/honoEnv";
+
+import { registerStaticRoutes } from "./staticRoutes";
 import { checkAndNotifyVersionChange } from "./services/versionService";
 import { auth as betterAuthInstance } from "@rawkoon/api/lib/auth";
 import {
@@ -15,10 +13,9 @@ import {
   ssoProvidersRoute,
   mobileAuthRoutes,
 } from "./auth";
+import { downloadClientHookRoutes } from "./routes/integrations/downloadClient/hookRoutes";
 import { adminRoutes } from "./routes/admin";
 import { dashboardRoutes } from "./routes/dashboard";
-import { libraryMediaAdminRoutes } from "./routes/library/libraryMediaAdmin";
-import { libraryDownloadsRoutes } from "./routes/library/downloads";
 import { libraryRoutes } from "./routes/library";
 import {
   bookRoutes,
@@ -31,16 +28,17 @@ import { mediasRoutes } from "./routes/medias";
 import { requestRoutes } from "./routes/requests";
 import { notificationsRoutes } from "./routes/notifications";
 import { integrationsRoutes } from "./routes/integrations";
-import { downloadClientHookRoutes } from "./routes/integrations/downloadClient/hookRoutes";
 import { labbyRoutes } from "./routes/labby";
 import { releasesRoutes } from "./routes/releases";
 import { searchRoutes } from "./routes/search";
 import { settingsRoutes } from "./routes/settings";
 import { systemRoutes } from "./routes/system";
 import { usersRoutes } from "./routes/users";
-import { globalRateLimit, strictAuthRateLimit } from "./middleware/rateLimit";
-import { requestTiming } from "./middleware/requestTiming";
-import { resolveUser } from "./middleware/auth";
+import {
+  globalRateLimit,
+  strictAuthRateLimit,
+} from "./middleware/hono/rateLimit";
+import { requestTiming } from "./middleware/hono/requestTiming";
 import {
   closeAllWorkers,
   initWorkers,
@@ -49,177 +47,85 @@ import {
 import { startResourceSampler } from "./services/perf/perfStore";
 import { checkHealth } from "./services/healthCheck";
 
-// The production image copies the built frontend into ./public (see
-// Dockerfile); in dev the directory doesn't exist and Vite serves the SPA.
-const serveStatic = existsSync("./public/index.html");
-const spaIndexHtmlPromise: Promise<string> = serveStatic
-  ? Bun.file("./public/index.html").text()
-  : Promise.resolve("");
+// strict:false: a trailing slash matches (`/api/x/` == `/api/x`).
+export const app = new Hono<Env>({ strict: false });
 
-function escapeInlineScriptJson(value: unknown): string {
-  return JSON.stringify(value)
-    .replaceAll("<", "\\u003c")
-    .replaceAll(">", "\\u003e")
-    .replaceAll("&", "\\u0026")
-    .replaceAll("\u2028", "\\u2028")
-    .replaceAll("\u2029", "\\u2029");
+app.use(
+  "*",
+  cors({
+    origin: Bun.env.CORS_ORIGIN || "http://localhost:5173",
+    credentials: true,
+  }),
+);
+app.use("*", requestTiming);
+
+if (Bun.env.LOG_LEVEL === "debug") {
+  app.use("*", async (c, next) => {
+    console.log(
+      `Incoming request: ${c.req.method} ${new URL(c.req.url).pathname}`,
+    );
+    await next();
+  });
 }
 
-export const app = new Elysia()
-  // Serve pre-compressed .gz assets built by vite-plugin-compression2 when client accepts gzip.
-  .onAfterHandle({ as: "global" }, async ({ request, response, path }) => {
-    if (!(response instanceof Response)) return;
-    if (!path.startsWith("/assets/")) return;
-    // Re-check after normalizing so paths like /assets/../../etc/passwd don't
-    // resolve outside ./public when interpolated into the file path below.
-    const safePath = nodePath.posix.normalize(path);
-    if (!safePath.startsWith("/assets/")) return;
-    const ext = safePath.split(".").pop() ?? "";
-    if (ext !== "js" && ext !== "css") return;
-    if ((request.headers.get("accept-encoding") ?? "").indexOf("gzip") === -1)
-      return;
-    if (response.headers.get("content-encoding")) return;
+app.onError(honoOnError);
+app.notFound(() => notFound("Not found"));
 
-    const gzFile = Bun.file(`./public${safePath}.gz`);
-    if (!(await gzFile.exists())) return;
+app.use("*", strictAuthRateLimit);
 
-    const ct = ext === "css" ? "text/css" : "application/javascript";
-    return new Response(gzFile, {
-      headers: {
-        "Content-Type": ct,
-        "Content-Encoding": "gzip",
-        "Cache-Control": "public, max-age=31536000, immutable",
-        Vary: "Accept-Encoding",
-      },
-    });
-  })
-  .use(
-    cors({
-      origin: Bun.env.CORS_ORIGIN || "http://localhost:5173", // Frontend URL
-      credentials: true,
-    }),
-  )
-  .use(Bun.env.NODE_ENV !== "production" ? swagger() : new Elysia())
-  .use((app) => {
-    console.log("Elysia app initialized");
-    if (Bun.env.LOG_LEVEL === "debug") {
-      app.on("beforeHandle", (context) => {
-        console.log(
-          `Incoming request: ${context.request.method} ${context.path}`,
-        );
-      });
-    }
-    return app;
-  })
-  // Perf-baseline request timing. Inert unless PERF_TIMING_ENABLED=true — off by
-  // default, so a normal run behaves identically.
-  .use(requestTiming)
-  .onError(({ code, error, set }) => {
-    if (code === "NOT_FOUND") {
-      set.status = 404;
-      return { error: "Not found" };
-    }
-    if (code === "VALIDATION") {
-      set.status = 400;
-      return { error: error.message };
-    }
-    console.error(`[${code}] Unhandled error:`, error);
-    set.status = 500;
-    return { error: "Internal server error" };
-  })
-  .use(strictAuthRateLimit)
-  .use(publicAuthRoutes)
-  .use(ssoProvidersRoute)
-  .use(mobileAuthRoutes)
-  .use(protectedAuthRoutes)
-  .all("/api/auth/*", ({ request }) => betterAuthInstance.handler(request))
-  .use(downloadClientHookRoutes)
-  .use(globalRateLimit) // Global rate limiting for unauthenticated requests
-  .use(dashboardRoutes)
-  .use(usersRoutes)
-  .use(notificationsRoutes)
-  .use(labbyRoutes)
-  .use(releasesRoutes)
-  .use(settingsRoutes)
-  .use(adminRoutes)
-  .use(integrationsRoutes)
-  .use(libraryMediaAdminRoutes)
-  .use(libraryDownloadsRoutes)
-  .use(libraryRoutes)
-  .use(bookRoutes)
-  .use(bookQualityProfileRoutes)
-  .use(authorRoutes)
-  .use(qualityProfilesRoutes)
-  .use(customFormatsRoutes)
-  .use(mediasRoutes)
-  .use(requestRoutes)
-  .use(searchRoutes)
-  .use(systemRoutes)
-  .get("/api/health", async ({ set }) => {
-    const health = await checkHealth();
-    if (health.status === "degraded") set.status = 503;
-    return health;
-  })
-  .use((app) => {
-    if (serveStatic) {
-      // On Bun, @elysiajs/static imports .html as modules; Vite's index.html is plain HTML, so those routes
-      // return empty bodies. Ignore *.html here and serve the SPA shell via Bun.file below.
-      app
-        .use(
-          staticPlugin({
-            assets: "./public",
-            prefix: "/",
-            // html served below with bootstrap injection
-            ignorePatterns: [/\.html$/],
-          }),
-        )
-        .get("*", async ({ request, set }) => {
-          // An unmatched /api path is a bug, not a client-side route. Falling
-          // through to the SPA answered 200 with HTML, which hid a real failure:
-          // epub.js probed `/api/books/files/1/META-INF/container.xml`, got the
-          // shell with a success status, and silently failed to parse it.
-          if (isApiPath(new URL(request.url).pathname)) {
-            return notFound(set, "Not found");
-          }
+// Registered before the /api/auth/* catch-all so Hono doesn't swallow them.
+app.route("/", publicAuthRoutes);
+app.route("/", ssoProvidersRoute);
+app.route("/", mobileAuthRoutes);
+app.route("/", protectedAuthRoutes);
+app.all("/api/auth/*", (c) => betterAuthInstance.handler(c.req.raw));
+app.route("/api/download-client", downloadClientHookRoutes);
 
-          const [indexHtml, user] = await Promise.all([
-            spaIndexHtmlPromise,
-            resolveUser(request).catch(() => null),
-          ]);
+app.use("*", globalRateLimit);
 
-          const bootScript = `<script>window.__RAWKOON_BOOTSTRAP__=${escapeInlineScriptJson({ user })};</script>`;
-          const html = indexHtml.replace("</body>", `${bootScript}\n</body>`);
+app
+  .route("/api/dashboard", dashboardRoutes)
+  .route("/api/users", usersRoutes)
+  .route("/api/notifications", notificationsRoutes)
+  .route("/api/labby", labbyRoutes)
+  .route("/api/releases", releasesRoutes)
+  .route("/api/settings", settingsRoutes)
+  .route("/api/admin", adminRoutes)
+  .route("/api/integrations", integrationsRoutes)
+  .route("/api/library", libraryRoutes)
+  .route("/api/books", bookRoutes)
+  .route("/api/book-quality-profiles", bookQualityProfileRoutes)
+  .route("/api/authors", authorRoutes)
+  .route("/api/quality-profiles", qualityProfilesRoutes)
+  .route("/api/custom-formats", customFormatsRoutes)
+  .route("/api/medias", mediasRoutes)
+  .route("/api/requests", requestRoutes)
+  .route("/api/search", searchRoutes)
+  .route("/api/system", systemRoutes);
 
-          return new Response(html, {
-            headers: {
-              "Content-Type": "text/html; charset=utf-8",
-              "Cache-Control": "no-cache",
-            },
-          });
-        });
-    }
-    return app;
-  });
+app.get("/api/health", async (c) => {
+  const health = await checkHealth();
+  return ok(health, health.status === "degraded" ? 503 : 200);
+});
+
+registerStaticRoutes(app);
 
 if (import.meta.main) {
-  // 1. Initialize BullMQ Workers
   initWorkers();
 
-  // 1b. Perf-baseline CPU/RSS sampler (no-op unless PERF_TIMING_ENABLED=true)
   startResourceSampler();
 
-  // 2. Setup Scheduled Tasks (Crons)
   setupScheduledJobs().catch((err) => {
     console.error("Failed to setup scheduled jobs:", err);
   });
 
-  // 3. Start Server
-  app.listen(process.env.API_PORT || 3000);
-  console.log(
-    `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
-  );
+  const server = Bun.serve({
+    fetch: app.fetch,
+    port: Number(process.env.API_PORT || 3000),
+    idleTimeout: 0,
+  });
+  console.log(`🔥 Hono is running at ${server.hostname}:${server.port}`);
 
-  // 4. Post-startup tasks
   checkAndNotifyVersionChange().catch((err) => {
     console.error("Failed to check version change after startup:", err);
   });
@@ -231,7 +137,7 @@ if (import.meta.main) {
     console.log(`Received ${signal}, shutting down...`);
     try {
       await closeAllWorkers();
-      await app.stop();
+      server.stop();
     } catch (err) {
       console.error("Shutdown error:", err);
     }

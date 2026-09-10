@@ -1,8 +1,11 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
 
-import { requireUser } from "@rawkoon/api/middleware/auth";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { requireUser } from "@rawkoon/api/middleware/hono/auth";
+import { jsonV, paramV } from "@rawkoon/api/middleware/validate";
 import { prisma } from "@rawkoon/api/db";
-import { badRequest, notFound } from "@rawkoon/api/errors";
+import { badRequest, notFound, ok } from "@rawkoon/api/errors";
 import { loadConfig } from "@rawkoon/api/config";
 import type { BookEditionKind } from "@rawkoon/shared/types";
 import { signGrant } from "@rawkoon/api/services/books/downloadGrant";
@@ -36,6 +39,11 @@ const editionSelect = {
   files: { select: { id: true, format: true } },
 } as const;
 
+const editionKindParams = z.object({
+  id: z.coerce.number(),
+  kind: z.union([z.literal("ebook"), z.literal("audiobook")]),
+});
+
 /**
  * Per-edition state. Monitoring is per edition kind, so a user can want the
  * audiobook of a title without wanting its ebook.
@@ -45,21 +53,29 @@ const editionSelect = {
  *   GET    /api/books/:id/editions/:kind/files
  *   DELETE /api/books/:id/files/:fileId
  */
-export const bookEditionRoutes = new Elysia()
-  .use(requireUser)
-
+export const bookEditionRoutes = new Hono<Env>()
   .patch(
     "/:id/editions/:kind",
-    async ({ params, body, set }) => {
+    requireUser,
+    paramV(editionKindParams),
+    jsonV(
+      z.object({
+        monitored: z.boolean().optional(),
+        status: z.string().optional(),
+        book_quality_profile_id: z.coerce.number().nullable().optional(),
+      }),
+    ),
+    async (c) => {
+      const params = c.req.valid("param");
+      const body = c.req.valid("json");
       const edition = await prisma.bookEdition.findUnique({
         where: { bookId_kind: { bookId: params.id, kind: params.kind } },
         select: { id: true },
       });
-      if (!edition) return notFound(set, "Edition not found");
+      if (!edition) return notFound("Edition not found");
 
       if (body.status && !EDITION_STATUSES.includes(body.status)) {
         return badRequest(
-          set,
           `status must be one of ${EDITION_STATUSES.join(", ")}`,
         );
       }
@@ -69,11 +85,10 @@ export const bookEditionRoutes = new Elysia()
           where: { id: body.book_quality_profile_id },
           select: { id: true, kind: true },
         });
-        if (!profile) return notFound(set, "Book quality profile not found");
+        if (!profile) return notFound("Book quality profile not found");
         // A profile scoped to one kind must not be attached to the other.
         if (profile.kind !== "both" && profile.kind !== params.kind) {
           return badRequest(
-            set,
             `Profile "${profile.id}" is for ${profile.kind} editions, not ${params.kind}`,
           );
         }
@@ -93,30 +108,30 @@ export const bookEditionRoutes = new Elysia()
         select: editionSelect,
       });
 
-      return { edition: mapBookEdition(updated) };
-    },
-    {
-      params: t.Object({
-        id: t.Numeric(),
-        kind: t.Union([t.Literal("ebook"), t.Literal("audiobook")]),
-      }),
-      body: t.Object({
-        monitored: t.Optional(t.Boolean()),
-        status: t.Optional(t.String()),
-        book_quality_profile_id: t.Optional(t.Nullable(t.Numeric())),
-      }),
+      return ok({ edition: mapBookEdition(updated) });
     },
   )
 
   // Add the other edition kind to a book that only has one.
   .post(
     "/:id/editions",
-    async ({ params, body, set }) => {
+    requireUser,
+    paramV(z.object({ id: z.coerce.number() })),
+    jsonV(
+      z.object({
+        kind: z.union([z.literal("ebook"), z.literal("audiobook")]),
+        monitored: z.boolean().optional(),
+        book_quality_profile_id: z.coerce.number().nullable().optional(),
+      }),
+    ),
+    async (c) => {
+      const params = c.req.valid("param");
+      const body = c.req.valid("json");
       const book = await prisma.libraryBook.findUnique({
         where: { id: params.id },
         select: { id: true },
       });
-      if (!book) return notFound(set, "Book not found");
+      if (!book) return notFound("Book not found");
 
       const kind = body.kind as BookEditionKind;
       const existing = await prisma.bookEdition.findUnique({
@@ -124,7 +139,7 @@ export const bookEditionRoutes = new Elysia()
         select: { id: true },
       });
       if (existing) {
-        return badRequest(set, `This book already has an ${kind} edition`);
+        return badRequest(`This book already has an ${kind} edition`);
       }
 
       const profile =
@@ -148,30 +163,25 @@ export const bookEditionRoutes = new Elysia()
         select: editionSelect,
       });
 
-      return { edition: mapBookEdition(created) };
-    },
-    {
-      params: t.Object({ id: t.Numeric() }),
-      body: t.Object({
-        kind: t.Union([t.Literal("ebook"), t.Literal("audiobook")]),
-        monitored: t.Optional(t.Boolean()),
-        book_quality_profile_id: t.Optional(t.Nullable(t.Numeric())),
-      }),
+      return ok({ edition: mapBookEdition(created) });
     },
   )
 
   .get(
     "/:id/editions/:kind/files",
-    async ({ params, set }) => {
+    requireUser,
+    paramV(editionKindParams),
+    async (c) => {
+      const params = c.req.valid("param");
       const edition = await prisma.bookEdition.findUnique({
         where: { bookId_kind: { bookId: params.id, kind: params.kind } },
         include: { files: { orderBy: { fileName: "asc" } } },
       });
-      if (!edition) return notFound(set, "Edition not found");
+      if (!edition) return notFound("Edition not found");
       const secret = loadConfig().SECRET_KEY;
       const expiresAt = Date.now() + EDITION_FILE_GRANT_TTL_MS;
 
-      return {
+      return ok({
         edition_id: edition.id,
         kind: edition.kind,
         files: edition.files.map((f) => ({
@@ -197,13 +207,7 @@ export const bookEditionRoutes = new Elysia()
           language_tags: f.languageTags,
           scanned_at: f.scannedAt.toISOString(),
         })),
-      };
-    },
-    {
-      params: t.Object({
-        id: t.Numeric(),
-        kind: t.Union([t.Literal("ebook"), t.Literal("audiobook")]),
-      }),
+      });
     },
   )
 
@@ -215,27 +219,24 @@ export const bookEditionRoutes = new Elysia()
    */
   .post(
     "/:id/editions/:kind/rescan",
-    async ({ params, set }) => {
+    requireUser,
+    paramV(editionKindParams),
+    async (c) => {
+      const params = c.req.valid("param");
       const edition = await prisma.bookEdition.findUnique({
         where: { bookId_kind: { bookId: params.id, kind: params.kind } },
         select: { id: true },
       });
-      if (!edition) return notFound(set, "Edition not found");
+      if (!edition) return notFound("Edition not found");
 
       const result = await rescanBookEdition(edition.id);
-      if (result.error) return badRequest(set, result.error);
-      return {
+      if (result.error) return badRequest(result.error);
+      return ok({
         registered: result.registered,
         refreshed: result.refreshed,
         removed: result.removed,
         directory: result.directory,
-      };
-    },
-    {
-      params: t.Object({
-        id: t.Numeric(),
-        kind: t.Union([t.Literal("ebook"), t.Literal("audiobook")]),
-      }),
+      });
     },
   )
 
@@ -243,14 +244,16 @@ export const bookEditionRoutes = new Elysia()
   // library media file removal behaves.
   .delete(
     "/:id/files/:fileId",
-    async ({ params, set }) => {
+    requireUser,
+    paramV(z.object({ id: z.coerce.number(), fileId: z.coerce.number() })),
+    async (c) => {
+      const params = c.req.valid("param");
       const file = await prisma.bookFile.findFirst({
         where: { id: params.fileId, edition: { bookId: params.id } },
         select: { id: true },
       });
-      if (!file) return notFound(set, "File not found");
+      if (!file) return notFound("File not found");
       await prisma.bookFile.delete({ where: { id: file.id } });
-      return { deleted: true };
+      return ok({ deleted: true });
     },
-    { params: t.Object({ id: t.Numeric(), fileId: t.Numeric() }) },
   );

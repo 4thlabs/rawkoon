@@ -1,13 +1,12 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
 import { UAParser } from "ua-parser-js";
 import { prisma } from "@rawkoon/api/db";
-import { requireAdmin } from "@rawkoon/api/middleware/auth";
-import { badRequest, serverError } from "@rawkoon/api/errors";
+import { badRequest, ok, serverError } from "@rawkoon/api/errors";
+import type { Env } from "@rawkoon/api/honoEnv";
 
-export const adminMiscRoutes = new Elysia()
-  .use(requireAdmin)
-  // GET /api/admin/sessions - List all active Better Auth sessions
-  .get("/sessions", async ({ set }) => {
+// Mounted under /api/admin; requireAdmin is applied at the admin parent.
+export const adminMiscRoutes = new Hono<Env>()
+  .get("/sessions", async () => {
     try {
       const sessions = await prisma.baSession.findMany({
         where: { expiresAt: { gt: new Date() } },
@@ -19,7 +18,7 @@ export const adminMiscRoutes = new Elysia()
         orderBy: { createdAt: "desc" },
       });
 
-      return {
+      return ok({
         success: true,
         sessions: sessions.map((session) => {
           const ua = session.userAgent
@@ -42,51 +41,36 @@ export const adminMiscRoutes = new Elysia()
               : null,
           };
         }),
-      };
+      });
     } catch (error) {
       console.error("Error listing sessions:", error);
-      return serverError(set, "Failed to list sessions");
+      return serverError("Failed to list sessions");
     }
   })
 
-  // DELETE /api/admin/sessions/:id - Revoke a specific session
-  .delete(
-    "/sessions/:id",
-    async ({ params, set }) => {
-      try {
-        await prisma.baSession.deleteMany({
-          where: { id: params.id },
-        });
-        return { success: true, message: "Session revoked" };
-      } catch (error) {
-        console.error("Error revoking session:", error);
-        return serverError(set, "Failed to revoke session");
-      }
-    },
-    { params: t.Object({ id: t.String() }) },
-  )
+  .delete("/sessions/:id", async (c) => {
+    try {
+      await prisma.baSession.deleteMany({ where: { id: c.req.param("id") } });
+      return ok({ success: true, message: "Session revoked" });
+    } catch (error) {
+      console.error("Error revoking session:", error);
+      return serverError("Failed to revoke session");
+    }
+  })
 
-  // DELETE /api/admin/sessions/user/:userId - Revoke all sessions for a user
-  .delete(
-    "/sessions/user/:userId",
-    async ({ params, set }) => {
-      const userId = params.userId;
+  .delete("/sessions/user/:userId", async (c) => {
+    try {
+      await prisma.baSession.deleteMany({
+        where: { userId: c.req.param("userId") },
+      });
+      return ok({ success: true, message: "All sessions revoked" });
+    } catch (error) {
+      console.error("Error revoking user sessions:", error);
+      return serverError("Failed to revoke sessions");
+    }
+  })
 
-      try {
-        await prisma.baSession.deleteMany({
-          where: { userId },
-        });
-        return { success: true, message: "All sessions revoked" };
-      } catch (error) {
-        console.error("Error revoking user sessions:", error);
-        return serverError(set, "Failed to revoke sessions");
-      }
-    },
-    { params: t.Object({ userId: t.String() }) },
-  )
-
-  // GET /api/admin/web-push - List all web push subscriptions
-  .get("/web-push", async ({ set }) => {
+  .get("/web-push", async () => {
     try {
       const subs = await prisma.userSubscription.findMany({
         include: {
@@ -97,7 +81,7 @@ export const adminMiscRoutes = new Elysia()
         orderBy: { createdAt: "desc" },
       });
 
-      return {
+      return ok({
         success: true,
         subscriptions: subs.map((s) => ({
           id: s.id,
@@ -116,27 +100,22 @@ export const adminMiscRoutes = new Elysia()
           created_at: s.createdAt?.toISOString() ?? null,
           updated_at: s.updatedAt?.toISOString() ?? null,
         })),
-      };
+      });
     } catch (error) {
       console.error("Error listing web push subscriptions:", error);
-      return serverError(set, "Failed to list web push subscriptions");
+      return serverError("Failed to list web push subscriptions");
     }
   })
 
-  // DELETE /api/admin/web-push/:id - Delete a web push subscription
-  .delete(
-    "/web-push/:id",
-    async ({ params, set }) => {
-      const id = parseInt(params.id, 10);
-      if (isNaN(id)) return badRequest(set, "Invalid subscription ID");
+  .delete("/web-push/:id", async (c) => {
+    const id = parseInt(c.req.param("id"), 10);
+    if (isNaN(id)) return badRequest("Invalid subscription ID");
 
-      try {
-        await prisma.userSubscription.delete({ where: { id } });
-        return { success: true, message: "Web push subscription deleted" };
-      } catch (error) {
-        console.error("Error deleting web push subscription:", error);
-        return serverError(set, "Failed to delete web push subscription");
-      }
-    },
-    { params: t.Object({ id: t.String() }) },
-  );
+    try {
+      await prisma.userSubscription.delete({ where: { id } });
+      return ok({ success: true, message: "Web push subscription deleted" });
+    } catch (error) {
+      console.error("Error deleting web push subscription:", error);
+      return serverError("Failed to delete web push subscription");
+    }
+  });

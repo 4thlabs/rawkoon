@@ -1,6 +1,9 @@
-import { Elysia, t } from "elysia";
-import { requireUser } from "@rawkoon/api/middleware/auth";
-import { badGateway, badRequest, serverError } from "@rawkoon/api/errors";
+import { Hono } from "hono";
+import { z } from "zod";
+import { badGateway, badRequest, ok, serverError } from "@rawkoon/api/errors";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { requireUser } from "@rawkoon/api/middleware/hono/auth";
+import { queryV } from "@rawkoon/api/middleware/validate";
 import {
   type TmdbSearchItem,
   mapTmdbSearchItem,
@@ -11,15 +14,24 @@ import {
   loadEnabledTmdbConfig,
 } from "./tmdbRouteHelpers";
 
-export const tmdbSearchRoutes = new Elysia().use(requireUser).get(
+// Mounted under /api/medias; requireUser guards each route directly.
+export const tmdbSearchRoutes = new Hono<Env>().get(
   "/tmdb-search",
-  async ({ user: _user, set, query }) => {
+  requireUser,
+  queryV(
+    z.object({
+      q: z.string(),
+      language: z.string().optional(),
+      kind: z
+        .union([z.literal("movie"), z.literal("tv"), z.literal("any")])
+        .optional(),
+    }),
+  ),
+  async (c) => {
+    const query = c.req.valid("query");
     const q = query.q.trim();
     if (q.length < 2) {
-      return {
-        enabled: true,
-        items: [],
-      };
+      return ok({ enabled: true, items: [] });
     }
 
     const response: {
@@ -33,13 +45,11 @@ export const tmdbSearchRoutes = new Elysia().use(requireUser).get(
     try {
       const tmdbConfig = await loadEnabledTmdbConfig();
       if (!tmdbConfig) {
-        return badRequest(set, "TMDB is not configured");
+        return badRequest("TMDB is not configured");
       }
 
       const searchUrl = new URL("https://api.themoviedb.org/3/search/multi");
-      const language = toTmdbLanguage(
-        (query as Record<string, string | undefined>).language || "en-US",
-      );
+      const language = toTmdbLanguage(query.language || "en-US");
       searchUrl.searchParams.set("api_key", tmdbConfig.api_key);
       searchUrl.searchParams.set("query", q);
       searchUrl.searchParams.set("include_adult", "false");
@@ -50,10 +60,7 @@ export const tmdbSearchRoutes = new Elysia().use(requireUser).get(
         headers: { Accept: "application/json" },
       });
       if (!searchRes.ok) {
-        return badGateway(
-          set,
-          `TMDB search failed with status ${searchRes.status}`,
-        );
+        return badGateway(`TMDB search failed with status ${searchRes.status}`);
       }
 
       const searchData = (await searchRes.json()) as Record<string, unknown>;
@@ -84,19 +91,10 @@ export const tmdbSearchRoutes = new Elysia().use(requireUser).get(
       }));
 
       response.items = items;
-      return response;
+      return ok(response);
     } catch (error) {
       console.error("Error searching TMDB medias:", error);
-      return serverError(set, "Failed to search TMDB medias");
+      return serverError("Failed to search TMDB medias");
     }
-  },
-  {
-    query: t.Object({
-      q: t.String(),
-      language: t.Optional(t.String()),
-      kind: t.Optional(
-        t.Union([t.Literal("movie"), t.Literal("tv"), t.Literal("any")]),
-      ),
-    }),
   },
 );

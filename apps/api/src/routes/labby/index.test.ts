@@ -1,13 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
+import { Hono } from "hono";
 import { buildLabbySummary } from "./summary";
 
 const { labbyRoutes } = await import("./index");
-const app = new Elysia().use(labbyRoutes);
+// Mount at /api/labby to drive the full /api/labby paths.
+const app = new Hono().route("/api/labby", labbyRoutes);
 
 describe("Labby API", () => {
   it("rejects a missing api key", async () => {
-    const res = await app.handle(
+    const res = await app.request(
       new Request("http://localhost/api/labby/summary"),
     );
     expect(res.status).toBe(401);

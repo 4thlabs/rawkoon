@@ -1,6 +1,8 @@
-import { Elysia, t } from "elysia";
-import { auth } from "@rawkoon/api/auth";
-import { requireAdmin } from "@rawkoon/api/middleware/auth";
+import { Hono } from "hono";
+import { z } from "zod";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { requireAdmin } from "@rawkoon/api/middleware/hono/auth";
+import { jsonV, queryV } from "@rawkoon/api/middleware/validate";
 import { prisma } from "@rawkoon/api/db";
 import {
   getActiveIndexerManager,
@@ -20,10 +22,13 @@ import {
   isCompleteSeries,
 } from "@rawkoon/api/utils/medias/mappers";
 import {
+  badGateway,
   badRequest,
   conflict,
   notFound,
+  ok,
   serverError,
+  unprocessable,
 } from "@rawkoon/api/errors";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
 import { getIntegrationConfigRecord } from "@rawkoon/api/services/integrationConfigCache";
@@ -78,14 +83,13 @@ export async function downloadInteractiveSearchRelease(
 ) {
   const token = body.token.trim();
   if (!token) {
-    return badRequest(set, "Invalid release token");
+    return badRequest("Invalid release token");
   }
 
   try {
     const adapter = await getActiveIndexerManager();
     if (!adapter) {
       return badRequest(
-        set,
         "No indexer manager configured. Enable Prowlarr or Jackett in integration settings.",
       );
     }
@@ -94,7 +98,6 @@ export async function downloadInteractiveSearchRelease(
     const resolved = await adapter.grabRelease(token);
     if (!resolved.success) {
       return notFound(
-        set,
         resolved.error ??
           "Selected release is no longer available. Run the search again.",
       );
@@ -102,11 +105,11 @@ export async function downloadInteractiveSearchRelease(
 
     const downloadUrl = resolved.magnetUrl ?? resolved.downloadUrl;
     if (!downloadUrl) {
-      return badRequest(set, "Release has no download URL");
+      return badRequest("Release has no download URL");
     }
     const releaseTitle = resolved.title?.trim();
     if (!releaseTitle) {
-      return badRequest(set, "Release has no title");
+      return badRequest("Release has no title");
     }
 
     let mediaId = body.library_media_id;
@@ -119,7 +122,6 @@ export async function downloadInteractiveSearchRelease(
     }
     if (mediaId == null) {
       return conflict(
-        set,
         "No library item to attach this download to. Add the title to your library first.",
       );
     }
@@ -129,7 +131,6 @@ export async function downloadInteractiveSearchRelease(
     });
     if (!media) {
       return conflict(
-        set,
         "No library item to attach this download to. Add the title to your library first.",
       );
     }
@@ -154,16 +155,27 @@ export async function downloadInteractiveSearchRelease(
     return { grabbed: false, reason: result.reason };
   } catch (error) {
     console.error("Error downloading release:", error);
-    return serverError(set, "Failed to download release");
+    return serverError("Failed to download release");
   }
 }
 
-export const mediasSearchRoutes = new Elysia()
-  .use(auth)
-  .use(requireAdmin)
+const interactiveSearchQuery = z.object({
+  q: z.string(),
+  library_media_id: z.union([z.string(), z.number()]).optional(),
+  season: z.union([z.string(), z.number()]).optional(),
+  tmdb_id: z.union([z.string(), z.number()]).optional(),
+  complete: z.union([z.string(), z.boolean()]).optional(),
+  media_type: z.union([z.literal("movie"), z.literal("tv")]).optional(),
+});
+
+// Mounted at /api/medias by the medias parent; admin-only.
+export const mediasSearchRoutes = new Hono<Env>()
   .get(
     "/interactive-search",
-    async ({ set, query }) => {
+    requireAdmin,
+    queryV(interactiveSearchQuery),
+    async (c) => {
+      const query = c.req.valid("query");
       // Strip diacritics and colons before querying indexers: release names are
       // almost always ASCII, and colons can be parsed as field separators by some
       // tracker search engines (e.g. Elasticsearch-backed private trackers).
@@ -184,17 +196,13 @@ export const mediasSearchRoutes = new Elysia()
         query.complete === "true" || query.complete === true;
 
       if (!isSeasonSearch && !isCompleteSearch && searchQuery.length < 2) {
-        return badRequest(
-          set,
-          "Search query must be at least 2 characters long",
-        );
+        return badRequest("Search query must be at least 2 characters long");
       }
 
       try {
         const adapter = await getActiveIndexerManager();
         if (!adapter) {
           return badRequest(
-            set,
             "No indexer manager configured. Enable Prowlarr or Jackett in integration settings.",
           );
         }
@@ -314,71 +322,87 @@ export const mediasSearchRoutes = new Elysia()
           }
         }
 
-        return {
+        return ok({
           success: true,
           service: adapter.name,
           releases: mapped,
           ...(indexerWarnings.length > 0
             ? { indexer_warnings: indexerWarnings }
             : {}),
-        };
+        });
       } catch (error) {
         console.error("Error loading interactive search releases:", error);
-        return serverError(set, "Failed to load interactive search releases");
+        return serverError("Failed to load interactive search releases");
       }
     },
-    {
-      query: t.Object({
-        q: t.String(),
-        library_media_id: t.Optional(t.Union([t.String(), t.Number()])),
-        season: t.Optional(t.Union([t.String(), t.Number()])),
-        tmdb_id: t.Optional(t.Union([t.String(), t.Number()])),
-        complete: t.Optional(t.Union([t.String(), t.Boolean()])),
-        media_type: t.Optional(t.Union([t.Literal("movie"), t.Literal("tv")])),
-      }),
-    },
   )
-  .get("/indexers", async ({ set }) => {
+  .get("/indexers", requireAdmin, async () => {
     try {
       const adapter = await getActiveIndexerManager();
       if (!adapter) {
         return badRequest(
-          set,
           "No indexer manager configured. Enable Prowlarr or Jackett in integration settings.",
         );
       }
       const indexers = await adapter.getIndexers();
-      return { indexers };
+      return ok({ indexers });
     } catch {
-      return serverError(set, "Failed to fetch indexers");
+      return serverError("Failed to fetch indexers");
     }
   })
   .post(
     "/interactive-search/download",
-    async ({ set, body }) => downloadInteractiveSearchRelease(body, set),
-    {
-      body: t.Object({
-        token: t.String(),
-        library_media_id: t.Optional(t.Number()),
-        episode_id: t.Optional(t.Number()),
-        season: t.Optional(t.Number()),
-        is_upgrade: t.Optional(t.Boolean()),
+    requireAdmin,
+    jsonV(
+      z.object({
+        token: z.string(),
+        library_media_id: z.number().optional(),
+        episode_id: z.number().optional(),
+        season: z.number().optional(),
+        is_upgrade: z.boolean().optional(),
       }),
+    ),
+    async (c) => {
+      // downloadInteractiveSearchRelease returns a Web Response on error and a
+      // plain object on success — wrap only the plain object at the route.
+      const result = await downloadInteractiveSearchRelease(
+        c.req.valid("json"),
+        {},
+      );
+      return result instanceof Response ? result : ok(result);
     },
   )
   .post(
     "/search/ai-pick",
-    async ({ body, set }) => {
+    requireAdmin,
+    jsonV(
+      z.object({
+        media_context: z.object({
+          title: z.string(),
+          year: z.number().nullable(),
+          type: z.union([z.literal("movie"), z.literal("tv")]),
+        }),
+        releases: z.array(
+          z.object({
+            key: z.string(),
+            title: z.string(),
+            size_bytes: z.number().nullable(),
+            seeders: z.number().nullable(),
+            score: z.number().nullable(),
+          }),
+        ),
+      }),
+    ),
+    async (c) => {
+      const body = c.req.valid("json");
       const config = await loadEnabledLocalAiConfig();
 
       if (!config) {
-        set.status = 404;
-        return { error: "Local AI integration not configured or disabled" };
+        return notFound("Local AI integration not configured or disabled");
       }
 
       if (body.releases.length === 0) {
-        set.status = 422;
-        return { error: "No releases to analyze" };
+        return unprocessable("No releases to analyze");
       }
 
       const result = await pickReleaseWithLocalAi(
@@ -387,43 +411,22 @@ export const mediasSearchRoutes = new Elysia()
         body.releases,
       );
       if (!result) {
-        set.status = 502;
-        return { error: "Could not get response from AI" };
+        return badGateway("Could not get response from AI");
       }
 
-      return result;
-    },
-    {
-      body: t.Object({
-        media_context: t.Object({
-          title: t.String(),
-          year: t.Nullable(t.Number()),
-          type: t.Union([t.Literal("movie"), t.Literal("tv")]),
-        }),
-        releases: t.Array(
-          t.Object({
-            key: t.String(),
-            title: t.String(),
-            size_bytes: t.Nullable(t.Number()),
-            seeders: t.Nullable(t.Number()),
-            score: t.Nullable(t.Number()),
-          }),
-        ),
-      }),
+      return ok(result);
     },
   )
-  .get("/search/ai-warm", async ({ set }) => {
+  .get("/search/ai-warm", requireAdmin, async () => {
     const record = await getIntegrationConfigRecord("local-ai");
     const config = normalizeLocalAiConfig(record?.config);
 
     if (!record?.enabled || !config) {
-      set.status = 204;
-      return;
+      return new Response(null, { status: 204 });
     }
 
     if (warmInFlight) {
-      set.status = 204;
-      return;
+      return new Response(null, { status: 204 });
     }
 
     // Fire-and-forget: loads the model into VRAM without blocking the caller.
@@ -444,5 +447,5 @@ export const mediasSearchRoutes = new Elysia()
         warmInFlight = false;
       });
 
-    set.status = 204;
+    return new Response(null, { status: 204 });
   });

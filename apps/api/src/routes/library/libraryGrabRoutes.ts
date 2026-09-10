@@ -1,8 +1,11 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
 
-import { requireAdmin } from "@rawkoon/api/middleware/auth";
 import { prisma } from "@rawkoon/api/db";
-import { badRequest, notFound, serverError } from "@rawkoon/api/errors";
+import { badRequest, notFound, ok, serverError } from "@rawkoon/api/errors";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { requireAdmin } from "@rawkoon/api/middleware/hono/auth";
+import { jsonV } from "@rawkoon/api/middleware/validate";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
 import {
   searchAndGrab,
@@ -19,32 +22,40 @@ import {
   SCHEDULED_JOB_NAMES,
 } from "@rawkoon/api/services/queueService";
 
-/**
- * Grab / search / upgrade actions.
- * POST /api/library/:id/grab
- * POST /api/library/:id/search
- * POST /api/library/:id/seasons/:season/search
- * POST /api/library/:id/seasons/:season/retry-skipped
- * POST /api/library/:id/episodes/:episodeId/search
- * POST /api/library/:id/upgrade
- */
-export const libraryGrabRoutes = new Elysia()
-  .use(requireAdmin)
+const searchQueryBody = z.object({
+  search_query: z.string().max(400).optional(),
+});
 
-  // POST /api/library/:id/grab — interactive grab (known download URL → qB + history)
+/**
+ * Grab / search / upgrade actions. All admin-only.
+ * POST /api/library/:id/grab | search | seasons/:season/search |
+ * seasons/:season/retry-skipped | episodes/:episodeId/search | upgrade
+ */
+export const libraryGrabRoutes = new Hono<Env>()
   .post(
     "/:id/grab",
-    async ({ params, body, set }) => {
+    requireAdmin,
+    jsonV(
+      z.object({
+        download_url: z.string().max(8192),
+        release_title: z.string().max(500),
+        indexer: z.string().max(200).optional(),
+        quality_parsed: z.any().optional(),
+        size_bytes: z.union([z.number(), z.null()]).optional(),
+        episode_id: z.union([z.number(), z.null()]).optional(),
+        season: z.union([z.number(), z.null()]).optional(),
+        is_upgrade: z.boolean().optional(),
+      }),
+    ),
+    async (c) => {
       try {
-        const id = parseInt(params.id, 10);
+        const id = parseInt(c.req.param("id"), 10);
+        const body = c.req.valid("json");
         const media = await prisma.libraryMedia.findUnique({ where: { id } });
-        if (!media) return notFound(set, "Library item not found");
+        if (!media) return notFound("Library item not found");
         // For shows, episode-level status governs grabs — don't gate on media status
         if (media.type === "movie" && media.status === "downloading") {
-          return badRequest(
-            set,
-            "This item cannot be grabbed in its current state",
-          );
+          return badRequest("This item cannot be grabbed in its current state");
         }
 
         let episodeId = body.episode_id ?? undefined;
@@ -69,7 +80,7 @@ export const libraryGrabRoutes = new Elysia()
           // stale context — reject rather than silently degrade to a
           // season-pack grab.
           if (!requested) {
-            return badRequest(set, "Episode not found for this library item");
+            return badRequest("Episode not found for this library item");
           }
           const resolved = resolveGrabEpisodeId({
             requested,
@@ -79,7 +90,7 @@ export const libraryGrabRoutes = new Elysia()
             ),
           });
           if (!resolved.ok) {
-            return badRequest(set, resolved.reason);
+            return badRequest(resolved.reason);
           }
           episodeId = resolved.episodeId ?? undefined;
         }
@@ -96,114 +107,92 @@ export const libraryGrabRoutes = new Elysia()
         });
 
         if (result.grabbed) {
-          return { grabbed: true, release_title: result.releaseTitle };
+          return ok({ grabbed: true, release_title: result.releaseTitle });
         }
 
-        return { grabbed: false, reason: result.reason };
+        return ok({ grabbed: false, reason: result.reason });
       } catch (err) {
         console.error("Library grab error:", err);
-        return serverError(set, "Grab failed");
+        return serverError("Grab failed");
       }
-    },
-    {
-      body: t.Object({
-        download_url: t.String({ maxLength: 8192 }),
-        release_title: t.String({ maxLength: 500 }),
-        indexer: t.Optional(t.String({ maxLength: 200 })),
-        quality_parsed: t.Optional(t.Any()),
-        size_bytes: t.Optional(t.Union([t.Number(), t.Null()])),
-        episode_id: t.Optional(t.Union([t.Number(), t.Null()])),
-        season: t.Optional(t.Union([t.Number(), t.Null()])),
-        is_upgrade: t.Optional(t.Boolean()),
-      }),
     },
   )
 
-  // POST /api/library/:id/search — manual Prowlarr search + grab (movies)
-  .post(
-    "/:id/search",
-    async ({ params, body, set }) => {
-      try {
-        const id = parseInt(params.id, 10);
-        const media = await prisma.libraryMedia.findUnique({ where: { id } });
-        if (!media) return notFound(set, "Library item not found");
-        if (media.type !== "movie") {
-          return badRequest(set, "Search is only available for movies");
-        }
-        if (media.status === "downloading") {
-          return badRequest(
-            set,
-            "This item cannot be grabbed in its current state",
-          );
-        }
-
-        // Manual search resets counter + status so users can always retry.
-        await prisma.libraryMedia.update({
-          where: { id },
-          data: { searchAttempts: 0, status: "wanted" },
-        });
-
-        const explicit = body.search_query?.trim();
-        const result = explicit
-          ? await searchAndGrab({
-              mediaId: id,
-              mediaType: "movie",
-              searchQuery: explicit,
-              qualityProfileId: media.qualityProfileId,
-            })
-          : await searchAndGrabWithTitleFallback({
-              mediaId: id,
-              mediaType: "movie",
-              titleBaseQueries: resolveSearchTitles({
-                title: media.title,
-                searchTitle: media.searchTitle,
-                originalTitle: media.originalTitle,
-              }).queries,
-              suffix: media.year ? ` ${media.year}` : "",
-              qualityProfileId: media.qualityProfileId,
-            });
-
-        if (result.grabbed) {
-          return { grabbed: true, release_title: result.releaseTitle };
-        }
-
-        return { grabbed: false, reason: result.reason };
-      } catch (err) {
-        console.error("Library search error:", err);
-        return serverError(set, "Search failed");
+  .post("/:id/search", requireAdmin, jsonV(searchQueryBody), async (c) => {
+    try {
+      const id = parseInt(c.req.param("id"), 10);
+      const body = c.req.valid("json");
+      const media = await prisma.libraryMedia.findUnique({ where: { id } });
+      if (!media) return notFound("Library item not found");
+      if (media.type !== "movie") {
+        return badRequest("Search is only available for movies");
       }
-    },
-    {
-      body: t.Object({
-        search_query: t.Optional(t.String({ maxLength: 400 })),
-      }),
-    },
-  )
+      if (media.status === "downloading") {
+        return badRequest("This item cannot be grabbed in its current state");
+      }
 
-  // POST /api/library/:id/episodes/:episodeId/search — episode grab (shows)
+      // Manual search resets counter + status so users can always retry.
+      await prisma.libraryMedia.update({
+        where: { id },
+        data: { searchAttempts: 0, status: "wanted" },
+      });
+
+      const explicit = body.search_query?.trim();
+      const result = explicit
+        ? await searchAndGrab({
+            mediaId: id,
+            mediaType: "movie",
+            searchQuery: explicit,
+            qualityProfileId: media.qualityProfileId,
+          })
+        : await searchAndGrabWithTitleFallback({
+            mediaId: id,
+            mediaType: "movie",
+            titleBaseQueries: resolveSearchTitles({
+              title: media.title,
+              searchTitle: media.searchTitle,
+              originalTitle: media.originalTitle,
+            }).queries,
+            suffix: media.year ? ` ${media.year}` : "",
+            qualityProfileId: media.qualityProfileId,
+          });
+
+      if (result.grabbed) {
+        return ok({ grabbed: true, release_title: result.releaseTitle });
+      }
+
+      return ok({ grabbed: false, reason: result.reason });
+    } catch (err) {
+      console.error("Library search error:", err);
+      return serverError("Search failed");
+    }
+  })
+
   .post(
     "/:id/episodes/:episodeId/search",
-    async ({ params, body, set }) => {
+    requireAdmin,
+    jsonV(searchQueryBody),
+    async (c) => {
       try {
-        const mediaId = parseInt(params.id, 10);
-        const episodeId = parseInt(params.episodeId, 10);
+        const mediaId = parseInt(c.req.param("id"), 10);
+        const episodeId = parseInt(c.req.param("episodeId"), 10);
+        const body = c.req.valid("json");
 
         const media = await prisma.libraryMedia.findUnique({
           where: { id: mediaId },
         });
-        if (!media) return notFound(set, "Library item not found");
+        if (!media) return notFound("Library item not found");
         if (media.type !== "show") {
-          return badRequest(set, "Episode search only applies to TV shows");
+          return badRequest("Episode search only applies to TV shows");
         }
 
         const ep = await prisma.libraryEpisode.findFirst({
           where: { id: episodeId, mediaId },
         });
-        if (!ep) return notFound(set, "Episode not found");
+        if (!ep) return notFound("Episode not found");
 
         if (ep.status === "downloading") {
           return badRequest(
-            set,
             "This episode cannot be grabbed in its current state",
           );
         }
@@ -239,51 +228,47 @@ export const libraryGrabRoutes = new Elysia()
             });
 
         if (result.grabbed) {
-          return { grabbed: true, release_title: result.releaseTitle };
+          return ok({ grabbed: true, release_title: result.releaseTitle });
         }
 
-        return { grabbed: false, reason: result.reason };
+        return ok({ grabbed: false, reason: result.reason });
       } catch (err) {
         console.error("Library episode search error:", err);
-        return serverError(set, "Search failed");
+        return serverError("Search failed");
       }
-    },
-    {
-      body: t.Object({
-        search_query: t.Optional(t.String({ maxLength: 400 })),
-      }),
     },
   )
 
-  // POST /api/library/:id/seasons/:season/retry-skipped — reset all skipped episodes in a season
-  .post("/:id/seasons/:season/retry-skipped", async ({ params, set }) => {
+  .post("/:id/seasons/:season/retry-skipped", requireAdmin, async (c) => {
     try {
-      const mediaId = parseInt(params.id, 10);
-      const season = parseInt(params.season, 10);
+      const mediaId = parseInt(c.req.param("id"), 10);
+      const season = parseInt(c.req.param("season"), 10);
       const result = await prisma.libraryEpisode.updateMany({
         where: { mediaId, season, status: "skipped" },
         data: { status: "wanted", searchAttempts: 0 },
       });
-      return { retried: result.count };
+      return ok({ retried: result.count });
     } catch {
-      return serverError(set, "Failed to retry skipped episodes");
+      return serverError("Failed to retry skipped episodes");
     }
   })
 
-  // POST /api/library/:id/seasons/:season/search — auto-grab best season pack
   .post(
     "/:id/seasons/:season/search",
-    async ({ params, body, set }) => {
+    requireAdmin,
+    jsonV(searchQueryBody),
+    async (c) => {
       try {
-        const mediaId = parseInt(params.id, 10);
-        const season = parseInt(params.season, 10);
+        const mediaId = parseInt(c.req.param("id"), 10);
+        const season = parseInt(c.req.param("season"), 10);
+        const body = c.req.valid("json");
 
         const media = await prisma.libraryMedia.findUnique({
           where: { id: mediaId },
         });
-        if (!media) return notFound(set, "Library item not found");
+        if (!media) return notFound("Library item not found");
         if (media.type !== "show") {
-          return badRequest(set, "Season search only applies to TV shows");
+          return badRequest("Season search only applies to TV shows");
         }
 
         const downloadingCount = await prisma.libraryEpisode.count({
@@ -291,7 +276,6 @@ export const libraryGrabRoutes = new Elysia()
         });
         if (downloadingCount > 0) {
           return badRequest(
-            set,
             "One or more episodes in this season are already downloading",
           );
         }
@@ -306,7 +290,7 @@ export const libraryGrabRoutes = new Elysia()
           where: { mediaId, season, status: "wanted" },
         });
         if (wantedEpisodes.length === 0) {
-          return badRequest(set, "No wanted episodes in this season");
+          return badRequest("No wanted episodes in this season");
         }
 
         const s = String(season).padStart(2, "0");
@@ -333,32 +317,31 @@ export const libraryGrabRoutes = new Elysia()
             });
 
         if (result.grabbed) {
-          return { grabbed: true, release_title: result.releaseTitle };
+          return ok({ grabbed: true, release_title: result.releaseTitle });
         }
 
-        return { grabbed: false, reason: result.reason };
+        return ok({ grabbed: false, reason: result.reason });
       } catch (err) {
         console.error("Library season search error:", err);
-        return serverError(set, "Search failed");
+        return serverError("Search failed");
       }
-    },
-    {
-      body: t.Object({
-        search_query: t.Optional(t.String({ maxLength: 400 })),
-      }),
     },
   )
 
-  // POST /api/library/:id/upgrade
   .post(
     "/:id/upgrade",
-    async ({ params, body, set }) => {
+    requireAdmin,
+    jsonV(
+      z.object({ mode: z.union([z.literal("auto"), z.literal("manual")]) }),
+    ),
+    async (c) => {
       try {
-        const id = parseInt(params.id, 10);
-        if (isNaN(id)) return badRequest(set, "Invalid library id");
+        const id = parseInt(c.req.param("id"), 10);
+        if (isNaN(id)) return badRequest("Invalid library id");
+        const body = c.req.valid("json");
 
         if (body.mode === "manual") {
-          return { queued: false, mode: "manual" as const };
+          return ok({ queued: false, mode: "manual" as const });
         }
 
         // mode === "auto"
@@ -366,7 +349,7 @@ export const libraryGrabRoutes = new Elysia()
           where: { id },
           select: { id: true, type: true, status: true },
         });
-        if (!media) return notFound(set, "Library item not found");
+        if (!media) return notFound("Library item not found");
 
         if (media.type === "movie") {
           await prisma.libraryMedia.update({
@@ -378,7 +361,7 @@ export const libraryGrabRoutes = new Elysia()
             SCHEDULED_JOB_NAMES.UPGRADE_MEDIA_SEARCH,
             { mediaId: id, episodeId: null },
           );
-          return { queued: true, mode: "auto" as const, count: 1 };
+          return ok({ queued: true, mode: "auto" as const, count: 1 });
         } else {
           // show — upgrade all downloaded episodes
           const episodes = await prisma.libraryEpisode.findMany({
@@ -401,19 +384,14 @@ export const libraryGrabRoutes = new Elysia()
             ),
           );
 
-          return {
+          return ok({
             queued: true,
             mode: "auto" as const,
             count: episodes.length,
-          };
+          });
         }
       } catch {
-        return serverError(set, "Failed to enqueue upgrade");
+        return serverError("Failed to enqueue upgrade");
       }
-    },
-    {
-      body: t.Object({
-        mode: t.Union([t.Literal("auto"), t.Literal("manual")]),
-      }),
     },
   );

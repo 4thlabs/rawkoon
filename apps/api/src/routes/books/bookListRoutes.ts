@@ -1,9 +1,18 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
-import { requireUser } from "@rawkoon/api/middleware/auth";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { requireUser } from "@rawkoon/api/middleware/hono/auth";
+import { jsonV, paramV, queryV } from "@rawkoon/api/middleware/validate";
 import { prisma } from "@rawkoon/api/db";
-import { badRequest, notFound, serverError } from "@rawkoon/api/errors";
+import {
+  badRequest,
+  notFound,
+  ok,
+  serverError,
+  serviceUnavailable,
+} from "@rawkoon/api/errors";
 import {
   getBookMetadataProvider,
   BookProviderUnavailableError,
@@ -18,6 +27,7 @@ import type { BookEditionKind } from "@rawkoon/shared/types";
 import { bookInclude, mapBook } from "./bookHelpers";
 
 const KINDS: BookEditionKind[] = ["ebook", "audiobook"];
+const idParam = z.object({ id: z.coerce.number() });
 
 /**
  * Books CRUD and provider search.
@@ -28,14 +38,26 @@ const KINDS: BookEditionKind[] = ["ebook", "audiobook"];
  *   POST   /api/books
  *   DELETE /api/books/:id
  */
-export const bookListRoutes = new Elysia()
-  .use(requireUser)
-
+export const bookListRoutes = new Hono<Env>()
   .get(
     "/",
-    async ({ query, set, user }) => {
+    requireUser,
+    queryV(
+      z.object({
+        q: z.string().optional(),
+        kind: z.union([z.literal("ebook"), z.literal("audiobook")]).optional(),
+        status: z.string().optional(),
+        page: z.coerce.number().optional(),
+        limit: z.coerce.number().optional(),
+        sort_by: z.string().optional(),
+        sort_dir: z.string().optional(),
+      }),
+    ),
+    async (c) => {
+      const user = c.get("user");
       try {
-        const { q, kind, status, page, limit, sort_by, sort_dir } = query;
+        const { q, kind, status, page, limit, sort_by, sort_dir } =
+          c.req.valid("query");
 
         const where: Prisma.LibraryBookWhereInput = {
           ...(q
@@ -79,29 +101,18 @@ export const bookListRoutes = new Elysia()
         const listed = has_more ? rows.slice(0, take) : rows;
         const readAt = await loadReadAtByBookId(
           prisma,
-          user!.id,
+          user.id,
           listed.map((b) => b.id),
         );
         const items = listed.map((b) =>
           mapBook(b, { readAt: readAt.get(b.id) ?? null }),
         );
 
-        return { items, total, has_more };
+        return ok({ items, total, has_more });
       } catch (e) {
         console.error("[books] list failed:", e);
-        return serverError(set, "Failed to list books");
+        return serverError("Failed to list books");
       }
-    },
-    {
-      query: t.Object({
-        q: t.Optional(t.String()),
-        kind: t.Optional(t.Union([t.Literal("ebook"), t.Literal("audiobook")])),
-        status: t.Optional(t.String()),
-        page: t.Optional(t.Numeric()),
-        limit: t.Optional(t.Numeric()),
-        sort_by: t.Optional(t.String()),
-        sort_dir: t.Optional(t.String()),
-      }),
     },
   )
 
@@ -109,14 +120,15 @@ export const bookListRoutes = new Elysia()
   // is not swallowed as an id.
   .get(
     "/search",
-    async ({ query, set }) => {
-      const term = query.q?.trim();
-      if (!term) return badRequest(set, "Query is required");
+    requireUser,
+    queryV(z.object({ q: z.string().optional() })),
+    async (c) => {
+      const term = c.req.valid("query").q?.trim();
+      if (!term) return badRequest("Query is required");
 
       const provider = await getBookMetadataProvider();
       if (!provider) {
         return badRequest(
-          set,
           "Google Books is not configured. Add an API key in Integrations.",
         );
       }
@@ -130,7 +142,7 @@ export const bookListRoutes = new Elysia()
         });
         const byVolume = new Map(existing.map((e) => [e.googleVolumeId, e.id]));
 
-        return {
+        return ok({
           results: found.map((b) => ({
             google_volume_id: b.volumeId,
             title: b.title,
@@ -144,65 +156,81 @@ export const bookListRoutes = new Elysia()
             in_library: byVolume.has(b.volumeId),
             library_book_id: byVolume.get(b.volumeId) ?? null,
           })),
-        };
+        });
       } catch (e) {
         // The provider being unavailable is NOT "no results" — saying otherwise
         // would report a transient 503 as "this book does not exist".
         if (e instanceof BookProviderUnavailableError) {
-          set.status = 503;
-          return { error: `Google Books is unavailable: ${e.message}` };
+          return serviceUnavailable(
+            `Google Books is unavailable: ${e.message}`,
+          );
         }
         console.error("[books] provider search failed:", e);
-        return serverError(set, "Book search failed");
+        return serverError("Book search failed");
       }
     },
-    { query: t.Object({ q: t.Optional(t.String()) }) },
   )
 
-  .get(
-    "/:id",
-    async ({ params, set, user }) => {
-      const book = await prisma.libraryBook.findUnique({
-        where: { id: params.id },
-        include: bookInclude,
-      });
-      if (!book) return notFound(set, "Book not found");
-      const readAt = await loadReadAtByBookId(prisma, user!.id, [book.id]);
-      return { item: mapBook(book, { readAt: readAt.get(book.id) ?? null }) };
-    },
-    { params: t.Object({ id: t.Numeric() }) },
-  )
+  .get("/:id", requireUser, paramV(idParam), async (c) => {
+    const user = c.get("user");
+    const { id } = c.req.valid("param");
+    const book = await prisma.libraryBook.findUnique({
+      where: { id },
+      include: bookInclude,
+    });
+    if (!book) return notFound("Book not found");
+    const readAt = await loadReadAtByBookId(prisma, user.id, [book.id]);
+    return ok({ item: mapBook(book, { readAt: readAt.get(book.id) ?? null }) });
+  })
 
   .put(
     "/:id/read",
-    async ({ params, body, set, user }) => {
+    requireUser,
+    paramV(idParam),
+    jsonV(z.object({ read: z.boolean() })),
+    async (c) => {
+      const user = c.get("user");
+      const { id } = c.req.valid("param");
       const result = await setBookRead(prisma, {
-        userId: user!.id,
-        bookId: params.id,
-        read: body.read,
+        userId: user.id,
+        bookId: id,
+        read: c.req.valid("json").read,
       });
-      if (!result.ok) return notFound(set, "Book not found");
+      if (!result.ok) return notFound("Book not found");
       const book = await prisma.libraryBook.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: bookInclude,
       });
-      if (!book) return notFound(set, "Book not found");
-      return { item: mapBook(book, { readAt: result.readAt }) };
-    },
-    {
-      params: t.Object({ id: t.Numeric() }),
-      body: t.Object({ read: t.Boolean() }),
+      if (!book) return notFound("Book not found");
+      return ok({ item: mapBook(book, { readAt: result.readAt }) });
     },
   )
 
   .post(
     "/",
-    async ({ body, set }) => {
+    requireUser,
+    jsonV(
+      z.object({
+        google_volume_id: z.string(),
+        isbn13: z
+          .string()
+          .regex(new RegExp("^[0-9Xx][0-9Xx -]{8,20}$"))
+          .nullable()
+          .optional(),
+        kinds: z
+          .array(z.union([z.literal("ebook"), z.literal("audiobook")]))
+          .optional(),
+        book_quality_profile_id: z.coerce.number().nullable().optional(),
+        monitored: z.boolean().optional(),
+      }),
+    ),
+    async (c) => {
+      const body = c.req.valid("json");
       const kinds = (
         body.kinds && body.kinds.length > 0 ? body.kinds : ["ebook"]
       ) as BookEditionKind[];
       if (kinds.some((k) => !KINDS.includes(k))) {
-        return badRequest(set, "kinds must be ebook and/or audiobook");
+        return badRequest("kinds must be ebook and/or audiobook");
       }
 
       let result;
@@ -216,56 +244,37 @@ export const bookListRoutes = new Elysia()
         });
       } catch (e) {
         console.error("[books] add failed:", e);
-        return serverError(set, "Failed to add book");
+        return serverError("Failed to add book");
       }
 
       if (!result.added) {
         if (result.unavailable) {
-          set.status = 503;
-          return { error: result.reason };
+          return serviceUnavailable(result.reason);
         }
         if (result.reason === "Volume not found") {
-          return notFound(set, result.reason);
+          return notFound(result.reason);
         }
-        return badRequest(set, result.reason);
+        return badRequest(result.reason);
       }
 
       const book = await prisma.libraryBook.findUnique({
         where: { id: result.bookId },
         include: bookInclude,
       });
-      if (!book) return serverError(set, "Failed to add book");
-      return { item: mapBook(book) };
-    },
-    {
-      body: t.Object({
-        google_volume_id: t.String(),
-        // Pinned onto the volume and used to derive the stored language, so a
-        // free-form string has no business reaching that far.
-        isbn13: t.Optional(
-          t.Nullable(t.String({ pattern: "^[0-9Xx][0-9Xx -]{8,20}$" })),
-        ),
-        kinds: t.Optional(
-          t.Array(t.Union([t.Literal("ebook"), t.Literal("audiobook")])),
-        ),
-        book_quality_profile_id: t.Optional(t.Nullable(t.Numeric())),
-        monitored: t.Optional(t.Boolean()),
-      }),
+      if (!book) return serverError("Failed to add book");
+      return ok({ item: mapBook(book) });
     },
   )
 
-  .delete(
-    "/:id",
-    async ({ params, set }) => {
-      const existing = await prisma.libraryBook.findUnique({
-        where: { id: params.id },
-        select: { id: true },
-      });
-      if (!existing) return notFound(set, "Book not found");
-      // Editions and files cascade; library files on disk are left alone,
-      // matching how removing a library media item behaves.
-      await prisma.libraryBook.delete({ where: { id: params.id } });
-      return { deleted: true };
-    },
-    { params: t.Object({ id: t.Numeric() }) },
-  );
+  .delete("/:id", requireUser, paramV(idParam), async (c) => {
+    const { id } = c.req.valid("param");
+    const existing = await prisma.libraryBook.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) return notFound("Book not found");
+    // Editions and files cascade; library files on disk are left alone,
+    // matching how removing a library media item behaves.
+    await prisma.libraryBook.delete({ where: { id } });
+    return ok({ deleted: true });
+  });

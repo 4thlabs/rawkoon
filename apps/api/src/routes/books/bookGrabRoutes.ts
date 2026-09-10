@@ -1,13 +1,21 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
 
-import { requireUser } from "@rawkoon/api/middleware/auth";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { requireUser } from "@rawkoon/api/middleware/hono/auth";
+import { jsonV, paramV } from "@rawkoon/api/middleware/validate";
 import { prisma } from "@rawkoon/api/db";
-import { badRequest, conflict, notFound } from "@rawkoon/api/errors";
+import { badRequest, conflict, notFound, ok } from "@rawkoon/api/errors";
 import {
   grabBookRelease,
   searchAndGrabBook,
   searchBookReleases,
 } from "@rawkoon/api/services/books/bookGrabber";
+
+const editionParams = z.object({
+  id: z.coerce.number(),
+  kind: z.union([z.literal("ebook"), z.literal("audiobook")]),
+});
 
 /**
  * Interactive search and grab.
@@ -15,45 +23,52 @@ import {
  *   POST /api/books/:id/editions/:kind/grab     — grab a chosen release
  *   POST /api/books/:id/editions/:kind/auto     — search and grab the best
  */
-export const bookGrabRoutes = new Elysia()
-  .use(requireUser)
-
+export const bookGrabRoutes = new Hono<Env>()
   .get(
     "/:id/editions/:kind/search",
-    async ({ params, set }) => {
+    requireUser,
+    paramV(editionParams),
+    async (c) => {
+      const params = c.req.valid("param");
       const edition = await prisma.bookEdition.findUnique({
         where: { bookId_kind: { bookId: params.id, kind: params.kind } },
         select: { id: true },
       });
-      if (!edition) return notFound(set, "Edition not found");
+      if (!edition) return notFound("Edition not found");
 
       const { releases, indexerWarnings, error } = await searchBookReleases(
         edition.id,
       );
-      if (error) return badRequest(set, error);
+      if (error) return badRequest(error);
 
-      return { releases, indexer_warnings: indexerWarnings };
-    },
-    {
-      params: t.Object({
-        id: t.Numeric(),
-        kind: t.Union([t.Literal("ebook"), t.Literal("audiobook")]),
-      }),
+      return ok({ releases, indexer_warnings: indexerWarnings });
     },
   )
 
   .post(
     "/:id/editions/:kind/grab",
-    async ({ params, body, set }) => {
+    requireUser,
+    paramV(editionParams),
+    jsonV(
+      z.object({
+        release_title: z.string(),
+        download_url: z.string().optional(),
+        magnet_url: z.string().optional(),
+        indexer: z.string().nullable().optional(),
+      }),
+    ),
+    async (c) => {
+      const params = c.req.valid("param");
+      const body = c.req.valid("json");
       const edition = await prisma.bookEdition.findUnique({
         where: { bookId_kind: { bookId: params.id, kind: params.kind } },
         select: { id: true },
       });
-      if (!edition) return notFound(set, "Edition not found");
+      if (!edition) return notFound("Edition not found");
 
       const url = body.download_url?.trim() || body.magnet_url?.trim();
       if (!url) {
-        return badRequest(set, "download_url or magnet_url is required");
+        return badRequest("download_url or magnet_url is required");
       }
 
       const result = await grabBookRelease({
@@ -67,40 +82,25 @@ export const bookGrabRoutes = new Elysia()
       // { error } on failure, and the web client's error extractor reads
       // exactly that field. Returning { reason } instead lost the message and
       // surfaced a bare "HTTP error! status: 409".
-      if (!result.grabbed) return conflict(set, result.reason);
-      return { grabbed: true, release_title: result.releaseTitle };
-    },
-    {
-      params: t.Object({
-        id: t.Numeric(),
-        kind: t.Union([t.Literal("ebook"), t.Literal("audiobook")]),
-      }),
-      body: t.Object({
-        release_title: t.String(),
-        download_url: t.Optional(t.String()),
-        magnet_url: t.Optional(t.String()),
-        indexer: t.Optional(t.Nullable(t.String())),
-      }),
+      if (!result.grabbed) return conflict(result.reason);
+      return ok({ grabbed: true, release_title: result.releaseTitle });
     },
   )
 
   .post(
     "/:id/editions/:kind/auto",
-    async ({ params, set }) => {
+    requireUser,
+    paramV(editionParams),
+    async (c) => {
+      const params = c.req.valid("param");
       const edition = await prisma.bookEdition.findUnique({
         where: { bookId_kind: { bookId: params.id, kind: params.kind } },
         select: { id: true },
       });
-      if (!edition) return notFound(set, "Edition not found");
+      if (!edition) return notFound("Edition not found");
 
       const result = await searchAndGrabBook(edition.id);
-      if (!result.grabbed) return conflict(set, result.reason);
-      return { grabbed: true, release_title: result.releaseTitle };
-    },
-    {
-      params: t.Object({
-        id: t.Numeric(),
-        kind: t.Union([t.Literal("ebook"), t.Literal("audiobook")]),
-      }),
+      if (!result.grabbed) return conflict(result.reason);
+      return ok({ grabbed: true, release_title: result.releaseTitle });
     },
   );

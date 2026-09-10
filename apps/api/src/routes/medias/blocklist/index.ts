@@ -1,9 +1,11 @@
-import { Elysia, t } from "elysia";
-import { auth } from "@rawkoon/api/auth";
+import { Hono } from "hono";
+import { z } from "zod";
 import { prisma } from "@rawkoon/api/db";
-import { requireAdmin } from "@rawkoon/api/middleware/auth";
+import { notFound, ok, serverError } from "@rawkoon/api/errors";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { requireAdmin } from "@rawkoon/api/middleware/hono/auth";
+import { jsonV, paramV } from "@rawkoon/api/middleware/validate";
 import { formatIso } from "@rawkoon/api/utils";
-import { notFound, serverError } from "@rawkoon/api/errors";
 
 /** Newest blocklist entries returned to the admin blocklist screen. */
 const BLOCKLIST_LIMIT = 500;
@@ -30,23 +32,34 @@ function formatEntry(e: {
   };
 }
 
-export const mediasBlocklistRoutes = new Elysia()
-  .use(auth)
-  .use(requireAdmin)
-  .get("/blocklist", async ({ set }) => {
+// Mounted under /api/medias; admin-only.
+export const mediasBlocklistRoutes = new Hono<Env>()
+  .get("/blocklist", requireAdmin, async () => {
     try {
       const entries = await prisma.grabBlocklist.findMany({
         orderBy: { blockedAt: "desc" },
         take: BLOCKLIST_LIMIT,
       });
-      return { entries: entries.map(formatEntry) };
+      return ok({ entries: entries.map(formatEntry) });
     } catch {
-      return serverError(set, "Failed to fetch blocklist");
+      return serverError("Failed to fetch blocklist");
     }
   })
   .post(
     "/blocklist",
-    async ({ body, set }) => {
+    requireAdmin,
+    jsonV(
+      z.object({
+        release_title: z.string().min(1),
+        torrent_hash: z.string().optional(),
+        indexer: z.string().optional(),
+        media_id: z.number().optional(),
+        episode_id: z.number().optional(),
+        reason: z.string().optional(),
+      }),
+    ),
+    async (c) => {
+      const body = c.req.valid("json");
       try {
         const entry = await prisma.grabBlocklist.create({
           data: {
@@ -58,36 +71,28 @@ export const mediasBlocklistRoutes = new Elysia()
             reason: body.reason ?? null,
           },
         });
-        return { entry: formatEntry(entry) };
+        return ok({ entry: formatEntry(entry) });
       } catch {
-        return serverError(set, "Failed to add blocklist entry");
+        return serverError("Failed to add blocklist entry");
       }
-    },
-    {
-      body: t.Object({
-        release_title: t.String({ minLength: 1 }),
-        torrent_hash: t.Optional(t.String()),
-        indexer: t.Optional(t.String()),
-        media_id: t.Optional(t.Number()),
-        episode_id: t.Optional(t.Number()),
-        reason: t.Optional(t.String()),
-      }),
     },
   )
   .delete(
     "/blocklist/:id",
-    async ({ params, set }) => {
+    requireAdmin,
+    paramV(z.object({ id: z.coerce.number() })),
+    async (c) => {
+      const { id } = c.req.valid("param");
       try {
         const existing = await prisma.grabBlocklist.findUnique({
-          where: { id: params.id },
+          where: { id },
         });
-        if (!existing) return notFound(set, "Blocklist entry not found");
+        if (!existing) return notFound("Blocklist entry not found");
 
-        await prisma.grabBlocklist.delete({ where: { id: params.id } });
-        return { success: true };
+        await prisma.grabBlocklist.delete({ where: { id } });
+        return ok({ success: true });
       } catch {
-        return serverError(set, "Failed to delete blocklist entry");
+        return serverError("Failed to delete blocklist entry");
       }
     },
-    { params: t.Object({ id: t.Number() }) },
   );

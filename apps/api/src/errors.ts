@@ -1,51 +1,36 @@
 /**
- * Simple error response helpers for Elysia route handlers.
- * Each function sets the HTTP status code and returns a consistent { error } shape.
+ * Error response helpers. Each returns a standard Web `Response` with the
+ * `{ error }` shape and correct status, so a handler just does
+ * `return errorHelper(msg)`.
  */
 
-type ElysiaSet = { status?: number | string };
+const errorResponse = (status: number, message: string) =>
+  Response.json({ error: message }, { status });
 
-export const badRequest = (set: ElysiaSet, message: string) => {
-  set.status = 400;
-  return { error: message };
-};
+/**
+ * Success counterpart to the error helpers. Hono does not auto-serialize a
+ * returned POJO, so success handlers return `ok(body)` instead of a bare object
+ * — keeping every return path a Web `Response` and `c.json` out of the handlers.
+ */
+export const ok = (body: unknown, status = 200) =>
+  Response.json(body, { status });
 
-export const unauthorized = (set: ElysiaSet, message = "Unauthorized") => {
-  set.status = 401;
-  return { error: message };
-};
+export const badRequest = (message: string) => errorResponse(400, message);
 
-export const forbidden = (set: ElysiaSet, message = "Forbidden") => {
-  set.status = 403;
-  return { error: message };
-};
+export const unauthorized = (message = "Unauthorized") =>
+  errorResponse(401, message);
 
-export const notFound = (set: ElysiaSet, message: string) => {
-  set.status = 404;
-  return { error: message };
-};
+export const forbidden = (message = "Forbidden") => errorResponse(403, message);
 
-export const conflict = (set: ElysiaSet, message: string) => {
-  set.status = 409;
-  return { error: message };
-};
+export const notFound = (message: string) => errorResponse(404, message);
 
-export const unprocessable = (set: ElysiaSet, message: string) => {
-  set.status = 422;
-  return { error: message };
-};
+export const conflict = (message: string) => errorResponse(409, message);
 
-export const serverError = (set: ElysiaSet, message: string) => {
-  set.status = 500;
-  return { error: message };
-};
+export const unprocessable = (message: string) => errorResponse(422, message);
 
-export const badGateway = (set: ElysiaSet, message: string) => {
-  set.status = 502;
-  return { error: message };
-};
+export const serverError = (message: string) => errorResponse(500, message);
 
-export const serviceUnavailable = (set: ElysiaSet, message: string) => {
-  set.status = 503;
-  return { error: message };
-};
+export const badGateway = (message: string) => errorResponse(502, message);
+
+export const serviceUnavailable = (message: string) =>
+  errorResponse(503, message);

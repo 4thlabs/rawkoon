@@ -1,8 +1,11 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
 
-import { requireUser, ensureAdmin } from "@rawkoon/api/middleware/auth";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { ensureAdmin, requireUser } from "@rawkoon/api/middleware/hono/auth";
+import { jsonV, paramV, queryV } from "@rawkoon/api/middleware/validate";
 import { prisma } from "@rawkoon/api/db";
-import { badRequest, notFound } from "@rawkoon/api/errors";
+import { badRequest, notFound, ok } from "@rawkoon/api/errors";
 import type { Author, BookEditionKind } from "@rawkoon/shared/types";
 
 const KINDS: BookEditionKind[] = ["ebook", "audiobook"];
@@ -63,45 +66,57 @@ const authorSelect = {
  * Authors are created as a side effect of adding a book, never directly: an
  * author with no books is not something the library has an opinion about.
  */
-export const authorRoutes = new Elysia({ prefix: "/api/authors" })
-  .use(requireUser)
-
-  .get("/", async () => {
+export const authorRoutes = new Hono<Env>()
+  .get("/", requireUser, async () => {
     const authors = await prisma.author.findMany({
       select: authorSelect,
       // Monitored first — the list's job is to show what is being watched.
       orderBy: [{ monitored: "desc" }, { sortName: "asc" }],
     });
-    return { authors: authors.map(mapAuthor) };
+    return ok({ authors: authors.map(mapAuthor) });
   })
 
   .get(
     "/search",
-    async ({ query }) => {
-      const q = query.q?.trim();
-      if (!q) return { authors: [] };
+    requireUser,
+    queryV(z.object({ q: z.string().optional() })),
+    async (c) => {
+      const q = c.req.valid("query").q?.trim();
+      if (!q) return ok({ authors: [] });
       const authors = await prisma.author.findMany({
         where: { googleAuthorName: { contains: q, mode: "insensitive" } },
         select: authorSelect,
         orderBy: [{ monitored: "desc" }, { sortName: "asc" }],
         take: 50,
       });
-      return { authors: authors.map(mapAuthor) };
+      return ok({ authors: authors.map(mapAuthor) });
     },
-    { query: t.Object({ q: t.Optional(t.String()) }) },
   )
 
   .patch(
     "/:id",
-    async ({ params, body, set, user }) => {
-      const denied = ensureAdmin(user, set);
+    requireUser,
+    paramV(z.object({ id: z.coerce.number() })),
+    jsonV(
+      z.object({
+        monitored: z.boolean().optional(),
+        monitor_from: z.string().nullable().optional(),
+        monitor_edition_kinds: z.array(z.string()).optional(),
+        monitor_languages: z.array(z.string()).optional(),
+        book_quality_profile_id: z.coerce.number().nullable().optional(),
+      }),
+    ),
+    async (c) => {
+      const denied = ensureAdmin(c.get("user"));
       if (denied) return denied;
 
+      const params = c.req.valid("param");
+      const body = c.req.valid("json");
       const author = await prisma.author.findUnique({
         where: { id: params.id },
         select: { id: true, monitored: true, monitorFrom: true },
       });
-      if (!author) return notFound(set, "Author not found");
+      if (!author) return notFound("Author not found");
 
       if (body.monitor_edition_kinds) {
         const invalid = body.monitor_edition_kinds.filter(
@@ -109,7 +124,6 @@ export const authorRoutes = new Elysia({ prefix: "/api/authors" })
         );
         if (invalid.length > 0) {
           return badRequest(
-            set,
             "monitor_edition_kinds must contain only ebook and/or audiobook",
           );
         }
@@ -123,10 +137,7 @@ export const authorRoutes = new Elysia({ prefix: "/api/authors" })
           l.trim().toLowerCase(),
         );
         if (normalized.some((l) => !/^[a-z]{2}$/.test(l))) {
-          return badRequest(
-            set,
-            "monitor_languages must contain ISO 639-1 codes",
-          );
+          return badRequest("monitor_languages must contain ISO 639-1 codes");
         }
         monitorLanguages = [...new Set(normalized)];
       }
@@ -136,7 +147,7 @@ export const authorRoutes = new Elysia({ prefix: "/api/authors" })
           where: { id: body.book_quality_profile_id },
           select: { id: true },
         });
-        if (!profile) return notFound(set, "Book quality profile not found");
+        if (!profile) return notFound("Book quality profile not found");
       }
 
       let monitorFrom: Date | null | undefined;
@@ -146,7 +157,7 @@ export const authorRoutes = new Elysia({ prefix: "/api/authors" })
         } else {
           const parsed = new Date(body.monitor_from);
           if (Number.isNaN(parsed.getTime())) {
-            return badRequest(set, "monitor_from must be a valid date");
+            return badRequest("monitor_from must be a valid date");
           }
           monitorFrom = parsed;
         }
@@ -174,16 +185,6 @@ export const authorRoutes = new Elysia({ prefix: "/api/authors" })
         select: authorSelect,
       });
 
-      return { author: mapAuthor(updated) };
-    },
-    {
-      params: t.Object({ id: t.Numeric() }),
-      body: t.Object({
-        monitored: t.Optional(t.Boolean()),
-        monitor_from: t.Optional(t.Nullable(t.String())),
-        monitor_edition_kinds: t.Optional(t.Array(t.String())),
-        monitor_languages: t.Optional(t.Array(t.String())),
-        book_quality_profile_id: t.Optional(t.Nullable(t.Numeric())),
-      }),
+      return ok({ author: mapAuthor(updated) });
     },
   );

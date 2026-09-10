@@ -6,7 +6,7 @@
  * custom-formats/index.test.ts: real requireUser, stub Better Auth + user row.
  */
 import { describe, expect, mock, test, beforeEach } from "bun:test";
-import { Elysia } from "elysia";
+import { Hono } from "hono";
 
 const EPOCH = new Date(0);
 
@@ -75,13 +75,10 @@ mock.module("@rawkoon/api/lib/auth", () => ({
   },
 }));
 
-mock.module("@rawkoon/api/auth", () => ({
-  auth: (app: Elysia) => app,
-}));
-
 const { bookProgressRoutes } = await import("./bookPlaybackRoutes");
 
-const app = new Elysia({ prefix: "/api/books" }).use(bookProgressRoutes);
+// Mount at /api/books to drive the full /api/books/editions/:id/progress paths.
+const app = new Hono().route("/api/books", bookProgressRoutes);
 
 const USER: NonNullable<FakeUser> = {
   id: "user-id",
@@ -103,7 +100,7 @@ function putProgress(body: {
   updated_at: string;
   finished?: boolean;
 }) {
-  return app.handle(
+  return app.request(
     new Request("http://localhost/api/books/editions/1/progress", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

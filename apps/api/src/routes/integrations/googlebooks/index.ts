@@ -1,5 +1,5 @@
-import { Elysia, t } from "elysia";
-import { auth } from "@rawkoon/api/auth";
+import { Hono } from "hono";
+import { z } from "zod";
 import { prisma } from "@rawkoon/api/db";
 import {
   getIntegrationConfigRecord,
@@ -9,8 +9,9 @@ import { nowUtc } from "@rawkoon/api/utils";
 import { normalizeGoogleBooksConfig } from "@rawkoon/api/utils/integrations/normalizers";
 import { encrypt } from "@rawkoon/api/services/crypto";
 import { logActivity } from "@rawkoon/api/utils/activityLogs";
-import { requireAdmin } from "@rawkoon/api/middleware/auth";
-import { badRequest, serverError } from "@rawkoon/api/errors";
+import { badRequest, ok, serverError } from "@rawkoon/api/errors";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { jsonV } from "@rawkoon/api/middleware/validate";
 
 /**
  * Google Books integration.
@@ -27,15 +28,13 @@ import { badRequest, serverError } from "@rawkoon/api/errors";
 const TEST_URL =
   "https://www.googleapis.com/books/v1/volumes?q=isbn:9780000000000&maxResults=1";
 
-export const googleBooksIntegrationRoutes = new Elysia()
-  .use(auth)
-  .use(requireAdmin)
-
-  .get("/googlebooks", async ({ set }) => {
+// Mounted under /api/integrations; requireAdmin is applied at the parent.
+export const googleBooksIntegrationRoutes = new Hono<Env>()
+  .get("/googlebooks", async () => {
     try {
       const integration = await getIntegrationConfigRecord("googlebooks");
       const config = normalizeGoogleBooksConfig(integration?.config);
-      return {
+      return ok({
         integration: {
           type: "googlebooks",
           enabled: integration?.enabled ?? false,
@@ -43,19 +42,18 @@ export const googleBooksIntegrationRoutes = new Elysia()
           api_key: "",
           has_api_key: Boolean(config?.api_key),
         },
-      };
+      });
     } catch (error) {
       console.error("Error fetching Google Books integration config:", error);
-      return serverError(
-        set,
-        "Failed to fetch Google Books integration config",
-      );
+      return serverError("Failed to fetch Google Books integration config");
     }
   })
 
   .put(
     "/googlebooks",
-    async ({ user, body, set }) => {
+    jsonV(z.object({ api_key: z.string(), enabled: z.boolean().optional() })),
+    async (c) => {
+      const body = c.req.valid("json");
       const existing = await getIntegrationConfigRecord("googlebooks");
       const existingConfig = normalizeGoogleBooksConfig(existing?.config);
       const provided = body.api_key.trim();
@@ -65,7 +63,7 @@ export const googleBooksIntegrationRoutes = new Elysia()
       // Enabling without a key would leave every book search failing with an
       // authentication error rather than saying what is missing.
       if (!apiKey && enabled) {
-        return badRequest(set, "api_key is required to enable Google Books");
+        return badRequest("api_key is required to enable Google Books");
       }
 
       try {
@@ -86,11 +84,11 @@ export const googleBooksIntegrationRoutes = new Elysia()
 
         await logActivity({
           type: "integration_updated",
-          userId: user!.id,
+          userId: c.get("user").id,
           payload: { integration_type: "googlebooks" },
         });
 
-        return {
+        return ok({
           success: true,
           integration: {
             type: integration.type,
@@ -98,17 +96,11 @@ export const googleBooksIntegrationRoutes = new Elysia()
             api_key: "",
             has_api_key: Boolean(apiKey),
           },
-        };
+        });
       } catch (error) {
         console.error("Error saving Google Books integration config:", error);
-        return serverError(set, "Failed to save Google Books integration");
+        return serverError("Failed to save Google Books integration");
       }
-    },
-    {
-      body: t.Object({
-        api_key: t.String(),
-        enabled: t.Optional(t.Boolean()),
-      }),
     },
   )
 
@@ -123,14 +115,16 @@ export const googleBooksIntegrationRoutes = new Elysia()
    */
   .post(
     "/googlebooks/test",
-    async ({ body, set }) => {
+    jsonV(z.object({ api_key: z.string().optional() })),
+    async (c) => {
+      const body = c.req.valid("json");
       const provided = body.api_key?.trim();
       let apiKey = provided ?? "";
       if (!apiKey) {
         const existing = await getIntegrationConfigRecord("googlebooks");
         apiKey = normalizeGoogleBooksConfig(existing?.config)?.api_key ?? "";
       }
-      if (!apiKey) return badRequest(set, "No API key to test");
+      if (!apiKey) return badRequest("No API key to test");
 
       try {
         const res = await fetch(
@@ -139,33 +133,32 @@ export const googleBooksIntegrationRoutes = new Elysia()
             signal: AbortSignal.timeout(15_000),
           },
         );
-        if (res.ok) return { success: true };
+        if (res.ok) return ok({ success: true });
 
         if (res.status === 400 || res.status === 403) {
-          return {
+          return ok({
             success: false,
             error: "Google Books rejected that key.",
-          };
+          });
         }
         if (res.status === 429) {
-          return {
+          return ok({
             success: false,
             error: "Key accepted, but its quota is exhausted right now.",
-          };
+          });
         }
-        return {
+        return ok({
           success: false,
           error: `Google Books is unavailable (HTTP ${res.status}). The key may still be valid — try again shortly.`,
-        };
+        });
       } catch (error) {
-        return {
+        return ok({
           success: false,
           error:
             error instanceof Error
               ? `Could not reach Google Books: ${error.message}`
               : "Could not reach Google Books.",
-        };
+        });
       }
     },
-    { body: t.Object({ api_key: t.Optional(t.String()) }) },
   );

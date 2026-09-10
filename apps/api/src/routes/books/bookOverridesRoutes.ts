@@ -1,8 +1,11 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
 
-import { requireUser } from "@rawkoon/api/middleware/auth";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { requireUser } from "@rawkoon/api/middleware/hono/auth";
+import { jsonV } from "@rawkoon/api/middleware/validate";
 import { prisma } from "@rawkoon/api/db";
-import { badRequest, notFound, serverError } from "@rawkoon/api/errors";
+import { badRequest, notFound, ok, serverError } from "@rawkoon/api/errors";
 import { sanitizeProviderHtml } from "@rawkoon/shared/utils";
 import { refreshBookMetadata } from "@rawkoon/api/services/books/refreshBookMetadata";
 import { serializePerBook } from "@rawkoon/api/services/books/refreshQueue";
@@ -57,7 +60,7 @@ const OVERRIDE_FIELDS = {
 } as const;
 
 const nullableStr = (max: number) =>
-  t.Optional(t.Union([t.String({ maxLength: max }), t.Null()]));
+  z.union([z.string().max(max), z.null()]).optional();
 
 /**
  * Integer columns must reject fractions at the edge.
@@ -68,20 +71,45 @@ const nullableStr = (max: number) =>
  * introduced it.
  */
 const nullableInt = (min: number, max: number) =>
-  t.Optional(t.Union([t.Integer({ minimum: min, maximum: max }), t.Null()]));
+  z.union([z.number().int().min(min).max(max), z.null()]).optional();
 
-export const bookOverridesRoutes = new Elysia().use(requireUser).patch(
+export const bookOverridesRoutes = new Hono<Env>().patch(
   "/:id/overrides",
-  async ({ params, body, set, user }) => {
-    const id = Number(params.id);
-    if (!Number.isInteger(id) || id <= 0)
-      return badRequest(set, "Invalid book id");
+  requireUser,
+  jsonV(
+    z.object({
+      title: nullableStr(500),
+      subtitle: nullableStr(500),
+      series_name: nullableStr(300),
+      // Float: half-books exist ("Book 4.5"), matching the column.
+      series_position: z
+        .union([z.number().min(0).max(10_000), z.null()])
+        .optional(),
+      narrators: z.union([z.array(z.string()), z.null()]).optional(),
+      genres: z.union([z.array(z.string()), z.null()]).optional(),
+      publisher: nullableStr(300),
+      page_count: nullableInt(0, 100_000),
+      published_date: nullableStr(40),
+      published_year: nullableInt(0, 9999),
+      rating: z.union([z.number().min(0).max(5), z.null()]).optional(),
+      rating_count: nullableInt(0, 1_000_000_000),
+      language: nullableStr(20),
+      overview: nullableStr(20_000),
+      cover_url: nullableStr(2000),
+      isbn13: nullableStr(20),
+    }),
+  ),
+  async (c) => {
+    const body = c.req.valid("json");
+    const user = c.get("user");
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id) || id <= 0) return badRequest("Invalid book id");
 
     const existing = await prisma.libraryBook.findUnique({
       where: { id },
       select: { id: true },
     });
-    if (!existing) return notFound(set, "Book not found");
+    if (!existing) return notFound("Book not found");
 
     const patch: Record<string, unknown> = {};
     const removed: string[] = [];
@@ -102,10 +130,7 @@ export const bookOverridesRoutes = new Elysia().use(requireUser).patch(
         // in the JSON would make every subsequent refresh throw.
         const parsed = parseIsoDate(value);
         if (!parsed) {
-          return badRequest(
-            set,
-            "published_date must be an ISO date (YYYY-MM-DD)",
-          );
+          return badRequest("published_date must be an ISO date (YYYY-MM-DD)");
         }
         patch[stored] = parsed.toISOString();
         continue;
@@ -121,10 +146,7 @@ export const bookOverridesRoutes = new Elysia().use(requireUser).patch(
          */
         const code = value.trim().toLowerCase();
         if (!/^[a-z]{2}$/.test(code)) {
-          return badRequest(
-            set,
-            "language must be a two-letter ISO 639-1 code",
-          );
+          return badRequest("language must be a two-letter ISO 639-1 code");
         }
         patch[stored] = code;
         continue;
@@ -156,7 +178,7 @@ export const bookOverridesRoutes = new Elysia().use(requireUser).patch(
     }
 
     if (Object.keys(patch).length === 0 && removed.length === 0) {
-      return badRequest(set, "No override fields supplied");
+      return badRequest("No override fields supplied");
     }
 
     try {
@@ -252,44 +274,19 @@ export const bookOverridesRoutes = new Elysia().use(requireUser).patch(
         return { item, unrestored };
       });
 
-      if (!item) return notFound(set, "Book not found");
+      if (!item) return notFound("Book not found");
       if (unrestored.length > 0) {
         return badRequest(
-          set,
           `No metadata source supplies ${unrestored.join(", ")}, so it cannot be reverted. Your value was kept.`,
         );
       }
-      const readAt = await loadReadAtByBookId(prisma, user!.id, [item.id]);
-      return { item: mapBook(item, { readAt: readAt.get(item.id) ?? null }) };
+      const readAt = await loadReadAtByBookId(prisma, user.id, [item.id]);
+      return ok({
+        item: mapBook(item, { readAt: readAt.get(item.id) ?? null }),
+      });
     } catch (error) {
       console.error("Failed to update book overrides:", error);
-      return serverError(set, "Failed to update overrides");
+      return serverError("Failed to update overrides");
     }
-  },
-  {
-    params: t.Object({ id: t.String() }),
-    body: t.Object({
-      title: nullableStr(500),
-      subtitle: nullableStr(500),
-      series_name: nullableStr(300),
-      // Float: half-books exist ("Book 4.5"), matching the column.
-      series_position: t.Optional(
-        t.Union([t.Number({ minimum: 0, maximum: 10_000 }), t.Null()]),
-      ),
-      narrators: t.Optional(t.Union([t.Array(t.String()), t.Null()])),
-      genres: t.Optional(t.Union([t.Array(t.String()), t.Null()])),
-      publisher: nullableStr(300),
-      page_count: nullableInt(0, 100_000),
-      published_date: nullableStr(40),
-      published_year: nullableInt(0, 9999),
-      rating: t.Optional(
-        t.Union([t.Number({ minimum: 0, maximum: 5 }), t.Null()]),
-      ),
-      rating_count: nullableInt(0, 1_000_000_000),
-      language: nullableStr(20),
-      overview: nullableStr(20_000),
-      cover_url: nullableStr(2000),
-      isbn13: nullableStr(20),
-    }),
   },
 );

@@ -7,7 +7,7 @@
  * storage, no /metrics endpoint, no Prometheus — just a one-shot snapshot to
  * capture a baseline before optimization.
  *
- * It starts the Elysia app on an ephemeral local port IN-PROCESS and fires real
+ * It starts the app on an ephemeral local port IN-PROCESS and fires real
  * HTTP requests at it — so the full response lifecycle runs exactly as in
  * production (the timing hook fires on `onAfterResponse`) — then reads the very
  * ring buffer those requests filled. It forces PERF_TIMING_ENABLED on for its
@@ -50,8 +50,8 @@ async function main(): Promise<void> {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   // Listen on an ephemeral port so the full HTTP response lifecycle runs.
-  app.listen(0);
-  const port = app.server?.port;
+  const server = Bun.serve({ fetch: app.fetch, port: 0 });
+  const port = server.port;
   if (!port) throw new Error("Failed to start app on an ephemeral port");
   const origin = `http://localhost:${port}`;
 
@@ -129,6 +129,6 @@ main()
     process.exit(1);
   })
   .finally(() => {
-    // app.handle spins up in-process workers/timers; exit explicitly.
+    // The app spins up in-process workers/timers; exit explicitly.
     process.exit(0);
   });

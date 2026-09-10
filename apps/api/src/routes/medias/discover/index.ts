@@ -1,8 +1,10 @@
-import { Elysia, t } from "elysia";
-import { auth } from "@rawkoon/api/auth";
-import { requireUser } from "@rawkoon/api/middleware/auth";
+import { Hono } from "hono";
+import { z } from "zod";
 import { prisma } from "@rawkoon/api/db";
-import { badRequest, serverError } from "@rawkoon/api/errors";
+import { badRequest, ok, serverError } from "@rawkoon/api/errors";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { requireUser } from "@rawkoon/api/middleware/hono/auth";
+import { jsonV } from "@rawkoon/api/middleware/validate";
 import {
   loadEnabledTmdbConfig,
   resolveLanguage,
@@ -21,18 +23,15 @@ function parseExclude(raw: string | undefined): number[] {
     .filter((n) => Number.isFinite(n) && n > 0);
 }
 
-export const mediasDiscoverRoutes = new Elysia({ prefix: "/discover" })
-  .use(auth)
-  .use(requireUser)
-
-  // GET /api/medias/discover/deck
-  .get("/deck", async ({ user, set, query }) => {
+// Mounted at /api/medias/discover by the medias parent (prefix dropped here).
+export const mediasDiscoverRoutes = new Hono<Env>()
+  .get("/deck", requireUser, async (c) => {
     try {
       const tmdbConfig = await loadEnabledTmdbConfig();
       if (!tmdbConfig) {
-        return badRequest(set, "TMDB is not configured");
+        return badRequest("TMDB is not configured");
       }
-      const q = query as Record<string, string | undefined>;
+      const q = c.req.query() as Record<string, string | undefined>;
       const language = resolveLanguage(q);
       const excludeTmdbIds = parseExclude(q.exclude);
       const limit = Math.min(
@@ -44,65 +43,70 @@ export const mediasDiscoverRoutes = new Elysia({ prefix: "/discover" })
       );
 
       const provider = new TmdbProvider(tmdbConfig.api_key);
-      return await buildDiscoverDeck({
-        provider,
-        userId: user!.id,
-        language,
-        excludeTmdbIds,
-        limit,
-      });
+      return ok(
+        await buildDiscoverDeck({
+          provider,
+          userId: c.get("user").id,
+          language,
+          excludeTmdbIds,
+          limit,
+        }),
+      );
     } catch (error) {
       console.error("Error building discover deck:", error);
-      return serverError(set, "Failed to build discover deck");
+      return serverError("Failed to build discover deck");
     }
   })
 
   // POST /api/medias/discover/dismiss — idempotent
   .post(
     "/dismiss",
-    async ({ user, body, set }) => {
+    requireUser,
+    jsonV(
+      z.object({
+        tmdb_id: z.number(),
+        type: z.union([z.literal("movie"), z.literal("tv")]),
+      }),
+    ),
+    async (c) => {
+      const body = c.req.valid("json");
       try {
         await prisma.discoverDismissal.upsert({
           where: {
             userId_tmdbId_mediaType: {
-              userId: user!.id,
+              userId: c.get("user").id,
               tmdbId: body.tmdb_id,
               mediaType: body.type,
             },
           },
           create: {
-            userId: user!.id,
+            userId: c.get("user").id,
             tmdbId: body.tmdb_id,
             mediaType: body.type,
           },
           update: {},
         });
-        return { dismissed: true };
+        return ok({ dismissed: true });
       } catch {
-        return serverError(set, "Failed to dismiss media");
+        return serverError("Failed to dismiss media");
       }
-    },
-    {
-      body: t.Object({
-        tmdb_id: t.Number(),
-        type: t.Union([t.Literal("movie"), t.Literal("tv")]),
-      }),
     },
   )
 
   // DELETE /api/medias/discover/dismiss/:tmdbId?type=movie|tv
-  .delete("/dismiss/:tmdbId", async ({ user, params, query, set }) => {
-    const tmdbId = parseInt(params.tmdbId, 10);
-    if (!Number.isFinite(tmdbId)) return badRequest(set, "Invalid tmdbId");
-    if (query.type !== "movie" && query.type !== "tv") {
-      return badRequest(set, "Missing or invalid type query param");
+  .delete("/dismiss/:tmdbId", requireUser, async (c) => {
+    const tmdbId = parseInt(c.req.param("tmdbId"), 10);
+    if (!Number.isFinite(tmdbId)) return badRequest("Invalid tmdbId");
+    const type = c.req.query("type");
+    if (type !== "movie" && type !== "tv") {
+      return badRequest("Missing or invalid type query param");
     }
     try {
       await prisma.discoverDismissal.deleteMany({
-        where: { userId: user!.id, tmdbId, mediaType: query.type },
+        where: { userId: c.get("user").id, tmdbId, mediaType: type },
       });
-      return { success: true };
+      return ok({ success: true });
     } catch {
-      return serverError(set, "Failed to undo dismissal");
+      return serverError("Failed to undo dismissal");
     }
   });

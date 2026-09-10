@@ -1,5 +1,5 @@
-import { Elysia, t } from "elysia";
-import { auth } from "@rawkoon/api/auth";
+import { Hono } from "hono";
+import { z } from "zod";
 import { prisma } from "@rawkoon/api/db";
 import { nowUtc } from "@rawkoon/api/utils";
 import {
@@ -9,21 +9,21 @@ import {
 import { normalizeJackettConfig } from "@rawkoon/api/utils/integrations/normalizers";
 import { logActivity } from "@rawkoon/api/utils/activityLogs";
 import { encrypt } from "@rawkoon/api/services/crypto";
-import { requireAdmin } from "@rawkoon/api/middleware/auth";
-import { badRequest, serverError } from "@rawkoon/api/errors";
+import { badRequest, ok, serverError } from "@rawkoon/api/errors";
+import type { Env } from "@rawkoon/api/honoEnv";
+import { jsonV } from "@rawkoon/api/middleware/validate";
 import { JackettAdapter } from "@rawkoon/api/services/indexerManager/jackettAdapter";
 
-export const jackettIntegrationRoutes = new Elysia()
-  .use(auth)
-  .use(requireAdmin)
-  .get("/jackett", async ({ set }) => {
+// Mounted under /api/integrations; requireAdmin is applied at the parent.
+export const jackettIntegrationRoutes = new Hono<Env>()
+  .get("/jackett", async () => {
     try {
       const integration = await prisma.integration.findFirst({
         where: { type: "jackett" },
       });
 
       const config = normalizeJackettConfig(integration?.config);
-      return {
+      return ok({
         integration: {
           type: "jackett",
           enabled: integration?.enabled || false,
@@ -31,15 +31,24 @@ export const jackettIntegrationRoutes = new Elysia()
           api_key: "",
           rss_indexers: config?.rss_indexers ?? [],
         },
-      };
+      });
     } catch (error) {
       console.error("Error fetching Jackett integration config:", error);
-      return serverError(set, "Failed to fetch Jackett integration config");
+      return serverError("Failed to fetch Jackett integration config");
     }
   })
   .put(
     "/jackett",
-    async ({ user, body, set }) => {
+    jsonV(
+      z.object({
+        website_url: z.string(),
+        api_key: z.string(),
+        enabled: z.boolean().optional(),
+        rss_indexers: z.array(z.string().min(1)).optional(),
+      }),
+    ),
+    async (c) => {
+      const body = c.req.valid("json");
       const websiteUrl = normalizeUrl(body.website_url);
       const existingIntegration = await prisma.integration.findFirst({
         where: { type: "jackett" },
@@ -52,14 +61,11 @@ export const jackettIntegrationRoutes = new Elysia()
       const enabled = body.enabled ?? true;
 
       if (!websiteUrl || !isValidHttpUrl(websiteUrl)) {
-        return badRequest(
-          set,
-          "Invalid website_url. Must be a valid http(s) URL.",
-        );
+        return badRequest("Invalid website_url. Must be a valid http(s) URL.");
       }
 
       if (!apiKey) {
-        return badRequest(set, "api_key is required");
+        return badRequest("api_key is required");
       }
 
       try {
@@ -117,11 +123,11 @@ export const jackettIntegrationRoutes = new Elysia()
 
         await logActivity({
           type: "integration_updated",
-          userId: user!.id,
+          userId: c.get("user").id,
           payload: { integration_type: "jackett" },
         });
 
-        return {
+        return ok({
           success: true,
           integration: {
             type: integration.type,
@@ -129,33 +135,25 @@ export const jackettIntegrationRoutes = new Elysia()
             website_url: websiteUrl,
             api_key: "",
           },
-        };
+        });
       } catch (error) {
         console.error("Error saving Jackett integration config:", error);
-        return serverError(set, "Failed to save Jackett integration config");
+        return serverError("Failed to save Jackett integration config");
       }
     },
-    {
-      body: t.Object({
-        website_url: t.String(),
-        api_key: t.String(),
-        enabled: t.Optional(t.Boolean()),
-        rss_indexers: t.Optional(t.Array(t.String({ minLength: 1 }))),
-      }),
-    },
   )
-  .get("/jackett/indexers", async ({ set }) => {
+  .get("/jackett/indexers", async () => {
     try {
       const integration = await prisma.integration.findFirst({
         where: { type: "jackett", enabled: true },
       });
       const config = normalizeJackettConfig(integration?.config);
-      if (!config) return { indexers: [] };
+      if (!config) return ok({ indexers: [] });
       const adapter = new JackettAdapter(config);
       const indexers = await adapter.getIndexers();
-      return { indexers };
+      return ok({ indexers });
     } catch (error) {
       console.error("Error fetching Jackett indexers:", error);
-      return serverError(set, "Failed to fetch Jackett indexers");
+      return serverError("Failed to fetch Jackett indexers");
     }
   });
