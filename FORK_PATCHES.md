@@ -9,8 +9,8 @@ new fork-only patch lands or an old one gets upstreamed.
 Remotes: `origin` = `git@github.com:4thlabs/rawkoon.git` (this fork),
 `upstream` = `git@github.com:samuelloranger/rawkoon.git`.
 
-Last synced with upstream: 2026-09-06, `upstream/main` @ `203d338`, newest
-release tag `v1.19.1` (`5cded30`, one README-screenshots commit behind
+Last synced with upstream: 2026-09-11, `upstream/main` @ `9445dbf`, newest
+release tag `v1.22.1` (`ea6703f`, one README-screenshots commit behind
 `upstream/main`).
 `main` is **rebased** on top of that commit — this fork keeps a linear history
 and never merges upstream into `main`, so the SHAs below change on every sync
@@ -28,7 +28,7 @@ qBittorrent-parsing bug report is about real qBittorrent.
 
 ### 1. fix(books): don't fail a grab after the torrent is already queued
 
-- Commit: `6a04384`
+- Commit: `c8e6615`
 - Files: `apps/api/src/services/books/bookGrabber.ts`,
   `apps/api/src/routes/books/bookGrabRoutes.ts`
 - Problem: the book grab path had no error-recovery net past the
@@ -53,7 +53,7 @@ qBittorrent-parsing bug report is about real qBittorrent.
 
 ### 2. fix(qbittorrent): don't misparse a genuinely successful torrent add
 
-- Commit: `8874520`
+- Commit: `fd628b2`
 - Files: `apps/api/src/services/qbittorrent/parseAddResponse.ts` (+ colocated
   test `parseAddResponse.test.ts`)
 - Problem: two independent ways a successful `/api/v2/torrents/add` came back
@@ -85,7 +85,7 @@ qBittorrent-parsing bug report is about real qBittorrent.
 
 ### 3. ci: publish a patched image of the latest upstream release
 
-- Commit: `6a6279a`
+- Commits: `577a1a9` (initial pipeline), `fddfe9f` (SemVer-correct app version)
 - Files: `.github/workflows/patched-release.yml` (new)
 - Purpose: **fork-only infrastructure, not meant for upstream.** Lets this
   fork run upstream's latest release with our fixes on top, in a homelab,
@@ -106,8 +106,10 @@ qBittorrent-parsing bug report is about real qBittorrent.
     *calling ref*, not the patched worktree, so it would test the wrong tree.
     Its checks are inlined instead (`./.github/actions/setup` + the two test
     commands). Everything else in `.github/` is upstream's, untouched.
-  - `APP_VERSION` is set to `<x.y.z>-patched` on purpose — that string is
-    what the UI shows. `GITHUB_RELEASES_REPO` points at this fork, which
+  - `APP_VERSION` is set to `<x.y.z>+patched` so the UI shows the patched
+    build without SemVer treating it as older than the upstream release. The
+    Docker tag remains `<x.y.z>-patched` because Docker tags forbid `+`.
+    `GITHUB_RELEASES_REPO` points at this fork, which
     publishes no releases, so there are no "App Updated" notifications.
   - There used to be a rolling `edge` image built from every push to
     `develop` (and briefly from `main`). It was dropped: `:patched` covers
@@ -120,9 +122,9 @@ If this fork ever needs to be rebuilt from scratch:
 
 1. Fork `samuelloranger/rawkoon` on GitHub, clone it, add both remotes as
    described above.
-2. Cherry-pick, in order: `8874520` and `6a04384` (bug fixes — try these
-   upstream first; skip any already merged there), then `6a6279a` (CI —
-   always needed since it's fork-only).
+2. Cherry-pick, in order: `fd628b2` and `c8e6615` (bug fixes — try these
+   upstream first; skip any already merged there), then `577a1a9` and
+   `fddfe9f` (CI — always needed since they're fork-only).
 3. Re-add repo secrets used by the workflows: `GITHUB_TOKEN` is automatic;
    `DEPLOYER_WEBHOOK_URL`/`DEPLOYER_WEBHOOK_SECRET` are optional (see
    `docker-publish.yml`) and only needed if a deploy webhook is wired up.
