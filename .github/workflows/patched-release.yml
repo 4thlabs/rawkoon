@@ -36,7 +36,8 @@ jobs:
           TAG=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
           [ -n "$TAG" ] || { echo "no upstream release tag found"; exit 1; }
           echo "TAG=$TAG" >> "$GITHUB_ENV"
-          echo "VERSION=${TAG#v}-patched" >> "$GITHUB_ENV"
+          echo "IMAGE_VERSION=${TAG#v}-patched" >> "$GITHUB_ENV"
+          echo "APP_VERSION=${TAG#v}+patched" >> "$GITHUB_ENV"
 
       - name: Apply patches onto $TAG
         run: |
@@ -79,7 +80,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ env.VERSION }}
+            type=raw,value=${{ env.IMAGE_VERSION }}
             type=raw,value=patched
 
       - name: Build and push image
@@ -90,7 +91,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            APP_VERSION=${{ env.VERSION }}
+            APP_VERSION=${{ env.APP_VERSION }}
             GITHUB_RELEASES_REPO=${{ github.repository }}
 
       - name: Push patched branch
