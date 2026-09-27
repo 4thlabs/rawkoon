@@ -9,8 +9,8 @@ new fork-only patch lands or an old one gets upstreamed.
 Remotes: `origin` = `git@github.com:4thlabs/rawkoon.git` (this fork),
 `upstream` = `git@github.com:samuelloranger/rawkoon.git`.
 
-Last synced with upstream: 2026-09-23, `upstream/main` @ `79cab6d`, newest
-release tag `v1.33.0` (`4138922`, one README-screenshots commit behind
+Last synced with upstream: 2026-09-27, `upstream/main` @ `c0a0260`, newest
+release tag `v1.35.1` (`9828e7d`, one README-screenshots commit behind
 `upstream/main`).
 `main` is **rebased** on top of that commit — this fork keeps a linear history
 and never merges upstream into `main`, so the SHAs below change on every sync
@@ -28,7 +28,7 @@ qBittorrent-parsing bug report is about real qBittorrent.
 
 ### 1. fix(books): don't fail a grab after the torrent is already queued
 
-- Commit: `a2242d8`
+- Commit: `797768e`
 - Files: `apps/api/src/services/books/bookGrabber.ts`,
   `apps/api/src/routes/books/bookGrabRoutes.ts`
 - Problem: the book grab path had no error-recovery net past the
@@ -53,7 +53,7 @@ qBittorrent-parsing bug report is about real qBittorrent.
 
 ### 2. fix(qbittorrent): don't misparse a genuinely successful torrent add
 
-- Commit: `e95a63a`
+- Commit: `73bcf73`
 - Files: `apps/api/src/services/qbittorrent/parseAddResponse.ts` (+ colocated
   test `parseAddResponse.test.ts`)
 - Problem: two independent ways a successful `/api/v2/torrents/add` came back
@@ -85,7 +85,7 @@ qBittorrent-parsing bug report is about real qBittorrent.
 
 ### 3. ci: publish a patched image of the latest upstream release
 
-- Commits: `bb14af2` (initial pipeline), `7cff742` (SemVer-correct app version)
+- Commits: `ca36eb4` (initial pipeline), `f88e48f` (SemVer-correct app version)
 - Files: `.github/workflows/patched-release.yml` (new)
 - Purpose: **fork-only infrastructure, not meant for upstream.** Lets this
   fork run upstream's latest release with our fixes on top, in a homelab,
@@ -122,9 +122,9 @@ If this fork ever needs to be rebuilt from scratch:
 
 1. Fork `samuelloranger/rawkoon` on GitHub, clone it, add both remotes as
    described above.
-2. Cherry-pick, in order: `e95a63a` and `a2242d8` (bug fixes — try these
-   upstream first; skip any already merged there), then `bb14af2` and
-   `7cff742` (CI — always needed since they're fork-only).
+2. Cherry-pick, in order: `73bcf73` and `797768e` (bug fixes — try these
+   upstream first; skip any already merged there), then `ca36eb4` and
+   `f88e48f` (CI — always needed since they're fork-only).
 3. Re-add repo secrets used by the workflows: `GITHUB_TOKEN` is automatic;
    `DEPLOYER_WEBHOOK_URL`/`DEPLOYER_WEBHOOK_SECRET` are optional (see
    `docker-publish.yml`) and only needed if a deploy webhook is wired up.
