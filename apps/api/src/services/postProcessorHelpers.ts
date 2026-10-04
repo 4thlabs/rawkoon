@@ -159,12 +159,20 @@ export async function markItemDownloaded(dh: {
   }
 }
 
+/** `season` is null when the file only carries an episode (absolute numbering, typical of anime). */
 export function parseSeasonEpisode(
   filename: string,
-): { season: number; episode: number } | null {
+): { season: number | null; episode: number } | null {
   const { season, episodes } = parseReleaseStructure(filename);
-  if (season == null || episodes.length === 0) return null;
-  return { season, episode: episodes[0] };
+  if (episodes.length > 0) return { season, episode: episodes[0] };
+  const abs =
+    filename.match(/\b(?:E|Ep|Episode)[\s._-]?(\d{1,4})\b/i) ??
+    filename.match(/\s-\s(\d{1,4})(?:v\d)?(?=[\s.[(]|$)/);
+  if (!abs) return null;
+  const episode = parseInt(abs[1], 10);
+  // A bare 4-digit number in that spot is far more often a year than an episode.
+  if (episode >= 1900 && episode <= 2099) return null;
+  return { season: null, episode };
 }
 
 /**
