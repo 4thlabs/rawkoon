@@ -135,7 +135,7 @@ export async function postProcessSeasonPack(
   const parsedSources = allVideos.flatMap((srcVideo) => {
     const fileName = basename(srcVideo);
     const se = parseSeasonEpisode(fileName);
-    if (!se) {
+    if (!se || se.season === null) {
       console.warn(
         `[postProcess/pack] Could not parse SxxExx from "${fileName}", skipping`,
       );
