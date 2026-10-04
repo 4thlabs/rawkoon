@@ -182,6 +182,18 @@ describe("runSeedSweep", () => {
     expect(removed).toEqual([H1]);
   });
 
+  it("never releases a torrent whose import failed", async () => {
+    // The row with a postProcessError only comes back when importedOnly is off.
+    deps.loadRows = async (_hash, importedOnly) =>
+      importedOnly ? [] : [{ id: 1, torrentHash: H1, indexer: "Harbor" }];
+    await runSeedSweep(deps);
+    await runSeedSweep(deps, { hash: H1 });
+    expect(removed).toEqual([]);
+    expect(await releaseTorrentNow(H1, deps)).toMatchObject({
+      status: "released",
+    });
+  });
+
   it("does nothing while disabled", async () => {
     deps.isEnabled = async () => false;
     expect(await runSeedSweep(deps)).toEqual([]);

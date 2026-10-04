@@ -54,7 +54,8 @@ export type SweepDecision =
 export interface SweepDeps {
   isEnabled: () => Promise<boolean>;
   loadContext: () => Promise<RuleContext & { moveMode: boolean }>;
-  loadRows: (hash?: string) => Promise<SweepRow[]>;
+  /** `importedOnly` leaves out failed imports: their data may be all that a manual fix has. */
+  loadRows: (hash?: string, importedOnly?: boolean) => Promise<SweepRow[]>;
   loadPendingHashes: () => Promise<Set<string>>;
   resolveAdapter: () => Promise<DownloadClientAdapter | null>;
   stamp: (
@@ -201,12 +202,13 @@ export const defaultSweepDeps: SweepDeps = {
       })
     )?.seedSweepEnabled ?? false,
   loadContext: loadSeedContext,
-  loadRows: async (hash) => {
+  loadRows: async (hash, importedOnly) => {
     const rows = await prisma.downloadHistory.findMany({
       where: {
         completedAt: { not: null },
         failed: false,
         seedReleasedAt: null,
+        ...(importedOnly ? { postProcessError: null } : {}),
         torrentHash: hash
           ? { equals: hash, mode: "insensitive" }
           : { not: null },
@@ -270,7 +272,7 @@ export async function runSeedSweep(
     return [];
   }
   const [rows, pendingHashes, base] = await Promise.all([
-    deps.loadRows(opts.hash?.toLowerCase()),
+    deps.loadRows(opts.hash?.toLowerCase(), true),
     deps.loadPendingHashes(),
     deps.loadContext(),
   ]);
