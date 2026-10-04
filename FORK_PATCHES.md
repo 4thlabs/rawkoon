@@ -9,9 +9,9 @@ new fork-only patch lands or an old one gets upstreamed.
 Remotes: `origin` = `git@github.com:4thlabs/rawkoon.git` (this fork),
 `upstream` = `git@github.com:samuelloranger/rawkoon.git`.
 
-Last synced with upstream: 2026-09-27, `upstream/main` @ `c0a0260`, newest
-release tag `v1.35.1` (`9828e7d`, one README-screenshots commit behind
-`upstream/main`).
+Last synced with upstream: 2026-10-04, `upstream/main` @ `3ce6680`, newest
+release tag `v1.38.1` (`ec43036`, two commits behind `upstream/main`: README
+screenshots and an iOS-only fix).
 `main` is **rebased** on top of that commit — this fork keeps a linear history
 and never merges upstream into `main`, so the SHAs below change on every sync
 and get refreshed here as part of it. There is no `develop` branch any more:
@@ -20,40 +20,43 @@ workflows whose file sits on the default branch.
 
 **Environment note:** this fork's homelab download client is
 [rdt-client](https://github.com/rogerfar/rdt-client) (a Real-Debrid proxy
-that emulates the qBittorrent Web API), not qBittorrent itself. Patch 2 below
-only exists because of that — keep it in mind before assuming any
-qBittorrent-parsing bug report is about real qBittorrent.
+that emulates the qBittorrent Web API), not qBittorrent itself. Both "BitTorrent client" patches below
+exist because of that — keep it in mind before assuming any qBittorrent bug
+report is about real qBittorrent.
 
 ## Patches
 
-### 1. fix(books): don't fail a grab after the torrent is already queued
+Grouped by area. The three new fixes are committed scan → post-process →
+client, since post-process needs the scan parser's `season: null`.
 
-- Commit: `797768e`
-- Files: `apps/api/src/services/books/bookGrabber.ts`,
-  `apps/api/src/routes/books/bookGrabRoutes.ts`
-- Problem: the book grab path had no error-recovery net past the
-  download-client handoff. `mediaGrabberGrab.grabRelease` (movie/TV) wraps its
-  whole body in try/catch and treats any post-handoff failure as a success
-  (the torrent is already committed to the client, so a later DB hiccup must
-  not surface as a failed grab). `grabBookRelease` never got that same
-  hardening: a failure in the `downloadHistory`/`bookEdition` update or
-  `emitBookUpdate` after a successful handoff propagated uncaught to the
-  route, which had no try/catch either, and hit the app's global `onError` —
-  a bare 500 to the client even though the torrent was already sitting in the
-  download client.
-- Fix: wrapped the post-handoff DB updates in `bookGrabber.ts` in a
-  try/catch that warns instead of throwing (mirrors `grabRelease`'s
-  `grabCommittedOk` pattern), and added a route-level try/catch in
-  `bookGrabRoutes.ts` (both `/grab` and `/auto`) as a second line of defense,
-  matching `libraryGrabRoutes.ts`.
-- Upstream status: **not yet submitted**. This is a generic bug fix with no
-  fork-specific behavior — a good candidate for a PR against
-  `samuelloranger/rawkoon`. If it lands upstream first, drop this patch on
-  the next sync instead of reapplying it.
+### 1. BitTorrent client
 
-### 2. fix(qbittorrent): don't misparse a genuinely successful torrent add
+#### fix(download-client): wait for rdt-client to land files and never sweep a failed import
 
-- Commit: `73bcf73`
+- Commit: `e91ee80`
+- Files: `apps/api/src/workers/checkDownloadCompletion.ts`,
+  `apps/api/src/services/seeding/seedSweep.ts` (+ `test/reconcileNormalized.test.ts`,
+  `test/seedSweep.test.ts`)
+- Problem: imports failed with ENOENT before the files existed, then the
+  torrent and its data vanished.
+  - `classifyPendingAgainstTorrent` treated `progress >= 1` as complete.
+    rdt-client (`server/RdtClient.Service/Services/QBittorrent.cs`) reports
+    `progress = rdProgress` until its local download starts, so 1.0 as soon
+    as Real-Debrid is done; it also hits 1.0 before unpacking. Only
+    `Completed`, exposed as `pausedUP`, means the files are local.
+    Real qBittorrent has the same gap while `moving` / `checkingUP`.
+  - The seed sweep loaded every completed row regardless of
+    `postProcessError`, so a failed import was released with `deleteData`.
+- Fix: complete only on the `completed` state (or `paused` at 100%, for
+  Deluge); full progress otherwise waits and is never failed as stalled.
+  The automatic sweep passes `importedOnly` to `loadRows`, which filters out
+  rows with a `postProcessError`; the manual "remove now" still sees them.
+- Upstream status: **not yet submitted**. Generic, good PR candidate; the
+  qBittorrent `moving` case is the argument that doesn't depend on rdt-client.
+
+#### fix(qbittorrent): don't misparse a genuinely successful torrent add
+
+- Commit: `eefb855`
 - Files: `apps/api/src/services/qbittorrent/parseAddResponse.ts` (+ colocated
   test `parseAddResponse.test.ts`)
 - Problem: two independent ways a successful `/api/v2/torrents/add` came back
@@ -83,9 +86,75 @@ qBittorrent-parsing bug report is about real qBittorrent.
   and similar) — still worth upstreaming since it can't mask a real failure,
   but flag that context in the PR description.
 
-### 3. ci: publish a patched image of the latest upstream release
+### 2. Post-process
 
-- Commits: `ca36eb4` (initial pipeline), `f88e48f` (SemVer-correct app version)
+#### fix(post-process): keep a refused pack's data and renumber anime/continued packs
+
+- Commit: `6b703ab`
+- Files: `apps/api/src/services/library/seasonPackMapping.ts` (+ test),
+  `apps/api/src/services/postProcessorSeasonPack.ts`,
+  `apps/api/src/services/postProcessorSingle.ts`,
+  `apps/api/src/services/postProcessFailure.ts`; deletes
+  `apps/api/test/packRefusal.test.ts`
+- Problem: "Season pack numbering does not match the provider" for anime
+  (absolute numbering) and packs that continue the previous season's count
+  (`S02E13..24` against a 12-episode TMDB season 2). The refusal also went
+  through `rejectRelease`, which removed the torrent and its data.
+- Fix: a refused pack is blocklisted and keeps its data, like a tooling
+  failure (`packRefusalPolicy` and the `pack_mismatch` reject kind are gone).
+  `mapSeasonPack` maps the pack as named first and, only if that refuses,
+  retries once through `renumberSources`: season-less files go on the grabbed
+  season (`DownloadHistory.season`) when they fit, otherwise absolute numbers
+  are spread over the seasons' episode counts; SxxEyy beyond a season's
+  count are shifted back by the earlier seasons' total. The House S6 split
+  handling is untouched. TMDB episode groups are not used.
+- Upstream status: **not yet submitted**. Depends on the scan patch below.
+- Rebase note: if upstream reworks `refusePack` or `resolveSeasonPackMapping`,
+  keep "data kept on refusal" and "renumber only as a fallback".
+
+### 3. Scan
+
+#### fix(scan): parse NxNN and absolute episode numbers
+
+- Commit: `cc877f6`
+- Files: `apps/api/src/services/postProcessorHelpers.ts` (+ colocated
+  `postProcessorHelpers.test.ts`)
+- Problem: `parseSeasonEpisode` only knew `SxxEyy`, so `[Group] Show - 05`
+  yielded no parsable file at all.
+- Fix: also reads `NxNN`, and returns `season: null` for absolute numbering
+  (` - 05`, `- 13v2`, `E05`, `Ep 05`); a bare 1900–2099 is taken as a year.
+- Upstream status: **not yet submitted**.
+
+### 4. Other
+
+#### fix(books): don't fail a grab after the torrent is already queued
+
+- Commit: `60d1f44`
+- Files: `apps/api/src/services/books/bookGrabber.ts`,
+  `apps/api/src/routes/books/bookGrabRoutes.ts`
+- Problem: the book grab path had no error-recovery net past the
+  download-client handoff. `mediaGrabberGrab.grabRelease` (movie/TV) wraps its
+  whole body in try/catch and treats any post-handoff failure as a success
+  (the torrent is already committed to the client, so a later DB hiccup must
+  not surface as a failed grab). `grabBookRelease` never got that same
+  hardening: a failure in the `downloadHistory`/`bookEdition` update or
+  `emitBookUpdate` after a successful handoff propagated uncaught to the
+  route, which had no try/catch either, and hit the app's global `onError` —
+  a bare 500 to the client even though the torrent was already sitting in the
+  download client.
+- Fix: wrapped the post-handoff DB updates in `bookGrabber.ts` in a
+  try/catch that warns instead of throwing (mirrors `grabRelease`'s
+  `grabCommittedOk` pattern), and added a route-level try/catch in
+  `bookGrabRoutes.ts` (both `/grab` and `/auto`) as a second line of defense,
+  matching `libraryGrabRoutes.ts`.
+- Upstream status: **not yet submitted**. This is a generic bug fix with no
+  fork-specific behavior — a good candidate for a PR against
+  `samuelloranger/rawkoon`. If it lands upstream first, drop this patch on
+  the next sync instead of reapplying it.
+
+#### ci: publish a patched image of the latest upstream release
+
+- Commits: `cd387c6` (initial pipeline), `51ebea6` (SemVer-correct app version)
 - Files: `.github/workflows/patched-release.yml` (new)
 - Purpose: **fork-only infrastructure, not meant for upstream.** Lets this
   fork run upstream's latest release with our fixes on top, in a homelab,
@@ -122,9 +191,10 @@ If this fork ever needs to be rebuilt from scratch:
 
 1. Fork `samuelloranger/rawkoon` on GitHub, clone it, add both remotes as
    described above.
-2. Cherry-pick, in order: `73bcf73` and `797768e` (bug fixes — try these
-   upstream first; skip any already merged there), then `ca36eb4` and
-   `f88e48f` (CI — always needed since they're fork-only).
+2. Cherry-pick, in order: `eefb855` and `60d1f44` (bug fixes), then
+   `cd387c6` and `51ebea6` (CI — always needed since they're fork-only), then
+   `cc877f6`, `6b703ab`, `e91ee80` (scan, post-process, client). Try the bug
+   fixes upstream first; skip any already merged there.
 3. Re-add repo secrets used by the workflows: `GITHUB_TOKEN` is automatic;
    `DEPLOYER_WEBHOOK_URL`/`DEPLOYER_WEBHOOK_SECRET` are optional (see
    `docker-publish.yml`) and only needed if a deploy webhook is wired up.
@@ -158,6 +228,11 @@ the files listed under "Patches" above:
 - `bookGrabber.ts` / `bookGrabRoutes.ts`: keep the try/catch shape (post-handoff
   updates non-fatal, route-level catch); reapply it on top of whatever
   upstream changed inside those functions.
+- `checkDownloadCompletion.ts` / `seedSweep.ts`: keep "complete only on a
+  finished state", "full progress waits before the stall checks", and the
+  `importedOnly` filter on the automatic sweep.
+- `seasonPackMapping.ts` / `postProcessorSeasonPack.ts` /
+  `postProcessorHelpers.ts`: see the rebase note on the post-process entry.
 - `parseAddResponse.ts`: keep both the `pending_count > 0` branch and the
   empty-body-is-success check in the success logic; reapply on top of
   upstream's version if the parsing logic moved.
