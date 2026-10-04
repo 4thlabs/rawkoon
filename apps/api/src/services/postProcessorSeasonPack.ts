@@ -33,8 +33,8 @@ import {
   isFullyReadable,
 } from "@rawkoon/api/services/postProcessorHelpers";
 import {
+  mapSeasonPack,
   parsePartMarker,
-  resolveSeasonPackMapping,
 } from "@rawkoon/api/services/library/seasonPackMapping";
 import {
   mkvAppend,
@@ -45,20 +45,6 @@ import {
  * Post-process a season pack / intégrale: find all video files under the torrent
  * folder, match each to a LibraryEpisode by SxxExx, hardlink/move to library.
  */
-/**
- * How a refused pack is handled. A mismatch is the release's fault (reject it:
- * blocklist and clear it). A tooling failure (MediaInfo, merge) must keep the
- * torrent's data — it can be the only copy of a split episode's parts.
- */
-export function packRefusalPolicy(kind: "mismatch" | "tooling"): {
-  rejectKind: "pack_mismatch" | undefined;
-  legacyBlocklist: boolean;
-} {
-  return kind === "mismatch"
-    ? { rejectKind: "pack_mismatch", legacyBlocklist: false }
-    : { rejectKind: undefined, legacyBlocklist: true };
-}
-
 export async function postProcessSeasonPack(
   downloadHistoryId: number,
   dh: {
@@ -71,6 +57,7 @@ export async function postProcessSeasonPack(
       tmdbStatus: string | null;
     };
     episode: null;
+    season: number | null;
     torrentHash: string | null;
     releaseTitle: string;
     qualityParsed: unknown;
@@ -135,13 +122,13 @@ export async function postProcessSeasonPack(
   const parsedSources = allVideos.flatMap((srcVideo) => {
     const fileName = basename(srcVideo);
     const se = parseSeasonEpisode(fileName);
-    if (!se || se.season === null) {
+    if (!se) {
       console.warn(
-        `[postProcess/pack] Could not parse SxxExx from "${fileName}", skipping`,
+        `[postProcess/pack] Could not parse an episode number from "${fileName}", skipping`,
       );
       return [];
     }
-    const key = `${se.season}x${se.episode}`;
+    const key = `${se.season ?? "abs"}x${se.episode}`;
     if (seenEpisodeKeys.has(key)) return [];
     seenEpisodeKeys.add(key);
     return [
@@ -156,36 +143,29 @@ export async function postProcessSeasonPack(
     ];
   });
 
-  const mapping = resolveSeasonPackMapping(parsedSources, episodes);
+  const mapping = mapSeasonPack(parsedSources, episodes, dh.season);
 
   /**
-   * Abandon the whole pack. Either way it is blocklisted, or auto-search finds
-   * the same pack again and loops; see packRefusalPolicy for what else happens.
+   * Abandon the whole pack, keeping its data: a refusal is often our numbering
+   * being wrong, and the files are what a manual import needs. It is
+   * blocklisted, or auto-search finds the same pack again and loops.
    */
-  const refusePack = async (
-    reason: string,
-    kind: "mismatch" | "tooling",
-  ): Promise<PostProcessFailure> => {
-    const policy = packRefusalPolicy(kind);
+  const refusePack = async (reason: string): Promise<PostProcessFailure> => {
     await prisma.downloadHistory.update({
       where: { id: downloadHistoryId },
       data: { postProcessError: reason },
     });
-    if (policy.legacyBlocklist) {
-      await prisma.grabBlocklist.create({
-        data: {
-          torrentHash: hash,
-          releaseTitle: dh.releaseTitle,
-          mediaId: dh.media.id,
-          kind: "import_rejected",
-          reason,
-        },
-      });
-    }
+    await prisma.grabBlocklist.create({
+      data: {
+        torrentHash: hash,
+        releaseTitle: dh.releaseTitle,
+        mediaId: dh.media.id,
+        kind: "import_rejected",
+        reason,
+      },
+    });
     console.warn(`[postProcess/pack] ${dh.media.title}: ${reason}`);
-    return policy.rejectKind
-      ? { success: false, reason, rejectKind: policy.rejectKind }
-      : { success: false, reason };
+    return { success: false, reason };
   };
 
   if (!mapping.ok) {
@@ -200,7 +180,6 @@ export async function postProcessSeasonPack(
           ? ` Unmatched: ${mapping.unmatched.join(", ")}`
           : ""
       }`,
-      "mismatch",
     );
   }
 
@@ -219,13 +198,11 @@ export async function postProcessSeasonPack(
     if (!miA || !miB) {
       return refusePack(
         `Season pack contains a split episode that MediaInfo cannot read — nothing imported. Could not scan "${miA ? b.fileName : a.fileName}".`,
-        "tooling",
       );
     }
     if (!tracksCompatible(miA, miB)) {
       return refusePack(
         `Season pack contains a split episode whose parts are not mergeable — nothing imported. "${a.fileName}" and "${b.fileName}" have different track layouts.`,
-        "mismatch",
       );
     }
   }
@@ -406,7 +383,6 @@ export async function postProcessSeasonPack(
   if (fatalErrors.length > 0) {
     return refusePack(
       `Season pack partially imported but a split episode could not be merged — ${fatalErrors.join("; ")}`,
-      "tooling",
     );
   }
 

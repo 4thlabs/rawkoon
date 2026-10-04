@@ -188,3 +188,95 @@ export function resolveSeasonPackMapping(
 
   return { ok: true, placements };
 }
+
+/** A parsed file whose name may carry no season (absolute numbering). */
+export type RawSourceFile = Omit<ParsedSourceFile, "season"> & {
+  season: number | null;
+};
+
+/**
+ * Renumber files whose numbers don't fit the provider: absolute numbering
+ * ("Show - 13") and seasons that continue the previous one's count
+ * (S02E13..S02E24 for a 12-episode TMDB season 2). Null when any file can't
+ * be placed or two files land on the same episode.
+ */
+export function renumberSources(
+  sources: RawSourceFile[],
+  providerEpisodes: ProviderEpisode[],
+  targetSeason: number | null,
+): ParsedSourceFile[] | null {
+  const bySeason = new Map<number, ProviderEpisode[]>();
+  for (const e of providerEpisodes) {
+    if (e.season < 1) continue;
+    const list = bySeason.get(e.season) ?? [];
+    list.push(e);
+    bySeason.set(e.season, list);
+  }
+  const seasons = [...bySeason.keys()].sort((a, b) => a - b);
+  for (const s of seasons) {
+    bySeason.get(s)?.sort((a, b) => a.episode - b.episode);
+  }
+  const count = (s: number) => bySeason.get(s)?.length ?? 0;
+
+  const absolute = (n: number): ProviderEpisode | null => {
+    let left = n;
+    for (const s of seasons) {
+      if (left >= 1 && left <= count(s))
+        return bySeason.get(s)?.[left - 1] ?? null;
+      left -= count(s);
+    }
+    return null;
+  };
+
+  const seasonless = sources.filter((s) => s.season === null);
+  const fitsTarget =
+    targetSeason != null &&
+    seasonless.every((s) => s.episode >= 1 && s.episode <= count(targetSeason));
+
+  const out: ParsedSourceFile[] = [];
+  const seen = new Set<string>();
+  for (const s of sources) {
+    const season = s.season;
+    let ep: { season: number; episode: number } | null;
+    if (season === null) {
+      ep = fitsTarget
+        ? (bySeason.get(targetSeason as number)?.[s.episode - 1] ?? null)
+        : absolute(s.episode);
+    } else if (bySeason.get(season)?.some((e) => e.episode === s.episode)) {
+      ep = { season, episode: s.episode };
+    } else {
+      const before = seasons
+        .filter((x) => x < season)
+        .reduce((sum, x) => sum + count(x), 0);
+      const inSeason = s.episode - before;
+      ep =
+        inSeason >= 1 && inSeason <= count(season)
+          ? (bySeason.get(season)?.[inSeason - 1] ?? null)
+          : absolute(s.episode);
+    }
+    if (!ep) return null;
+    const key = `${ep.season}x${ep.episode}`;
+    if (seen.has(key)) return null;
+    seen.add(key);
+    out.push({ ...s, season: ep.season, episode: ep.episode });
+  }
+  return out;
+}
+
+/**
+ * Map a pack as named first; only when that refuses, retry with renumbered
+ * files. The original refusal is kept when the retry fails too.
+ */
+export function mapSeasonPack(
+  sources: RawSourceFile[],
+  providerEpisodes: ProviderEpisode[],
+  targetSeason: number | null,
+): MappingResult {
+  const named = sources.filter((s): s is ParsedSourceFile => s.season !== null);
+  const first = resolveSeasonPackMapping(named, providerEpisodes);
+  if (first.ok) return first;
+  const renumbered = renumberSources(sources, providerEpisodes, targetSeason);
+  if (!renumbered) return first;
+  const second = resolveSeasonPackMapping(renumbered, providerEpisodes);
+  return second.ok ? second : first;
+}

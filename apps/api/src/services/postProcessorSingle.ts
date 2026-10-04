@@ -102,6 +102,7 @@ export async function postProcess(downloadHistoryId: number): Promise<
           id: dh.id,
           media: dh.media!,
           episode: null,
+          season: dh.season,
           torrentHash: dh.torrentHash,
           releaseTitle: dh.releaseTitle,
           qualityParsed: dh.qualityParsed,
