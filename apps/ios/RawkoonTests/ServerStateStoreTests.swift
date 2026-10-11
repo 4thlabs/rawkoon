@@ -1,3 +1,4 @@
+import Foundation
 @testable import Rawkoon
 import Testing
 
@@ -116,6 +117,55 @@ struct ServerStateStoreTests {
         #expect(state.key.query == "Dune")
         #expect(state.key.sortBy == "title")
         #expect(state.key.sortDirection == "asc")
+    }
+
+    @Test func equalConcurrentWindowLoadsShareOneFetch() async throws {
+        let store = ServerStateStore()
+        let calls = LoadCounter()
+        let loader: @Sendable (Int) async throws -> LibraryPage = { _ in
+            calls.increment()
+            await Task.yield()
+            return LibraryPage(items: [movie(id: 1)], hasMore: false)
+        }
+
+        async let first: Void = store.loadLibraryWindow(.default, pages: 1, loader: loader)
+        async let second: Void = store.loadLibraryWindow(.default, pages: 1, loader: loader)
+        try await first
+        try await second
+
+        #expect(calls.value == 1)
+        #expect(store.libraryList(.default).value?.map(\.id) == [1])
+    }
+
+    @Test func overlappingRollbackMarksSharedEntryStaleInsteadOfRestoring() {
+        let store = ServerStateStore()
+        let key = LibraryListKey.default
+        store.seedLibraryList([movie(id: 1), movie(id: 2)], for: key)
+
+        let first = store.beginMutation(.removeLibraryItem(1))
+        store.removeLibraryItemOptimistically(id: 1, from: key, token: first)
+        let second = store.beginMutation(.removeLibraryItem(2))
+        store.removeLibraryItemOptimistically(id: 2, from: key, token: second)
+        store.rollback(first)
+
+        #expect(store.libraryList(key).value?.map(\.id) == [])
+        #expect(store.libraryList(key).isInvalidated)
+    }
+
+    private final class LoadCounter: @unchecked Sendable {
+        private let lock = NSLock()
+        private var count = 0
+        var value: Int {
+            lock.lock()
+            defer { lock.unlock() }
+            return count
+        }
+
+        func increment() {
+            lock.lock()
+            defer { lock.unlock() }
+            count += 1
+        }
     }
 
     private enum RefreshFailure: Error {
