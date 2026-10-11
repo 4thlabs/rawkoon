@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import Network
 import RawkoonKit
@@ -9,24 +8,24 @@ import UIKit
 /// URLSessions and the disk, turns delegate callbacks into engine events, and
 /// executes the engine's commands. All engine access is serialized on `stateQueue`.
 final class ChapterDownloader: NSObject, URLSessionDownloadDelegate {
-    private let editionId: Int
+    let editionId: Int
     private let baseURL: URL
     private let onSnapshot: (DownloadSnapshot) -> Void
-    private let stateQueue = DispatchQueue(label: "cloud.samlo.rawkoon.chapter-downloader")
+    let stateQueue = DispatchQueue(label: "cloud.samlo.rawkoon.chapter-downloader")
     private let sessionIdentifier: String
     /// Fired once the cancelled session has fully invalidated; a new session with
     /// the same identifier created before that collides with it.
-    private var onInvalidated: (@Sendable () -> Void)?
+    var onInvalidated: (@Sendable () -> Void)?
 
     /// Not `let`: an expired grant is replaced in place rather than by tearing
     /// the background session down, because the session identifier has to stay
     /// stable for `handleEventsForBackgroundURLSession` to map back to it.
     private var manifest: BookManifest
-    private var fileById: [Int: ManifestFile]
-    private var engine: DownloadEngine
-    private var isCancelled = false
-    private var tasks: [Int: URLSessionDownloadTask] = [:]
-    private var backgroundSessionCompletion: (() -> Void)?
+    var fileById: [Int: ManifestFile]
+    var engine: DownloadEngine
+    var isCancelled = false
+    var tasks: [Int: URLSessionDownloadTask] = [:]
+    var backgroundSessionCompletion: (() -> Void)?
 
     private var lastEmittedStructure = -1
     private var lastEmittedRevision = -1
@@ -36,12 +35,12 @@ final class ChapterDownloader: NSObject, URLSessionDownloadDelegate {
     private static let idleReconcileDelay: TimeInterval = 5
     private static let progressEmitInterval: TimeInterval = 0.1
 
-    private let pathMonitor = NWPathMonitor()
-    private let journal: DownloadJournal
+    let pathMonitor = NWPathMonitor()
+    let journal: DownloadJournal
     private let watchdog: MainThreadWatchdog
     /// Keeps foreground transfers alive for iOS's short background grace period.
-    private var graceTaskId = UIBackgroundTaskIdentifier.invalid
-    private var lifecycleObservers: [NSObjectProtocol] = []
+    var graceTaskId = UIBackgroundTaskIdentifier.invalid
+    var lifecycleObservers: [NSObjectProtocol] = []
 
     /// iOS throttles background sessions even with the app on screen, so chapters
     /// start on this default session while the app is up and on `session` otherwise.
@@ -187,52 +186,6 @@ final class ChapterDownloader: NSObject, URLSessionDownloadDelegate {
 
     // MARK: Engine plumbing (stateQueue)
 
-    private func observeEnvironment() {
-        pathMonitor.pathUpdateHandler = { [weak self] path in
-            let wifi = path.usesInterfaceType(.wifi) && !path.isExpensive && !path.isConstrained
-            self?.stateQueue.async { self?.send(.unmeteredWifi(wifi)) }
-        }
-        pathMonitor.start(queue: stateQueue)
-        let center = NotificationCenter.default
-        lifecycleObservers = [
-            center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil) { [weak self] _ in
-                self?.beginBackgroundGrace()
-            },
-            center.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: nil) { [weak self] _ in
-                self?.stateQueue.async {
-                    self?.endBackgroundGrace()
-                    self?.send(.appForeground(true))
-                }
-            },
-        ]
-    }
-
-    /// A brief app switch should not demote six fast transfers to the throttled
-    /// background session: keep them running until iOS says time is up.
-    private func beginBackgroundGrace() {
-        let id = UIApplication.shared.beginBackgroundTask(withName: "chapter-downloads") { [weak self] in
-            self?.stateQueue.async {
-                self?.journal.log("grace expired")
-                self?.send(.appForeground(false))
-                self?.endBackgroundGrace()
-            }
-        }
-        stateQueue.async {
-            self.journal.log("entered background, grace task started")
-            self.endBackgroundGrace()
-            self.graceTaskId = id
-            if self.engine.plan.isComplete {
-                self.endBackgroundGrace()
-            }
-        }
-    }
-
-    private func endBackgroundGrace() {
-        guard graceTaskId != .invalid else { return }
-        UIApplication.shared.endBackgroundTask(graceTaskId)
-        graceTaskId = .invalid
-    }
-
     /// Disk first, then whatever the background session still holds from a previous launch.
     private func bootstrap() {
         reconcileWithDisk()
@@ -251,7 +204,7 @@ final class ChapterDownloader: NSObject, URLSessionDownloadDelegate {
         }
     }
 
-    private func send(_ event: EngineEvent) {
+    func send(_ event: EngineEvent) {
         guard !isCancelled else { return }
         let commands = engine.handle(event)
         logEvent(event, commands: commands)
@@ -378,129 +331,6 @@ final class ChapterDownloader: NSObject, URLSessionDownloadDelegate {
         send(.reconcile(onDiskBytes: onDisk, liveFileIds: liveFileIds ?? []))
     }
 
-    // MARK: URLSession delegate
-
-    private func lane(of session: URLSession) -> TransferLane {
-        session.configuration.identifier != nil ? .background : .foreground
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        downloadTask: URLSessionDownloadTask,
-        didFinishDownloadingTo location: URL
-    ) {
-        guard let fileId = fileId(from: downloadTask.taskDescription) else { return }
-        let lane = lane(of: session)
-        journal.log("didFinishDownloadingTo file=\(fileId) lane=\(lane)")
-        guard let outcome = store(downloadTask, at: location, fileId: fileId) else {
-            journal.log("store returned nil file=\(fileId)")
-            return
-        }
-        stateQueue.async {
-            if self.tasks[fileId] === downloadTask {
-                self.tasks.removeValue(forKey: fileId)
-            }
-            self.send(.finished(fileId: fileId, lane: lane, outcome: outcome))
-        }
-    }
-
-    /// Moves the downloaded file into place and hashes it. Nil when the book was
-    /// cancelled, so nothing lands in a directory that is being deleted.
-    private func store(_ task: URLSessionDownloadTask, at location: URL, fileId: Int) -> TaskOutcome? {
-        let status = (task.response as? HTTPURLResponse)?.statusCode ?? -1
-        let editionId = editionId
-        guard (200 ... 299).contains(status) else {
-            Log.download.error(
-                "Chapter download failed: editionId=\(editionId, privacy: .public) fileId=\(fileId, privacy: .public) status=\(status, privacy: .public)"
-            )
-            return .rejected(status: status)
-        }
-        // fileById is written on stateQueue by a grant refresh; read it there too.
-        let (file, cancelled) = stateQueue.sync { (fileById[fileId], isCancelled) }
-        if cancelled {
-            return nil
-        }
-        guard let file else { return .transportFailed }
-
-        var destination = FileStore.chapterURL(editionId: editionId, fileId: fileId, ext: file.fileExtension)
-        let fileManager = FileManager.default
-        if fileManager.fileExists(atPath: destination.path) {
-            try? fileManager.removeItem(at: destination)
-        }
-        do {
-            try fileManager.moveItem(at: location, to: destination)
-        } catch {
-            return .moveFailed
-        }
-        FileStore.excludeFromBackup(&destination)
-        let bytes = FileStore.size(url: destination) ?? 0
-        return .stored(status: status, bytes: bytes, sha256: Self.sha256Hex(of: destination))
-    }
-
-    /// SHA-256 of a downloaded chapter, lowercase hex to match the server's digest.
-    /// Read in chunks: a chapter is tens of megabytes and this runs on the delegate
-    /// queue. Nil when unreadable; `DownloadPlan` then falls back to the byte count.
-    private static func sha256Hex(of url: URL) -> String? {
-        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
-        defer { try? handle.close() }
-        var hasher = SHA256()
-        while true {
-            guard let chunk = try? handle.read(upToCount: 1024 * 1024), !chunk.isEmpty else { break }
-            hasher.update(data: chunk)
-        }
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
-    }
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        guard let error else { return }
-        let nsError = error as NSError
-        guard nsError.code != NSURLErrorCancelled else { return }
-        guard let fileId = fileId(from: task.taskDescription) else { return }
-        let lane = lane(of: session)
-        let editionId = editionId
-        journal.log("didCompleteWithError file=\(fileId) lane=\(lane) code=\(nsError.code)")
-        Log.download.error(
-            """
-            Chapter download failed (transport): \
-            editionId=\(editionId, privacy: .public) fileId=\(fileId, privacy: .public) \
-            domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public)
-            """
-        )
-        stateQueue.async {
-            if self.tasks[fileId] === task {
-                self.tasks.removeValue(forKey: fileId)
-            }
-            self.send(.finished(fileId: fileId, lane: lane, outcome: .transportFailed))
-        }
-    }
-
-    func urlSession(
-        _ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData _: Int64,
-        totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64
-    ) {
-        guard let fileId = fileId(from: downloadTask.taskDescription) else { return }
-        let lane = lane(of: session)
-        stateQueue.async {
-            self.send(.progress(fileId: fileId, lane: lane, written: totalBytesWritten, expected: totalBytesExpectedToWrite))
-        }
-    }
-
-    func urlSession(_ invalidated: URLSession, didBecomeInvalidWithError _: Error?) {
-        // The foreground session invalidates alongside it; only the background
-        // identifier is waited on by `invalidatingSessions`.
-        guard invalidated.configuration.identifier != nil else { return }
-        let callback = stateQueue.sync { onInvalidated }
-        callback?()
-    }
-
-    func urlSessionDidFinishEvents(forBackgroundURLSession _: URLSession) {
-        stateQueue.async {
-            let completion = self.backgroundSessionCompletion
-            self.backgroundSessionCompletion = nil
-            DispatchQueue.main.async { completion?() }
-        }
-    }
-
     // MARK: Helpers
 
     /// The Settings "download over" choice, read when each chapter starts.
@@ -508,7 +338,7 @@ final class ChapterDownloader: NSObject, URLSessionDownloadDelegate {
         UserDefaults.standard.string(forKey: "download_over") != "wifi"
     }
 
-    private func fileId(from taskDescription: String?) -> Int? {
+    func fileId(from taskDescription: String?) -> Int? {
         guard let taskDescription else { return nil }
         let parts = taskDescription.split(separator: "/", maxSplits: 1).map(String.init)
         guard parts.count == 2, Int(parts[0]) == editionId, let fileId = Int(parts[1]) else { return nil }
