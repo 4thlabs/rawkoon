@@ -1,22 +1,21 @@
-import AVKit
 import Foundation
 import RawkoonKit
 import SwiftUI
 
 struct PlayerView: View {
-    @Environment(AppModel.self) private var model
+    @Environment(AppModel.self) var model
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let summary: LibrarySummary
     let manifest: BookManifest
 
-    @State private var sliderPosition: Double = 0
-    @State private var isDraggingSlider = false
-    @State private var draggingChapterSnapshot: ManifestChapter?
+    @State var sliderPosition: Double = 0
+    @State var isDraggingSlider = false
+    @State var draggingChapterSnapshot: ManifestChapter?
     @State private var showingChapters = false
 
-    private let rates: [Double] = [0.8, 1.0, 1.25, 1.5, 2.0]
+    let rates: [Double] = [0.8, 1.0, 1.25, 1.5, 2.0]
 
     var body: some View {
         ZStack {
@@ -201,211 +200,6 @@ struct PlayerView: View {
             .contentShape(Circle())
     }
 
-    // MARK: Scrubber
-
-    private var scrubber: some View {
-        VStack(spacing: 8) {
-            if let chapter = scrubberChapterScope {
-                Slider(
-                    value: $sliderPosition,
-                    in: chapter.startSecs ... chapter.endSecs,
-                    onEditingChanged: scrubChanged
-                )
-                .tint(Theme.apricot)
-                .accessibilityLabel("Position in chapter")
-                .accessibilityValue(formatTime(max(sliderPosition - chapter.startSecs, 0)))
-
-                HStack {
-                    Text(formatTime(max(sliderPosition - chapter.startSecs, 0)))
-                    Spacer()
-                    Text("−\(formatTime(max(chapter.endSecs - sliderPosition, 0)))")
-                }
-                .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(Theme.muted)
-                .contentTransition(.numericText())
-                .rawkoonMotion(RawkoonMotion.gentle, value: Int(sliderPosition))
-                .accessibilityHidden(true)
-
-                Text("\(formatTime(sliderPosition)) of \(formatTime(model.player.duration))")
-                    .font(.system(.caption2, design: .monospaced))
-                    .foregroundStyle(Theme.faint)
-                    .contentTransition(.numericText())
-                    .rawkoonMotion(RawkoonMotion.gentle, value: Int(sliderPosition))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityLabel("Book position")
-                    .accessibilityValue("\(formatTime(sliderPosition)) of \(formatTime(model.player.duration))")
-            } else {
-                Slider(
-                    value: $sliderPosition,
-                    in: 0 ... max(model.player.duration, 0.1),
-                    onEditingChanged: scrubChanged
-                )
-                .tint(Theme.apricot)
-                .accessibilityLabel("Position in book")
-                .accessibilityValue(formatTime(sliderPosition))
-
-                HStack {
-                    Text(formatTime(sliderPosition))
-                    Spacer()
-                    Text("−\(formatTime(max(model.player.duration - sliderPosition, 0)))")
-                }
-                .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(Theme.muted)
-                .contentTransition(.numericText())
-                .rawkoonMotion(RawkoonMotion.gentle, value: Int(sliderPosition))
-                .accessibilityHidden(true)
-            }
-        }
-        .padding(.top, 8)
-    }
-
-    /// SwiftUI can call `onEditingChanged(false)` before the last thumb
-    /// write lands on `sliderPosition`. One turn of the run loop lets that
-    /// write commit so we seek to where the finger actually was, not where
-    /// playback still is. Keep `isDraggingSlider` true across that hop so a
-    /// tick cannot overwrite the value first.
-    private func scrubChanged(_ editing: Bool) {
-        if editing {
-            isDraggingSlider = true
-            if draggingChapterSnapshot == nil {
-                draggingChapterSnapshot = model.player.currentChapter
-            }
-            return
-        }
-        DispatchQueue.main.async {
-            model.player.seek(to: sliderPosition)
-            isDraggingSlider = false
-            draggingChapterSnapshot = nil
-        }
-    }
-
-    // MARK: Transport
-
-    private var transport: some View {
-        HStack(spacing: 24) {
-            control("backward.end.fill", label: "Previous chapter", action: model.player.prevChapter)
-            SkipControl(systemImage: "gobackward.30", label: "Skip back 30 seconds", clockwise: false) {
-                model.player.skipBackward(30)
-            }
-
-            Button {
-                model.player.isPlaying ? model.player.pause() : model.player.play()
-            } label: {
-                Image(systemName: model.player.isPlaying ? "pause.fill" : "play.fill")
-                    .contentTransition(.symbolEffect(.replace))
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
-                    .frame(width: 66, height: 66)
-                    .glassEffect(.regular.tint(Theme.apricot).interactive(), in: .circle)
-            }
-            .buttonStyle(.plain)
-            .shadow(color: Theme.apricot.opacity(0.35), radius: 12, y: 6)
-            .accessibilityLabel(Text(LocalizedStringKey(model.player.isPlaying ? "Pause" : "Play")))
-
-            SkipControl(systemImage: "goforward.30", label: "Skip forward 30 seconds", clockwise: true) {
-                model.player.skipForward(30)
-            }
-            control("forward.end.fill", label: "Next chapter", action: model.player.nextChapter)
-        }
-        .padding(.top, 8)
-    }
-
-    private func control(_ name: String, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: name)
-                .font(.system(size: 22))
-                .foregroundStyle(Theme.textStrong)
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-    }
-
-    // MARK: Speed
-
-    private var rateMenu: some View {
-        Menu {
-            ForEach(rates, id: \.self) { rateValue in
-                Button("\(rateLabel(rateValue))×") { model.player.setRate(Float(rateValue)) }
-            }
-        } label: {
-            chip(
-                title: Text(verbatim: "\(rateLabel(Double(model.player.rate)))×"),
-                systemImage: "speedometer",
-                emphasized: false
-            )
-            .rawkoonNumeric(Double(model.player.rate))
-        }
-        .accessibilityLabel("Playback speed")
-        .accessibilityValue("\(rateLabel(Double(model.player.rate)))×")
-    }
-
-    private var sleepMenu: some View {
-        Menu {
-            Button("Off") { model.player.setSleep(.off) }
-            Button("End of chapter") { model.player.setSleep(.endOfChapter) }
-            ForEach([10, 15, 30, 45, 60], id: \.self) { m in
-                Button("\(m) min") { model.player.setSleep(.minutes(m)) }
-            }
-        } label: {
-            // One label for every mode, so a mode change and each countdown second roll in place.
-            chip(title: sleepText, systemImage: "moon.zzz.fill", emphasized: sleepActive)
-                .rawkoonNumeric(PlayerMotion.sleepRollValue(
-                    isOff: model.player.sleepMode == .off, remaining: model.player.sleepRemainingSecs
-                ))
-        }
-        .accessibilityLabel("Sleep timer")
-        .accessibilityValue(sleepText)
-    }
-
-    /// AirPlay, in the player rather than only in Control Center — moving a
-    /// book to a HomePod or the car should not mean leaving the app.
-    private var routeButton: some View {
-        RoutePicker()
-            .frame(width: 44, height: 44)
-            .glassEffect(.regular.interactive(), in: .capsule)
-    }
-
-    private func chip(title: Text, systemImage: String, emphasized: Bool) -> some View {
-        chipLabel(
-            Label {
-                title
-            } icon: {
-                Image(systemName: systemImage)
-            },
-            emphasized: emphasized
-        )
-    }
-
-    private func chipLabel(_ label: some View, emphasized: Bool) -> some View {
-        label
-            .font(.system(.subheadline, design: .monospaced).weight(.medium))
-            .foregroundStyle(emphasized ? Theme.apricot : Theme.textStrong)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .glassEffect(.regular.tint(emphasized ? Theme.apricot.opacity(0.25) : nil).interactive(), in: .capsule)
-    }
-
-    private var sleepActive: Bool {
-        model.player.sleepMode != .off
-    }
-
-    /// One `Text` for every mode (no view branches), so it localizes with the in-app language and still rolls in place.
-    private var sleepText: Text {
-        switch model.player.sleepMode {
-        case .off:
-            return Text("Sleep")
-        case .endOfChapter:
-            return Text("Chapter")
-        case .minutes:
-            if let remaining = model.player.sleepRemainingSecs {
-                return Text(verbatim: Formatters.durationTimestampRounded(remaining))
-            }
-            return Text("Sleep")
-        }
-    }
-
     // MARK: Derived
 
     private var hasChapter: Bool {
@@ -421,91 +215,4 @@ struct PlayerView: View {
         }
         return chapter.title
     }
-
-    /// The chapter the scrubber is scoped to, or nil to fall back to a
-    /// whole-book slider.
-    ///
-    /// A zero-length chapter is rejected: `Slider(in:)` divides by the span, so a
-    /// degenerate range produces NaN rather than a disabled control.
-    private var scrubberChapterScope: ManifestChapter? {
-        let chapter = isDraggingSlider ? draggingChapterSnapshot : model.player.currentChapter
-        guard let chapter, chapter.endSecs > chapter.startSecs else { return nil }
-        return chapter
-    }
-
-    private func rateLabel(_ value: Double) -> String {
-        let rounded = (value * 100).rounded() / 100
-        if abs(rounded.rounded() - rounded) < 0.001 {
-            return String(format: "%.0f", rounded)
-        }
-        if abs((rounded * 10).rounded() - (rounded * 10)) < 0.001 {
-            return String(format: "%.1f", rounded)
-        }
-        return String(format: "%.2f", rounded)
-    }
-
-    private func formatTime(_ seconds: Double) -> String {
-        Formatters.durationTimestampRounded(seconds)
-    }
-}
-
-/// The player's motion rules, pure so they can be tested.
-nonisolated enum PlayerMotion {
-    /// Far enough to read as "resting", near enough that the cover never looks like it is closing.
-    static let pausedArtworkScale: CGFloat = 0.9
-
-    static func artworkScale(isPlaying: Bool, reduceMotion: Bool) -> CGFloat {
-        isPlaying || reduceMotion ? 1 : pausedArtworkScale
-    }
-
-    /// What the sleep chip rolls on: a mode change, then each displayed second of the countdown.
-    static func sleepRollValue(isOff: Bool, remaining: Double?) -> Double {
-        if isOff {
-            return 0
-        }
-        guard let remaining, remaining.isFinite else { return -1 }
-        return max(1, remaining.rounded())
-    }
-}
-
-/// A 30-second skip whose arrow spins the way it skips; the skip runs first, the spin alongside.
-private struct SkipControl: View {
-    let systemImage: String
-    let label: LocalizedStringKey
-    let clockwise: Bool
-    let action: () -> Void
-    @State private var spins = 0
-
-    var body: some View {
-        Button {
-            action()
-            spins += 1
-        } label: {
-            Image(systemName: systemImage)
-                .font(.system(size: 22))
-                .foregroundStyle(Theme.textStrong)
-                .rawkoonSymbolSpin(spins, clockwise: clockwise)
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-    }
-}
-
-/// `AVRoutePickerView` has no SwiftUI equivalent.
-private struct RoutePicker: UIViewRepresentable {
-    func makeUIView(context _: Context) -> AVRoutePickerView {
-        let view = AVRoutePickerView()
-        // AVRoutePickerView is already an accessible button and names itself,
-        // so a SwiftUI label on the wrapper would have VoiceOver say it twice.
-        // Audio only, so the picker should not rank AirPlay displays first.
-        view.prioritizesVideoDevices = false
-        view.tintColor = UIColor(Theme.textStrong)
-        view.activeTintColor = UIColor(Theme.apricot)
-        view.backgroundColor = .clear
-        return view
-    }
-
-    func updateUIView(_: AVRoutePickerView, context _: Context) {}
 }
