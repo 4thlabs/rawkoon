@@ -1,51 +1,10 @@
 import RawkoonKit
 import SwiftUI
 
-/// Filter state for `ExploreView` / `ExploreFilterSheet`. Provider and genre
-/// hold the full TMDB object (not just an id) so the active-filter chip row
-/// can show a name without a second lookup.
-struct ExploreFilters: Equatable {
-    enum Kind: String, CaseIterable, Identifiable, Sendable {
-        case movie
-        case tv
-
-        var id: String {
-            rawValue
-        }
-
-        var apiValue: String {
-            rawValue
-        }
-
-        var label: LocalizedStringKey {
-            switch self {
-            case .movie: "Movies"
-            case .tv: "TV"
-            }
-        }
-    }
-
-    var kind: Kind = .movie
-    var provider: StreamingProvider?
-    var genre: Genre?
-    var sort: DiscoverSort = .popularityDesc
-    var originalLanguageOnly = false
-
-    init(kind: Kind = .movie) {
-        self.kind = kind
-    }
-
-    /// Whether every filter but `kind` is at its default — drives the sheet's
-    /// Reset button and whether the chip row has anything to show.
-    var isDefault: Bool {
-        provider == nil && genre == nil && sort == .popularityDesc && !originalLanguageOnly
-    }
-}
-
 /// A filterable, paginated TMDB discover grid — the "browse everything"
 /// counterpart to the swipe deck — with the movies, shows and books search on top.
 struct ExploreView: View {
-    @Environment(AppModel.self) private var model
+    @Environment(AppModel.self) var model
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var hSizeClass
 
@@ -53,22 +12,22 @@ struct ExploreView: View {
     /// Done button, since there's nothing to dismiss.
     var embedded = false
 
-    @State private var filters = ExploreFilters()
-    @State private var query = ""
-    @State private var items: [TmdbSearchItem] = []
-    @State private var page = 1
-    @State private var totalPages = 1
-    @State private var totalResults = 0
+    @State var filters = ExploreFilters()
+    @State var query = ""
+    @State var items: [TmdbSearchItem] = []
+    @State var page = 1
+    @State var totalPages = 1
+    @State var totalResults = 0
 
-    @State private var loading = false
-    @State private var loadingMore = false
-    @State private var error: String?
-    @State private var loadMoreError: String?
-    @State private var showFilters = false
+    @State var loading = false
+    @State var loadingMore = false
+    @State var error: String?
+    @State var loadMoreError: String?
+    @State var showFilters = false
     /// Bumped every time filters change so a `loadFirstPage`/`loadMore` still
     /// in flight from the previous filters discards its response instead of
     /// appending stale-filter pages onto the new grid.
-    @State private var loadGeneration = 0
+    @State var loadGeneration = 0
     /// Ties each active chip to its glass shape, so adding or clearing one morphs inside the container.
     @Namespace private var chipNamespace
 
@@ -409,112 +368,5 @@ struct ExploreView: View {
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-
-    // MARK: Data
-
-    private func fetchPage(client: APIClient, page: Int) async throws -> DiscoverMediasResponse {
-        try await client.discoverGrid(
-            type: filters.kind.apiValue,
-            providerId: filters.provider?.id,
-            genreId: filters.genre?.id,
-            sortBy: filters.sort.rawValue,
-            page: page,
-            originalLanguage: originalLanguageFilter
-        )
-    }
-
-    /// The saved copy of the page `fetchPage` would request with the same filters.
-    private func cachedPage(client: APIClient, page: Int) -> DiscoverMediasResponse? {
-        client.cached(Endpoints.discoverGrid(
-            type: filters.kind.apiValue,
-            providerId: filters.provider?.id,
-            genreId: filters.genre?.id,
-            sortBy: filters.sort.rawValue,
-            page: page,
-            originalLanguage: originalLanguageFilter
-        ))?.value
-    }
-
-    private var originalLanguageFilter: String? {
-        filters.originalLanguageOnly ? Locale.current.language.languageCode?.identifier : nil
-    }
-
-    private func loadFirstPage() async {
-        guard let client = model.api() else {
-            error = String(localized: "Not signed in.")
-            loading = false
-            return
-        }
-        let generation = loadGeneration
-        if items.isEmpty, let cached = cachedPage(client: client, page: 1) {
-            items = cached.items
-            page = cached.page
-            totalPages = cached.totalPages
-            totalResults = cached.totalResults
-        }
-        loading = true
-        error = nil
-        defer {
-            if generation == loadGeneration {
-                loading = false
-            }
-        }
-        do {
-            let response = try await fetchPage(client: client, page: 1)
-            guard generation == loadGeneration else { return }
-            items = response.items
-            page = response.page
-            totalPages = response.totalPages
-            totalResults = response.totalResults
-        } catch let apiError as APIError {
-            guard generation == loadGeneration else { return }
-            error = message(for: apiError)
-        } catch {
-            guard generation == loadGeneration else { return }
-            self.error = String(localized: "Can't reach the server. Try again in a moment.")
-        }
-    }
-
-    /// `force` lets the "Tap to retry" button bypass the `loadMoreError`
-    /// guard that otherwise stops the automatic `onAppear` trigger from
-    /// hot-looping after a failed page fetch.
-    private func loadMore(force: Bool = false) async {
-        guard !loadingMore, !loading, page < totalPages, force || loadMoreError == nil else { return }
-        guard let client = model.api() else { return }
-        let generation = loadGeneration
-        loadingMore = true
-        loadMoreError = nil
-        defer {
-            if generation == loadGeneration {
-                loadingMore = false
-            }
-        }
-        do {
-            let response = try await fetchPage(client: client, page: page + 1)
-            guard generation == loadGeneration else { return }
-            items.append(contentsOf: response.items)
-            page = response.page
-            totalPages = response.totalPages
-            totalResults = response.totalResults
-        } catch let apiError as APIError {
-            guard generation == loadGeneration else { return }
-            // Offline, the next page may still be saved from an earlier scroll.
-            if apiError.isNetworkFailure, let cached = cachedPage(client: client, page: page + 1) {
-                items.append(contentsOf: cached.items)
-                page = cached.page
-                totalPages = cached.totalPages
-                totalResults = cached.totalResults
-            } else {
-                loadMoreError = message(for: apiError)
-            }
-        } catch {
-            guard generation == loadGeneration else { return }
-            loadMoreError = String(localized: "Can't reach the server.")
-        }
-    }
-
-    private func message(for error: APIError) -> String {
-        error.userMessage(unauthorized: String(localized: "Sign in required."))
     }
 }
