@@ -1,6 +1,6 @@
 import Foundation
 
-/// The detail-screen GETs, spelled exactly as `APIClient+Media` / `+System` send
+/// The detail-screen GETs, spelled exactly as `APIClient+Library` / `+System` send
 /// them so the cached read hits the same key as the live fetch.
 nonisolated extension Endpoints {
     static func similar(tmdbId: Int, mediaType: String) -> Endpoint<SimilarTitlesResponse> {
