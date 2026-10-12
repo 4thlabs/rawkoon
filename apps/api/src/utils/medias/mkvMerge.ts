@@ -1,8 +1,11 @@
-import { randomUUID } from "node:crypto";
 import { mkdir, rename, unlink } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { dirname } from "node:path";
 import { scanMediaInfo } from "@rawkoon/api/utils/medias/mediainfoScanner";
 import type { MediaFileData } from "@rawkoon/api/utils/medias/mediainfoParser";
+import {
+  partialPathFor,
+  removeStalePartials,
+} from "@rawkoon/api/utils/medias/partialFile";
 
 const MERGE_TIMEOUT_MS = 600_000;
 /** Appending is lossless, so the result should equal the sum of the parts. */
@@ -72,10 +75,8 @@ export async function mkvAppend(
 
   // Merged into a hidden file and renamed into place only once verified, so a
   // failed, rejected or interrupted merge never leaves a file at outPath.
-  const partial = join(
-    dirname(outPath),
-    `.${basename(outPath)}.${randomUUID()}.rawkoon-partial`,
-  );
+  await removeStalePartials(outPath);
+  const partial = partialPathFor(outPath);
   const merged = await mergeInto(bin, parts, partial, expected);
   if (!merged) {
     await unlink(partial).catch(() => {});

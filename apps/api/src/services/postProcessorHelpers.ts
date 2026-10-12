@@ -1,5 +1,4 @@
 import { parseReleaseStructure } from "@rawkoon/shared/utils/releaseStructure";
-import { randomUUID } from "node:crypto";
 import {
   copyFile,
   link,
@@ -14,6 +13,10 @@ import { basename, dirname, isAbsolute, join } from "node:path";
 import { prisma } from "@rawkoon/api/db";
 import { parseReleaseTitle } from "@rawkoon/api/utils/medias/filenameParser";
 import { resolveDownloadedStatus } from "@rawkoon/api/utils/medias/libraryHelpers";
+import {
+  partialPathFor,
+  removeStalePartials,
+} from "@rawkoon/api/utils/medias/partialFile";
 
 export function qualityStringsFromParsed(
   qualityParsed: unknown,
@@ -86,11 +89,9 @@ function inodeMatch(
  * path that a retry would take for a finished import.
  */
 export async function copyFileAtomic(src: string, dst: string): Promise<void> {
+  await removeStalePartials(dst);
   // Unique per attempt, so a failed attempt never removes another's copy.
-  const partial = join(
-    dirname(dst),
-    `.${basename(dst)}.${randomUUID()}.rawkoon-partial`,
-  );
+  const partial = partialPathFor(dst);
   try {
     await copyFile(src, partial);
     await rename(partial, dst);
