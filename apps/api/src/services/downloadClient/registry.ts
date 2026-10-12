@@ -18,6 +18,16 @@ export function buildAdapter(
         username: config.username,
         password: config.password,
       });
+    case "rdtclient":
+      // rdt-client emulates the qBittorrent Web API.
+      return {
+        ...createQbittorrentAdapter({
+          website_url: config.website_url,
+          username: config.username,
+          password: config.password,
+        }),
+        type: "rdtclient",
+      };
     case "transmission":
       return createTransmissionAdapter(config);
     case "deluge":

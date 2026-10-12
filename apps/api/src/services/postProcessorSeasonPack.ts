@@ -22,7 +22,10 @@ import {
   renderEpisodeTemplate,
   sanitizePathTemplateOutput,
 } from "@rawkoon/api/utils/medias/fileTemplate";
-import type { DownloadClientAdapter } from "@rawkoon/api/services/downloadClient/types";
+import {
+  afterImportAction,
+  type DownloadClientAdapter,
+} from "@rawkoon/api/services/downloadClient/types";
 import { resolveDownloadedStatus } from "@rawkoon/api/utils/medias/libraryHelpers";
 
 import {
@@ -411,13 +414,16 @@ export async function postProcessSeasonPack(
     `[postProcess/pack] Processed ${processed} episodes for "${dh.media.title}" (${errors.length} errors)`,
   );
 
-  const ratio = tor.ratio;
-  const min = settings.minSeedRatio;
-  const shouldRemove = min <= 0 || (ratio != null && ratio >= min);
-  // Once the seed sweep is on it owns removal, with per-indexer targets.
-  if (shouldRemove && !settings.seedSweepEnabled) {
+  const after = afterImportAction({
+    type: adapter.type,
+    ratio: tor.ratio,
+    minSeedRatio: settings.minSeedRatio,
+    seedSweepEnabled: settings.seedSweepEnabled,
+  });
+  if (after !== "keep") {
     await adapter
-      .remove(hash, false)
+      // Episodes that failed to import still need their files.
+      .remove(hash, after === "removeWithData" && errors.length === 0)
       .catch((error) =>
         console.warn(
           `[postProcess/pack] Could not remove torrent ${hash}:`,

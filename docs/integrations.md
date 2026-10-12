@@ -10,7 +10,7 @@ service.
 | --- | --- |
 | TMDB | Discovery, search, and media metadata. A TMDB API key is required for discovery. |
 | Google Books | Book and audiobook metadata. Required for the book library; see [Books and audiobooks](/library/books). |
-| qBittorrent, Transmission, or Deluge | The active download client. Rawkoon polls it for progress and completion. |
+| qBittorrent, Transmission, Deluge, or rdt-client | The active download client. Rawkoon polls it for progress and completion. |
 | Prowlarr or Jackett | Indexer search. Choose one active indexer manager for the library grab pipeline. |
 | Jellyfin or Plex | Latest additions, watch activity, and supported notifications. |
 | AI provider (optional) | Any OpenAI-compatible model, local or hosted, that chooses between releases a profile accepts. Configured in **Settings → AI**; see [AI release picks](/library/ai-release-picks). |
@@ -22,6 +22,42 @@ the same way the other integrations are.
 Choose one active download client. Rawkoon labels its torrents, polls the
 client automatically, and detects stalled or expired downloads without
 requiring webhook setup.
+
+### rdt-client (debrid)
+
+[rdt-client](https://github.com/rogerfar/rdt-client) sends torrents to a
+debrid service (Real-Debrid, AllDebrid, Premiumize, TorBox), then downloads the
+finished files to local disk. It speaks the qBittorrent Web API, so Rawkoon
+talks to it through the qBittorrent adapter.
+
+1. In **Settings → Integrations**, pick **rdt-client** as the download client.
+   Use rdt-client's own address (its web UI listens on port 6500 by default)
+   and the username and password you log into rdt-client with.
+2. Mount rdt-client's download folder at the **same path** in both containers.
+   Rawkoon imports from the path rdt-client reports and has no remote path
+   mapping.
+3. Use a downloader that writes real files to that folder. Symlink mode, which
+   points at an rclone mount, is not supported.
+4. In rdt-client's settings, keep **Post Download Action** on removing the
+   torrent from the debrid provider and the client, and set **Finished Action
+   Delay** to a day or so (1440 minutes).
+
+Step 4 matters in both directions. With the default delay of 0, rdt-client
+removes a torrent as soon as its local copy finishes, which can be before
+Rawkoon has seen it complete; the download then stays pending in Rawkoon and
+is never imported. With the action set to **None**, rdt-client ignores
+Rawkoon's removal request, so torrents and their files pile up.
+
+A debrid client never seeds, so seed ratio targets and the seed sweep don't
+apply to it. Right after a successful import Rawkoon asks rdt-client to remove
+the torrent along with its local copy; the library keeps its own hardlink or
+moved file. When some episodes of a season pack fail to import, the local
+copy is kept for a manual fix.
+
+Rawkoon only treats a download as complete once rdt-client reports it
+finished, not when the debrid service reaches 100%, because the local copy can
+still be in progress at that point. The qBittorrent completion hook is not
+available, since rdt-client can't run an external program.
 
 ## Identity and notifications
 
