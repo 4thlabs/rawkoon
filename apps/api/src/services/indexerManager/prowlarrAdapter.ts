@@ -16,6 +16,7 @@ import {
   infoHashFromMagnet,
   indexerNameFromRaw,
   releaseTitleFromRaw,
+  sizeBytesFromRaw,
   toBoolean,
 } from "../../utils/medias/prowlarrSearchUtils";
 import { randomUUID } from "crypto";
@@ -229,10 +230,23 @@ export class ProwlarrAdapter implements IndexerManagerAdapter {
     }
     const title = releaseTitleFromRaw(payload) ?? undefined;
     const indexer = indexerNameFromRaw(payload);
+    const sizeBytes = sizeBytesFromRaw(payload) ?? undefined;
     if (target.isMagnet) {
-      return { success: true, magnetUrl: target.url, title, indexer };
+      return {
+        success: true,
+        magnetUrl: target.url,
+        title,
+        indexer,
+        sizeBytes,
+      };
     }
-    return { success: true, downloadUrl: target.url, title, indexer };
+    return {
+      success: true,
+      downloadUrl: target.url,
+      title,
+      indexer,
+      sizeBytes,
+    };
   }
 
   storeReleaseToken(release: NormalizedRelease): string | null {

@@ -1,8 +1,10 @@
 import { statfs } from "node:fs/promises";
 import { prisma } from "@rawkoon/api/db";
+import { deriveDownloadsScanRoots } from "@rawkoon/api/services/downloadsScanner";
 
 export const SPACE_REFUSAL_PREFIX = "Not enough free space";
 
+// GiB, though the setting and UI call it GB.
 const GB = 1024 ** 3;
 
 /**
@@ -24,13 +26,15 @@ export async function checkFreeSpaceForGrab(opts: {
     const minFreeGb = settings?.minFreeSpaceGb ?? 0;
     if (!settings || minFreeGb <= 0) return null;
 
-    // Bytes land in the downloads dir first; the library path is the fallback
-    // for setups that download straight into the library volume.
-    const libraryPath =
-      opts.mediaType === "movie"
-        ? settings.moviesLibraryPath
-        : settings.showsLibraryPath;
-    const path = settings.downloadsPath?.trim() || libraryPath?.trim();
+    // Same roots the downloads scanner uses: the configured downloads path, else
+    // the parent of this media type's library path.
+    const isMovie = opts.mediaType === "movie";
+    const roots = deriveDownloadsScanRoots({
+      downloadsPath: settings.downloadsPath,
+      moviesLibraryPath: isMovie ? settings.moviesLibraryPath : null,
+      showsLibraryPath: isMovie ? null : settings.showsLibraryPath,
+    });
+    const path = roots[0];
     if (!path) return null;
 
     const fs = await statfs(path);

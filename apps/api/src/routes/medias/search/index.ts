@@ -144,6 +144,7 @@ export async function downloadInteractiveSearchRelease(
       downloadUrl,
       releaseTitle,
       indexer: resolved.indexer,
+      sizeBytes: resolved.sizeBytes,
       isUpgrade: body.is_upgrade ?? false,
     });
 
