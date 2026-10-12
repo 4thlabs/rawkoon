@@ -1,4 +1,5 @@
-import { copyFile, link, mkdir, rename, stat, unlink } from "node:fs/promises";
+import { link, mkdir, rename, stat, unlink } from "node:fs/promises";
+import { copyFileAtomic } from "@rawkoon/api/services/postProcessorHelpers";
 import { basename, dirname, extname, join, resolve } from "node:path";
 
 import { prisma } from "@rawkoon/api/db";
@@ -102,7 +103,7 @@ async function placeSourceToDestination(
     } catch (e) {
       const code = (e as NodeJS.ErrnoException).code;
       if (code === "EXDEV") {
-        await copyFile(srcMapped, dstMapped);
+        await copyFileAtomic(srcMapped, dstMapped);
         await unlink(srcMapped);
         return "copied";
       }
@@ -117,7 +118,7 @@ async function placeSourceToDestination(
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code;
     if (code === "EXDEV") {
-      await copyFile(srcMapped, dstMapped);
+      await copyFileAtomic(srcMapped, dstMapped);
       return "copied";
     }
     throw e;

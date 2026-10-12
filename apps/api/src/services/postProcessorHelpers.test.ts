@@ -9,7 +9,11 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseSeasonEpisode, replaceFile } from "./postProcessorHelpers";
+import {
+  copyFileAtomic,
+  parseSeasonEpisode,
+  replaceFile,
+} from "./postProcessorHelpers";
 
 describe("parseSeasonEpisode", () => {
   it.each([
@@ -104,6 +108,34 @@ describe("replaceFile", () => {
     try {
       await replaceFile(dst, dst, "move");
       expect(await readFile(dst, "utf8")).toBe("old release");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("copyFileAtomic", () => {
+  it("copies into place without leaving a temp file", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "rawkoon-copy-"));
+    try {
+      const src = join(dir, "src.mkv");
+      const dst = join(dir, "dst.mkv");
+      await writeFile(src, "release");
+      await copyFileAtomic(src, dst);
+      expect(await readFile(dst, "utf8")).toBe("release");
+      expect((await readdir(dir)).sort()).toEqual(["dst.mkv", "src.mkv"]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("leaves neither a partial nor a final file when the copy fails", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "rawkoon-copy-"));
+    try {
+      await expect(
+        copyFileAtomic(join(dir, "missing.mkv"), join(dir, "dst.mkv")),
+      ).rejects.toThrow();
+      expect(await readdir(dir)).toEqual([]);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

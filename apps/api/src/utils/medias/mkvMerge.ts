@@ -1,5 +1,6 @@
-import { mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
+import { randomUUID } from "node:crypto";
+import { mkdir, rename, unlink } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import { scanMediaInfo } from "@rawkoon/api/utils/medias/mediainfoScanner";
 import type { MediaFileData } from "@rawkoon/api/utils/medias/mediainfoParser";
 
@@ -69,6 +70,33 @@ export async function mkvAppend(
     return false;
   }
 
+  // Merged into a hidden file and renamed into place only once verified, so a
+  // failed, rejected or interrupted merge never leaves a file at outPath.
+  const partial = join(
+    dirname(outPath),
+    `.${basename(outPath)}.${randomUUID()}.rawkoon-partial`,
+  );
+  const merged = await mergeInto(bin, parts, partial, expected);
+  if (!merged) {
+    await unlink(partial).catch(() => {});
+    return false;
+  }
+  try {
+    await rename(partial, outPath);
+  } catch (e) {
+    console.warn(`[mkvMerge] Could not move the merge into "${outPath}":`, e);
+    await unlink(partial).catch(() => {});
+    return false;
+  }
+  return true;
+}
+
+async function mergeInto(
+  bin: string,
+  parts: string[],
+  outPath: string,
+  expected: number[],
+): Promise<boolean> {
   // mkvmerge's append syntax: mkvmerge -o out first + second [+ third...]
   const args = [bin, "-o", outPath, parts[0] as string];
   for (const part of parts.slice(1)) args.push("+", part);
