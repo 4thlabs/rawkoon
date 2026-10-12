@@ -10449,10 +10449,7 @@ exports[`release-name corpus parseSeasonEpisode (season-pack file mapping) 1`] =
     "episode": 4,
     "season": 2,
   },
-  "Quiet.Harbor.S02E05.1080p.WEB.h264-GRP.Sample": {
-    "episode": 5,
-    "season": 2,
-  },
+  "Quiet.Harbor.S02E05.1080p.WEB.h264-GRP.Sample": null,
   "Quiet.Harbor.S02E05.1080p.WEB.h264-GRP.mkv": {
     "episode": 5,
     "season": 2,
@@ -10547,8 +10544,14 @@ exports[`release-name corpus parseSeasonEpisode (season-pack file mapping) 1`] =
   "The.Long.Voyage.2021.1080p.BluRay.x264-GRP.mkv": null,
   "The.Long.Voyage.2021.1080p.WEB-DL.DDP5.1.H.264-GRP.mkv": null,
   "The.Long.Voyage.2021.2160p.UHD.BluRay.x265.HDR10+.mkv": null,
-  "[SubGroup] Starfall Saga - 112 [1080p][HEVC]": null,
-  "[SubGroup] Starfall Saga - 12 (1080p) [ABCD1234].mkv": null,
+  "[SubGroup] Starfall Saga - 112 [1080p][HEVC]": {
+    "episode": 112,
+    "season": null,
+  },
+  "[SubGroup] Starfall Saga - 12 (1080p) [ABCD1234].mkv": {
+    "episode": 12,
+    "season": null,
+  },
   "[SubGroup] Starfall Saga - S01E05 [1080p]": {
     "episode": 5,
     "season": 1,
@@ -10580,7 +10583,9 @@ exports[`release-name corpus mismatches against truth 1`] = `
   "downloadsYear": {},
   "inferSeason": {},
   "multiEpisode": {},
-  "packFileMapping": {},
+  "packFileMapping": {
+    "Quiet.Harbor.S02E05.1080p.WEB.h264-GRP.Sample": "null",
+  },
   "rssEpisode": {},
   "rssTitle": {
     "1x01 - Pilot.mkv": "undefined",

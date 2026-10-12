@@ -5,6 +5,7 @@ import type {
 } from "@rawkoon/api/services/downloadClient/types";
 import {
   abandonPendingDownloads,
+  dropTorrentsWithFailedImport,
   planSeedReleases,
   previewSeedRelease,
   releaseTorrentNow,
@@ -182,6 +183,18 @@ describe("runSeedSweep", () => {
     expect(removed).toEqual([H1]);
   });
 
+  it("never releases a torrent whose import failed", async () => {
+    // The row with a postProcessError only comes back when importedOnly is off.
+    deps.loadRows = async (_hash, importedOnly) =>
+      importedOnly ? [] : [{ id: 1, torrentHash: H1, indexer: "Harbor" }];
+    await runSeedSweep(deps);
+    await runSeedSweep(deps, { hash: H1 });
+    expect(removed).toEqual([]);
+    expect(await releaseTorrentNow(H1, deps)).toMatchObject({
+      status: "released",
+    });
+  });
+
   it("does nothing while disabled", async () => {
     deps.isEnabled = async () => false;
     expect(await runSeedSweep(deps)).toEqual([]);
@@ -353,5 +366,21 @@ describe("previewSeedRelease", () => {
     expect(
       previewSeedRelease(rows, torrents, { ...baseCtx, moveMode: true }),
     ).toEqual({ count: 1, bytes: GB });
+  });
+});
+
+describe("dropTorrentsWithFailedImport", () => {
+  it("holds back every row of a torrent when one of its imports failed", () => {
+    const rows = [
+      { id: 1, torrentHash: H1, indexer: null, postProcessError: null },
+      {
+        id: 2,
+        torrentHash: H1.toUpperCase(),
+        indexer: null,
+        postProcessError: "no files",
+      },
+      { id: 3, torrentHash: H2, indexer: null, postProcessError: null },
+    ];
+    expect(dropTorrentsWithFailedImport(rows).map((r) => r.id)).toEqual([3]);
   });
 });

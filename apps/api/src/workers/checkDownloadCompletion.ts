@@ -62,22 +62,28 @@ export function classifyPendingAgainstTorrent(
   settings: ReconcileSettings,
 ): PendingOutcome {
   // Completion first: a torrent that finished while Rawkoon was down is imported, not condemned.
-  if (torrent.state === "completed" || torrent.progress >= 1) {
+  if (
+    torrent.state === "completed" ||
+    (torrent.state === "paused" && torrent.progress >= 1)
+  ) {
     return { outcome: "complete" };
-  }
-  if (nowMs - track.createdAtMs > settings.maxAgeSecs * 1000) {
-    return {
-      outcome: "fail",
-      reason: "exceeded max age with no completion",
-      // A torrent paused on purpose is not the release's fault.
-      failKind: torrent.state === "paused" ? "error" : "stalled",
-    };
   }
   if (torrent.state === "error") {
     return {
       outcome: "fail",
       reason: "download client reported error state",
       failKind: "error",
+    };
+  }
+  // Full progress without a finished state means the files are still landing
+  // (rdt-client before its local download, qBittorrent moving or checking).
+  if (torrent.progress >= 1) return { outcome: "wait", progressed: false };
+  if (nowMs - track.createdAtMs > settings.maxAgeSecs * 1000) {
+    return {
+      outcome: "fail",
+      reason: "exceeded max age with no completion",
+      // A torrent paused on purpose is not the release's fault.
+      failKind: torrent.state === "paused" ? "error" : "stalled",
     };
   }
   const progressed = torrent.progress > track.lastProgress + 1e-9;

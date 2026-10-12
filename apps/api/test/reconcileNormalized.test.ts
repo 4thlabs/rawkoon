@@ -27,7 +27,7 @@ const now = 1_000_000;
 const settings = { stallTimeoutSecs: 100, maxAgeSecs: 1000 };
 
 describe("classifyPendingAgainstTorrent", () => {
-  it("completes terminal state or full progress", () => {
+  it("completes a terminal state, or a paused torrent at full progress", () => {
     expect(
       classifyPendingAgainstTorrent(
         { ...base, state: "completed" },
@@ -38,12 +38,35 @@ describe("classifyPendingAgainstTorrent", () => {
     ).toBe("complete");
     expect(
       classifyPendingAgainstTorrent(
-        { ...base, progress: 1 },
+        { ...base, state: "paused", progress: 1 },
         { createdAtMs: now, lastProgress: 1, lastProgressAtMs: now },
         now,
         settings,
       ).outcome,
     ).toBe("complete");
+  });
+
+  it("waits, never fails, a full-progress torrent whose files aren't local yet", () => {
+    // rdt-client reports progress 1 once Real-Debrid is done, before its local download.
+    expect(
+      classifyPendingAgainstTorrent(
+        { ...base, progress: 1 },
+        { createdAtMs: 0, lastProgress: 1, lastProgressAtMs: 0 },
+        now,
+        settings,
+      ),
+    ).toEqual({ outcome: "wait", progressed: false });
+  });
+
+  it("fails an error state even at full progress", () => {
+    expect(
+      classifyPendingAgainstTorrent(
+        { ...base, state: "error", progress: 1 },
+        { createdAtMs: now, lastProgress: 1, lastProgressAtMs: now },
+        now,
+        settings,
+      ),
+    ).toMatchObject({ outcome: "fail", failKind: "error" });
   });
 
   it("fails error, stall-timeout, and max-age states", () => {

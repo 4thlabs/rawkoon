@@ -1,9 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import {
+  mapSeasonPack,
   parsePartMarker,
   resolveSeasonPackMapping,
   type ParsedSourceFile,
   type ProviderEpisode,
+  type RawSourceFile,
 } from "./seasonPackMapping";
 
 function src(
@@ -166,5 +168,96 @@ describe("resolveSeasonPackMapping", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toContain("mkv");
+  });
+});
+
+describe("mapSeasonPack", () => {
+  // Two 12-episode seasons, as TMDB lists most cours-split anime.
+  const provider: ProviderEpisode[] = [1, 2].flatMap((season) =>
+    Array.from({ length: 12 }, (_, i) => ({
+      id: season * 100 + i + 1,
+      season,
+      episode: i + 1,
+      title: null,
+    })),
+  );
+  const raw = (season: number | null, episode: number): RawSourceFile => ({
+    path: `/dl/${episode}.mkv`,
+    fileName: `${episode}.mkv`,
+    season,
+    episode,
+    part: null,
+    ext: ".mkv",
+  });
+  const placed = (sources: RawSourceFile[], target: number | null) => {
+    const result = mapSeasonPack(sources, provider, target);
+    if (!result.ok) throw new Error(result.reason);
+    return result.placements.map(
+      (p) => `${p.episode.season}x${p.episode.episode}`,
+    );
+  };
+  const range = (from: number, to: number) =>
+    Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+  it("maps absolute numbers across seasons", () => {
+    const got = placed(
+      range(13, 24).map((e) => raw(null, e)),
+      null,
+    );
+    expect(got).toEqual(range(1, 12).map((e) => `2x${e}`));
+  });
+
+  it("maps a season that continues the previous one's count", () => {
+    const got = placed(
+      range(13, 24).map((e) => raw(2, e)),
+      2,
+    );
+    expect(got).toEqual(range(1, 12).map((e) => `2x${e}`));
+  });
+
+  it("puts season-less files on the grabbed season when they fit", () => {
+    const got = placed(
+      range(1, 12).map((e) => raw(null, e)),
+      2,
+    );
+    expect(got).toEqual(range(1, 12).map((e) => `2x${e}`));
+  });
+
+  it("spreads an absolute complete-series pack over every season", () => {
+    const got = placed(
+      range(1, 24).map((e) => raw(null, e)),
+      null,
+    );
+    expect(got).toHaveLength(24);
+    expect(got.at(-1)).toBe("2x12");
+  });
+
+  it("keeps the original refusal when renumbering cannot place a file", () => {
+    const result = mapSeasonPack([raw(null, 30)], provider, null);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("No parsable source files");
+  });
+});
+
+describe("mapSeasonPack season boundaries", () => {
+  it("never moves a file that names its season into another season", () => {
+    const provider: ProviderEpisode[] = [1, 2, 3].flatMap((season) =>
+      Array.from({ length: 12 }, (_, i) => ({
+        id: season * 100 + i + 1,
+        season,
+        episode: i + 1,
+        title: `S${season}E${i + 1}`,
+      })),
+    );
+    const file: RawSourceFile = {
+      path: "/dl/Show.S02E25.mkv",
+      fileName: "Show.S02E25.mkv",
+      season: 2,
+      episode: 25,
+      part: null,
+      ext: ".mkv",
+    };
+    expect(mapSeasonPack([file], provider, 2).ok).toBe(false);
   });
 });

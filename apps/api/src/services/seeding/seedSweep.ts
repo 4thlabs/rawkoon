@@ -54,7 +54,8 @@ export type SweepDecision =
 export interface SweepDeps {
   isEnabled: () => Promise<boolean>;
   loadContext: () => Promise<RuleContext & { moveMode: boolean }>;
-  loadRows: (hash?: string) => Promise<SweepRow[]>;
+  /** `importedOnly` leaves out torrents with a failed import: their data may be all that a manual fix has. */
+  loadRows: (hash?: string, importedOnly?: boolean) => Promise<SweepRow[]>;
   loadPendingHashes: () => Promise<Set<string>>;
   resolveAdapter: () => Promise<DownloadClientAdapter | null>;
   stamp: (
@@ -65,8 +66,8 @@ export interface SweepDeps {
   emit: (items: SeedStateItem[]) => void;
 }
 
-function groupByHash(rows: SweepRow[]): Map<string, SweepRow[]> {
-  const groups = new Map<string, SweepRow[]>();
+function groupByHash<T extends SweepRow>(rows: T[]): Map<string, T[]> {
+  const groups = new Map<string, T[]>();
   for (const row of rows) {
     const key = row.torrentHash.trim().toLowerCase();
     const list = groups.get(key);
@@ -74,6 +75,17 @@ function groupByHash(rows: SweepRow[]): Map<string, SweepRow[]> {
     else groups.set(key, [row]);
   }
   return groups;
+}
+
+/** A torrent shared by several rows is held back if any of their imports failed. */
+export function dropTorrentsWithFailedImport<
+  T extends SweepRow & { postProcessError: string | null },
+>(rows: T[]): T[] {
+  const kept: T[] = [];
+  for (const group of groupByHash(rows).values()) {
+    if (!group.some((r) => r.postProcessError)) kept.push(...group);
+  }
+  return kept;
 }
 
 export function planSeedReleases(
@@ -201,7 +213,7 @@ export const defaultSweepDeps: SweepDeps = {
       })
     )?.seedSweepEnabled ?? false,
   loadContext: loadSeedContext,
-  loadRows: async (hash) => {
+  loadRows: async (hash, importedOnly) => {
     const rows = await prisma.downloadHistory.findMany({
       where: {
         completedAt: { not: null },
@@ -211,13 +223,33 @@ export const defaultSweepDeps: SweepDeps = {
           ? { equals: hash, mode: "insensitive" }
           : { not: null },
       },
-      select: { id: true, torrentHash: true, indexer: true },
+      select: {
+        id: true,
+        torrentHash: true,
+        indexer: true,
+        postProcessError: true,
+      },
     });
-    return rows.flatMap((r) =>
+    const sweepRows = rows.flatMap((r) =>
       r.torrentHash
-        ? [{ id: r.id, torrentHash: r.torrentHash, indexer: r.indexer }]
+        ? [
+            {
+              id: r.id,
+              torrentHash: r.torrentHash,
+              indexer: r.indexer,
+              postProcessError: r.postProcessError,
+            },
+          ]
         : [],
     );
+    const kept = importedOnly
+      ? dropTorrentsWithFailedImport(sweepRows)
+      : sweepRows;
+    return kept.map(({ id, torrentHash, indexer }) => ({
+      id,
+      torrentHash,
+      indexer,
+    }));
   },
   loadPendingHashes: async () => {
     const rows = await prisma.downloadHistory.findMany({
@@ -270,7 +302,7 @@ export async function runSeedSweep(
     return [];
   }
   const [rows, pendingHashes, base] = await Promise.all([
-    deps.loadRows(opts.hash?.toLowerCase()),
+    deps.loadRows(opts.hash?.toLowerCase(), true),
     deps.loadPendingHashes(),
     deps.loadContext(),
   ]);
