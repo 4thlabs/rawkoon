@@ -20,7 +20,7 @@ mkdir rawkoon && cd rawkoon
 ---
 
 ## 2. Docker Compose Configuration
-Create a `docker-compose.yml` file in that folder using the official Docker image (`ghcr.io/samuelloranger/rawkoon:latest`). `:latest` follows releases. `:edge` follows every change merged to `main` that passes CI, so it gets fixes first and is less tested; pin `:X.Y.Z` to stay on one version.
+Create a `docker-compose.yml` file in that folder using the official Docker image (`ghcr.io/samuelloranger/rawkoon:latest`). `:latest` follows releases. See [Updating and release channels](#updating-and-release-channels) for `:edge` and pinned versions.
 
 ```yaml
 services:
@@ -146,9 +146,41 @@ Once the containers are up:
 3. **Connect Integrations:** Go to **Settings → Integrations** to enter:
    - Your **TMDB API key** (required for search and discovery).
    - Your indexer manager (**Prowlarr** or **Jackett**).
-   - Your download client (**qBittorrent**, **Transmission**, or **Deluge**).
+   - Your download client (**qBittorrent**, **Transmission**, **Deluge**, or **rdt-client**; see [Integrations](/integrations#rdt-client-debrid) for rdt-client).
 
 See [Getting started](/getting-started) to add your first movie or show!
+
+## Updating and release channels
+
+Pick the image tag that matches how closely you want to follow development:
+
+| Tag | Follows | Version shown in the app |
+| --- | --- | --- |
+| `:latest` | Each release | `vX.Y.Z` |
+| `:edge` | Every change merged to `main` that passes CI, and each release | `vX.Y.Z-main.N` (the next patch number, then a build counter) |
+| `:X.Y.Z` | Nothing: one fixed version | `vX.Y.Z` |
+
+`:edge` gets fixes as soon as they merge, and has had less testing than a release. Release notes are only written for releases, and the "App updated" notification is only sent when a release arrives, not for edge builds.
+
+To switch channels, change the tag in `docker-compose.yml`, then pull and restart:
+
+```bash
+docker compose pull rawkoon
+docker compose up -d rawkoon
+```
+
+Rawkoon doesn't update itself. Run the same two commands to update, or use a container updater (Watchtower, Arcane and the like) if you want it automatic.
+
+### Going back from `:edge` to `:latest`
+
+The container applies database migrations when it starts, and `:edge` can carry migrations that no release has yet. An older image can't always run against a schema that has moved on, so:
+
+- Moving from `:edge` to `:latest` is safe once a release includes everything you ran on edge. Until then, stay on `:edge`.
+- If you have to go back sooner, restore the database from a backup taken before the switch (see [Deployment and recovery](/deployment#restore)); changing the tag alone isn't enough.
+
+Take a backup before switching to `:edge` in the first place.
+
+---
 
 ## Re-encoding (optional GPU)
 
