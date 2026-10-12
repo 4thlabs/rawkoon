@@ -7,7 +7,10 @@ import { useCurrentUser } from "@/lib/auth/useAuth";
 import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
 import { useAiProviderIntegration } from "@/pages/settings/useAiProviderIntegration";
 import {
+  aiPickQueryKey,
   resolveAiTarget,
+  type AiPickInput,
+  useAiDismissal,
   useAiPick,
 } from "@/pages/medias/_component/useAiPick";
 import { AiPickBanner } from "@/pages/medias/_component/AiPickBanner";
@@ -56,24 +59,30 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
 
   const aiTarget = resolveAiTarget(props.episodeTarget, state.selectedSeason);
 
-  const aiPick = useAiPick({
-    enabled:
-      aiEnabled && state.releases.length > 0 && !state.activeQuery.isLoading,
+  const aiInput: AiPickInput = {
     releases: state.releases,
     mediaTitle: props.media?.title ?? props.defaultSearchQuery ?? "",
     mediaYear: props.media?.year ?? null,
     mediaType: mediaType as "movie" | "tv",
     libraryMediaId: props.libraryMediaId,
     ...aiTarget,
+  };
+
+  const aiPick = useAiPick({
+    enabled:
+      aiEnabled && state.releases.length > 0 && !state.activeQuery.isLoading,
+    ...aiInput,
   });
+
+  const { dismissed: aiDismissed, dismiss: dismissAi } = useAiDismissal(
+    aiPickQueryKey(aiInput),
+  );
 
   const pickedRelease =
     aiPick.data?.release_key != null
       ? (state.releases.find((r) => r.guid === aiPick.data?.release_key) ??
         null)
       : null;
-
-  const [aiDismissed, setAiDismissed] = useState(false);
 
   const { t } = useTranslation("common");
   const { data: currentUser } = useCurrentUser();
@@ -112,19 +121,6 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
       setBlockingReleaseKey(null);
     }
   };
-
-  const candidateKeys = state.releases
-    .filter((r) => !r.rejected)
-    .map((r) => r.guid)
-    .join(",");
-
-  // Re-show the AI suggestion when the candidate set changes (render-time
-  // state adjustment, not an effect).
-  const [prevCandidateKeys, setPrevCandidateKeys] = useState(candidateKeys);
-  if (candidateKeys !== prevCandidateKeys) {
-    setPrevCandidateKeys(candidateKeys);
-    setAiDismissed(false);
-  }
 
   // Pre-warm the LLM as soon as the panel opens so the model is already loaded
   // by the time search results arrive (~1-3s later).
@@ -256,7 +252,7 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
             grabBusy={state.grabBusy}
             onGrab={state.downloadRelease}
             onRetry={() => void aiPick.refetch()}
-            onDismiss={() => setAiDismissed(true)}
+            onDismiss={() => dismissAi()}
           />
         )}
 

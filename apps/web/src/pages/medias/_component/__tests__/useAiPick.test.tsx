@@ -1,9 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FetcherProvider, type Fetcher } from "@/lib/api/context";
 import {
   resolveAiTarget,
+  aiPickQueryKey,
+  type AiPickInput,
+  useAiDismissal,
   useAiPick,
 } from "@/pages/medias/_component/useAiPick";
 import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
@@ -100,5 +103,66 @@ describe("resolveAiTarget", () => {
 
   it("uses the selected season when there is no episode target", () => {
     expect(resolveAiTarget(null, 4)).toEqual({ season: 4, episode: null });
+  });
+});
+
+describe("useAiDismissal", () => {
+  const input = (over: Partial<AiPickInput> = {}): AiPickInput => ({
+    releases: [release],
+    mediaTitle: "Show",
+    mediaYear: 2020,
+    mediaType: "tv",
+    libraryMediaId: 7,
+    season: 1,
+    episode: null,
+    ...over,
+  });
+
+  it("shows the suggestion again after switching target with identical results", () => {
+    const { result, rerender } = renderHook(
+      ({ season }: { season: number | null }) =>
+        useAiDismissal(aiPickQueryKey(input({ season }))),
+      { initialProps: { season: 1 as number | null } },
+    );
+    act(() => result.current.dismiss());
+    expect(result.current.dismissed).toBe(true);
+    rerender({ season: 2 });
+    expect(result.current.dismissed).toBe(false);
+  });
+
+  it("stays dismissed when the same pick re-renders", () => {
+    const { result, rerender } = renderHook(
+      ({ n }: { n: number }) => {
+        void n;
+        return useAiDismissal(aiPickQueryKey(input()));
+      },
+      { initialProps: { n: 0 } },
+    );
+    act(() => result.current.dismiss());
+    rerender({ n: 1 });
+    expect(result.current.dismissed).toBe(true);
+  });
+
+  it("resets when the candidate set changes", () => {
+    const other = { ...release, guid: "g2" } as InteractiveReleaseItem;
+    const { result, rerender } = renderHook(
+      ({ releases }: { releases: InteractiveReleaseItem[] }) =>
+        useAiDismissal(aiPickQueryKey(input({ releases }))),
+      { initialProps: { releases: [release] } },
+    );
+    act(() => result.current.dismiss());
+    rerender({ releases: [release, other] });
+    expect(result.current.dismissed).toBe(false);
+  });
+
+  it("resets when the media changes with identical results", () => {
+    const { result, rerender } = renderHook(
+      ({ mediaTitle }: { mediaTitle: string }) =>
+        useAiDismissal(aiPickQueryKey(input({ mediaTitle }))),
+      { initialProps: { mediaTitle: "Show" } },
+    );
+    act(() => result.current.dismiss());
+    rerender({ mediaTitle: "Other Show" });
+    expect(result.current.dismissed).toBe(false);
   });
 });
