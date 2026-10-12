@@ -272,7 +272,7 @@ actor APIClient {
             // reached the server, so retrying an idempotent GET is safe and opens a
             // fresh connection. This is what makes a pull-to-refresh fail while a
             // cold app launch (fresh session) succeeds.
-            if request.httpMethod == "GET", Self.isConnectionResetError(error) {
+            if Self.shouldRetry(after: error, method: request.httpMethod, longWait: longWait) {
                 Log.network.warning(
                     "Retrying GET \(request.url?.path ?? "?", privacy: .public) after transport reset: \(error.localizedDescription, privacy: .public)"
                 )
@@ -303,13 +303,17 @@ actor APIClient {
         return NetworkFailure.classify(urlErrorCode: urlError.code.rawValue) == .offline
     }
 
-    /// Transport failures that mean the request never reached the server over a
-    /// stale keep-alive connection, so a single retry on a fresh socket is safe.
-    private static func isConnectionResetError(_ error: Error) -> Bool {
-        guard let urlError = error as? URLError else { return false }
+    /// Whether a GET that failed in transport is retried once on a fresh socket:
+    /// these failures mean it likely never reached the server over a stale
+    /// keep-alive connection. A timeout on the long-wait lane means the server
+    /// was still working, so a retry would only double the wait and its search.
+    static func shouldRetry(after error: Error, method: String?, longWait: Bool) -> Bool {
+        guard method == "GET", let urlError = error as? URLError else { return false }
         switch urlError.code {
-        case .networkConnectionLost, .cannotConnectToHost, .timedOut:
+        case .networkConnectionLost, .cannotConnectToHost:
             return true
+        case .timedOut:
+            return !longWait
         default:
             return false
         }
