@@ -68,6 +68,13 @@ export function classifyPendingAgainstTorrent(
   ) {
     return { outcome: "complete" };
   }
+  if (torrent.state === "error") {
+    return {
+      outcome: "fail",
+      reason: "download client reported error state",
+      failKind: "error",
+    };
+  }
   // Full progress without a finished state means the files are still landing
   // (rdt-client before its local download, qBittorrent moving or checking).
   if (torrent.progress >= 1) return { outcome: "wait", progressed: false };
@@ -77,13 +84,6 @@ export function classifyPendingAgainstTorrent(
       reason: "exceeded max age with no completion",
       // A torrent paused on purpose is not the release's fault.
       failKind: torrent.state === "paused" ? "error" : "stalled",
-    };
-  }
-  if (torrent.state === "error") {
-    return {
-      outcome: "fail",
-      reason: "download client reported error state",
-      failKind: "error",
     };
   }
   const progressed = torrent.progress > track.lastProgress + 1e-9;

@@ -239,3 +239,25 @@ describe("mapSeasonPack", () => {
     expect(result.reason).toBe("No parsable source files");
   });
 });
+
+describe("mapSeasonPack season boundaries", () => {
+  it("never moves a file that names its season into another season", () => {
+    const provider: ProviderEpisode[] = [1, 2, 3].flatMap((season) =>
+      Array.from({ length: 12 }, (_, i) => ({
+        id: season * 100 + i + 1,
+        season,
+        episode: i + 1,
+        title: `S${season}E${i + 1}`,
+      })),
+    );
+    const file: RawSourceFile = {
+      path: "/dl/Show.S02E25.mkv",
+      fileName: "Show.S02E25.mkv",
+      season: 2,
+      episode: 25,
+      part: null,
+      ext: ".mkv",
+    };
+    expect(mapSeasonPack([file], provider, 2).ok).toBe(false);
+  });
+});

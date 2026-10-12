@@ -5,6 +5,7 @@ import type {
 } from "@rawkoon/api/services/downloadClient/types";
 import {
   abandonPendingDownloads,
+  dropTorrentsWithFailedImport,
   planSeedReleases,
   previewSeedRelease,
   releaseTorrentNow,
@@ -365,5 +366,21 @@ describe("previewSeedRelease", () => {
     expect(
       previewSeedRelease(rows, torrents, { ...baseCtx, moveMode: true }),
     ).toEqual({ count: 1, bytes: GB });
+  });
+});
+
+describe("dropTorrentsWithFailedImport", () => {
+  it("holds back every row of a torrent when one of its imports failed", () => {
+    const rows = [
+      { id: 1, torrentHash: H1, indexer: null, postProcessError: null },
+      {
+        id: 2,
+        torrentHash: H1.toUpperCase(),
+        indexer: null,
+        postProcessError: "no files",
+      },
+      { id: 3, torrentHash: H2, indexer: null, postProcessError: null },
+    ];
+    expect(dropTorrentsWithFailedImport(rows).map((r) => r.id)).toEqual([3]);
   });
 });

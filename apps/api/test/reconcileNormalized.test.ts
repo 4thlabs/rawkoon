@@ -58,6 +58,17 @@ describe("classifyPendingAgainstTorrent", () => {
     ).toEqual({ outcome: "wait", progressed: false });
   });
 
+  it("fails an error state even at full progress", () => {
+    expect(
+      classifyPendingAgainstTorrent(
+        { ...base, state: "error", progress: 1 },
+        { createdAtMs: now, lastProgress: 1, lastProgressAtMs: now },
+        now,
+        settings,
+      ),
+    ).toMatchObject({ outcome: "fail", failKind: "error" });
+  });
+
   it("fails error, stall-timeout, and max-age states", () => {
     expect(
       classifyPendingAgainstTorrent(

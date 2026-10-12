@@ -249,10 +249,11 @@ export function renumberSources(
         .filter((x) => x < season)
         .reduce((sum, x) => sum + count(x), 0);
       const inSeason = s.episode - before;
+      // A file that names its season never moves to another one.
       ep =
         inSeason >= 1 && inSeason <= count(season)
           ? (bySeason.get(season)?.[inSeason - 1] ?? null)
-          : absolute(s.episode);
+          : null;
     }
     if (!ep) return null;
     const key = `${ep.season}x${ep.episode}`;

@@ -10449,10 +10449,7 @@ exports[`release-name corpus parseSeasonEpisode (season-pack file mapping) 1`] =
     "episode": 4,
     "season": 2,
   },
-  "Quiet.Harbor.S02E05.1080p.WEB.h264-GRP.Sample": {
-    "episode": 5,
-    "season": 2,
-  },
+  "Quiet.Harbor.S02E05.1080p.WEB.h264-GRP.Sample": null,
   "Quiet.Harbor.S02E05.1080p.WEB.h264-GRP.mkv": {
     "episode": 5,
     "season": 2,
@@ -10586,7 +10583,9 @@ exports[`release-name corpus mismatches against truth 1`] = `
   "downloadsYear": {},
   "inferSeason": {},
   "multiEpisode": {},
-  "packFileMapping": {},
+  "packFileMapping": {
+    "Quiet.Harbor.S02E05.1080p.WEB.h264-GRP.Sample": "null",
+  },
   "rssEpisode": {},
   "rssTitle": {
     "1x01 - Pilot.mkv": "undefined",
