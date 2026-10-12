@@ -40,7 +40,8 @@ export type Placement =
     };
 
 export type MappingResult =
-  | { ok: true; placements: Placement[] }
+  /** `skipped` lists season-less files that could not be placed and were left out. */
+  | { ok: true; placements: Placement[]; skipped?: string[] }
   | { ok: false; reason: string; unmatched: string[] };
 
 const PART_PATTERNS: RegExp[] = [
@@ -266,7 +267,9 @@ export function renumberSources(
 
 /**
  * Map a pack as named first; only when that refuses, retry with renumbered
- * files. The original refusal is kept when the retry fails too.
+ * files. The original refusal is kept when the retry fails too. A pack with
+ * season-less files that can't all be placed still imports its named files,
+ * and reports the rest in `skipped` instead of dropping them silently.
  */
 export function mapSeasonPack(
   sources: RawSourceFile[],
@@ -274,10 +277,14 @@ export function mapSeasonPack(
   targetSeason: number | null,
 ): MappingResult {
   const named = sources.filter((s): s is ParsedSourceFile => s.season !== null);
+  const seasonless = sources.filter((s) => s.season === null);
   const first = resolveSeasonPackMapping(named, providerEpisodes);
-  if (first.ok) return first;
+  if (first.ok && seasonless.length === 0) return first;
   const renumbered = renumberSources(sources, providerEpisodes, targetSeason);
-  if (!renumbered) return first;
-  const second = resolveSeasonPackMapping(renumbered, providerEpisodes);
-  return second.ok ? second : first;
+  if (renumbered) {
+    const second = resolveSeasonPackMapping(renumbered, providerEpisodes);
+    if (second.ok) return second;
+  }
+  if (first.ok) return { ...first, skipped: seasonless.map((s) => s.fileName) };
+  return first;
 }
