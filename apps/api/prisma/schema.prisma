@@ -736,6 +736,8 @@ model MediaSettings {
   /// Off until an admin opts in: the first sweep would otherwise release every old torrent at once.
   seedSweepEnabled        Boolean  @default(false) @map("seed_sweep_enabled")
   blockedExtensions       String[] @default(["exe", "scr", "lnk", "bat", "cmd", "com", "msi", "pif", "vbs", "ps1", "jar", "apk"]) @map("blocked_extensions")
+  /// Refuse a grab that would leave less than this on the download volume. 0 disables the check.
+  minFreeSpaceGb          Int      @default(10) @map("min_free_space_gb")
 
   // ── Books ──────────────────────────────────────────
   booksLibraryPath            String?  @map("books_library_path")

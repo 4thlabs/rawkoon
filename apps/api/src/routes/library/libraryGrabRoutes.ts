@@ -113,6 +113,7 @@ export const libraryGrabRoutes = new Hono<Env>()
           indexer: body.indexer ?? null,
           qualityParsed: body.quality_parsed,
           isUpgrade: body.is_upgrade ?? false,
+          sizeBytes: body.size_bytes,
         });
 
         if (result.grabbed) {

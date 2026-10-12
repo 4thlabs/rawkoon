@@ -77,4 +77,22 @@ describe("indexer grabRelease resolves a URL without pushing to Prowlarr", () =>
     expect(result.magnetUrl).toStartWith("magnet:");
     expect(result.title).toBe("Movie.2024.1080p");
   });
+
+  it("Prowlarr and Jackett carry the search-time size through the token", async () => {
+    const prowlarr = new ProwlarrAdapter(FAKE_CONFIG as never);
+    const pToken = prowlarr.storeReleaseToken(
+      fakeRelease({
+        rawPayload: {
+          title: "Movie.2024.1080p",
+          downloadUrl: "https://indexer.example/dl.torrent",
+          size: 123456,
+        },
+      }),
+    );
+    expect((await prowlarr.grabRelease(pToken!)).sizeBytes).toBe(123456);
+
+    const jackett = new JackettAdapter(FAKE_CONFIG as never);
+    const jToken = jackett.storeReleaseToken(fakeRelease({ sizeBytes: 999 }));
+    expect((await jackett.grabRelease(jToken!)).sizeBytes).toBe(999);
+  });
 });

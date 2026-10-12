@@ -2,6 +2,7 @@ import { prisma } from "@rawkoon/api/db";
 import { searchAndGrabWithTitleFallback } from "@rawkoon/api/services/mediaGrabberSearch";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 import { refreshLibraryMovieDigitalDate } from "@rawkoon/api/services/libraryTmdbRefresh";
+import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import { MAX_CRON_GRAB_ATTEMPTS } from "@rawkoon/api/constants/libraryGrab";
 import { notifyAdminsLibraryGrabSkipped } from "@rawkoon/api/workers/notifyLibraryGrabSkipped";
 import {
@@ -74,6 +75,8 @@ export async function checkMovieReleases(): Promise<void> {
       });
 
       if (result.grabbed) continue;
+      // A full disk is not the release's fault and clears on its own; keep the item wanted.
+      if (result.reason.startsWith(SPACE_REFUSAL_PREFIX)) continue;
 
       const next = m.searchAttempts + 1;
       const reachedCap = next >= MAX_CRON_GRAB_ATTEMPTS;

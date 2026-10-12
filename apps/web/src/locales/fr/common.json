@@ -1682,9 +1682,11 @@
       "invalid": "Utilisez une extension de fichier comme exe ou .iso.",
       "stats": "30 derniers jours : {{malware}} rejetées pour fichiers bloqués, {{stalled}} pour blocage, {{imports}} pour contenu inutilisable.",
       "statsLink": "Les voir dans la liste de blocage",
-      "save": "Enregistrer les types de fichiers",
-      "saved": "Types de fichiers enregistrés.",
-      "saveError": "Impossible d'enregistrer les types de fichiers."
+      "minFreeLabel": "Espace libre minimum (Go)",
+      "minFreeHelp": "Refuser une version qui laisserait moins que cette quantité d'espace libre sur le volume de téléchargement. 0 désactive la vérification.",
+      "save": "Enregistrer",
+      "saved": "Enregistré.",
+      "saveError": "Impossible d'enregistrer."
     },
     "transcode": {
       "title": "Réencodage"
