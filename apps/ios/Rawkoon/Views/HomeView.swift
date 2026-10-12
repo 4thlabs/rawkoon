@@ -268,7 +268,8 @@ struct HomeView: View {
             stats = client.cachedLibraryStats()
         }
         if growth == nil, let cached = client.cached(Endpoints.libraryGrowth),
-           GrowthDates.isCurrentMonth(start: cached.value.growth.month.start, timezone: cached.value.growth.timezone) {
+           GrowthDates.isCurrentMonth(start: cached.value.growth.month.start, timezone: cached.value.growth.timezone)
+        {
             growth = cached.value.growth
         }
         if let features = client.cached(Endpoints.systemFeatures) {
@@ -345,7 +346,8 @@ struct HomeView: View {
         if let fresh = try? await growthR {
             withRawkoonMotion(RawkoonMotion.spring) { growth = fresh }
         } else if let kept = growth,
-                  !GrowthDates.isCurrentMonth(start: kept.month.start, timezone: kept.timezone) {
+                  !GrowthDates.isCurrentMonth(start: kept.month.start, timezone: kept.timezone)
+        {
             // A failed refresh must not leave last month's card up after the month rolls over.
             withRawkoonMotion(RawkoonMotion.spring) { growth = nil }
         }

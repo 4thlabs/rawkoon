@@ -198,10 +198,14 @@ struct LibraryGrowthCard: View {
     /// "42 GB · 3 movies · 12 episodes" for admins, without the bytes for members.
     private func detail(_ week: GrowthPeriod) -> String {
         var parts: [String] = []
-        if isAdmin { parts.append(Self.bytes(week.bytes ?? 0)) }
+        if isAdmin {
+            parts.append(Self.bytes(week.bytes ?? 0))
+        }
         parts.append(String(localized: "\(week.movies) movies"))
         parts.append(String(localized: "\(week.episodes) episodes"))
-        if showBooks { parts.append(String(localized: "\(week.books) books")) }
+        if showBooks {
+            parts.append(String(localized: "\(week.books) books"))
+        }
         return parts.joined(separator: " · ")
     }
 
