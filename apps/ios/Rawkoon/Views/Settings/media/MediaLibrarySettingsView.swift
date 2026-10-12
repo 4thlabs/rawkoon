@@ -238,7 +238,7 @@ struct MediaLibrarySettingsView: View {
                     activeIndexerManager: activeManager,
                     defaultMovieQualityProfileId: defaultMovieProfile,
                     defaultShowQualityProfileId: defaultShowProfile,
-                    minFreeSpaceGb: minFreeSpaceGb ?? 10
+                    minFreeSpaceGb: minFreeSpaceGb
                 )
             )
             loaded = current
