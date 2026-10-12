@@ -2,21 +2,16 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type {
-  BookManifest,
-  BookManifestChapter,
-  BookManifestFile,
-} from "@rawkoon/shared/types";
+import type { BookManifestFile } from "@rawkoon/shared/types";
 import { queryKeys } from "@/lib/queryKeys";
-import { createTimeline, type Timeline } from "./timeline";
-import { createFileIndex, type FileIndex } from "./fileIndex";
+import { createTimeline } from "./timeline";
+import { createFileIndex } from "./fileIndex";
 import { webDeviceId } from "./deviceId";
 import {
   fetchBookCover,
@@ -24,48 +19,18 @@ import {
   fetchManifest,
   putListeningProgress,
 } from "./usePlayback";
+import {
+  PLAYBACK_RATES,
+  type LoadedBook,
+  type PlaybackRate,
+  type PlayerContextValue,
+} from "./playerTypes";
+import { clearMediaSession } from "./mediaSession";
+import { useAudioEvents } from "./useAudioEvents";
+import { useFlushOnHide } from "./useFlushOnHide";
+import { useMediaSessionControls } from "./useMediaSessionControls";
 
-export const PLAYBACK_RATES = [0.8, 1, 1.25, 1.5, 2] as const;
-export type PlaybackRate = (typeof PLAYBACK_RATES)[number];
-
-const PUT_THROTTLE_MS = 10_000;
-
-type LoadedBook = {
-  editionId: number;
-  bookId: number;
-  title: string;
-  authors: string[];
-  coverUrl: string | null;
-  manifest: BookManifest;
-  timeline: Timeline;
-  fileIndex: FileIndex;
-};
-
-export type PlayerContextValue = {
-  loaded: boolean;
-  editionId: number | null;
-  bookId: number | null;
-  title: string | null;
-  authors: string[];
-  coverUrl: string | null;
-  chapters: BookManifestChapter[];
-  currentChapterIndex: number | null;
-  isPlaying: boolean;
-  isLoading: boolean;
-  positionSecs: number;
-  durationSecs: number;
-  rate: PlaybackRate;
-  error: string | null;
-  load: (editionId: number, bookId: number) => Promise<void>;
-  play: () => void;
-  pause: () => void;
-  seek: (positionSecs: number) => void;
-  skip: (deltaSecs: number) => void;
-  nextChapter: () => void;
-  prevChapter: () => void;
-  setRate: (rate: PlaybackRate) => void;
-  unload: () => void;
-};
+export { PLAYBACK_RATES, type PlaybackRate, type PlayerContextValue };
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
 
@@ -75,25 +40,6 @@ export function usePlayer(): PlayerContextValue {
     throw new Error("usePlayer must be used inside PlayerProvider");
   }
   return ctx;
-}
-
-function clearMediaSession() {
-  if (!("mediaSession" in navigator)) return;
-  navigator.mediaSession.metadata = null;
-  for (const action of [
-    "play",
-    "pause",
-    "seekbackward",
-    "seekforward",
-    "previoustrack",
-    "nexttrack",
-  ] as const) {
-    try {
-      navigator.mediaSession.setActionHandler(action, null);
-    } catch {
-      // Some browsers reject individual handlers.
-    }
-  }
 }
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
@@ -356,147 +302,29 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [applyFile, setPlaying]);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const onLoaded = () => {
-      const offset = pendingOffsetRef.current;
-      if (offset != null) {
-        audio.currentTime = offset;
-        pendingOffsetRef.current = null;
-      }
-      audio.playbackRate = rateRef.current;
-      if (wantPlayRef.current) {
-        void audio.play().then(
-          () => setPlaying(true),
-          () => setError("play"),
-        );
-      }
-    };
-
-    const onTimeUpdate = () => {
-      const book = loadedRef.current;
-      const file = currentFileRef.current;
-      if (!book || !file) return;
-      const position = file.start_secs + audio.currentTime;
-      setPosition(position);
-      // The item can span many chapters (single-file book), so advance the
-      // marker as playback crosses chapter boundaries within the file.
-      setChapterMarker(position);
-      if (
-        playingRef.current &&
-        Date.now() - lastPutAtRef.current >= PUT_THROTTLE_MS
-      ) {
-        void flushProgress();
-      }
-      if (
-        "mediaSession" in navigator &&
-        document.visibilityState === "visible"
-      ) {
-        try {
-          navigator.mediaSession.setPositionState({
-            duration: book.timeline.totalDurationSecs,
-            playbackRate: rateRef.current,
-            position: Math.min(position, book.timeline.totalDurationSecs),
-          });
-        } catch {
-          // Duration 0 throws in some browsers.
-        }
-      }
-    };
-
-    const onEnded = () => {
-      const book = loadedRef.current;
-      if (!book) return;
-      // A file (not a chapter) ended: the <audio> element only fires `ended` at
-      // the physical file's end. Advance to the next file, or finish the book.
-      const nextStart = book.fileIndex.boundaryAfterFile(positionRef.current);
-      if (nextStart == null) {
-        setPlaying(false);
-        setPosition(book.timeline.totalDurationSecs);
-        void flushProgress(true);
-        return;
-      }
-      seekInternal(nextStart, true);
-    };
-
-    const onError = () => {
-      void retryGrantOrError();
-    };
-
-    const onPlay = () => setPlaying(true);
-    const onPause = () => {
-      // A cross-chapter seek or auto-advance swaps `audio.src` and calls
-      // `load()`, which fires `pause` asynchronously — after `seek` has already
-      // reset `seekingRef`. `pendingOffsetRef` stays non-null until the new
-      // chapter's metadata loads, so it covers that async window too.
-      if (seekingRef.current || pendingOffsetRef.current != null) return;
-      setPlaying(false);
-    };
-
-    audio.addEventListener("loadedmetadata", onLoaded);
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("ended", onEnded);
-    audio.addEventListener("error", onError);
-    audio.addEventListener("play", onPlay);
-    audio.addEventListener("pause", onPause);
-    return () => {
-      audio.removeEventListener("loadedmetadata", onLoaded);
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("ended", onEnded);
-      audio.removeEventListener("error", onError);
-      audio.removeEventListener("play", onPlay);
-      audio.removeEventListener("pause", onPause);
-    };
-  }, [
+  useAudioEvents({
+    audioRef,
+    loadedRef,
+    currentFileRef,
+    pendingOffsetRef,
+    wantPlayRef,
+    lastPutAtRef,
+    positionRef,
+    playingRef,
+    rateRef,
+    seekingRef,
+    setError,
     setChapterMarker,
     flushProgress,
     retryGrantOrError,
     seekInternal,
     setPlaying,
     setPosition,
-  ]);
+  });
 
-  useEffect(() => {
-    const onHidden = () => {
-      if (document.visibilityState !== "hidden") return;
-      void flushProgress();
-      clearMediaSession();
-    };
-    const onPageHide = () => {
-      void flushProgress();
-    };
-    document.addEventListener("visibilitychange", onHidden);
-    window.addEventListener("pagehide", onPageHide);
-    return () => {
-      document.removeEventListener("visibilitychange", onHidden);
-      window.removeEventListener("pagehide", onPageHide);
-    };
-  }, [flushProgress]);
+  useFlushOnHide(flushProgress);
 
-  useEffect(() => {
-    if (!loaded || document.visibilityState !== "visible") {
-      if (!loaded) clearMediaSession();
-      return;
-    }
-    if (!("mediaSession" in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: loaded.title,
-      artist: loaded.authors.join(", "),
-      artwork: loaded.coverUrl
-        ? [{ src: loaded.coverUrl, sizes: "512x512" }]
-        : [],
-    });
-    navigator.mediaSession.setActionHandler("play", () => play());
-    navigator.mediaSession.setActionHandler("pause", () => pause());
-    navigator.mediaSession.setActionHandler("seekbackward", () => skip(-30));
-    navigator.mediaSession.setActionHandler("seekforward", () => skip(30));
-    navigator.mediaSession.setActionHandler("previoustrack", () =>
-      prevChapter(),
-    );
-    navigator.mediaSession.setActionHandler("nexttrack", () => nextChapter());
-  }, [loaded, play, pause, skip, prevChapter, nextChapter]);
+  useMediaSessionControls(loaded, play, pause, skip, prevChapter, nextChapter);
 
   const value = useMemo<PlayerContextValue>(
     () => ({
