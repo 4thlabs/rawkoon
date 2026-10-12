@@ -282,6 +282,20 @@ describe("releaseTorrentNow", () => {
     });
   });
 
+  it("never sweeps a debrid client, whose import removes its torrents", async () => {
+    const removed: string[] = [];
+    const debrid = {
+      ...adapterWith([t({ ratio: 5 })], removed),
+      type: "rdtclient" as const,
+    };
+    const d = deps({
+      isEnabled: async () => true,
+      resolveAdapter: async () => debrid,
+    });
+    expect(await runSeedSweep(d)).toEqual([]);
+    expect(removed).toEqual([]);
+  });
+
   it("reports unknown hashes", async () => {
     expect(
       await releaseTorrentNow(H1, deps({ loadRows: async () => [] })),

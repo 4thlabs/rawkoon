@@ -22,10 +22,11 @@ import {
   renderEpisodeTemplate,
   sanitizePathTemplateOutput,
 } from "@rawkoon/api/utils/medias/fileTemplate";
+import type { DownloadClientAdapter } from "@rawkoon/api/services/downloadClient/types";
 import {
   afterImportAction,
-  type DownloadClientAdapter,
-} from "@rawkoon/api/services/downloadClient/types";
+  applyAfterImportAction,
+} from "@rawkoon/api/services/downloadClient/afterImport";
 import { resolveDownloadedStatus } from "@rawkoon/api/utils/medias/libraryHelpers";
 
 import {
@@ -414,23 +415,19 @@ export async function postProcessSeasonPack(
     `[postProcess/pack] Processed ${processed} episodes for "${dh.media.title}" (${errors.length} errors)`,
   );
 
-  const after = afterImportAction({
-    type: adapter.type,
-    ratio: tor.ratio,
-    minSeedRatio: settings.minSeedRatio,
-    seedSweepEnabled: settings.seedSweepEnabled,
-  });
-  if (after !== "keep") {
-    await adapter
+  await applyAfterImportAction(
+    adapter,
+    hash,
+    afterImportAction({
+      type: adapter.type,
+      ratio: tor.ratio,
+      minSeedRatio: settings.minSeedRatio,
+      seedSweepEnabled: settings.seedSweepEnabled,
       // Episodes that failed to import still need their files.
-      .remove(hash, after === "removeWithData" && errors.length === 0)
-      .catch((error) =>
-        console.warn(
-          `[postProcess/pack] Could not remove torrent ${hash}:`,
-          error,
-        ),
-      );
-  }
+      fullyImported: errors.length === 0,
+    }),
+    "postProcess/pack",
+  );
 
   return {
     success: true,

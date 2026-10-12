@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { buildAdapter } from "@rawkoon/api/services/downloadClient/registry";
-import { afterImportAction } from "@rawkoon/api/services/downloadClient/types";
+import { afterImportAction } from "@rawkoon/api/services/downloadClient/afterImport";
 
 const config = {
   website_url: "http://localhost",
@@ -19,7 +19,12 @@ describe("buildAdapter", () => {
 });
 
 describe("afterImportAction", () => {
-  const base = { ratio: 0, minSeedRatio: 2, seedSweepEnabled: false };
+  const base = {
+    ratio: 0,
+    minSeedRatio: 2,
+    seedSweepEnabled: false,
+    fullyImported: true,
+  };
 
   it("keeps a torrent on a seeding client until its ratio is met", () => {
     expect(afterImportAction({ ...base, type: "qbittorrent" })).toBe("keep");
@@ -46,5 +51,11 @@ describe("afterImportAction", () => {
     expect(
       afterImportAction({ ...base, type: "rdtclient", seedSweepEnabled: true }),
     ).toBe("removeWithData");
+  });
+
+  it("keeps an rdt-client torrent whose import didn't place every file", () => {
+    expect(
+      afterImportAction({ ...base, type: "rdtclient", fullyImported: false }),
+    ).toBe("keep");
   });
 });

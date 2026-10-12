@@ -4,26 +4,6 @@ export type DownloadClientType =
   | "deluge"
   | "rdtclient";
 
-/**
- * What a post-processor does with the torrent right after a successful import.
- * Debrid clients (rdt-client) never seed, so their local copy is dropped too:
- * the library holds its own hardlink or moved file.
- */
-export function afterImportAction(input: {
-  type: DownloadClientType;
-  ratio: number | null;
-  minSeedRatio: number;
-  seedSweepEnabled: boolean;
-}): "keep" | "remove" | "removeWithData" {
-  if (input.type === "rdtclient") return "removeWithData";
-  // Once the seed sweep is on it owns removal, with per-indexer targets.
-  if (input.seedSweepEnabled) return "keep";
-  return input.minSeedRatio <= 0 ||
-    (input.ratio != null && input.ratio >= input.minSeedRatio)
-    ? "remove"
-    : "keep";
-}
-
 export type NormalizedState =
   | "downloading"
   | "completed"

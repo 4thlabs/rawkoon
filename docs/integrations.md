@@ -49,10 +49,12 @@ is never imported. With the action set to **None**, rdt-client ignores
 Rawkoon's removal request, so torrents and their files pile up.
 
 A debrid client never seeds, so seed ratio targets and the seed sweep don't
-apply to it. Right after a successful import Rawkoon asks rdt-client to remove
-the torrent along with its local copy; the library keeps its own hardlink or
-moved file. When some episodes of a season pack fail to import, the local
-copy is kept for a manual fix.
+apply to it. Once an import has placed every file (movies, episodes, season
+packs, books and audiobooks), Rawkoon asks rdt-client to remove the torrent
+along with its local copy; the library keeps its own hardlink or moved file.
+When an import leaves something behind, such as a season pack with failed
+episodes or a book with skipped files, the torrent and its local copy are kept
+for a manual fix. Data that another torrent shares is never deleted.
 
 Rawkoon only treats a download as complete once rdt-client reports it
 finished, not when the debrid service reaches 100%, because the local copy can
