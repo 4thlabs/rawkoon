@@ -7,6 +7,7 @@ import type {
   GrabResult,
   SearchResult,
 } from "./types";
+import { parsePublishDate } from "./publishDate";
 import type { IndexerIntegrationConfig } from "../../utils/integrations/types";
 import { randomUUID } from "crypto";
 
@@ -366,6 +367,7 @@ export class JackettAdapter implements IndexerManagerAdapter {
       protocol: "torrent",
       sizeBytes: toNumber(raw.Size) ?? toNumber(raw.size) ?? null,
       age: null,
+      publishedAt: parsePublishDate(raw.PublishDate ?? raw.publishDate),
       seeders: toNumber(raw.Seeders) ?? toNumber(raw.seeders) ?? null,
       leechers: toNumber(raw.Peers) ?? toNumber(raw.peers) ?? null,
       rejected: false,

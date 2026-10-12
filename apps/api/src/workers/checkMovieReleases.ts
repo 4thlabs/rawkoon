@@ -73,7 +73,8 @@ export async function checkMovieReleases(): Promise<void> {
         qualityProfileId: m.qualityProfileId,
       });
 
-      if (result.grabbed) continue;
+      // A grab held by the profile's delay isn't a miss; don't burn an attempt.
+      if (result.grabbed || result.delayed) continue;
 
       const next = m.searchAttempts + 1;
       const reachedCap = next >= MAX_CRON_GRAB_ATTEMPTS;

@@ -16,6 +16,10 @@ export interface QualityProfile {
   prefer_hdr: boolean;
   cutoff_resolution: number | null;
   min_seeders: number;
+  /** Minutes an automatic grab waits after a release's publish time; 0 grabs at once. */
+  grab_delay_minutes: number;
+  /** A release that already meets the cutoff skips the delay. */
+  bypass_delay_if_cutoff_met: boolean;
   custom_formats: QualityProfileCustomFormatAssignment[];
   created_at: string;
   updated_at: string;

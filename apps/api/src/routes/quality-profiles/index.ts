@@ -46,6 +46,8 @@ function mapProfile(p: ProfileWithFormats) {
     prefer_hdr: p.preferHdr,
     cutoff_resolution: p.cutoffResolution,
     min_seeders: p.minSeeders,
+    grab_delay_minutes: p.grabDelayMinutes,
+    bypass_delay_if_cutoff_met: p.bypassDelayIfCutoffMet,
     custom_formats: (p.customFormats ?? []).map((l) => ({
       custom_format_id: l.customFormatId,
       name: l.customFormat.name,
@@ -85,6 +87,8 @@ const profileBody = z.object({
   prefer_hdr: z.boolean(),
   cutoff_resolution: z.number().nullable().optional(),
   min_seeders: z.number().int().min(0).optional(),
+  grab_delay_minutes: z.number().int().min(0).max(43200).optional(),
+  bypass_delay_if_cutoff_met: z.boolean().optional(),
   custom_formats: z
     .array(
       z.object({
@@ -155,6 +159,8 @@ export const qualityProfilesRoutes = new Hono<Env>()
             preferHdr: body.prefer_hdr,
             cutoffResolution: body.cutoff_resolution ?? null,
             minSeeders: body.min_seeders ?? 0,
+            grabDelayMinutes: body.grab_delay_minutes ?? 0,
+            bypassDelayIfCutoffMet: body.bypass_delay_if_cutoff_met ?? true,
           },
         });
         if (
@@ -229,6 +235,11 @@ export const qualityProfilesRoutes = new Hono<Env>()
             preferHdr: body.prefer_hdr,
             cutoffResolution: body.cutoff_resolution ?? null,
             minSeeders: body.min_seeders ?? existing.minSeeders,
+            grabDelayMinutes:
+              body.grab_delay_minutes ?? existing.grabDelayMinutes,
+            bypassDelayIfCutoffMet:
+              body.bypass_delay_if_cutoff_met ??
+              existing.bypassDelayIfCutoffMet,
           },
         });
         if (body.custom_formats !== undefined) {

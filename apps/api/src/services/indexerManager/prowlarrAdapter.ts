@@ -7,6 +7,7 @@ import type {
   GrabResult,
   SearchResult,
 } from "./types";
+import { parsePublishDate } from "./publishDate";
 import type { IndexerIntegrationConfig } from "../../utils/integrations/types";
 import {
   toRecord,
@@ -318,6 +319,7 @@ export class ProwlarrAdapter implements IndexerManagerAdapter {
       protocol: toStringOrNull(row.protocol),
       sizeBytes: toNumberOrNull(row.size),
       age: toNumberOrNull(row.age),
+      publishedAt: parsePublishDate(row.publishDate),
       seeders: toNumberOrNull(row.seeders),
       leechers: toNumberOrNull(row.leechers),
       rejected: toBoolean(row.rejected),

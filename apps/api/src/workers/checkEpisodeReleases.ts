@@ -112,7 +112,8 @@ export async function checkEpisodeReleases(): Promise<void> {
         qualityProfileId: media.qualityProfileId,
       });
 
-      if (result.grabbed) continue;
+      // A grab held by the profile's delay isn't a miss; don't burn an attempt.
+      if (result.grabbed || result.delayed) continue;
 
       // Increment searchAttempts on all episodes in the pack; skip those at cap.
       const skippedEpisodes: typeof groupEps = [];
@@ -166,7 +167,8 @@ export async function checkEpisodeReleases(): Promise<void> {
         qualityProfileId: ep.media.qualityProfileId,
       });
 
-      if (result.grabbed) continue;
+      // A grab held by the profile's delay isn't a miss; don't burn an attempt.
+      if (result.grabbed || result.delayed) continue;
 
       const next = ep.searchAttempts + 1;
       const reachedCap = next >= MAX_CRON_GRAB_ATTEMPTS;
