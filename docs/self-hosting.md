@@ -157,10 +157,10 @@ Pick the image tag that matches how closely you want to follow development:
 | Tag | Follows | Version shown in the app |
 | --- | --- | --- |
 | `:latest` | Each release | `vX.Y.Z` |
-| `:edge` | Every change merged to `main` that passes CI, and each release | `vX.Y.Z-main.N` (the next patch number, then a build counter) |
+| `:edge` | Changes merged to `main` that pass CI, and each release | `vX.Y.Z-main.N` for a `main` build (the next patch number, then a build counter), `vX.Y.Z` once a release lands |
 | `:X.Y.Z` | Nothing: one fixed version | `vX.Y.Z` |
 
-`:edge` gets fixes as soon as they merge, and has had less testing than a release. Release notes are only written for releases, and the "App updated" notification is only sent when a release arrives, not for edge builds.
+`:edge` gets fixes as soon as they merge, and has had less testing than a release. When several changes merge close together, only the newest may get an image. Release notes are only written for releases, and edge builds never send the "App updated" notification; a release can.
 
 To switch channels, change the tag in `docker-compose.yml`, then pull and restart:
 
@@ -173,10 +173,10 @@ Rawkoon doesn't update itself. Run the same two commands to update, or use a con
 
 ### Going back from `:edge` to `:latest`
 
-The container applies database migrations when it starts, and `:edge` can carry migrations that no release has yet. An older image can't always run against a schema that has moved on, so:
+The container applies database migrations when it starts, and `:edge` can carry migrations that no release has yet. Changing the tag doesn't undo them, and nothing checks that an older image matches the schema: it will start, and may then fail in ways that are hard to trace. So:
 
 - Moving from `:edge` to `:latest` is safe once a release includes everything you ran on edge. Until then, stay on `:edge`.
-- If you have to go back sooner, restore the database from a backup taken before the switch (see [Deployment and recovery](/deployment#restore)); changing the tag alone isn't enough.
+- If you have to go back sooner, restore the database from a backup taken before the switch (see [Deployment and recovery](/deployment#restore)) before starting the older image.
 
 Take a backup before switching to `:edge` in the first place.
 
