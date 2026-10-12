@@ -147,6 +147,17 @@ describe("bucketGrowthRows", () => {
     expect(b.weeks[10].episodes).toBe(1);
   });
 
+  it("keeps a landed row in the month during the repeated DST hour", () => {
+    // Nov 1 2026: 06:15Z is the second 01:15 local; 05:30Z, the first 01:30, is already past.
+    const foldNow = new Date("2026-11-01T06:15:00Z");
+    const b = bucketGrowthRows(
+      [row("2026-11-01T05:30:00Z", "episode", 1)],
+      growthWindows(foldNow, TZ),
+    );
+    expect(b.month.episodes).toBe(1);
+    expect(b.weeks[11].episodes).toBe(1);
+  });
+
   it("returns zeroed buckets for no rows", () => {
     const b = bucketGrowthRows([], windows);
     expect(b.month.bytes).toBe(0);

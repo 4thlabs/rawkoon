@@ -169,9 +169,9 @@ export function bucketGrowthRows(
 
   for (const row of rows) {
     const ms = toWallMs(row.t, windows.timezone);
-    if (ms >= windows.month.startMs && ms <= windows.month.endMs) {
-      add(month, row);
-    }
+    // Landed rows are never in the future, so the month has no upper bound;
+    // comparing wall times there would drop rows in the repeated DST hour.
+    if (ms >= windows.month.startMs) add(month, row);
     if (
       ms >= windows.previousMonth.startMs &&
       ms <= windows.previousMonth.endMs

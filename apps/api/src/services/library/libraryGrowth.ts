@@ -124,14 +124,25 @@ export async function computeLibraryGrowth(
   };
 }
 
-/** Cached for 10 minutes, keyed by admin vs member since bytes differ. */
+export const growthCacheKey = (
+  isAdmin: boolean,
+  now: Date,
+  timeZone: string,
+): string =>
+  `library:growth:${isAdmin ? "admin" : "member"}:${calendarDateInTz(now, timeZone)}`;
+
+/**
+ * Cached for 10 minutes, keyed by admin vs member since bytes differ, and by
+ * the local date so a response never outlives the day (or month) it covers.
+ */
 export async function getLibraryGrowth(
   isAdmin: boolean,
+  now = new Date(),
 ): Promise<LibraryGrowth> {
-  const key = `library:growth:${isAdmin ? "admin" : "member"}`;
+  const key = growthCacheKey(isAdmin, now, loadConfig().TZ);
   const cached = await getJsonCache<LibraryGrowth>(key);
   if (cached) return cached;
-  const growth = await computeLibraryGrowth(isAdmin);
+  const growth = await computeLibraryGrowth(isAdmin, now);
   await setJsonCache(key, growth, CACHE_TTL_SECONDS);
   return growth;
 }
