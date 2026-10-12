@@ -43,6 +43,11 @@ describe("mapSettings", () => {
     });
   });
 
+  it("maps the minimum free space, defaulting to 10 GB", () => {
+    expect(mapSettings(row()).min_free_space_gb).toBe(10);
+    expect(mapSettings(row({ minFreeSpaceGb: 0 })).min_free_space_gb).toBe(0);
+  });
+
   it("defaults to a ratio-only private rule — no seed-time target", () => {
     expect(mapSettings(row()).private_seed_time_mins).toBeNull();
   });

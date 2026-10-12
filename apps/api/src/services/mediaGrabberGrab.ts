@@ -16,6 +16,7 @@ import {
   qualityJsonValue,
 } from "@rawkoon/api/services/mediaGrabberHelpers";
 import { tryAdoptQbDuplicate } from "@rawkoon/api/services/mediaGrabberAdopt";
+import { checkFreeSpaceForGrab } from "@rawkoon/api/services/grabSpaceCheck";
 import { resolveGrabSeason } from "@rawkoon/api/services/grabEpisodeResolver";
 
 /**
@@ -62,6 +63,8 @@ export async function grabRelease(opts: {
    * packs for different seasons of one show stay independent.
    */
   season?: number | null;
+  /** Release size from the indexer; unknown (null/0) skips the free-space check. */
+  sizeBytes?: number | null;
 }): Promise<
   { grabbed: true; releaseTitle: string } | { grabbed: false; reason: string }
 > {
@@ -115,6 +118,12 @@ export async function grabRelease(opts: {
     if (blockReason) {
       return { grabbed: false, reason: `Blocklisted: ${blockReason}` };
     }
+
+    const spaceReason = await checkFreeSpaceForGrab({
+      mediaType: media.type,
+      sizeBytes: opts.sizeBytes,
+    });
+    if (spaceReason) return { grabbed: false, reason: spaceReason };
 
     // One active grab per target. Two scheduled jobs can fire on the same tick
     // (RSS poll + the 6-hourly release sweep) off the same "wanted" snapshot,

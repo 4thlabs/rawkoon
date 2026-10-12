@@ -16,10 +16,15 @@ export function DownloadSafetySection({
   const update = useUpdateMediaPostProcessingSettings();
   const stats = useJanitorStats();
   const [exts, setExts] = useState(settings.blocked_extensions);
+  const [minFree, setMinFree] = useState(String(settings.min_free_space_gb));
 
   const onSave = async () => {
     try {
-      await update.mutateAsync({ blocked_extensions: exts });
+      const minFreeGb = Math.max(0, Math.floor(Number(minFree) || 0));
+      await update.mutateAsync({
+        blocked_extensions: exts,
+        min_free_space_gb: minFreeGb,
+      });
       toast.success(t("settings.downloadSafety.saved"));
     } catch {
       toast.error(t("settings.downloadSafety.saveError"));
@@ -35,6 +40,27 @@ export function DownloadSafetySection({
         </p>
       </div>
       <ExtensionChipInput value={exts} onChange={setExts} />
+      <div className="space-y-1">
+        <label
+          htmlFor="min-free-space-gb"
+          className="text-sm font-medium text-neutral-200"
+        >
+          {t("settings.downloadSafety.minFreeLabel")}
+        </label>
+        <p className="max-w-[68ch] text-sm text-neutral-400">
+          {t("settings.downloadSafety.minFreeHelp")}
+        </p>
+        <input
+          id="min-free-space-gb"
+          type="number"
+          min={0}
+          step={1}
+          inputMode="numeric"
+          value={minFree}
+          onChange={(e) => setMinFree(e.target.value)}
+          className="w-32 rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
+        />
+      </div>
       {stats.data && (
         <p className="text-sm text-neutral-400">
           {t("settings.downloadSafety.stats", {

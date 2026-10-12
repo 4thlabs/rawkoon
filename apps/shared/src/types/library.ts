@@ -258,6 +258,8 @@ export interface MediaPostProcessingSettings {
   /** Off until an admin opts in to automatic torrent release. */
   seed_sweep_enabled: boolean;
   blocked_extensions: string[];
+  /** Minimum GB to keep free when grabbing; 0 disables the check. */
+  min_free_space_gb: number;
   updated_at: string;
 }
 
@@ -287,6 +289,7 @@ export interface UpdateMediaPostProcessingSettingsRequest {
   private_seed_time_mins?: number | null;
   seed_sweep_enabled?: boolean;
   blocked_extensions?: string[];
+  min_free_space_gb?: number;
 }
 
 export interface LibraryScanResponse {

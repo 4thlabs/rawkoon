@@ -18,6 +18,7 @@ import {
   type CandidateRow,
 } from "@rawkoon/api/services/mediaGrabberHelpers";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
+import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import {
   releaseMatchesExpectedTitles,
   resolveSearchTitles,
@@ -241,6 +242,7 @@ export async function searchAndGrab(opts: {
       ? [aiRow, ...viable.filter((r) => r !== aiRow)]
       : viable;
 
+    let spaceRefusal: string | null = null;
     for (const candidate of ordered) {
       const downloadUrl = candidate.raw._downloadUrl;
 
@@ -254,18 +256,27 @@ export async function searchAndGrab(opts: {
         qualityParsed: candidate.parsed,
         isUpgrade,
         aiPicked: candidate === aiRow,
+        sizeBytes: candidate.size,
       });
 
       if (result.grabbed) return { ...result, aiPicked: candidate === aiRow };
 
-      // Only continue to the next candidate on a hash-level blocklist hit.
+      // Only continue to the next candidate on a blocklist hit or a space refusal.
       // All other failures (network, download client) are terminal.
       if (!result.grabbed && result.reason.startsWith("Blocklisted:")) continue;
+      // Smaller candidates further down may still fit.
+      if (!result.grabbed && result.reason.startsWith(SPACE_REFUSAL_PREFIX)) {
+        spaceRefusal ??= result.reason;
+        continue;
+      }
 
       return result;
     }
 
-    return { grabbed: false, reason: "No matching releases found" };
+    return {
+      grabbed: false,
+      reason: spaceRefusal ?? "No matching releases found",
+    };
   } catch (e) {
     console.warn("[mediaGrabber] searchAndGrab failed:", e);
     return {

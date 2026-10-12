@@ -51,6 +51,7 @@ export function mapSettings(row: {
   privateSeedTimeMins?: number | null;
   seedSweepEnabled?: boolean;
   blockedExtensions?: string[];
+  minFreeSpaceGb?: number;
   updatedAt: Date;
 }) {
   return {
@@ -79,6 +80,7 @@ export function mapSettings(row: {
     private_seed_time_mins: row.privateSeedTimeMins ?? null,
     seed_sweep_enabled: row.seedSweepEnabled ?? false,
     blocked_extensions: row.blockedExtensions ?? [],
+    min_free_space_gb: row.minFreeSpaceGb ?? 10,
     updated_at: row.updatedAt.toISOString(),
   };
 }
@@ -147,6 +149,7 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
           .optional(),
         seed_sweep_enabled: z.boolean().optional(),
         blocked_extensions: z.array(z.string().max(12)).max(100).optional(),
+        min_free_space_gb: z.number().int().min(0).max(100_000).optional(),
       }),
     ),
     async (c) => {
@@ -174,6 +177,7 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
           privateSeedTimeMins?: number | null;
           seedSweepEnabled?: boolean;
           blockedExtensions?: string[];
+          minFreeSpaceGb?: number;
         } = {};
         if (body.movies_library_path !== undefined)
           update.moviesLibraryPath = body.movies_library_path;
@@ -235,6 +239,8 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
           update.privateSeedTimeMins = body.private_seed_time_mins;
         if (body.seed_sweep_enabled !== undefined)
           update.seedSweepEnabled = body.seed_sweep_enabled;
+        if (body.min_free_space_gb !== undefined)
+          update.minFreeSpaceGb = body.min_free_space_gb;
         if (body.blocked_extensions !== undefined) {
           const normalized = body.blocked_extensions.map(normalizeExtension);
           if (normalized.some((e) => e === null)) {

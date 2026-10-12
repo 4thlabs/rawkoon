@@ -362,6 +362,7 @@ export async function pollIndexerRss(): Promise<RssRunStats | null> {
         releaseTitle: best.release.title,
         indexer: best.release.indexer,
         grabSource: "rss",
+        sizeBytes: best.release.sizeBytes,
         aiPicked: best.picked_by === "ai",
         aiReasoning: best.ai_reasoning,
       });
