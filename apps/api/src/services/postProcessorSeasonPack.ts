@@ -23,6 +23,7 @@ import {
   sanitizePathTemplateOutput,
 } from "@rawkoon/api/utils/medias/fileTemplate";
 import type { DownloadClientAdapter } from "@rawkoon/api/services/downloadClient/types";
+import { loadImportSeedRules } from "@rawkoon/api/services/seeding/importSeedRule";
 import {
   afterImportAction,
   applyAfterImportAction,
@@ -85,6 +86,7 @@ export async function postProcessSeasonPack(
     episode: null;
     season: number | null;
     torrentHash: string | null;
+    indexer: string | null;
     releaseTitle: string;
     qualityParsed: unknown;
     isUpgrade?: boolean;
@@ -93,7 +95,6 @@ export async function postProcessSeasonPack(
     showsLibraryPath: string | null;
     episodeTemplate: string | null;
     fileOperation: string | null;
-    minSeedRatio: number;
     seedSweepEnabled: boolean;
   },
   op: "hardlink" | "move",
@@ -484,7 +485,13 @@ export async function postProcessSeasonPack(
     afterImportAction({
       type: adapter.type,
       ratio: tor.ratio,
-      minSeedRatio: settings.minSeedRatio,
+      seedingTimeSecs: tor.seedingTimeSecs,
+      rules: await loadImportSeedRules({
+        hash,
+        indexer: dh.indexer,
+        type: adapter.type,
+        seedSweepEnabled: settings.seedSweepEnabled,
+      }),
       seedSweepEnabled: settings.seedSweepEnabled,
       // Episodes that failed to import still need their files.
       // Files left out of the mapping still need their data for a manual import.
