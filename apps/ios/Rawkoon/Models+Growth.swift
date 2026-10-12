@@ -81,4 +81,13 @@ nonisolated enum GrowthDates {
               let end = calendar.date(byAdding: .day, value: 6, to: s) else { return true }
         return end < sinceDate
     }
+
+    /// True when `start` ("YYYY-MM-DD") falls in the calendar month containing `now` in `timezone`.
+    static func isCurrentMonth(start: String, timezone: String, now: Date = Date()) -> Bool {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: timezone) ?? .current
+        let parts = c.dateComponents([.year, .month], from: now)
+        guard let y = parts.year, let m = parts.month else { return false }
+        return start.hasPrefix(String(format: "%04d-%02d-", y, m))
+    }
 }
