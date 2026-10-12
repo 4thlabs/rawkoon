@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FetcherProvider, type Fetcher } from "@/lib/api/context";
 import {
   resolveAiTarget,
+  aiPickQueryKey,
+  type AiPickInput,
   useAiDismissal,
   useAiPick,
 } from "@/pages/medias/_component/useAiPick";
@@ -105,10 +107,21 @@ describe("resolveAiTarget", () => {
 });
 
 describe("useAiDismissal", () => {
+  const input = (over: Partial<AiPickInput> = {}): AiPickInput => ({
+    releases: [release],
+    mediaTitle: "Show",
+    mediaYear: 2020,
+    mediaType: "tv",
+    libraryMediaId: 7,
+    season: 1,
+    episode: null,
+    ...over,
+  });
+
   it("shows the suggestion again after switching target with identical results", () => {
     const { result, rerender } = renderHook(
       ({ season }: { season: number | null }) =>
-        useAiDismissal("g1,g2", season, null),
+        useAiDismissal(aiPickQueryKey(input({ season }))),
       { initialProps: { season: 1 as number | null } },
     );
     act(() => result.current.dismiss());
@@ -117,11 +130,11 @@ describe("useAiDismissal", () => {
     expect(result.current.dismissed).toBe(false);
   });
 
-  it("stays dismissed when the same target and results re-render", () => {
+  it("stays dismissed when the same pick re-renders", () => {
     const { result, rerender } = renderHook(
       ({ n }: { n: number }) => {
         void n;
-        return useAiDismissal("g1,g2", 1, null);
+        return useAiDismissal(aiPickQueryKey(input()));
       },
       { initialProps: { n: 0 } },
     );
@@ -131,12 +144,25 @@ describe("useAiDismissal", () => {
   });
 
   it("resets when the candidate set changes", () => {
+    const other = { ...release, guid: "g2" } as InteractiveReleaseItem;
     const { result, rerender } = renderHook(
-      ({ keys }: { keys: string }) => useAiDismissal(keys, 1, null),
-      { initialProps: { keys: "g1" } },
+      ({ releases }: { releases: InteractiveReleaseItem[] }) =>
+        useAiDismissal(aiPickQueryKey(input({ releases }))),
+      { initialProps: { releases: [release] } },
     );
     act(() => result.current.dismiss());
-    rerender({ keys: "g1,g2" });
+    rerender({ releases: [release, other] });
+    expect(result.current.dismissed).toBe(false);
+  });
+
+  it("resets when the media changes with identical results", () => {
+    const { result, rerender } = renderHook(
+      ({ mediaTitle }: { mediaTitle: string }) =>
+        useAiDismissal(aiPickQueryKey(input({ mediaTitle }))),
+      { initialProps: { mediaTitle: "Show" } },
+    );
+    act(() => result.current.dismiss());
+    rerender({ mediaTitle: "Other Show" });
     expect(result.current.dismissed).toBe(false);
   });
 });

@@ -7,7 +7,9 @@ import { useCurrentUser } from "@/lib/auth/useAuth";
 import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
 import { useAiProviderIntegration } from "@/pages/settings/useAiProviderIntegration";
 import {
+  aiPickQueryKey,
   resolveAiTarget,
+  type AiPickInput,
   useAiDismissal,
   useAiPick,
 } from "@/pages/medias/_component/useAiPick";
@@ -57,26 +59,23 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
 
   const aiTarget = resolveAiTarget(props.episodeTarget, state.selectedSeason);
 
-  const candidateKeys = state.releases
-    .filter((r) => !r.rejected)
-    .map((r) => r.guid)
-    .join(",");
-
-  const aiPick = useAiPick({
-    enabled:
-      aiEnabled && state.releases.length > 0 && !state.activeQuery.isLoading,
+  const aiInput: AiPickInput = {
     releases: state.releases,
     mediaTitle: props.media?.title ?? props.defaultSearchQuery ?? "",
     mediaYear: props.media?.year ?? null,
     mediaType: mediaType as "movie" | "tv",
     libraryMediaId: props.libraryMediaId,
     ...aiTarget,
+  };
+
+  const aiPick = useAiPick({
+    enabled:
+      aiEnabled && state.releases.length > 0 && !state.activeQuery.isLoading,
+    ...aiInput,
   });
 
   const { dismissed: aiDismissed, dismiss: dismissAi } = useAiDismissal(
-    candidateKeys,
-    aiTarget.season,
-    aiTarget.episode,
+    aiPickQueryKey(aiInput),
   );
 
   const pickedRelease =
