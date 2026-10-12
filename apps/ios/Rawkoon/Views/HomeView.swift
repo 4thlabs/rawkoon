@@ -18,6 +18,8 @@ struct HomeView: View {
     @State var attention: [AttentionItem] = []
     @State var rss: RssStatusResponse?
     @State var stats: LibraryStats?
+    @State private var growth: LibraryGrowth?
+    @State private var booksEnabled = true
     @State var reencodeSummary: TranscodeSummary?
     @State private var loading = true
     /// When the last full refresh finished, so switching back to Home within a
@@ -137,6 +139,11 @@ struct HomeView: View {
             )
             ListeningStatsCard(refreshToken: continueToken)
                 .padding(.horizontal, 16)
+            if let growth, !growth.isEmpty {
+                LibraryGrowthCard(growth: growth, isAdmin: model.isAdmin, showBooks: booksEnabled)
+                    .padding(.horizontal, 16)
+                    .transition(.rawkoonSwap)
+            }
             if !recent.isEmpty {
                 rail("Recently added", recent.map(RailItem.library))
             }
@@ -259,6 +266,12 @@ struct HomeView: View {
         if stats == nil {
             stats = client.cachedLibraryStats()
         }
+        if growth == nil, let cached = client.cached(Endpoints.libraryGrowth) {
+            growth = cached.value.growth
+        }
+        if let features = client.cached(Endpoints.systemFeatures) {
+            booksEnabled = features.value.booksEnabled
+        }
         if !recent.isEmpty || !upcoming.isEmpty || discover != nil {
             loading = false
         }
@@ -284,6 +297,8 @@ struct HomeView: View {
         async let attnR = client.libraryAttention()
         async let rssR = client.rssStatus()
         let isAdmin = model.isAdmin
+        async let growthR = client.libraryGrowth()
+        async let featuresR = client.systemFeatures()
         async let statsR: LibraryStats? = isAdmin ? client.libraryStats() : nil
 
         // A failed refetch (a transient error on pull-to-refresh) must not blank
@@ -320,6 +335,13 @@ struct HomeView: View {
         }
         if let s = try? await statsR {
             stats = s
+        }
+        if let features = try? await featuresR {
+            booksEnabled = features.booksEnabled
+        }
+        // Animated so the card swaps in and the rails below glide down instead of jumping.
+        if let fresh = try? await growthR {
+            withRawkoonMotion(RawkoonMotion.spring) { growth = fresh }
         }
 
         loading = false

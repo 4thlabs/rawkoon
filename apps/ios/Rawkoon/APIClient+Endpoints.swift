@@ -26,6 +26,7 @@ nonisolated enum Endpoints {
     static let rssStatus = Endpoint<RssStatusResponse>(path: "/api/library/rss-status")
     static let systemVersion = Endpoint<SystemVersion>(path: "/api/system/version")
     static let listeningStats = Endpoint<ListeningStats>(path: "/api/books/listening-stats")
+    static let libraryGrowth = Endpoint<LibraryGrowthResponse>(path: "/api/library/growth")
 
     static func libraryList(
         type: String? = nil, status: String? = nil, q: String? = nil, page: Int? = nil, limit: Int? = nil,
