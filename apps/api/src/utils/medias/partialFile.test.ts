@@ -2,7 +2,11 @@ import { describe, expect, it } from "bun:test";
 import { mkdtemp, readdir, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { partialPathFor, removeStalePartials } from "./partialFile";
+import {
+  partialPathFor,
+  removeStalePartials,
+  withPartial,
+} from "./partialFile";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -49,6 +53,27 @@ describe("removeStalePartials", () => {
     await withDir(async (dir) => {
       await removeStalePartials(join(dir, "missing", "Movie.mkv"));
       expect(await readdir(dir)).toEqual([]);
+    });
+  });
+
+  it("never matches another destination whose name starts the same", async () => {
+    await withDir(async (dir) => {
+      const dst = join(dir, "A.mkv");
+      const longer = partialPathFor(join(dir, "A.mkv.backup.mkv"));
+      await aged(longer, 7 * HOUR);
+      await removeStalePartials(dst);
+      expect(await readdir(dir)).toEqual([longer.slice(dir.length + 1)]);
+    });
+  });
+
+  it("leaves a temp file this process is still writing, however old", async () => {
+    await withDir(async (dir) => {
+      const dst = join(dir, "Movie.mkv");
+      await withPartial(dst, async (partial) => {
+        await aged(partial, 7 * HOUR);
+        await removeStalePartials(dst);
+        expect(await readdir(dir)).toEqual([partial.slice(dir.length + 1)]);
+      });
     });
   });
 });

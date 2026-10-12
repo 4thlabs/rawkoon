@@ -3,8 +3,8 @@ import { dirname } from "node:path";
 import { scanMediaInfo } from "@rawkoon/api/utils/medias/mediainfoScanner";
 import type { MediaFileData } from "@rawkoon/api/utils/medias/mediainfoParser";
 import {
-  partialPathFor,
   removeStalePartials,
+  withPartial,
 } from "@rawkoon/api/utils/medias/partialFile";
 
 const MERGE_TIMEOUT_MS = 600_000;
@@ -76,20 +76,21 @@ export async function mkvAppend(
   // Merged into a hidden file and renamed into place only once verified, so a
   // failed, rejected or interrupted merge never leaves a file at outPath.
   await removeStalePartials(outPath);
-  const partial = partialPathFor(outPath);
-  const merged = await mergeInto(bin, parts, partial, expected);
-  if (!merged) {
-    await unlink(partial).catch(() => {});
-    return false;
-  }
-  try {
-    await rename(partial, outPath);
-  } catch (e) {
-    console.warn(`[mkvMerge] Could not move the merge into "${outPath}":`, e);
-    await unlink(partial).catch(() => {});
-    return false;
-  }
-  return true;
+  return withPartial(outPath, async (partial) => {
+    const merged = await mergeInto(bin, parts, partial, expected);
+    if (!merged) {
+      await unlink(partial).catch(() => {});
+      return false;
+    }
+    try {
+      await rename(partial, outPath);
+    } catch (e) {
+      console.warn(`[mkvMerge] Could not move the merge into "${outPath}":`, e);
+      await unlink(partial).catch(() => {});
+      return false;
+    }
+    return true;
+  });
 }
 
 async function mergeInto(
