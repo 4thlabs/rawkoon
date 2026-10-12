@@ -7,12 +7,24 @@ import {
 
 const NO_TARGET: Rule = { ratio: null, seedTimeMins: null };
 
-/** The target the seed sweep would use for this indexer; skipped when the import-time decision ignores it. */
+/**
+ * The target the seed sweep would use for this indexer; skipped when the
+ * import-time decision ignores it. Null when it can't be loaded, so the files
+ * already placed by the import aren't failed over a lookup.
+ */
 export async function loadImportSeedRule(input: {
   indexer: string | null;
   type: DownloadClientType;
   seedSweepEnabled: boolean;
-}): Promise<Rule> {
+}): Promise<Rule | null> {
   if (input.type === "rdtclient" || input.seedSweepEnabled) return NO_TARGET;
-  return resolveIndexerRule(input.indexer, await loadSeedContext()).rule;
+  try {
+    return resolveIndexerRule(input.indexer, await loadSeedContext()).rule;
+  } catch (error) {
+    console.warn(
+      "[postProcess] Could not load the seed target, keeping the torrent:",
+      error,
+    );
+    return null;
+  }
 }

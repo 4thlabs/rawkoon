@@ -1,18 +1,23 @@
 import { describe, expect, it, mock, afterAll } from "bun:test";
 
+let contextFails = false;
+
 mock.module("@rawkoon/api/services/seeding/seedSweep", () => ({
-  loadSeedContext: async () => ({
-    defaults: {
-      publicRule: { ratio: 1, seedTimeMins: null },
-      privateRule: { ratio: 3, seedTimeMins: 120 },
-    },
-    overrides: new Map([["special", { ratio: 5, seedTimeMins: null }]]),
-    privacy: new Map([
-      ["pub", false],
-      ["special", true],
-    ]),
-    moveMode: false,
-  }),
+  loadSeedContext: async () => {
+    if (contextFails) throw new Error("db down");
+    return {
+      defaults: {
+        publicRule: { ratio: 1, seedTimeMins: null },
+        privateRule: { ratio: 3, seedTimeMins: 120 },
+      },
+      overrides: new Map([["special", { ratio: 5, seedTimeMins: null }]]),
+      privacy: new Map([
+        ["pub", false],
+        ["special", true],
+      ]),
+      moveMode: false,
+    };
+  },
 }));
 
 const { loadImportSeedRule } = await import(
@@ -37,6 +42,15 @@ describe("loadImportSeedRule", () => {
       ratio: 1,
       seedTimeMins: null,
     });
+  });
+
+  it("returns null when the seed context can't be loaded", async () => {
+    contextFails = true;
+    try {
+      expect(await loadImportSeedRule({ ...base, indexer: "Pub" })).toBeNull();
+    } finally {
+      contextFails = false;
+    }
   });
 
   it("lets a per-indexer override win", async () => {

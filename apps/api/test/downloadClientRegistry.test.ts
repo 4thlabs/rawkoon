@@ -27,6 +27,12 @@ describe("afterImportAction", () => {
     fullyImported: true,
   };
 
+  it("keeps the torrent when its seed target is unknown", () => {
+    expect(
+      afterImportAction({ ...base, type: "qbittorrent", ratio: 9, rule: null }),
+    ).toBe("keep");
+  });
+
   it("keeps a torrent on a seeding client until its ratio is met", () => {
     expect(afterImportAction({ ...base, type: "qbittorrent" })).toBe("keep");
     expect(afterImportAction({ ...base, type: "qbittorrent", ratio: 2 })).toBe(

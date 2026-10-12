@@ -16,8 +16,8 @@ export function afterImportAction(input: {
   type: DownloadClientType;
   ratio: number | null;
   seedingTimeSecs: number | null;
-  /** The seed target the sweep would apply to this torrent's indexer. */
-  rule: Rule;
+  /** The seed target the sweep would apply to this torrent's indexer; null when unknown. */
+  rule: Rule | null;
   seedSweepEnabled: boolean;
   /** Every file was placed by this import, so nothing still needs the source. */
   fullyImported: boolean;
@@ -27,7 +27,7 @@ export function afterImportAction(input: {
     return input.fullyImported ? "removeWithData" : "keep";
   }
   // Once the seed sweep is on it owns removal, with per-indexer targets.
-  if (input.seedSweepEnabled) return "keep";
+  if (input.seedSweepEnabled || input.rule == null) return "keep";
   return isSeedTargetMet(
     {
       ratio: input.ratio,
