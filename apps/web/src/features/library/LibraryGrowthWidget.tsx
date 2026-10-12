@@ -91,7 +91,9 @@ export function LibraryGrowthWidget() {
           </div>
           <div
             className="grid gap-2"
-            style={{ gridTemplateColumns: `repeat(${figures.length}, 1fr)` }}
+            style={{
+              gridTemplateColumns: `repeat(${figures.length}, minmax(0, 1fr))`,
+            }}
           >
             {figures.map((f) => (
               <div
@@ -107,22 +109,25 @@ export function LibraryGrowthWidget() {
               </div>
             ))}
           </div>
-          <GrowthBars
-            growth={growth}
-            showBytes={showBytes}
-            booksEnabled={booksEnabled}
-            locale={locale}
-          />
-          <div className="flex justify-between gap-2 text-xs text-neutral-400">
-            <span>
-              {t("libraryGrowth.upgrades", { count: growth.month.upgrades })}
-            </span>
-            {sinceDate ? (
-              <span>{t("libraryGrowth.since", { date: sinceDate })}</span>
-            ) : null}
-          </div>
         </div>
       </button>
+      {/* Outside the button: the bars are focusable for their tooltips. */}
+      <div className="space-y-4 px-4 pb-4">
+        <GrowthBars
+          growth={growth}
+          showBytes={showBytes}
+          booksEnabled={booksEnabled}
+          locale={locale}
+        />
+        <div className="flex justify-between gap-2 text-xs text-neutral-400">
+          <span>
+            {t("libraryGrowth.upgrades", { count: growth.month.upgrades })}
+          </span>
+          {sinceDate ? (
+            <span>{t("libraryGrowth.since", { date: sinceDate })}</span>
+          ) : null}
+        </div>
+      </div>
     </WidgetShell>
   );
 }

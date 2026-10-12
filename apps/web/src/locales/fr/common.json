@@ -2349,8 +2349,8 @@
     "weekOf": "Semaine du {{date}}",
     "noData": "Pas de données",
     "thisWeek": "Cette semaine",
-    "upgrades_one": "{{count}} amélioration",
-    "upgrades_other": "{{count}} améliorations",
+    "upgrades_one": "{{count}} mise à niveau",
+    "upgrades_other": "{{count}} mises à niveau",
     "since": "Depuis le {{date}}"
   },
   "listening": {

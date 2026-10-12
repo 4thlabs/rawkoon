@@ -604,8 +604,6 @@ model DownloadHistory {
   @@index([episodeId], map: "ix_download_history_episode_id")
   /// Speeds MAX(grabbed_at) / latest-grab lookups per media (library list sort)
   @@index([mediaId, grabbedAt(sort: Desc)], map: "ix_download_history_media_id_grabbed_at")
-  /// Library growth widget: landed items by completion time.
-  @@index([completedAt], map: "ix_download_history_completed_at")
   /// The active-download poll (every ~20s) is served by a PARTIAL index that
   /// Prisma cannot express, created in the 20260810120000_query_performance
   /// migration: (grabbed_at) WHERE completed_at IS NULL AND failed = false.
