@@ -62,7 +62,7 @@ describe("LibraryGrowthWidget", () => {
 
   it("shows bytes and a percent comparison for admins", () => {
     renderWithProviders(<LibraryGrowthWidget />);
-    expect(screen.getByText("4.0 GB")).toBeInTheDocument();
+    expect(screen.getByText("4.29 GB")).toBeInTheDocument();
     expect(
       screen.getByText(/libraryGrowth\.vsPrevious.*percent:100/),
     ).toBeInTheDocument();

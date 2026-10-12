@@ -1,3 +1,4 @@
+import { formatBytes } from "@/lib/utils/format";
 import { memo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, Loader2, X } from "lucide-react";
@@ -16,16 +17,8 @@ import { ReleaseDetails } from "@/features/downloadsImport/components/ReleaseDet
 import { TmdbAssignPopover } from "@/features/downloadsImport/components/TmdbAssignPopover";
 import type { TmdbMediaSearchItem } from "@rawkoon/shared/types";
 
-function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return "—";
-  const units = ["B", "KiB", "MiB", "GiB"];
-  let n = bytes;
-  let i = 0;
-  while (n >= 1024 && i < units.length - 1) {
-    n /= 1024;
-    i++;
-  }
-  return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+function formatSize(bytes: number): string {
+  return Number.isFinite(bytes) && bytes > 0 ? formatBytes(bytes) : "—";
 }
 
 /** Shared CSS grid template — keep in sync with the header row in DownloadsTable. */
@@ -110,7 +103,7 @@ function DownloadRowImpl({
         </div>
         <div className="font-medium text-white truncate">{row.file_name}</div>
         <div className="text-neutral-300 whitespace-nowrap text-xs sm:text-sm">
-          {formatBytes(row.size_bytes)}
+          {formatSize(row.size_bytes)}
         </div>
         <div className="text-neutral-500 text-xs">{parsed.quality ?? "—"}</div>
         <div className="text-neutral-500 truncate text-xs hidden md:block">

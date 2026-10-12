@@ -1,3 +1,4 @@
+import i18n from "i18next";
 import type { User } from "@rawkoon/shared/types";
 
 export function formatDisplayName(
@@ -89,15 +90,58 @@ export function formatCronTrigger(
   return trigger;
 }
 
-export function formatBytes(bytes: number | null | undefined): string {
-  if (bytes == null || !Number.isFinite(bytes) || bytes <= 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  const power = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    units.length - 1,
+const SIZE_UNITS = {
+  en: {
+    byte: "byte",
+    bytes: "bytes",
+    zero: "Zero KB",
+    units: ["KB", "MB", "GB", "TB", "PB"],
+  },
+  fr: {
+    byte: "octet",
+    bytes: "octets",
+    zero: "Zéro Ko",
+    units: ["Ko", "Mo", "Go", "To", "Po"],
+  },
+} as const;
+/** Fraction digits per unit, from KB up, as Apple's adaptive file sizes use them. */
+const SIZE_DIGITS = [0, 1, 2, 2, 2];
+
+/**
+ * Decimal file size, matching the iOS app (ByteCountFormatter, .file style):
+ * 1 KB = 1000 bytes, "Zero KB", whole bytes below 1 KB, then 0/1/2 decimals
+ * for KB/MB/GB+, trailing zeros dropped. Follows the UI language.
+ */
+export function formatBytes(
+  bytes: number | null | undefined,
+  language: string = i18n.resolvedLanguage ?? i18n.language ?? "en",
+): string {
+  const lang = language.startsWith("fr") ? "fr" : "en";
+  const names = SIZE_UNITS[lang];
+  if (bytes == null || !Number.isFinite(bytes) || bytes <= 0) return names.zero;
+  if (bytes < 1000) {
+    const n = Math.round(bytes);
+    return `${n} ${n === 1 ? names.byte : names.bytes}`;
+  }
+  let index = Math.min(
+    Math.floor(Math.log10(bytes) / 3) - 1,
+    names.units.length - 1,
   );
-  const value = bytes / 1024 ** power;
-  return `${value >= 100 ? value.toFixed(0) : value.toFixed(1)} ${units[power]}`;
+  let value = bytes / 1000 ** (index + 1);
+  // Rounding can carry into the next unit: 999,999 bytes shows as "1 MB".
+  const factor = 10 ** SIZE_DIGITS[index];
+  if (
+    Math.round(value * factor) / factor >= 1000 &&
+    index < names.units.length - 1
+  ) {
+    index += 1;
+    value = bytes / 1000 ** (index + 1);
+  }
+  const number = new Intl.NumberFormat(lang === "fr" ? "fr-CA" : "en-CA", {
+    maximumFractionDigits: SIZE_DIGITS[index],
+    useGrouping: false,
+  }).format(value);
+  return `${number} ${names.units[index]}`;
 }
 
 export function formatSpeed(bytesPerSecond: number | null | undefined): string {

@@ -1,10 +1,8 @@
+import { formatBytes as formatSize } from "@/lib/utils/format";
 import type { TranscodeJobSettings } from "@rawkoon/shared/types";
 
 export function formatBytes(bytes: string | number | bigint): string {
-  const n = Number(bytes);
-  if (n >= 1e12) return `${(n / 1e12).toFixed(2)} TB`;
-  if (n >= 1e9) return `${(n / 1e9).toFixed(1)} GB`;
-  return `${Math.round(n / 1e6)} MB`;
+  return formatSize(Number(bytes));
 }
 
 export function formatDuration(secs: number): string {

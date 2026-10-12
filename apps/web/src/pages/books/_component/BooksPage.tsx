@@ -1,3 +1,4 @@
+import { formatBytes } from "@/lib/utils/format";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
@@ -35,15 +36,10 @@ import { BookGrid } from "./BookGrid";
 import { BookReadBadge, BookReadContextMenu } from "./BookReadActions";
 import { aggregateState, byKindOrder, stateTokens } from "./bookState";
 
-const formatBytes = (raw: string | null): string => {
+const formatSize = (raw: string | null): string => {
   if (!raw) return "";
   const n = Number(raw);
-  if (!Number.isFinite(n) || n === 0) return "";
-  const mb = n / 1_048_576;
-  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
-  // A decimal below 10 MB: most ebooks live there, and rounding turned every
-  // one of them into "1 MB".
-  return mb >= 10 ? `${Math.round(mb)} MB` : `${mb.toFixed(1)} MB`;
+  return Number.isFinite(n) && n > 0 ? formatBytes(n) : "";
 };
 
 /**
@@ -72,7 +68,7 @@ function EditionLedgerLine({ edition }: { edition: BookEdition }) {
         {edition.best_format ?? ""}
       </span>
       <span className="w-16 shrink-0 text-right font-mono text-[11px] text-neutral-500">
-        {edition.file_count > 0 ? formatBytes(edition.total_size_bytes) : ""}
+        {edition.file_count > 0 ? formatSize(edition.total_size_bytes) : ""}
       </span>
       <span className={`w-24 shrink-0 text-right ${tokens.text}`}>
         {t(`books.status.${edition.status}`, { defaultValue: edition.status })}
