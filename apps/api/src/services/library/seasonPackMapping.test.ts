@@ -317,4 +317,59 @@ describe("mapSeasonPack season boundaries", () => {
     };
     expect(mapSeasonPack([file], provider, 2).ok).toBe(false);
   });
+
+  const twoSeasons: ProviderEpisode[] = [1, 2].flatMap((season) =>
+    Array.from({ length: 12 }, (_, i) => ({
+      id: season * 100 + i + 1,
+      season,
+      episode: i + 1,
+      title: `S${season}E${i + 1}`,
+    })),
+  );
+  const seasonFile = (
+    season: number | null,
+    episode: number,
+  ): RawSourceFile => ({
+    path: `/dl/${season ?? "abs"}-${episode}.mkv`,
+    fileName: `${season ?? "abs"}-${episode}.mkv`,
+    season,
+    episode,
+    part: null,
+    ext: ".mkv",
+  });
+
+  it("places absolute-numbered files across seasons without moving named ones", () => {
+    const result = mapSeasonPack(
+      [seasonFile(2, 1), seasonFile(null, 14), seasonFile(null, 15)],
+      twoSeasons,
+      null,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(
+      result.placements.map((p) => [p.episode.season, p.episode.episode]),
+    ).toEqual([
+      [2, 1],
+      [2, 2],
+      [2, 3],
+    ]);
+    expect(result.skipped).toBeUndefined();
+  });
+
+  it("shifts continued numbering back alongside season-less files", () => {
+    const result = mapSeasonPack(
+      [seasonFile(2, 13), seasonFile(2, 14), seasonFile(null, 3)],
+      twoSeasons,
+      2,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(
+      result.placements.map((p) => [p.episode.season, p.episode.episode]),
+    ).toEqual([
+      [2, 1],
+      [2, 2],
+      [2, 3],
+    ]);
+  });
 });
