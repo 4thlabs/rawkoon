@@ -1,5 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseSeasonEpisode, replaceFile } from "./postProcessorHelpers";
@@ -73,6 +80,30 @@ describe("replaceFile", () => {
       await replaceFile(src, dst, "hardlink");
       await replaceFile(src, dst, "hardlink");
       expect(await readFile(dst, "utf8")).toBe("new release");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps a leftover temp file that holds a different release", async () => {
+    const { dir, src, dst } = await setup();
+    try {
+      const stale = join(dir, "lib", ".Movie (2020).mkv.rawkoon-upgrade");
+      await writeFile(stale, "interrupted release");
+      await replaceFile(src, dst, "hardlink");
+      expect(await readFile(dst, "utf8")).toBe("new release");
+      expect(await readFile(stale, "utf8")).toBe("interrupted release");
+      expect(await readdir(join(dir, "lib"))).toHaveLength(2);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does nothing when the source already is the destination", async () => {
+    const { dir, dst } = await setup();
+    try {
+      await replaceFile(dst, dst, "move");
+      expect(await readFile(dst, "utf8")).toBe("old release");
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

@@ -140,6 +140,23 @@ export async function placeFile(
   }
 }
 
+const exists = (path: string): Promise<boolean> =>
+  stat(path).then(
+    () => true,
+    () => false,
+  );
+
+/** Rename, falling back to copy and delete across devices. */
+async function moveFile(from: string, to: string): Promise<void> {
+  try {
+    await rename(from, to);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "EXDEV") throw e;
+    await copyFile(from, to);
+    await unlink(from);
+  }
+}
+
 /** Whether two paths are the same file on disk; a hardlink counts. */
 export async function isSameFile(a: string, b: string): Promise<boolean> {
   try {
@@ -164,14 +181,19 @@ export async function replaceFile(
   operation: "hardlink" | "move",
 ): Promise<void> {
   if (await isSameFile(src, dst)) return;
-  const tmp = join(dirname(dst), `.${basename(dst)}.rawkoon-upgrade`);
-  await unlink(tmp).catch(() => {});
+  let tmp = join(dirname(dst), `.${basename(dst)}.rawkoon-upgrade`);
+  if (await exists(tmp)) {
+    // A leftover from an interrupted replace may be the only copy of a release:
+    // drop it only when it is just another link to this source.
+    if (await isSameFile(tmp, src)) await unlink(tmp);
+    else tmp = `${tmp}-${Date.now()}`;
+  }
   await placeFile(src, tmp, operation);
   try {
     await rename(tmp, dst);
   } catch (e) {
     // A moved source is only at tmp now: put it back rather than delete it.
-    await (operation === "move" ? rename(tmp, src) : unlink(tmp)).catch(
+    await (operation === "move" ? moveFile(tmp, src) : unlink(tmp)).catch(
       (cleanupError) =>
         console.warn(`[postProcess] Could not clean up ${tmp}:`, cleanupError),
     );

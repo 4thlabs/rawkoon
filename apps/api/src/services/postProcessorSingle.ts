@@ -1,6 +1,6 @@
 import { basename, extname, join } from "node:path";
 import type { PostProcessFailure } from "@rawkoon/api/services/postProcessFailure";
-import { stat, unlink } from "node:fs/promises";
+import { realpath, stat, unlink } from "node:fs/promises";
 
 import { prisma } from "@rawkoon/api/db";
 import { classifyLanguageTags, type LibraryAudioTrack } from "@rawkoon/shared";
@@ -278,7 +278,8 @@ export async function postProcess(downloadHistoryId: number): Promise<
       await placeFile(srcVideo, destinationPath, op);
       placed = true;
     } else if (await isSameFile(srcVideo, destinationPath)) {
-      placed = true;
+      // A download that already sits at its library path is not a separate copy.
+      placed = (await realpath(srcVideo)) !== (await realpath(destinationPath));
     } else if (dh.isUpgrade) {
       await replaceFile(srcVideo, destinationPath, op);
       placed = true;
@@ -379,6 +380,11 @@ export async function postProcess(downloadHistoryId: number): Promise<
       const idsToDelete: number[] = [];
       await Promise.all(
         oldFiles.map(async (oldFile) => {
+          // A duplicate row for the destination now points at the new file.
+          if (oldFile.filePath === destinationPath) {
+            idsToDelete.push(oldFile.id);
+            return;
+          }
           try {
             await unlink(oldFile.filePath);
             idsToDelete.push(oldFile.id);
