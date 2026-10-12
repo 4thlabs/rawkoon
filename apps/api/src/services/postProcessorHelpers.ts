@@ -1,4 +1,5 @@
 import { parseReleaseStructure } from "@rawkoon/shared/utils/releaseStructure";
+import { randomUUID } from "node:crypto";
 import {
   copyFile,
   link,
@@ -85,7 +86,11 @@ function inodeMatch(
  * path that a retry would take for a finished import.
  */
 export async function copyFileAtomic(src: string, dst: string): Promise<void> {
-  const partial = join(dirname(dst), `.${basename(dst)}.rawkoon-partial`);
+  // Unique per attempt, so a failed attempt never removes another's copy.
+  const partial = join(
+    dirname(dst),
+    `.${basename(dst)}.${randomUUID()}.rawkoon-partial`,
+  );
   try {
     await copyFile(src, partial);
     await rename(partial, dst);
