@@ -433,3 +433,33 @@ export interface LibraryAttentionItem {
 export interface LibraryAttentionResponse {
   items: LibraryAttentionItem[];
 }
+
+/** Counts of what landed in the library over one window. */
+export interface LibraryGrowthBucket {
+  /** First day of the window, YYYY-MM-DD in the instance timezone. */
+  start: string;
+  movies: number;
+  episodes: number;
+  books: number;
+  upgrades: number;
+  /** Bytes that landed; null for non-admin users. */
+  bytes: number | null;
+}
+
+export interface LibraryGrowth {
+  timezone: string;
+  /** Current calendar month so far. */
+  month: LibraryGrowthBucket;
+  /** Previous calendar month, day 1 up to the same day-of-month and time. */
+  previous_to_date: LibraryGrowthBucket;
+  /** The whole previous calendar month. */
+  previous_month: LibraryGrowthBucket;
+  /** Exactly 12 ISO weeks (Monday start), oldest first, last = current week. */
+  weeks: LibraryGrowthBucket[];
+  /** Date of the first recorded landing, or null when nothing landed yet. */
+  since: string | null;
+}
+
+export interface LibraryGrowthResponse {
+  growth: LibraryGrowth;
+}

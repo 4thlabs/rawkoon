@@ -7,6 +7,7 @@ import { ok, serverError } from "@rawkoon/api/errors";
 import type { Env } from "@rawkoon/api/honoEnv";
 import { requireUser } from "@rawkoon/api/middleware/hono/auth";
 import { queryV } from "@rawkoon/api/middleware/validate";
+import { getLibraryGrowth } from "@rawkoon/api/services/library/libraryGrowth";
 import { buildLibraryStatsResponse } from "./libraryStats";
 
 /**
@@ -35,6 +36,7 @@ async function readDiskUsage(): Promise<{
 
 /**
  * GET /api/library/stats
+ * GET /api/library/growth
  * GET /api/library/language-tags
  * GET /api/library/download-history
  * GET /api/library/download-history/stats
@@ -83,6 +85,14 @@ export const libraryJobStatsRoutes = new Hono<Env>()
       return ok({ stats: { ...stats, ...disk } });
     } catch {
       return serverError("Failed to fetch library stats");
+    }
+  })
+
+  .get("/growth", requireUser, async (c) => {
+    try {
+      return ok({ growth: await getLibraryGrowth(c.get("user").is_admin) });
+    } catch {
+      return serverError("Failed to fetch library growth");
     }
   })
 
