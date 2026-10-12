@@ -31,7 +31,7 @@ import { resolveDownloadedStatus } from "@rawkoon/api/utils/medias/libraryHelper
 
 import {
   parseSeasonEpisode,
-  placeFile,
+  placeImportFile,
   qualityStringsFromParsed,
   resolveTorrentContentPath,
   isFullyReadable,
@@ -49,6 +49,28 @@ import {
  * Post-process a season pack / intégrale: find all video files under the torrent
  * folder, match each to a LibraryEpisode by SxxExx, hardlink/move to library.
  */
+/**
+ * Why an episode can't be placed at its library path, or null. A template
+ * without the episode number sends several episodes to one path, and a file
+ * the library records for another episode is never replaced or adopted.
+ */
+export function packPathConflict(input: {
+  sharedInPack: boolean;
+  ownerEpisodeId: number | null;
+  episodeId: number;
+}): string | null {
+  if (input.sharedInPack) {
+    return "another episode in this pack renders to the same library path; check the episode naming template";
+  }
+  if (
+    input.ownerEpisodeId != null &&
+    input.ownerEpisodeId !== input.episodeId
+  ) {
+    return "its library path already holds another episode's file";
+  }
+  return null;
+}
+
 export async function postProcessSeasonPack(
   downloadHistoryId: number,
   dh: {
@@ -65,6 +87,7 @@ export async function postProcessSeasonPack(
     torrentHash: string | null;
     releaseTitle: string;
     qualityParsed: unknown;
+    isUpgrade?: boolean;
   },
   settings: {
     showsLibraryPath: string | null;
@@ -212,8 +235,32 @@ export async function postProcessSeasonPack(
   }
 
   type EpisodeResult =
-    | { ok: true; destinationPath: string }
+    | { ok: true; destinationPath: string; placed: boolean }
     | { ok: false; error: string; fatal?: boolean };
+
+  const destinationFor = (placement: (typeof mapping.placements)[number]) => {
+    const ep = placement.episode;
+    const ext = placement.sources[0].ext;
+    const epStem =
+      renderEpisodeTemplate(settings.episodeTemplate ?? "", {
+        show: dh.media.title,
+        season: ep.season,
+        episode: ep.episode,
+        title: ep.title,
+        resolution: q.resolution,
+        source: q.source,
+        ext,
+      }) ||
+      sanitizePathTemplateOutput(
+        `${dh.media.title}/Season ${ep.season}/${dh.media.title} - S${String(ep.season).padStart(2, "0")}E${String(ep.episode).padStart(2, "0")}`,
+      );
+    return join(root, `${epStem}${ext}`);
+  };
+  const pathUses = new Map<string, number>();
+  for (const placement of mapping.placements) {
+    const path = destinationFor(placement);
+    pathUses.set(path, (pathUses.get(path) ?? 0) + 1);
+  }
 
   const PACK_CONCURRENCY = 6;
   const episodeResults: (EpisodeResult | null)[] = [];
@@ -225,26 +272,30 @@ export async function postProcessSeasonPack(
         const primary = placement.sources[0];
         const srcVideo = primary.path;
         const fn = primary.fileName;
-        const ext = primary.ext;
-        const epStem =
-          renderEpisodeTemplate(settings.episodeTemplate ?? "", {
-            show: dh.media.title,
-            season: ep.season,
-            episode: ep.episode,
-            title: ep.title,
-            resolution: q.resolution,
-            source: q.source,
-            ext,
-          }) ||
-          sanitizePathTemplateOutput(
-            `${dh.media.title}/Season ${ep.season}/${dh.media.title} - S${String(ep.season).padStart(2, "0")}E${String(ep.episode).padStart(2, "0")}`,
-          );
-        const destinationPath = join(root, `${epStem}${ext}`);
+        const destinationPath = destinationFor(placement);
+        const label = `S${ep.season}E${ep.episode}`;
+        const owner = await prisma.mediaFile.findFirst({
+          where: { filePath: destinationPath },
+          select: { episodeId: true },
+        });
+        const conflict = packPathConflict({
+          sharedInPack: (pathUses.get(destinationPath) ?? 0) > 1,
+          ownerEpisodeId: owner?.episodeId ?? null,
+          episodeId: ep.id,
+        });
+        if (conflict) return { ok: false, error: `${label}: ${conflict}` };
 
+        let placed = true;
         if (placement.kind === "merge") {
           // Track compatibility was already verified in the preflight above.
           const [a, b] = placement.sources;
-          if (!(await mkvAppend([a.path, b.path], destinationPath))) {
+          // The merge renames over its target, so only an upgrade may do that.
+          if (
+            !dh.isUpgrade &&
+            (await stat(destinationPath).catch(() => null))
+          ) {
+            placed = false;
+          } else if (!(await mkvAppend([a.path, b.path], destinationPath))) {
             // Fatal: a season missing its double episode must not be reported
             // as a successful import.
             return {
@@ -256,7 +307,7 @@ export async function postProcessSeasonPack(
           // The merged file is new content, never a hardlink to the source
           // parts. In move mode the parts are consumed; in hardlink mode they
           // stay put so the torrent keeps seeding.
-          if (op === "move") {
+          if (placed && op === "move") {
             await Promise.all(
               [a.path, b.path].map((p) =>
                 rm(p).catch((e) =>
@@ -270,7 +321,12 @@ export async function postProcessSeasonPack(
           }
         } else {
           try {
-            await placeFile(srcVideo, destinationPath, op);
+            placed = await placeImportFile(
+              srcVideo,
+              destinationPath,
+              op,
+              dh.isUpgrade === true,
+            );
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             return { ok: false, error: `S${ep.season}E${ep.episode}: ${msg}` };
@@ -360,7 +416,7 @@ export async function postProcessSeasonPack(
             error: `S${ep.season}E${ep.episode}: episode status update failed: ${msg}`,
           };
         }
-        return { ok: true, destinationPath };
+        return { ok: true, destinationPath, placed };
       }),
     );
     episodeResults.push(...chunkResults);
@@ -370,6 +426,7 @@ export async function postProcessSeasonPack(
   const errors: string[] = [];
   const fatalErrors: string[] = [];
   let firstDest: string | null = null;
+  let allPlaced = true;
   for (const result of episodeResults) {
     if (result === null) continue;
     if (!result.ok) {
@@ -377,6 +434,7 @@ export async function postProcessSeasonPack(
       if (result.fatal) fatalErrors.push(result.error);
     } else {
       processed++;
+      if (!result.placed) allPlaced = false;
       if (!firstDest) firstDest = result.destinationPath;
     }
   }
@@ -424,7 +482,7 @@ export async function postProcessSeasonPack(
       minSeedRatio: settings.minSeedRatio,
       seedSweepEnabled: settings.seedSweepEnabled,
       // Episodes that failed to import still need their files.
-      fullyImported: errors.length === 0,
+      fullyImported: errors.length === 0 && allPlaced,
     }),
     "postProcess/pack",
   );

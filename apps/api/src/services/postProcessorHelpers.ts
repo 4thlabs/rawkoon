@@ -4,6 +4,7 @@ import {
   link,
   mkdir,
   readdir,
+  realpath,
   rename,
   stat,
   unlink,
@@ -291,5 +292,29 @@ export async function isFullyReadable(
       return false;
     }
   }
+  return true;
+}
+
+/**
+ * Put a release's file at its library path. A different file already there is
+ * only replaced by an upgrade. Returns whether the release's file is now at
+ * `dst` as a copy separate from the download.
+ */
+export async function placeImportFile(
+  src: string,
+  dst: string,
+  operation: "hardlink" | "move",
+  isUpgrade: boolean,
+): Promise<boolean> {
+  if (!(await exists(dst))) {
+    await placeFile(src, dst, operation);
+    return true;
+  }
+  if (await isSameFile(src, dst)) {
+    // A download that already sits at its library path is not a separate copy.
+    return (await realpath(src)) !== (await realpath(dst));
+  }
+  if (!isUpgrade) return false;
+  await replaceFile(src, dst, operation);
   return true;
 }

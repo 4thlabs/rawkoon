@@ -1,6 +1,6 @@
 import { basename, extname, join } from "node:path";
 import type { PostProcessFailure } from "@rawkoon/api/services/postProcessFailure";
-import { realpath, stat, unlink } from "node:fs/promises";
+import { stat, unlink } from "node:fs/promises";
 
 import { prisma } from "@rawkoon/api/db";
 import { classifyLanguageTags, type LibraryAudioTrack } from "@rawkoon/shared";
@@ -27,11 +27,9 @@ import {
 import { resolveActiveAdapter } from "@rawkoon/api/services/downloadClient/registry";
 import {
   isFullyReadable,
-  isSameFile,
   markItemDownloaded,
-  placeFile,
+  placeImportFile,
   qualityStringsFromParsed,
-  replaceFile,
   resolveTorrentContentPath,
 } from "@rawkoon/api/services/postProcessorHelpers";
 import { postProcessSeasonPack } from "@rawkoon/api/services/postProcessorSeasonPack";
@@ -112,6 +110,7 @@ export async function postProcess(downloadHistoryId: number): Promise<
           torrentHash: dh.torrentHash,
           releaseTitle: dh.releaseTitle,
           qualityParsed: dh.qualityParsed,
+          isUpgrade: dh.isUpgrade,
         },
         settings,
         op,
@@ -266,24 +265,9 @@ export async function postProcess(downloadHistoryId: number): Promise<
     }
   }
 
-  // Whether the release's file is now at the destination. A different file
-  // already there is only replaced by an upgrade; otherwise it is left as is.
-  let placed = false;
+  let placed: boolean;
   try {
-    const exists = await stat(destinationPath).then(
-      () => true,
-      () => false,
-    );
-    if (!exists) {
-      await placeFile(srcVideo, destinationPath, op);
-      placed = true;
-    } else if (await isSameFile(srcVideo, destinationPath)) {
-      // A download that already sits at its library path is not a separate copy.
-      placed = (await realpath(srcVideo)) !== (await realpath(destinationPath));
-    } else if (dh.isUpgrade) {
-      await replaceFile(srcVideo, destinationPath, op);
-      placed = true;
-    }
+    placed = await placeImportFile(srcVideo, destinationPath, op, dh.isUpgrade);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { success: false, reason: msg };
