@@ -33,6 +33,10 @@ import {
   resolveTorrentContentPath,
 } from "@rawkoon/api/services/postProcessorHelpers";
 import { postProcessSeasonPack } from "@rawkoon/api/services/postProcessorSeasonPack";
+import {
+  afterImportAction,
+  applyAfterImportAction,
+} from "@rawkoon/api/services/downloadClient/afterImport";
 
 /**
  * After a library torrent completes: hardlink/move into the configured library tree.
@@ -260,11 +264,14 @@ export async function postProcess(downloadHistoryId: number): Promise<
     }
   }
 
+  // An existing file at the destination is left as is, so this run placed nothing.
+  let placed = false;
   try {
     await stat(destinationPath);
   } catch {
     try {
       await placeFile(srcVideo, destinationPath, op);
+      placed = true;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       return { success: false, reason: msg };
@@ -401,17 +408,18 @@ export async function postProcess(downloadHistoryId: number): Promise<
     console.warn("[postProcess] Status update to downloaded failed:", e);
   }
 
-  const ratio = tor.ratio;
-  const min = settings.minSeedRatio;
-  const shouldRemove = min <= 0 || (ratio != null && ratio >= min);
-  // Once the seed sweep is on it owns removal, with per-indexer targets.
-  if (shouldRemove && !settings.seedSweepEnabled) {
-    await active.adapter
-      .remove(hash, false)
-      .catch((error) =>
-        console.warn(`[postProcess] Could not remove torrent ${hash}:`, error),
-      );
-  }
+  await applyAfterImportAction(
+    active.adapter,
+    hash,
+    afterImportAction({
+      type: active.adapter.type,
+      ratio: tor.ratio,
+      minSeedRatio: settings.minSeedRatio,
+      seedSweepEnabled: settings.seedSweepEnabled,
+      fullyImported: placed,
+    }),
+    "postProcess",
+  );
 
   return { success: true, destinationPath };
 }

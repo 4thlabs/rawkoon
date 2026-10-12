@@ -27,7 +27,11 @@ export interface JackettIntegration {
   rss_indexers: string[];
 }
 
-export type DownloadClientType = "qbittorrent" | "transmission" | "deluge";
+export type DownloadClientType =
+  | "qbittorrent"
+  | "transmission"
+  | "deluge"
+  | "rdtclient";
 
 export interface DownloadClientIntegration {
   type: "download-client";

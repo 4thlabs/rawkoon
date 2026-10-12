@@ -1266,7 +1266,7 @@
       },
       "downloadClient": {
         "title": "Client de téléchargement",
-        "help": "Connectez qBittorrent, Transmission ou Deluge. Rawkoon détecte automatiquement la progression et la fin des téléchargements.",
+        "help": "Connecte qBittorrent, Transmission, Deluge ou rdt-client. Rawkoon détecte automatiquement la progression et la fin des téléchargements.",
         "client": "Client",
         "websiteUrl": "URL du client",
         "username": "Nom d'utilisateur",
@@ -1274,6 +1274,7 @@
         "passwordPlaceholder": "Laisser vide pour conserver le mot de passe actuel",
         "label": "Étiquette",
         "savePath": "Chemin de téléchargement personnalisé",
+        "rdtclientHint": "rdt-client ne partage jamais : Rawkoon retire chaque torrent et sa copie locale juste après l’import. Dans rdt-client, garde la Post Download Action sur la suppression du torrent et règle le Finished Action Delay à environ 1440 minutes, pour qu’il ne retire pas un téléchargement avant que Rawkoon l’importe.",
         "test": "Tester la connexion",
         "testing": "Test…",
         "testSuccess": "Connexion au client de téléchargement réussie.",

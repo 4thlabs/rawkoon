@@ -60,6 +60,7 @@ const VALID_TYPES: DownloadClientType[] = [
   "qbittorrent",
   "transmission",
   "deluge",
+  "rdtclient",
 ];
 
 const parseClientType = (raw: unknown): DownloadClientType | null => {

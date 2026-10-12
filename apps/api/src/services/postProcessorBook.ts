@@ -27,6 +27,7 @@ import {
   parseBookReleaseTitle,
 } from "@rawkoon/api/utils/books/bookReleaseParser";
 import type { BookEditionKind, BookFormat } from "@rawkoon/shared/types";
+import { applyAfterImportAction } from "@rawkoon/api/services/downloadClient/afterImport";
 
 /**
  * Book and audiobook import.
@@ -614,6 +615,15 @@ export async function postProcessBookDownload(
   if (result.skipped.length > 0) {
     console.warn(
       `[postProcessBook] dh#${downloadHistoryId} skipped ${result.skipped.length} file(s): ${result.skipped.join("; ")}`,
+    );
+  }
+  // Seeding clients keep book torrents; a debrid client has nothing left to seed.
+  if (active.adapter.type === "rdtclient") {
+    await applyAfterImportAction(
+      active.adapter,
+      hash,
+      result.skipped.length === 0 ? "removeWithData" : "keep",
+      "postProcessBook",
     );
   }
   return { success: true, destinationPath: result.destinationPath };

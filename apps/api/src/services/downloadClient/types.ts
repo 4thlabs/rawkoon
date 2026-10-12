@@ -1,4 +1,8 @@
-export type DownloadClientType = "qbittorrent" | "transmission" | "deluge";
+export type DownloadClientType =
+  | "qbittorrent"
+  | "transmission"
+  | "deluge"
+  | "rdtclient";
 
 export type NormalizedState =
   | "downloading"

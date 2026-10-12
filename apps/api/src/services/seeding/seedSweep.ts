@@ -293,7 +293,8 @@ export async function runSeedSweep(
 ): Promise<SweepDecision[]> {
   if (!(await deps.isEnabled())) return [];
   const adapter = await deps.resolveAdapter();
-  if (!adapter) return [];
+  // A debrid client never seeds; its torrents are removed by the import itself.
+  if (!adapter || adapter.type === "rdtclient") return [];
   let torrents: NormalizedTorrent[];
   try {
     torrents = await adapter.listTorrents();

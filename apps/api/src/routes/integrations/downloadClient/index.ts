@@ -230,7 +230,9 @@ export const downloadClientIntegrationRoutes = new Hono<Env>()
       const config = rawConfig(integration?.config);
       const clientType = stringValue(config.client_type);
       const validType: DownloadClientType =
-        clientType === "transmission" || clientType === "deluge"
+        clientType === "transmission" ||
+        clientType === "deluge" ||
+        clientType === "rdtclient"
           ? clientType
           : "qbittorrent";
       return ok({
@@ -259,6 +261,7 @@ export const downloadClientIntegrationRoutes = new Hono<Env>()
           z.literal("qbittorrent"),
           z.literal("transmission"),
           z.literal("deluge"),
+          z.literal("rdtclient"),
         ]),
         website_url: z.string(),
         username: z.string(),
