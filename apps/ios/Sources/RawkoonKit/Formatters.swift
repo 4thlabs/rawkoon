@@ -79,7 +79,7 @@ public enum Formatters {
     /// `useAll: true` matches ActivityView/DownloadClientView; `false` matches MediaDetailView.
     public static func speed(_ bytesPerSecond: Double, useAll: Bool) -> String {
         let formatter = ByteCountFormatter()
-        formatter.countStyle = .binary
+        formatter.countStyle = .file
         if useAll {
             formatter.allowedUnits = [.useAll]
         }
