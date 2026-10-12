@@ -129,7 +129,9 @@ function DownloadClientIntegrationSectionImpl({
       ? "http://transmission:9091"
       : clientType === "deluge"
         ? "http://deluge:8112"
-        : "http://qbittorrent:8080";
+        : clientType === "rdtclient"
+          ? "http://rdtclient:6500"
+          : "http://qbittorrent:8080";
 
   return (
     <IntegrationSectionCard
@@ -154,8 +156,14 @@ function DownloadClientIntegrationSectionImpl({
           <option value="qbittorrent">qBittorrent</option>
           <option value="transmission">Transmission</option>
           <option value="deluge">Deluge</option>
+          <option value="rdtclient">rdt-client (debrid)</option>
         </select>
       </LabeledField>
+      {clientType === "rdtclient" && (
+        <p className="text-sm text-neutral-400">
+          {t("settings.integrations.downloadClient.rdtclientHint")}
+        </p>
+      )}
       <IntegrationUrlInput
         label={t("settings.integrations.downloadClient.websiteUrl")}
         value={websiteUrl}
