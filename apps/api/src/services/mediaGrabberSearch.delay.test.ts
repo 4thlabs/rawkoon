@@ -110,6 +110,7 @@ describe("searchAndGrab grab delay", () => {
     const r = await searchAndGrab({ ...base, trigger: "scheduled" });
     expect(r.grabbed).toBe(true);
     expect(pendingUpsert).not.toHaveBeenCalled();
+    expect(pendingDeleteMany).not.toHaveBeenCalled();
   });
 
   it("never delays a manual search", async () => {

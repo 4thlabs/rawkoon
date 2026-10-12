@@ -171,17 +171,19 @@ describe("evaluateDelay", () => {
     });
     expect(first.delay).toBe(true);
 
-    // Next poll, 61 minutes later: the stored first-seen time has elapsed.
+    // Next poll, 61 minutes later: the first-seen time has elapsed, so the held
+    // row is due for processPendingReleases rather than given a fresh window.
     rows[0]!.createdAt = NOW;
     const later = new Date(NOW.getTime() + 61 * 60_000);
-    const second = await evaluateDelay({
+    await evaluateDelay({
       target,
       settings,
       cutoffResolution: 2160,
       candidates: [cand("a", 100, 720, null)],
       now: later,
     });
-    expect(second).toEqual({ delay: false });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.grabAfter.getTime()).toBe(NOW.getTime() + 60 * 60_000);
   });
 
   it("collects a better candidate arriving inside the window", async () => {
@@ -228,6 +230,60 @@ describe("evaluateDelay", () => {
     });
     expect(rows).toHaveLength(1);
     expect(rows[0]!.score).toBe(150);
+  });
+});
+
+describe("held rows own the target", () => {
+  it("keeps holding when a due held release meets a worse batch", async () => {
+    // X1080 was held earlier and is already due; the poll only sees Y720.
+    await evaluateDelay({
+      target,
+      settings,
+      cutoffResolution: 2160,
+      candidates: [cand("x1080", 300, 1080, minutesAgo(30))],
+      now: NOW,
+    });
+    const later = new Date(NOW.getTime() + 40 * 60_000);
+    const d = await evaluateDelay({
+      target,
+      settings,
+      cutoffResolution: 2160,
+      candidates: [cand("y720", 100, 720, minutesAgo(-35))],
+      now: later,
+    });
+    expect(d.delay).toBe(true);
+    expect(rows.map((r) => r.releaseGuid).sort()).toEqual(["x1080", "y720"]);
+  });
+
+  it("still lets a cutoff-meeting release through while rows are held", async () => {
+    await evaluateDelay({
+      target,
+      settings,
+      cutoffResolution: 1080,
+      candidates: [cand("low", 100, 720, minutesAgo(10))],
+      now: NOW,
+    });
+    const d = await evaluateDelay({
+      target,
+      settings,
+      cutoffResolution: 1080,
+      candidates: [cand("top", 300, 1080, minutesAgo(1))],
+      now: NOW,
+    });
+    expect(d).toEqual({ delay: false });
+  });
+
+  it("clamps a future publish time to now", async () => {
+    const future = new Date(NOW.getTime() + 6 * 3600_000).toISOString();
+    const d = await evaluateDelay({
+      target,
+      settings,
+      cutoffResolution: 2160,
+      candidates: [cand("a", 100, 720, future)],
+      now: NOW,
+    });
+    expect(d.delay).toBe(true);
+    expect(rows[0]!.grabAfter.getTime()).toBe(NOW.getTime() + 60 * 60_000);
   });
 });
 

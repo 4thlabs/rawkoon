@@ -359,9 +359,14 @@ export function QualityProfileForm({
         label={t("settings.qualityProfiles.grabDelayMinutes")}
         type="number"
         min="0"
-        value={form.grab_delay_minutes}
+        max={43200}
+        // Empty shows the "0" placeholder, so the field can be cleared while typing.
+        value={form.grab_delay_minutes || ""}
         onChange={(e) =>
-          set("grab_delay_minutes", Math.max(0, Number(e.target.value) || 0))
+          set(
+            "grab_delay_minutes",
+            Math.min(43200, Math.max(0, Number(e.target.value) || 0)),
+          )
         }
         placeholder="0"
       />

@@ -14,6 +14,7 @@ CREATE TABLE "pending_releases" (
     "indexer" TEXT,
     "release" JSONB NOT NULL,
     "score" DOUBLE PRECISION NOT NULL,
+    "source" TEXT,
     "published_at" TIMESTAMP(3),
     "grab_after" TIMESTAMP(3) NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

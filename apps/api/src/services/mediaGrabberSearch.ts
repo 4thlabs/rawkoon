@@ -301,7 +301,10 @@ export async function searchAndGrab(opts: {
       });
 
       if (result.grabbed) {
-        await clearPending(delayTarget).catch(() => {});
+        // Only profiles with a delay ever hold rows; delay 0 stays query-for-query as before.
+        if (delaySettings.minutes > 0) {
+          await clearPending(delayTarget).catch(() => {});
+        }
         return { ...result, aiPicked: candidate === aiRow };
       }
 

@@ -346,6 +346,8 @@ model PendingRelease {
   /// NormalizedRelease minus rawPayload: enough to re-score and grab later.
   release      Json
   score        Float
+  /// Grab origin to replay ("rss"), null for scheduled searches.
+  source       String?
   publishedAt  DateTime? @map("published_at")
   grabAfter    DateTime  @map("grab_after")
   createdAt    DateTime  @default(now()) @map("created_at")

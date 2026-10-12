@@ -346,6 +346,7 @@ export async function pollIndexerRss(): Promise<RssRunStats | null> {
           },
           settings: delaySettings,
           cutoffResolution: profileInput.cutoffResolution,
+          source: "rss",
           candidates: scoreReleasesForProfile(candidates, profileInput).map(
             (s) => toDelayCandidate(s.release, s.score),
           ),
@@ -400,7 +401,8 @@ export async function pollIndexerRss(): Promise<RssRunStats | null> {
         aiReasoning: best.ai_reasoning,
       });
       didGrab = result.grabbed;
-      if (didGrab) {
+      // Only profiles with a delay ever hold rows; delay 0 stays query-for-query as before.
+      if (didGrab && delaySettings.minutes > 0) {
         await clearPending({
           mediaId: grabArgs.mediaId,
           episodeId: grabArgs.episodeId ?? null,

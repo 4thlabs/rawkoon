@@ -1,4 +1,10 @@
 import { prisma } from "@rawkoon/api/db";
+import {
+  recordEpisodeMiss,
+  recordMovieMiss,
+  recordSeasonPackMiss,
+} from "@rawkoon/api/services/grabAttempts";
+import { blocklistedTitles } from "@rawkoon/api/utils/medias/pickReleaseForGrab";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
 import {
   profileToScoreInput,
@@ -11,12 +17,14 @@ import { scoreReleasesForProfile } from "@rawkoon/api/utils/medias/pickBestRelea
 const PENDING_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 type PendingRow = {
+  id: number;
   targetKey: string;
   mediaId: number;
   episodeId: number | null;
   season: number | null;
   release: unknown;
   score: number;
+  source: string | null;
 };
 
 // The column is written only by evaluateDelay from a NormalizedRelease.
@@ -66,6 +74,37 @@ async function isStillWanted(row: PendingRow): Promise<boolean> {
   return media.status === "wanted" && media._count.files === 0;
 }
 
+/** Count a failed replay like a failed sweep, so a persistent failure still reaches the skip cap. */
+async function recordMiss(row: PendingRow, reason: string): Promise<void> {
+  if (row.episodeId != null) {
+    const ep = await prisma.libraryEpisode.findUnique({
+      where: { id: row.episodeId },
+      select: { id: true, mediaId: true, searchAttempts: true },
+    });
+    if (ep) await recordEpisodeMiss(ep, reason);
+    return;
+  }
+  if (row.season != null) {
+    const episodes = await prisma.libraryEpisode.findMany({
+      where: {
+        mediaId: row.mediaId,
+        season: row.season,
+        monitored: true,
+        status: "wanted",
+        files: { none: {} },
+      },
+      select: { id: true, searchAttempts: true },
+    });
+    await recordSeasonPackMiss(row.mediaId, row.season, episodes, reason);
+    return;
+  }
+  const media = await prisma.libraryMedia.findUnique({
+    where: { id: row.mediaId },
+    select: { id: true, searchAttempts: true },
+  });
+  if (media) await recordMovieMiss(media, reason);
+}
+
 /**
  * Grab the best held release for every target whose delay window has ended.
  * Targets that were satisfied or unmonitored meanwhile are dropped without a grab.
@@ -90,7 +129,9 @@ export async function processPendingReleases(
       const rows = await prisma.pendingRelease.findMany({
         where: { targetKey },
         select: {
+          id: true,
           targetKey: true,
+          source: true,
           mediaId: true,
           episodeId: true,
           season: true,
@@ -133,7 +174,22 @@ export async function processPendingReleases(
         }))
         .sort((a, b) => b.score - a.score);
 
+      // Same title filter searchAndGrab applies before it tries a release.
+      const blocked = await blocklistedTitles(
+        ordered.map((s) => s.release.title),
+      );
+      const sourceByGuid = new Map(
+        rows.map((r) => [asRelease(r.release).guid, r.source]),
+      );
+
+      let success = false;
+      let alreadyActive = false;
+      let lastReason = "No release could be grabbed";
       for (const candidate of ordered) {
+        if (blocked.has(candidate.release.title.toLowerCase())) {
+          lastReason = "Blocklisted";
+          continue;
+        }
         const result = await grabRelease({
           mediaId: first.mediaId,
           episodeId: first.episodeId ?? undefined,
@@ -141,16 +197,34 @@ export async function processPendingReleases(
           downloadUrl: candidate.downloadUrl,
           releaseTitle: candidate.release.title,
           indexer: candidate.release.indexer,
+          // The type only allows "rss"; scheduled-search rows leave it unset.
+          grabSource:
+            sourceByGuid.get(candidate.release.guid) === "rss"
+              ? "rss"
+              : undefined,
         });
         if (result.grabbed) {
+          success = true;
           grabbed++;
           break;
         }
+        lastReason = result.reason;
         // Another grab already owns the target; later candidates would hit the same wall.
-        if (result.reason.startsWith("A download is already active")) break;
+        if (result.reason.startsWith("A download is already active")) {
+          alreadyActive = true;
+          break;
+        }
       }
 
-      await prisma.pendingRelease.deleteMany({ where: { targetKey } });
+      if (success || alreadyActive) {
+        await prisma.pendingRelease.deleteMany({ where: { targetKey } });
+      } else {
+        await recordMiss(first, lastReason);
+        // Only the rows this pass read: a poll may have added fresh candidates meanwhile.
+        await prisma.pendingRelease.deleteMany({
+          where: { id: { in: rows.map((r) => r.id) } },
+        });
+      }
     } catch (e) {
       console.warn(`[processPendingReleases] ${targetKey} failed:`, e);
     }

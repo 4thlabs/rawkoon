@@ -2,7 +2,10 @@ import { prisma } from "@rawkoon/api/db";
 import { searchAndGrabWithTitleFallback } from "@rawkoon/api/services/mediaGrabberSearch";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 import { MAX_CRON_GRAB_ATTEMPTS } from "@rawkoon/api/constants/libraryGrab";
-import { notifyAdminsLibraryGrabSkipped } from "@rawkoon/api/workers/notifyLibraryGrabSkipped";
+import {
+  recordEpisodeMiss,
+  recordSeasonPackMiss,
+} from "@rawkoon/api/services/grabAttempts";
 import {
   APP_DISPLAY_TIMEZONE,
   localDateYmd,
@@ -115,29 +118,7 @@ export async function checkEpisodeReleases(): Promise<void> {
       // A grab held by the profile's delay isn't a miss; don't burn an attempt.
       if (result.grabbed || result.delayed) continue;
 
-      // Increment searchAttempts on all episodes in the pack; skip those at cap.
-      const skippedEpisodes: typeof groupEps = [];
-      for (const ep of groupEps) {
-        const next = ep.searchAttempts + 1;
-        const reachedCap = next >= MAX_CRON_GRAB_ATTEMPTS;
-        await prisma.libraryEpisode.update({
-          where: { id: ep.id },
-          data: {
-            searchAttempts: next,
-            ...(reachedCap ? { status: "skipped" } : {}),
-          },
-        });
-        if (reachedCap) skippedEpisodes.push(ep);
-      }
-
-      if (skippedEpisodes.length > 0) {
-        await notifyAdminsLibraryGrabSkipped({
-          mediaId,
-          season,
-          reason: `No matching release after ${MAX_CRON_GRAB_ATTEMPTS} attempts (${result.reason})`,
-          scope: "season_pack",
-        });
-      }
+      await recordSeasonPackMiss(mediaId, season, groupEps, result.reason);
     } catch (e) {
       console.warn(
         `[checkEpisodeReleases] Season pack failed for media ${mediaId} S${season}:`,
@@ -170,24 +151,10 @@ export async function checkEpisodeReleases(): Promise<void> {
       // A grab held by the profile's delay isn't a miss; don't burn an attempt.
       if (result.grabbed || result.delayed) continue;
 
-      const next = ep.searchAttempts + 1;
-      const reachedCap = next >= MAX_CRON_GRAB_ATTEMPTS;
-      await prisma.libraryEpisode.update({
-        where: { id: ep.id },
-        data: {
-          searchAttempts: next,
-          ...(reachedCap ? { status: "skipped" } : {}),
-        },
-      });
-
-      if (reachedCap) {
-        await notifyAdminsLibraryGrabSkipped({
-          mediaId: ep.media.id,
-          episodeId: ep.id,
-          reason: `No matching release after ${MAX_CRON_GRAB_ATTEMPTS} attempts (${result.reason})`,
-          scope: "episode",
-        });
-      }
+      await recordEpisodeMiss(
+        { id: ep.id, mediaId: ep.media.id, searchAttempts: ep.searchAttempts },
+        result.reason,
+      );
     } catch (e) {
       console.warn(`[checkEpisodeReleases] Failed for episode ${ep.id}:`, e);
     }
