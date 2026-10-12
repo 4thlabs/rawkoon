@@ -8,6 +8,7 @@ import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
 import { useAiProviderIntegration } from "@/pages/settings/useAiProviderIntegration";
 import {
   resolveAiTarget,
+  useAiDismissal,
   useAiPick,
 } from "@/pages/medias/_component/useAiPick";
 import { AiPickBanner } from "@/pages/medias/_component/AiPickBanner";
@@ -56,6 +57,11 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
 
   const aiTarget = resolveAiTarget(props.episodeTarget, state.selectedSeason);
 
+  const candidateKeys = state.releases
+    .filter((r) => !r.rejected)
+    .map((r) => r.guid)
+    .join(",");
+
   const aiPick = useAiPick({
     enabled:
       aiEnabled && state.releases.length > 0 && !state.activeQuery.isLoading,
@@ -67,13 +73,17 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
     ...aiTarget,
   });
 
+  const { dismissed: aiDismissed, dismiss: dismissAi } = useAiDismissal(
+    candidateKeys,
+    aiTarget.season,
+    aiTarget.episode,
+  );
+
   const pickedRelease =
     aiPick.data?.release_key != null
       ? (state.releases.find((r) => r.guid === aiPick.data?.release_key) ??
         null)
       : null;
-
-  const [aiDismissed, setAiDismissed] = useState(false);
 
   const { t } = useTranslation("common");
   const { data: currentUser } = useCurrentUser();
@@ -112,19 +122,6 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
       setBlockingReleaseKey(null);
     }
   };
-
-  const candidateKeys = state.releases
-    .filter((r) => !r.rejected)
-    .map((r) => r.guid)
-    .join(",");
-
-  // Re-show the AI suggestion when the candidate set changes (render-time
-  // state adjustment, not an effect).
-  const [prevCandidateKeys, setPrevCandidateKeys] = useState(candidateKeys);
-  if (candidateKeys !== prevCandidateKeys) {
-    setPrevCandidateKeys(candidateKeys);
-    setAiDismissed(false);
-  }
 
   // Pre-warm the LLM as soon as the panel opens so the model is already loaded
   // by the time search results arrive (~1-3s later).
@@ -256,7 +253,7 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
             grabBusy={state.grabBusy}
             onGrab={state.downloadRelease}
             onRetry={() => void aiPick.refetch()}
-            onDismiss={() => setAiDismissed(true)}
+            onDismiss={() => dismissAi()}
           />
         )}
 

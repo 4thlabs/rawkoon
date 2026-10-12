@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useFetcher } from "@/lib/api/context";
 import { queryKeys } from "@/lib/queryKeys";
@@ -87,4 +88,21 @@ export function useAiPick({
     retry: 0,
     staleTime: 5 * 60 * 1000,
   });
+}
+
+/** Dismissal of the AI suggestion, scoped to one candidate set and one target. */
+export function useAiDismissal(
+  candidateKeys: string,
+  season: number | null,
+  episode: number | null,
+) {
+  const scope = `${candidateKeys}|${season ?? ""}|${episode ?? ""}`;
+  const [dismissed, setDismissed] = useState(false);
+  const [prevScope, setPrevScope] = useState(scope);
+  // Render-time state adjustment, not an effect.
+  if (scope !== prevScope) {
+    setPrevScope(scope);
+    setDismissed(false);
+  }
+  return { dismissed, dismiss: () => setDismissed(true) };
 }

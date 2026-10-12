@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FetcherProvider, type Fetcher } from "@/lib/api/context";
 import {
   resolveAiTarget,
+  useAiDismissal,
   useAiPick,
 } from "@/pages/medias/_component/useAiPick";
 import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
@@ -100,5 +101,42 @@ describe("resolveAiTarget", () => {
 
   it("uses the selected season when there is no episode target", () => {
     expect(resolveAiTarget(null, 4)).toEqual({ season: 4, episode: null });
+  });
+});
+
+describe("useAiDismissal", () => {
+  it("shows the suggestion again after switching target with identical results", () => {
+    const { result, rerender } = renderHook(
+      ({ season }: { season: number | null }) =>
+        useAiDismissal("g1,g2", season, null),
+      { initialProps: { season: 1 as number | null } },
+    );
+    act(() => result.current.dismiss());
+    expect(result.current.dismissed).toBe(true);
+    rerender({ season: 2 });
+    expect(result.current.dismissed).toBe(false);
+  });
+
+  it("stays dismissed when the same target and results re-render", () => {
+    const { result, rerender } = renderHook(
+      ({ n }: { n: number }) => {
+        void n;
+        return useAiDismissal("g1,g2", 1, null);
+      },
+      { initialProps: { n: 0 } },
+    );
+    act(() => result.current.dismiss());
+    rerender({ n: 1 });
+    expect(result.current.dismissed).toBe(true);
+  });
+
+  it("resets when the candidate set changes", () => {
+    const { result, rerender } = renderHook(
+      ({ keys }: { keys: string }) => useAiDismissal(keys, 1, null),
+      { initialProps: { keys: "g1" } },
+    );
+    act(() => result.current.dismiss());
+    rerender({ keys: "g1,g2" });
+    expect(result.current.dismissed).toBe(false);
   });
 });
