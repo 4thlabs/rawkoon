@@ -23,7 +23,7 @@ import {
   sanitizePathTemplateOutput,
 } from "@rawkoon/api/utils/medias/fileTemplate";
 import type { DownloadClientAdapter } from "@rawkoon/api/services/downloadClient/types";
-import { loadImportSeedRule } from "@rawkoon/api/services/seeding/importSeedRule";
+import { loadImportSeedRules } from "@rawkoon/api/services/seeding/importSeedRule";
 import {
   afterImportAction,
   applyAfterImportAction,
@@ -423,7 +423,8 @@ export async function postProcessSeasonPack(
       type: adapter.type,
       ratio: tor.ratio,
       seedingTimeSecs: tor.seedingTimeSecs,
-      rule: await loadImportSeedRule({
+      rules: await loadImportSeedRules({
+        hash,
         indexer: dh.indexer,
         type: adapter.type,
         seedSweepEnabled: settings.seedSweepEnabled,

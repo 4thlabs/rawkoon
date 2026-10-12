@@ -22,14 +22,32 @@ describe("afterImportAction", () => {
   const base = {
     ratio: 0,
     seedingTimeSecs: null,
-    rule: { ratio: 2, seedTimeMins: null },
+    rules: [{ ratio: 2, seedTimeMins: null }],
     seedSweepEnabled: false,
     fullyImported: true,
   };
 
+  it("waits until every row sharing the torrent meets its target", () => {
+    const rules = [
+      { ratio: 1, seedTimeMins: null },
+      { ratio: 3, seedTimeMins: null },
+    ];
+    expect(
+      afterImportAction({ ...base, type: "qbittorrent", ratio: 2, rules }),
+    ).toBe("keep");
+    expect(
+      afterImportAction({ ...base, type: "qbittorrent", ratio: 3, rules }),
+    ).toBe("remove");
+  });
+
   it("keeps the torrent when its seed target is unknown", () => {
     expect(
-      afterImportAction({ ...base, type: "qbittorrent", ratio: 9, rule: null }),
+      afterImportAction({
+        ...base,
+        type: "qbittorrent",
+        ratio: 9,
+        rules: null,
+      }),
     ).toBe("keep");
   });
 
@@ -73,7 +91,7 @@ describe("afterImportAction seed targets", () => {
     type: "qbittorrent" as const,
     ratio: 1,
     seedingTimeSecs: 0 as number | null,
-    rule,
+    rules: [rule],
     seedSweepEnabled: false,
     fullyImported: true,
   };
@@ -85,9 +103,9 @@ describe("afterImportAction seed targets", () => {
 
   it("honours a seed-time target", () => {
     const timed = { ratio: null, seedTimeMins: 60 };
-    expect(afterImportAction({ ...base, rule: timed })).toBe("keep");
+    expect(afterImportAction({ ...base, rules: [timed] })).toBe("keep");
     expect(
-      afterImportAction({ ...base, rule: timed, seedingTimeSecs: 3600 }),
+      afterImportAction({ ...base, rules: [timed], seedingTimeSecs: 3600 }),
     ).toBe("remove");
   });
 
@@ -96,7 +114,7 @@ describe("afterImportAction seed targets", () => {
       afterImportAction({
         ...base,
         ratio: null,
-        rule: { ratio: null, seedTimeMins: null },
+        rules: [{ ratio: null, seedTimeMins: null }],
       }),
     ).toBe("remove");
   });

@@ -35,7 +35,7 @@ import {
   resolveTorrentContentPath,
 } from "@rawkoon/api/services/postProcessorHelpers";
 import { postProcessSeasonPack } from "@rawkoon/api/services/postProcessorSeasonPack";
-import { loadImportSeedRule } from "@rawkoon/api/services/seeding/importSeedRule";
+import { loadImportSeedRules } from "@rawkoon/api/services/seeding/importSeedRule";
 import {
   afterImportAction,
   applyAfterImportAction,
@@ -433,7 +433,8 @@ export async function postProcess(downloadHistoryId: number): Promise<
       type: active.adapter.type,
       ratio: tor.ratio,
       seedingTimeSecs: tor.seedingTimeSecs,
-      rule: await loadImportSeedRule({
+      rules: await loadImportSeedRules({
+        hash,
         indexer: dh.indexer,
         type: active.adapter.type,
         seedSweepEnabled: settings.seedSweepEnabled,
