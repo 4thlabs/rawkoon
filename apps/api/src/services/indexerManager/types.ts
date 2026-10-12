@@ -28,6 +28,8 @@ export interface NormalizedRelease {
   protocol: string | null;
   sizeBytes: number | null;
   age: number | null;
+  /** Indexer publish time (ISO); the grab-delay clock starts here when present. */
+  publishedAt?: string | null;
   seeders: number | null;
   leechers: number | null;
   rejected: boolean;

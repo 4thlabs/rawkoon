@@ -17,6 +17,12 @@ import {
   qualityProfileFormatsInclude,
   type CandidateRow,
 } from "@rawkoon/api/services/mediaGrabberHelpers";
+import {
+  clearPending,
+  delaySettingsOf,
+  evaluateDelay,
+  toDelayCandidate,
+} from "@rawkoon/api/services/grabDelay";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
 import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import {
@@ -39,7 +45,7 @@ export async function searchAndGrab(opts: {
   aiConfig?: AiProviderConfig | null;
 }): Promise<
   | { grabbed: true; releaseTitle: string; aiPicked?: boolean }
-  | { grabbed: false; reason: string }
+  | { grabbed: false; reason: string; delayed?: true }
 > {
   try {
     const {
@@ -105,12 +111,16 @@ export async function searchAndGrab(opts: {
     const rows: CandidateRow[] = [];
 
     let profileInput: QualityProfileScoreInput | null = null;
+    let delaySettings = delaySettingsOf(null);
     if (qualityProfileId != null) {
       const prof = await prisma.qualityProfile.findUnique({
         where: { id: qualityProfileId },
         include: qualityProfileFormatsInclude,
       });
-      if (prof) profileInput = profileToScoreInput(prof);
+      if (prof) {
+        profileInput = profileToScoreInput(prof);
+        delaySettings = delaySettingsOf(prof);
+      }
     }
 
     for (const release of releases) {
@@ -157,6 +167,7 @@ export async function searchAndGrab(opts: {
           title,
           size,
           seeders: release.seeders,
+          release,
         });
       } else {
         rows.push({
@@ -200,6 +211,39 @@ export async function searchAndGrab(opts: {
     const viable = rows.filter(
       (r) => !blocklistTitles.has(r.title.toLowerCase()) && r.raw._downloadUrl,
     );
+
+    // Only unattended, non-upgrade searches wait; manual and upgrade searches act at once.
+    const delayTarget = {
+      mediaId,
+      episodeId: episodeId ?? null,
+      season: season ?? null,
+    };
+    if (
+      trigger === "scheduled" &&
+      !isUpgrade &&
+      delaySettings.minutes > 0 &&
+      profileInput
+    ) {
+      try {
+        const decision = await evaluateDelay({
+          target: delayTarget,
+          settings: delaySettings,
+          cutoffResolution: profileInput.cutoffResolution,
+          candidates: viable.flatMap((r) =>
+            r.release ? [toDelayCandidate(r.release, r.score)] : [],
+          ),
+        });
+        if (decision.delay) {
+          return {
+            grabbed: false,
+            delayed: true,
+            reason: `Held by grab delay until ${decision.grabAfter.toISOString()}`,
+          };
+        }
+      } catch (e) {
+        console.warn("[mediaGrabber] delay check failed:", e);
+      }
+    }
 
     let aiRow: CandidateRow | null = null;
     if (viable.length >= 2) {
@@ -259,7 +303,13 @@ export async function searchAndGrab(opts: {
         sizeBytes: candidate.size,
       });
 
-      if (result.grabbed) return { ...result, aiPicked: candidate === aiRow };
+      if (result.grabbed) {
+        // Only profiles with a delay ever hold rows; delay 0 stays query-for-query as before.
+        if (delaySettings.minutes > 0) {
+          await clearPending(delayTarget).catch(() => {});
+        }
+        return { ...result, aiPicked: candidate === aiRow };
+      }
 
       // Only continue to the next candidate on a blocklist hit or a space refusal.
       // All other failures (network, download client) are terminal.
@@ -307,7 +357,7 @@ export async function searchAndGrabWithTitleFallback(opts: {
   trigger?: AiTrigger;
 }): Promise<
   | { grabbed: true; releaseTitle: string; aiPicked?: boolean }
-  | { grabbed: false; reason: string }
+  | { grabbed: false; reason: string; delayed?: true }
 > {
   let lastReason = "No matching releases found";
   const aiConfig = await loadEnabledAiProviderConfig().catch(() => null);

@@ -5,6 +5,13 @@ import type { RssRunStats } from "@rawkoon/api/services/rssRunStatus";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
 import { loadEnabledAiProviderConfig } from "@rawkoon/api/services/aiProvider/client";
 import { normalizeTitleForMatch } from "@rawkoon/api/utils/medias/filenameParser";
+import {
+  clearPending,
+  delaySettingsOf,
+  evaluateDelay,
+  toDelayCandidate,
+} from "@rawkoon/api/services/grabDelay";
+import { scoreReleasesForProfile } from "@rawkoon/api/utils/medias/pickBestRelease";
 import { pickReleaseForGrab } from "@rawkoon/api/utils/medias/pickReleaseForGrab";
 import { mapPool } from "@rawkoon/api/utils/medias/fileFingerprint";
 
@@ -327,6 +334,34 @@ export async function pollIndexerRss(): Promise<RssRunStats | null> {
     const profile = profileId ? profileMap.get(profileId) : null;
     const profileInput = profile ? profileToScoreInput(profile) : null;
 
+    // Decide before the AI pick so a held-back match doesn't spend a judge call every poll.
+    const delaySettings = delaySettingsOf(profile);
+    if (profileInput && delaySettings.minutes > 0) {
+      try {
+        const decision = await evaluateDelay({
+          target: {
+            mediaId: grabArgs.mediaId,
+            episodeId: grabArgs.episodeId ?? null,
+            season: grabArgs.season ?? null,
+          },
+          settings: delaySettings,
+          cutoffResolution: profileInput.cutoffResolution,
+          source: "rss",
+          candidates: scoreReleasesForProfile(candidates, profileInput).map(
+            (s) => toDelayCandidate(s.release, s.score),
+          ),
+        });
+        if (decision.delay) {
+          console.log(
+            `[pollIndexerRss] Holding ${label} until ${decision.grabAfter.toISOString()} (grab delay)`,
+          );
+          return { grabbed: false, ai: false };
+        }
+      } catch (e) {
+        console.warn(`[pollIndexerRss] delay check failed for ${warnTag}:`, e);
+      }
+    }
+
     const best = await pickReleaseForGrab({
       candidates,
       profile: profileInput,
@@ -367,6 +402,14 @@ export async function pollIndexerRss(): Promise<RssRunStats | null> {
         aiReasoning: best.ai_reasoning,
       });
       didGrab = result.grabbed;
+      // Only profiles with a delay ever hold rows; delay 0 stays query-for-query as before.
+      if (didGrab && delaySettings.minutes > 0) {
+        await clearPending({
+          mediaId: grabArgs.mediaId,
+          episodeId: grabArgs.episodeId ?? null,
+          season: grabArgs.season ?? null,
+        }).catch(() => {});
+      }
     } catch (e) {
       console.warn(`[pollIndexerRss] grab failed for ${warnTag}:`, e);
     }

@@ -39,6 +39,7 @@ export const SCHEDULED_JOB_NAMES = {
   CHECK_AUTHOR_RELEASES: "check-author-releases",
   SYNC_LOCALIZED_TITLES: "sync-localized-titles",
   SWEEP_SEEDING_TORRENTS: "sweep-seeding-torrents",
+  PROCESS_PENDING_RELEASES: "process-pending-releases",
 } as const;
 
 export const NOTIFICATION_JOB_NAMES = {
@@ -346,6 +347,11 @@ export async function setupScheduledJobs() {
       name: SCHEDULED_JOB_NAMES.SWEEP_SEEDING_TORRENTS,
       // Offset off the RSS poll's :07/:22/... ticks; both list the client's torrents.
       pattern: "3-59/15 * * * *",
+    },
+    {
+      name: SCHEDULED_JOB_NAMES.PROCESS_PENDING_RELEASES,
+      // Offset off the RSS poll's :07/:22/... ticks so a due grab doesn't race a poll.
+      pattern: "1-59/5 * * * *",
     },
   ];
 
