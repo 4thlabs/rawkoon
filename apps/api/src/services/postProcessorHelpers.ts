@@ -79,6 +79,22 @@ function inodeMatch(
   return a.dev === b.dev && a.ino === b.ino;
 }
 
+/**
+ * Copy into a hidden file beside `dst`, then rename it into place, so a copy
+ * cut short (the process killed mid-way) never leaves a partial file at a
+ * path that a retry would take for a finished import.
+ */
+export async function copyFileAtomic(src: string, dst: string): Promise<void> {
+  const partial = join(dirname(dst), `.${basename(dst)}.rawkoon-partial`);
+  try {
+    await copyFile(src, partial);
+    await rename(partial, dst);
+  } catch (e) {
+    await unlink(partial).catch(() => {});
+    throw e;
+  }
+}
+
 export async function placeFile(
   src: string,
   dst: string,
@@ -119,7 +135,7 @@ export async function placeFile(
     } catch (e) {
       const code = (e as NodeJS.ErrnoException).code;
       if (code === "EXDEV") {
-        await copyFile(src, dst);
+        await copyFileAtomic(src, dst);
         await unlink(src);
       } else {
         throw e;
@@ -133,7 +149,7 @@ export async function placeFile(
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code;
     if (code === "EXDEV") {
-      await copyFile(src, dst);
+      await copyFileAtomic(src, dst);
     } else {
       throw e;
     }
@@ -152,7 +168,7 @@ async function moveFile(from: string, to: string): Promise<void> {
     await rename(from, to);
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== "EXDEV") throw e;
-    await copyFile(from, to);
+    await copyFileAtomic(from, to);
     await unlink(from);
   }
 }
