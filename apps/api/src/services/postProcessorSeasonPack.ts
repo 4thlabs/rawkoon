@@ -209,6 +209,11 @@ export async function postProcessSeasonPack(
       }`,
     );
   }
+  if (mapping.skipped?.length) {
+    console.warn(
+      `[postProcess/pack] ${dh.media.title}: ${mapping.skipped.length} file(s) without a season could not be placed and were not imported: ${mapping.skipped.join(", ")}`,
+    );
+  }
 
   // Preflight every merge candidate BEFORE placing anything. Checking track
   // compatibility inside the placement loop would surface the failure after
@@ -482,7 +487,9 @@ export async function postProcessSeasonPack(
       minSeedRatio: settings.minSeedRatio,
       seedSweepEnabled: settings.seedSweepEnabled,
       // Episodes that failed to import still need their files.
-      fullyImported: errors.length === 0 && allPlaced,
+      // Files left out of the mapping still need their data for a manual import.
+      fullyImported:
+        errors.length === 0 && allPlaced && !mapping.skipped?.length,
     }),
     "postProcess/pack",
   );
