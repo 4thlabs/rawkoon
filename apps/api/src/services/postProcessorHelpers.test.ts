@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { parseSeasonEpisode } from "./postProcessorHelpers";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { parseSeasonEpisode, replaceFile } from "./postProcessorHelpers";
 
 describe("parseSeasonEpisode", () => {
   it.each([
@@ -29,5 +32,49 @@ describe("parseSeasonEpisode", () => {
     "[Grp] Show - NCOP 01 [1080p].mkv",
   ])("rejects %s", (name) => {
     expect(parseSeasonEpisode(name)).toBeNull();
+  });
+});
+
+describe("replaceFile", () => {
+  async function setup() {
+    const dir = await mkdtemp(join(tmpdir(), "rawkoon-replace-"));
+    const src = join(dir, "new.mkv");
+    const dst = join(dir, "lib", "Movie (2020).mkv");
+    await writeFile(src, "new release");
+    await Bun.write(dst, "old release");
+    return { dir, src, dst };
+  }
+
+  it("hardlinks the new file over the old one", async () => {
+    const { dir, src, dst } = await setup();
+    try {
+      await replaceFile(src, dst, "hardlink");
+      expect(await readFile(dst, "utf8")).toBe("new release");
+      expect((await stat(dst)).ino).toBe((await stat(src)).ino);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("moves the new file over the old one", async () => {
+    const { dir, src, dst } = await setup();
+    try {
+      await replaceFile(src, dst, "move");
+      expect(await readFile(dst, "utf8")).toBe("new release");
+      expect(await Bun.file(src).exists()).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("leaves a file that is already the source alone", async () => {
+    const { dir, src, dst } = await setup();
+    try {
+      await replaceFile(src, dst, "hardlink");
+      await replaceFile(src, dst, "hardlink");
+      expect(await readFile(dst, "utf8")).toBe("new release");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });

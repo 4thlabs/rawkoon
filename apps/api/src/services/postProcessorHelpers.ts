@@ -8,7 +8,7 @@ import {
   stat,
   unlink,
 } from "node:fs/promises";
-import { dirname, isAbsolute, join } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path";
 
 import { prisma } from "@rawkoon/api/db";
 import { parseReleaseTitle } from "@rawkoon/api/utils/medias/filenameParser";
@@ -137,6 +137,45 @@ export async function placeFile(
     } else {
       throw e;
     }
+  }
+}
+
+/** Whether two paths are the same file on disk; a hardlink counts. */
+export async function isSameFile(a: string, b: string): Promise<boolean> {
+  try {
+    const [sa, sb] = await Promise.all([
+      stat(a, { bigint: true }),
+      stat(b, { bigint: true }),
+    ]);
+    return inodeMatch(asInodeParts(sa), asInodeParts(sb));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Place `src` at `dst` over an existing file. The new file lands beside the
+ * old one first and is then renamed over it, so the library is never left
+ * without a copy.
+ */
+export async function replaceFile(
+  src: string,
+  dst: string,
+  operation: "hardlink" | "move",
+): Promise<void> {
+  if (await isSameFile(src, dst)) return;
+  const tmp = join(dirname(dst), `.${basename(dst)}.rawkoon-upgrade`);
+  await unlink(tmp).catch(() => {});
+  await placeFile(src, tmp, operation);
+  try {
+    await rename(tmp, dst);
+  } catch (e) {
+    // A moved source is only at tmp now: put it back rather than delete it.
+    await (operation === "move" ? rename(tmp, src) : unlink(tmp)).catch(
+      (cleanupError) =>
+        console.warn(`[postProcess] Could not clean up ${tmp}:`, cleanupError),
+    );
+    throw e;
   }
 }
 
