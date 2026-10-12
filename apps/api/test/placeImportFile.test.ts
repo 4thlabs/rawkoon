@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { placeImportFile } from "@rawkoon/api/services/postProcessorHelpers";
+import { packPathConflict } from "@rawkoon/api/services/postProcessorSeasonPack";
 
 describe("placeImportFile", () => {
   let dir: string;
@@ -47,5 +48,44 @@ describe("placeImportFile", () => {
   it("does not count the source itself as a separate copy", async () => {
     expect(await placeImportFile(src, src, "hardlink", true)).toBe(false);
     expect((await stat(src)).size).toBe(3);
+  });
+});
+
+describe("packPathConflict", () => {
+  it("refuses an episode whose path another episode in the pack also renders to", () => {
+    expect(
+      packPathConflict({
+        sharedInPack: true,
+        ownerEpisodeId: null,
+        episodeId: 2,
+      }),
+    ).toContain("same library path");
+  });
+
+  it("refuses a path the library records for another episode", () => {
+    expect(
+      packPathConflict({
+        sharedInPack: false,
+        ownerEpisodeId: 1,
+        episodeId: 2,
+      }),
+    ).toContain("another episode's file");
+  });
+
+  it("allows a free path or one already recorded for this episode", () => {
+    expect(
+      packPathConflict({
+        sharedInPack: false,
+        ownerEpisodeId: null,
+        episodeId: 2,
+      }),
+    ).toBeNull();
+    expect(
+      packPathConflict({
+        sharedInPack: false,
+        ownerEpisodeId: 2,
+        episodeId: 2,
+      }),
+    ).toBeNull();
   });
 });
