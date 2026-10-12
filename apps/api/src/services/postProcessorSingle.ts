@@ -112,6 +112,7 @@ export async function postProcess(downloadHistoryId: number): Promise<
           torrentHash: dh.torrentHash,
           releaseTitle: dh.releaseTitle,
           qualityParsed: dh.qualityParsed,
+          isUpgrade: dh.isUpgrade,
         },
         settings,
         op,
