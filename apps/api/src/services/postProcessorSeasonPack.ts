@@ -31,7 +31,7 @@ import { resolveDownloadedStatus } from "@rawkoon/api/utils/medias/libraryHelper
 
 import {
   parseSeasonEpisode,
-  placeEpisodeFile,
+  placeImportFile,
   qualityStringsFromParsed,
   resolveTorrentContentPath,
   isFullyReadable,
@@ -278,7 +278,7 @@ export async function postProcessSeasonPack(
           }
         } else {
           try {
-            placed = await placeEpisodeFile(
+            placed = await placeImportFile(
               srcVideo,
               destinationPath,
               op,

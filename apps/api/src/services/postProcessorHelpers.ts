@@ -294,10 +294,11 @@ export async function isFullyReadable(
 }
 
 /**
- * Put an episode's file at `dst`. A different file already there is only
- * replaced by an upgrade. Returns whether the release's file is now at `dst`.
+ * Put a release's file at its library path. A different file already there is
+ * only replaced by an upgrade. Returns whether the release's file is now at
+ * `dst` as a copy separate from the download.
  */
-export async function placeEpisodeFile(
+export async function placeImportFile(
   src: string,
   dst: string,
   operation: "hardlink" | "move",

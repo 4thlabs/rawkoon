@@ -3,9 +3,9 @@ import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { placeEpisodeFile } from "@rawkoon/api/services/postProcessorHelpers";
+import { placeImportFile } from "@rawkoon/api/services/postProcessorHelpers";
 
-describe("placeEpisodeFile", () => {
+describe("placeImportFile", () => {
   let dir: string;
   let src: string;
   let dst: string;
@@ -19,33 +19,33 @@ describe("placeEpisodeFile", () => {
   afterEach(() => rm(dir, { recursive: true, force: true }));
 
   it("places the file when the destination is missing", async () => {
-    expect(await placeEpisodeFile(src, dst, "hardlink", false)).toBe(true);
+    expect(await placeImportFile(src, dst, "hardlink", false)).toBe(true);
     expect(await readFile(dst, "utf8")).toBe("new");
   });
 
   it("replaces a different file when the pack is an upgrade", async () => {
-    await placeEpisodeFile(src, dst, "hardlink", false);
+    await placeImportFile(src, dst, "hardlink", false);
     await rm(dst);
     await writeFile(dst, "old");
-    expect(await placeEpisodeFile(src, dst, "hardlink", true)).toBe(true);
+    expect(await placeImportFile(src, dst, "hardlink", true)).toBe(true);
     expect(await readFile(dst, "utf8")).toBe("new");
   });
 
   it("leaves an unrelated file alone when the pack is not an upgrade", async () => {
-    await placeEpisodeFile(src, dst, "hardlink", false);
+    await placeImportFile(src, dst, "hardlink", false);
     await rm(dst);
     await writeFile(dst, "old");
-    expect(await placeEpisodeFile(src, dst, "hardlink", false)).toBe(false);
+    expect(await placeImportFile(src, dst, "hardlink", false)).toBe(false);
     expect(await readFile(dst, "utf8")).toBe("old");
   });
 
   it("counts an existing hardlink of the source as placed", async () => {
-    await placeEpisodeFile(src, dst, "hardlink", false);
-    expect(await placeEpisodeFile(src, dst, "hardlink", false)).toBe(true);
+    await placeImportFile(src, dst, "hardlink", false);
+    expect(await placeImportFile(src, dst, "hardlink", false)).toBe(true);
   });
 
   it("does not count the source itself as a separate copy", async () => {
-    expect(await placeEpisodeFile(src, src, "hardlink", true)).toBe(false);
+    expect(await placeImportFile(src, src, "hardlink", true)).toBe(false);
     expect((await stat(src)).size).toBe(3);
   });
 });
