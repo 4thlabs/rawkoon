@@ -333,14 +333,12 @@ export const downloadsRoutes = new Hono<Env>()
           where: { indexerName: { equals: name, mode: "insensitive" } },
         });
         const data = { ratio: body.ratio, seedTimeMins: body.seed_time_mins };
-        const rule = existing
-          ? await prisma.indexerSeedRule.update({
-              where: { id: existing.id },
-              data,
-            })
-          : await prisma.indexerSeedRule.create({
-              data: { indexerName: name, ...data },
-            });
+        // Upsert so two concurrent first saves can't both hit the unique constraint.
+        const rule = await prisma.indexerSeedRule.upsert({
+          where: { indexerName: existing?.indexerName ?? name },
+          update: data,
+          create: { indexerName: name, ...data },
+        });
         return ok({
           rule: {
             indexer: rule.indexerName,

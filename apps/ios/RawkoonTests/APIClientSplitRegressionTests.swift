@@ -35,4 +35,22 @@ struct APIClientSplitRegressionTests {
             try await client.checkStatus(Data(), forbidden)
         }
     }
+
+    @Test func longWaitTimeoutIsNotRetried() {
+        let timedOut = URLError(.timedOut)
+        #expect(!APIClient.shouldRetry(after: timedOut, method: "GET", longWait: true))
+        #expect(APIClient.shouldRetry(after: timedOut, method: "GET", longWait: false))
+    }
+
+    @Test func droppedConnectionsAreRetriedOnEitherLane() {
+        for code in [URLError.Code.networkConnectionLost, .cannotConnectToHost] {
+            #expect(APIClient.shouldRetry(after: URLError(code), method: "GET", longWait: true))
+            #expect(APIClient.shouldRetry(after: URLError(code), method: "GET", longWait: false))
+        }
+    }
+
+    @Test func onlyGetsAreRetried() {
+        #expect(!APIClient.shouldRetry(after: URLError(.networkConnectionLost), method: "POST", longWait: false))
+        #expect(!APIClient.shouldRetry(after: URLError(.badServerResponse), method: "GET", longWait: false))
+    }
 }

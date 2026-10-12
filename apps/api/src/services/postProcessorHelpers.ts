@@ -1,10 +1,10 @@
 import { parseReleaseStructure } from "@rawkoon/shared/utils/releaseStructure";
-import { randomUUID } from "node:crypto";
 import {
   copyFile,
   link,
   mkdir,
   readdir,
+  realpath,
   rename,
   stat,
   unlink,
@@ -14,6 +14,10 @@ import { basename, dirname, isAbsolute, join } from "node:path";
 import { prisma } from "@rawkoon/api/db";
 import { parseReleaseTitle } from "@rawkoon/api/utils/medias/filenameParser";
 import { resolveDownloadedStatus } from "@rawkoon/api/utils/medias/libraryHelpers";
+import {
+  removeStalePartials,
+  withPartial,
+} from "@rawkoon/api/utils/medias/partialFile";
 
 export function qualityStringsFromParsed(
   qualityParsed: unknown,
@@ -86,18 +90,17 @@ function inodeMatch(
  * path that a retry would take for a finished import.
  */
 export async function copyFileAtomic(src: string, dst: string): Promise<void> {
+  await removeStalePartials(dst);
   // Unique per attempt, so a failed attempt never removes another's copy.
-  const partial = join(
-    dirname(dst),
-    `.${basename(dst)}.${randomUUID()}.rawkoon-partial`,
-  );
-  try {
-    await copyFile(src, partial);
-    await rename(partial, dst);
-  } catch (e) {
-    await unlink(partial).catch(() => {});
-    throw e;
-  }
+  await withPartial(dst, async (partial) => {
+    try {
+      await copyFile(src, partial);
+      await rename(partial, dst);
+    } catch (e) {
+      await unlink(partial).catch(() => {});
+      throw e;
+    }
+  });
 }
 
 export async function placeFile(
@@ -289,5 +292,29 @@ export async function isFullyReadable(
       return false;
     }
   }
+  return true;
+}
+
+/**
+ * Put a release's file at its library path. A different file already there is
+ * only replaced by an upgrade. Returns whether the release's file is now at
+ * `dst` as a copy separate from the download.
+ */
+export async function placeImportFile(
+  src: string,
+  dst: string,
+  operation: "hardlink" | "move",
+  isUpgrade: boolean,
+): Promise<boolean> {
+  if (!(await exists(dst))) {
+    await placeFile(src, dst, operation);
+    return true;
+  }
+  if (await isSameFile(src, dst)) {
+    // A download that already sits at its library path is not a separate copy.
+    return (await realpath(src)) !== (await realpath(dst));
+  }
+  if (!isUpgrade) return false;
+  await replaceFile(src, dst, operation);
   return true;
 }

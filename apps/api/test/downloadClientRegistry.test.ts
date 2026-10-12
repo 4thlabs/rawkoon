@@ -21,10 +21,35 @@ describe("buildAdapter", () => {
 describe("afterImportAction", () => {
   const base = {
     ratio: 0,
-    minSeedRatio: 2,
+    seedingTimeSecs: null,
+    rules: [{ ratio: 2, seedTimeMins: null }],
     seedSweepEnabled: false,
     fullyImported: true,
   };
+
+  it("waits until every row sharing the torrent meets its target", () => {
+    const rules = [
+      { ratio: 1, seedTimeMins: null },
+      { ratio: 3, seedTimeMins: null },
+    ];
+    expect(
+      afterImportAction({ ...base, type: "qbittorrent", ratio: 2, rules }),
+    ).toBe("keep");
+    expect(
+      afterImportAction({ ...base, type: "qbittorrent", ratio: 3, rules }),
+    ).toBe("remove");
+  });
+
+  it("keeps the torrent when its seed target is unknown", () => {
+    expect(
+      afterImportAction({
+        ...base,
+        type: "qbittorrent",
+        ratio: 9,
+        rules: null,
+      }),
+    ).toBe("keep");
+  });
 
   it("keeps a torrent on a seeding client until its ratio is met", () => {
     expect(afterImportAction({ ...base, type: "qbittorrent" })).toBe("keep");
@@ -56,6 +81,50 @@ describe("afterImportAction", () => {
   it("keeps an rdt-client torrent whose import didn't place every file", () => {
     expect(
       afterImportAction({ ...base, type: "rdtclient", fullyImported: false }),
+    ).toBe("keep");
+  });
+});
+
+describe("afterImportAction seed targets", () => {
+  const rule = { ratio: 2, seedTimeMins: null as number | null };
+  const base = {
+    type: "qbittorrent" as const,
+    ratio: 1,
+    seedingTimeSecs: 0 as number | null,
+    rules: [rule],
+    seedSweepEnabled: false,
+    fullyImported: true,
+  };
+
+  it("keeps a torrent below its target and removes it once met", () => {
+    expect(afterImportAction(base)).toBe("keep");
+    expect(afterImportAction({ ...base, ratio: 2 })).toBe("remove");
+  });
+
+  it("honours a seed-time target", () => {
+    const timed = { ratio: null, seedTimeMins: 60 };
+    expect(afterImportAction({ ...base, rules: [timed] })).toBe("keep");
+    expect(
+      afterImportAction({ ...base, rules: [timed], seedingTimeSecs: 3600 }),
+    ).toBe("remove");
+  });
+
+  it("removes at once when the rule has no target", () => {
+    expect(
+      afterImportAction({
+        ...base,
+        ratio: null,
+        rules: [{ ratio: null, seedTimeMins: null }],
+      }),
+    ).toBe("remove");
+  });
+
+  it("leaves rdt-client and sweep-on behaviour unchanged", () => {
+    expect(afterImportAction({ ...base, type: "rdtclient" })).toBe(
+      "removeWithData",
+    );
+    expect(
+      afterImportAction({ ...base, ratio: 9, seedSweepEnabled: true }),
     ).toBe("keep");
   });
 });

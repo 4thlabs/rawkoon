@@ -29,6 +29,11 @@ Do not run `bun run db:migrate` inside the container — that script sources a
 repo-root `.env` the image does not ship. Do not run development migration
 commands against production.
 
+To update, pull the image and restart the container. Which tag to run
+(`:latest`, `:edge` or a pinned `:X.Y.Z`), and why going back from `:edge`
+can need a database restore, is covered in
+[Updating and release channels](/self-hosting#updating-and-release-channels).
+
 ## Back up a complete instance
 
 Keep the following together in a secure backup location:

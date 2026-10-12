@@ -1,4 +1,8 @@
-import { sharesContentPath } from "@rawkoon/api/services/seeding/seedPolicy";
+import {
+  isSeedTargetMet,
+  sharesContentPath,
+  type Rule,
+} from "@rawkoon/api/services/seeding/seedPolicy";
 import type { DownloadClientAdapter, DownloadClientType } from "./types";
 
 export type AfterImportAction = "keep" | "remove" | "removeWithData";
@@ -11,7 +15,9 @@ export type AfterImportAction = "keep" | "remove" | "removeWithData";
 export function afterImportAction(input: {
   type: DownloadClientType;
   ratio: number | null;
-  minSeedRatio: number;
+  seedingTimeSecs: number | null;
+  /** Every seed target the torrent must meet, as the sweep would apply them; null when unknown. */
+  rules: Rule[] | null;
   seedSweepEnabled: boolean;
   /** Every file was placed by this import, so nothing still needs the source. */
   fullyImported: boolean;
@@ -21,9 +27,14 @@ export function afterImportAction(input: {
     return input.fullyImported ? "removeWithData" : "keep";
   }
   // Once the seed sweep is on it owns removal, with per-indexer targets.
-  if (input.seedSweepEnabled) return "keep";
-  return input.minSeedRatio <= 0 ||
-    (input.ratio != null && input.ratio >= input.minSeedRatio)
+  if (input.seedSweepEnabled || input.rules == null) return "keep";
+  const stats = {
+    ratio: input.ratio,
+    seedingTimeSecs: input.seedingTimeSecs,
+    upSpeed: 0,
+    sizeBytes: 0,
+  };
+  return input.rules.every((rule) => isSeedTargetMet(stats, rule))
     ? "remove"
     : "keep";
 }

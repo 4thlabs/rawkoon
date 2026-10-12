@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useFetcher } from "@/lib/api/context";
 import { queryKeys } from "@/lib/queryKeys";
@@ -37,31 +38,42 @@ interface UseAiPickParams {
   episode?: number | null;
 }
 
-export function useAiPick({
-  enabled,
-  releases,
-  mediaTitle,
-  mediaYear,
-  mediaType,
-  libraryMediaId,
-  season,
-  episode,
-}: UseAiPickParams) {
+export type AiPickInput = Omit<UseAiPickParams, "enabled">;
+
+/** The identity of one AI pick: the request it makes, and what a dismissal applies to. */
+export function aiPickQueryKey(input: AiPickInput) {
+  const releaseKeys = input.releases
+    .filter((r) => !r.rejected)
+    .map((r) => r.guid)
+    .join(",");
+  return queryKeys.medias.aiPick(
+    input.mediaTitle,
+    input.mediaYear,
+    input.mediaType,
+    releaseKeys,
+    input.libraryMediaId ?? null,
+    input.season ?? null,
+    input.episode ?? null,
+  );
+}
+
+export function useAiPick(params: UseAiPickParams) {
+  const {
+    enabled,
+    releases,
+    mediaTitle,
+    mediaYear,
+    mediaType,
+    libraryMediaId,
+    season,
+    episode,
+  } = params;
   const fetcher = useFetcher();
 
   const candidates = releases.filter((r) => !r.rejected);
-  const releaseKeys = candidates.map((r) => r.guid).join(",");
 
   return useQuery({
-    queryKey: queryKeys.medias.aiPick(
-      mediaTitle,
-      mediaYear,
-      mediaType,
-      releaseKeys,
-      libraryMediaId ?? null,
-      season ?? null,
-      episode ?? null,
-    ),
+    queryKey: aiPickQueryKey(params),
     queryFn: () =>
       fetcher<AiPickResult>(MEDIAS_ENDPOINTS.INTERACTIVE_SEARCH_AI_PICK, {
         method: "POST",
@@ -87,4 +99,17 @@ export function useAiPick({
     retry: 0,
     staleTime: 5 * 60 * 1000,
   });
+}
+
+/** Dismissal of the AI suggestion, scoped to one pick (see aiPickQueryKey). */
+export function useAiDismissal(pickKey: readonly unknown[]) {
+  const scope = JSON.stringify(pickKey);
+  const [dismissed, setDismissed] = useState(false);
+  const [prevScope, setPrevScope] = useState(scope);
+  // Render-time state adjustment, not an effect.
+  if (scope !== prevScope) {
+    setPrevScope(scope);
+    setDismissed(false);
+  }
+  return { dismissed, dismiss: () => setDismissed(true) };
 }

@@ -68,7 +68,7 @@ export function resolveIndexerRule(
 }
 
 /** A 0 target means "no target", like minSeedRatio 0 always did — never "met immediately". */
-function withoutZeroTargets(rule: Rule): Rule {
+export function withoutZeroTargets(rule: Rule): Rule {
   return {
     ratio: rule.ratio != null && rule.ratio > 0 ? rule.ratio : null,
     seedTimeMins:

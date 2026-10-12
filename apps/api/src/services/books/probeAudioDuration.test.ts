@@ -14,7 +14,8 @@ describe("probeAudioDuration", () => {
     "reads the real duration of the reference book's first chapter",
     async () => {
       const seen = await probeAudioDuration(CHAPTER_ONE);
-      expect(seen).toBeCloseTo(504.189388, 3);
+      // ffprobe versions disagree by a few hundredths of a second on the same file.
+      expect(seen).toBeCloseTo(504.18, 1);
     },
   );
 
