@@ -5,11 +5,15 @@ import { LibraryAttentionPanel } from "@/pages/_component/LibraryAttentionPanel"
 import { RssStatusPanel } from "@/pages/_component/RssStatusPanel";
 import { TranscodeWidget } from "@/pages/_component/TranscodeWidget";
 import { ContinueListeningWidget } from "@/features/continue/ContinueListeningWidget";
+import { LibraryGrowthWidget } from "@/features/library/LibraryGrowthWidget";
 import { ListeningStatsWidget } from "@/features/listening/ListeningStatsWidget";
 
 export function WidgetGrid() {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <CardErrorBoundary>
+        <LibraryGrowthWidget />
+      </CardErrorBoundary>
       <CardErrorBoundary>
         <ContinueListeningWidget />
       </CardErrorBoundary>

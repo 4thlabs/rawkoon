@@ -9,6 +9,9 @@ vi.mock("@/pages/_component/NowWatchingWidget", () => ({
 vi.mock("@/features/continue/ContinueListeningWidget", () => ({
   ContinueListeningWidget: () => <div data-testid="w-continue" />,
 }));
+vi.mock("@/features/library/LibraryGrowthWidget", () => ({
+  LibraryGrowthWidget: () => <div data-testid="w-growth" />,
+}));
 vi.mock("@/features/listening/ListeningStatsWidget", () => ({
   ListeningStatsWidget: () => <div data-testid="w-listening" />,
 }));
@@ -29,6 +32,7 @@ describe("WidgetGrid", () => {
   it("renders every widget", () => {
     renderWithProviders(<WidgetGrid />);
     for (const id of [
+      "w-growth",
       "w-continue",
       "w-listening",
       "w-nowwatching",

@@ -2336,6 +2336,23 @@
     "navPosition": "Position de la navigation",
     "openNotification": "Ouvrir la notification"
   },
+  "libraryGrowth": {
+    "title": "Croissance de la bibliothèque",
+    "monthSoFar": "{{month}} jusqu'ici",
+    "titles_one": "{{count}} titre",
+    "titles_other": "{{count}} titres",
+    "vsPrevious": "{{arrow}} {{percent}} % par rapport au même moment en {{month}}",
+    "vsNoBaseline": "{{value}} au même moment en {{month}}",
+    "movies": "Films",
+    "episodes": "Épisodes",
+    "books": "Livres",
+    "weekOf": "Semaine du {{date}}",
+    "noData": "Pas de données",
+    "thisWeek": "Cette semaine",
+    "upgrades_one": "{{count}} mise à niveau",
+    "upgrades_other": "{{count}} mises à niveau",
+    "since": "Depuis le {{date}}"
+  },
   "listening": {
     "title": "Écoute",
     "streak_one": "1 jour de série",

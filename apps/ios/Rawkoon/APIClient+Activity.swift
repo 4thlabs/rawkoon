@@ -73,6 +73,10 @@ extension APIClient {
         return cached?.value.stats
     }
 
+    func libraryGrowth() async throws -> LibraryGrowth {
+        try await get(Endpoints.libraryGrowth).growth
+    }
+
     func rssStatus() async throws -> RssStatusResponse {
         try await get(Endpoints.rssStatus)
     }

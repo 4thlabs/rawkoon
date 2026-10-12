@@ -540,6 +540,7 @@ model LibraryEpisode {
   @@index([status, monitored, airDate], map: "ix_library_episodes_status_monitored_air_date")
   /// Dashboard upcoming: air-date window with no status filter.
   @@index([airDate], map: "ix_library_episodes_air_date")
+  @@index([downloadedAt], map: "ix_library_episodes_downloaded_at")
   /// NOTE: a (media_id, season, status) composite was tried and removed — it
   /// made per-season lookups SLOWER (0.03ms → 0.58ms), because the planner
   /// chose a wide index-only scan over it instead of the better plan available

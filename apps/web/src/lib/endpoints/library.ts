@@ -2,6 +2,7 @@ export const LIBRARY_ENDPOINTS = {
   LIST: "/api/library",
   ITEM: (id: number) => `/api/library/item/${id}`,
   LIBRARY_STATS: "/api/library/stats",
+  GROWTH: "/api/library/growth",
   ADD: "/api/library",
   POST_PROCESSING_SETTINGS: "/api/library/post-processing/settings",
   SCAN: "/api/library/scan",

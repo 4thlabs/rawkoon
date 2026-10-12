@@ -90,6 +90,12 @@
                 DebugAutoSearch(searching: true, dialog: false)
             case "upgradeDialog":
                 DebugAutoSearch(searching: false, dialog: true)
+            case "growthAdmin":
+                DebugGrowth(admin: true, showBooks: true)
+            case "growthMember":
+                DebugGrowth(admin: false, showBooks: true)
+            case "growthNoBooks":
+                DebugGrowth(admin: false, showBooks: false)
             default:
                 EmptyView()
             }
@@ -101,6 +107,7 @@
                 "bookDiscoveryDetail", "tabBar", "tabContainer", "aiConfig", "aiPrices", "aiUsage", "aiStats", "aiCharts",
                 "aiGrabs", "aiHistory", "aiCallDetail", "aiBanner", "aiBannerBudget",
                 "autoSearchIdle", "autoSearchBusy", "upgradeDialog", "motionKit",
+                "growthAdmin", "growthMember", "growthNoBooks",
             ].contains(screen)
         }
     }

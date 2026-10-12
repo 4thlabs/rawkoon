@@ -70,7 +70,7 @@ describe("TranscodeWidget", () => {
       screen.getByText("transcode.widget.more count:58"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/^transcode.widget.saved size:187.0 GB count:34/),
+      screen.getByText(/^transcode.widget.saved size:187 GB count:34/),
     ).toBeInTheDocument();
     expect(
       screen.getByText("transcode.widget.failed count:1"),
