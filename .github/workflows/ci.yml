@@ -53,6 +53,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    # A test process that never exits otherwise holds the job for GitHub's 6h default.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
@@ -60,8 +62,13 @@ jobs:
           generate-routes: "true"
       - name: Install ffmpeg
         run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
-      - name: Test
-        run: |
-          cd apps/web && bun run test --run
-          cd ../api && bun run test
-          cd ../relay && bun run test
+      # One step per suite, each with its own timeout, so a hang fails fast and names its suite.
+      - name: Web tests
+        timeout-minutes: 5
+        run: cd apps/web && bun run test --run
+      - name: API tests
+        timeout-minutes: 10
+        run: cd apps/api && bun run test
+      - name: Relay tests
+        timeout-minutes: 3
+        run: cd apps/relay && bun run test
