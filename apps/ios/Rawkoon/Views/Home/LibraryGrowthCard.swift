@@ -109,21 +109,52 @@ struct LibraryGrowthCard: View {
 
     private var bars: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .bottom, spacing: 5) {
-                ForEach(Array(weeks.enumerated()), id: \.offset) { index, week in
-                    bar(week, index: index)
+            GeometryReader { geo in
+                HStack(alignment: .bottom, spacing: 5) {
+                    ForEach(Array(weeks.enumerated()), id: \.offset) { index, week in
+                        bar(week, index: index)
+                    }
                 }
+                .contentShape(Rectangle())
+                // One gesture over the whole strip: full-size touch target, and dragging scrubs weeks.
+                .gesture(
+                    DragGesture(minimumDistance: 0).onChanged { value in
+                        select(index(atX: value.location.x, width: geo.size.width))
+                    }
+                )
             }
             .frame(height: Self.barAreaHeight)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(trendSummary)
+            .accessibilityValue(selected == nil ? "" : caption)
+            .accessibilityAdjustableAction { direction in
+                guard !weeks.isEmpty else { return }
+                let last = weeks.count - 1
+                switch direction {
+                case .increment: select(min((selected ?? -1) + 1, last))
+                case .decrement: select(max((selected ?? weeks.count) - 1, 0))
+                @unknown default: break
+                }
+            }
 
+            // Same text as the strip's accessibility value, so VoiceOver skips it.
             Text(caption)
                 .font(.caption2).foregroundStyle(Theme.muted)
                 .lineLimit(2)
                 .frame(minHeight: 28, alignment: .topLeading)
                 .accessibilityHidden(true)
         }
+    }
+
+    private func index(atX x: CGFloat, width: CGFloat) -> Int {
+        guard width > 0, !weeks.isEmpty else { return 0 }
+        let raw = Int(x / width * CGFloat(weeks.count))
+        return min(max(raw, 0), weeks.count - 1)
+    }
+
+    private func select(_ index: Int) {
+        guard selected != index else { return }
+        withRawkoonMotion(RawkoonMotion.snappy) { selected = index }
     }
 
     private func bar(_ week: GrowthPeriod, index: Int) -> some View {
@@ -150,12 +181,6 @@ struct LibraryGrowthCard: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            withRawkoonMotion(RawkoonMotion.snappy) {
-                selected = isSelected ? nil : index
-            }
-        }
     }
 
     private var caption: String {

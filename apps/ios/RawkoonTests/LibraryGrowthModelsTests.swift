@@ -63,4 +63,13 @@ struct LibraryGrowthModelsTests {
         #expect(GrowthDates.monthName("2026-10-01", locale: Locale(identifier: "en_US")) == "October")
         #expect(GrowthDates.monthName("2026-10-01", locale: Locale(identifier: "fr_CA")) == "octobre")
     }
+
+    @Test func cachedGrowthIsKeptOnlyForTheCurrentMonthInItsOwnTimezone() throws {
+        // 2026-11-01 03:00 UTC is still Oct 31 in Toronto, already Nov 1 in UTC.
+        let now = try #require(ISO8601DateFormatter().date(from: "2026-11-01T03:00:00Z"))
+        #expect(GrowthDates.isCurrentMonth(start: "2026-10-01", timezone: "America/Toronto", now: now))
+        #expect(!GrowthDates.isCurrentMonth(start: "2026-10-01", timezone: "UTC", now: now))
+        #expect(GrowthDates.isCurrentMonth(start: "2026-11-01", timezone: "UTC", now: now))
+        #expect(!GrowthDates.isCurrentMonth(start: "2025-11-01", timezone: "UTC", now: now))
+    }
 }
