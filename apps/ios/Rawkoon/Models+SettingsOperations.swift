@@ -91,6 +91,7 @@ nonisolated struct PostProcessingSettingsDTO: Decodable, Sendable {
     let defaultBookQualityProfileId: Int?
     let seedSweepEnabled: Bool?
     let privateSeedRatio: Double?
+    let minFreeSpaceGb: Int?
 }
 
 nonisolated struct PostProcessingSettingsResponseDTO: Decodable, Sendable {
@@ -112,11 +113,14 @@ nonisolated struct UpdateMediaSettingsBody: Encodable, Sendable {
     var activeIndexerManager: String?
     var defaultMovieQualityProfileId: Int?
     var defaultShowQualityProfileId: Int?
+    /// Omitted when nil so an older server keeps its value.
+    var minFreeSpaceGb: Int?
 
     enum CodingKeys: String, CodingKey {
         case postProcessingEnabled, moviesLibraryPath, showsLibraryPath, downloadsPath
         case fileOperation, movieTemplate, episodeTemplate, minSeedRatio
         case activeIndexerManager, defaultMovieQualityProfileId, defaultShowQualityProfileId
+        case minFreeSpaceGb
     }
 
     func encode(to encoder: Encoder) throws {
@@ -132,6 +136,7 @@ nonisolated struct UpdateMediaSettingsBody: Encodable, Sendable {
         try c.encode(activeIndexerManager, forKey: .activeIndexerManager)
         try c.encode(defaultMovieQualityProfileId, forKey: .defaultMovieQualityProfileId)
         try c.encode(defaultShowQualityProfileId, forKey: .defaultShowQualityProfileId)
+        try c.encodeIfPresent(minFreeSpaceGb, forKey: .minFreeSpaceGb)
     }
 }
 

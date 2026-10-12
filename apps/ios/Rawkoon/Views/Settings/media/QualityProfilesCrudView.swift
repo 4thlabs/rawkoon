@@ -132,6 +132,8 @@ private struct QualityProfileEditorView: View {
     @State private var preferTracker = false
     @State private var maxSizeText = ""
     @State private var minSeeders: Int? = 0
+    @State private var grabDelayMinutes: Int? = 0
+    @State private var bypassDelayIfCutoffMet = true
     @State private var requireHdr = false
     @State private var preferHdr = false
     @State private var scores: [Int: Int] = [:] // customFormatId -> score (included when present)
@@ -196,6 +198,13 @@ private struct QualityProfileEditorView: View {
                 Toggle("Require HDR", isOn: $requireHdr).tint(Theme.apricot).listRowBackground(Theme.raised)
                 NumberFieldRow("Min seeders", value: $minSeeders, range: 0 ... 100_000)
                 LabeledTextFieldRow(title: "Max size (GB)", text: $maxSizeText, keyboard: .decimalPad)
+            }
+            Section {
+                NumberFieldRow("Grab delay (minutes)", value: $grabDelayMinutes, range: 0 ... 43200)
+                Toggle("Skip delay when cutoff is met", isOn: $bypassDelayIfCutoffMet)
+                    .tint(Theme.apricot).listRowBackground(Theme.raised)
+            } footer: {
+                Text("The delay holds automatic grabs so a better release can show up. Manual grabs are never delayed.")
             }
             Section {
                 LabeledTextFieldRow(title: "Prioritized trackers", text: $trackersText,
@@ -292,6 +301,8 @@ private struct QualityProfileEditorView: View {
         preferTracker = profile.preferTrackerOverQuality ?? false
         maxSizeText = profile.maxSizeGb.map { String($0) } ?? ""
         minSeeders = profile.minSeeders ?? 0
+        grabDelayMinutes = profile.grabDelayMinutes ?? 0
+        bypassDelayIfCutoffMet = profile.bypassDelayIfCutoffMet ?? true
         requireHdr = profile.requireHdr ?? false
         preferHdr = profile.preferHdr ?? false
         var seededScores: [Int: Int] = [:]
@@ -335,6 +346,8 @@ private struct QualityProfileEditorView: View {
             requireHdr: requireHdr,
             preferHdr: preferHdr,
             minSeeders: minSeeders ?? 0,
+            grabDelayMinutes: grabDelayMinutes ?? 0,
+            bypassDelayIfCutoffMet: bypassDelayIfCutoffMet,
             customFormats: assignments
         )
     }
