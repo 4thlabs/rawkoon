@@ -493,8 +493,7 @@ export async function postProcessSeasonPack(
         seedSweepEnabled: settings.seedSweepEnabled,
       }),
       seedSweepEnabled: settings.seedSweepEnabled,
-      // Episodes that failed to import still need their files.
-      // Files left out of the mapping still need their data for a manual import.
+      // Failed episodes, skipped ones and files left out of the mapping still need their data.
       fullyImported:
         errors.length === 0 && allPlaced && !mapping.skipped?.length,
     }),
