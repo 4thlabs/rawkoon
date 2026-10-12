@@ -35,6 +35,7 @@ import {
   resolveTorrentContentPath,
 } from "@rawkoon/api/services/postProcessorHelpers";
 import { postProcessSeasonPack } from "@rawkoon/api/services/postProcessorSeasonPack";
+import { loadImportSeedRule } from "@rawkoon/api/services/seeding/importSeedRule";
 import {
   afterImportAction,
   applyAfterImportAction,
@@ -110,6 +111,7 @@ export async function postProcess(downloadHistoryId: number): Promise<
           episode: null,
           season: dh.season,
           torrentHash: dh.torrentHash,
+          indexer: dh.indexer,
           releaseTitle: dh.releaseTitle,
           qualityParsed: dh.qualityParsed,
         },
@@ -430,7 +432,12 @@ export async function postProcess(downloadHistoryId: number): Promise<
     afterImportAction({
       type: active.adapter.type,
       ratio: tor.ratio,
-      minSeedRatio: settings.minSeedRatio,
+      seedingTimeSecs: tor.seedingTimeSecs,
+      rule: await loadImportSeedRule({
+        indexer: dh.indexer,
+        type: active.adapter.type,
+        seedSweepEnabled: settings.seedSweepEnabled,
+      }),
       seedSweepEnabled: settings.seedSweepEnabled,
       fullyImported: placed,
     }),
