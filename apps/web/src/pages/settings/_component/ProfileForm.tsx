@@ -3,55 +3,20 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import ReactCrop, {
-  centerCrop,
-  makeAspectCrop,
-  type Crop,
-  type PixelCrop,
-} from "react-image-crop";
+import type { Crop, PixelCrop } from "react-image-crop";
 import { useCurrentUser } from "@/lib/auth/useAuth";
 import {
   useUpdateProfile,
   useChangePassword,
   useUploadAvatar,
 } from "@/pages/settings/useUsers";
-import { Dialog } from "@/components/dialog";
+import { AvatarCropDialog } from "./AvatarCropDialog";
+import { PasswordSection } from "./PasswordSection";
+import type { PasswordFormData, ProfileFormData } from "./profileFormTypes";
 import type { UpdateProfileRequest } from "@rawkoon/shared/types";
-import "react-image-crop/dist/ReactCrop.css";
-
-interface ProfileFormData {
-  first_name: string;
-  last_name: string;
-}
-
-interface PasswordFormData {
-  current_password: string;
-  new_password: string;
-  confirm_password: string;
-}
 
 const MAX_AVATAR_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const MAX_CROPPED_DIMENSION_PX = 1024;
-
-function centerAspectCrop(
-  mediaWidth: number,
-  mediaHeight: number,
-  aspect: number,
-) {
-  return centerCrop(
-    makeAspectCrop(
-      {
-        unit: "%",
-        width: 90,
-      },
-      aspect,
-      mediaWidth,
-      mediaHeight,
-    ),
-    mediaWidth,
-    mediaHeight,
-  );
-}
 
 export function ProfileForm() {
   const { t } = useTranslation("common");
@@ -386,174 +351,25 @@ export function ProfileForm() {
       <div className="border-t border-neutral-700" />
 
       {/* Password Section */}
-      <form
+      <PasswordSection
         onSubmit={handlePasswordSubmit(onPasswordSubmit)}
-        className="space-y-6"
-      >
-        <h3 className="text-lg font-medium text-neutral-100">
-          {t("settings.profile.changePassword") || "Change Password"}
-        </h3>
+        registerPassword={registerPassword}
+        passwordErrors={passwordErrors}
+        newPassword={newPassword}
+        isPending={changePasswordMutation.isPending}
+      />
 
-        {/* Current Password */}
-        <div>
-          <label
-            htmlFor="profile-form-current-password"
-            className="block text-sm font-medium text-neutral-300 mb-2"
-          >
-            {t("settings.profile.currentPassword") || "Current Password"}
-          </label>
-          <input
-            id="profile-form-current-password"
-            type="password"
-            {...registerPassword("current_password", {
-              required:
-                t("settings.profile.currentPasswordRequired") ||
-                "Current password is required",
-            })}
-            placeholder={
-              t("settings.profile.currentPasswordPlaceholder") ||
-              "Enter your current password"
-            }
-            className="focus-ring w-full px-4 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-neutral-100 focus:border-transparent"
-          />
-          {passwordErrors.current_password && (
-            <p className="mt-1 text-sm text-red-400">
-              {passwordErrors.current_password.message}
-            </p>
-          )}
-        </div>
-
-        {/* New Password */}
-        <div>
-          <label
-            htmlFor="profile-form-new-password"
-            className="block text-sm font-medium text-neutral-300 mb-2"
-          >
-            {t("settings.profile.newPassword")}
-          </label>
-          <input
-            id="profile-form-new-password"
-            type="password"
-            {...registerPassword("new_password", {
-              required:
-                t("settings.profile.newPasswordRequired") ||
-                "New password is required",
-              minLength: {
-                value: 8,
-                message:
-                  t("settings.profile.passwordMinLength") ||
-                  "Password must be at least 8 characters",
-              },
-            })}
-            placeholder={t("settings.profile.newPasswordPlaceholder")}
-            className="focus-ring w-full px-4 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-neutral-100 focus:border-transparent"
-          />
-          {passwordErrors.new_password && (
-            <p className="mt-1 text-sm text-red-400">
-              {passwordErrors.new_password.message}
-            </p>
-          )}
-          <p className="mt-1 text-sm text-neutral-400">
-            {t("settings.profile.passwordHelp")}
-          </p>
-        </div>
-
-        {/* Confirm New Password */}
-        <div>
-          <label
-            htmlFor="profile-form-confirm-password"
-            className="block text-sm font-medium text-neutral-300 mb-2"
-          >
-            {t("settings.profile.confirmPassword") || "Confirm New Password"}
-          </label>
-          <input
-            id="profile-form-confirm-password"
-            type="password"
-            {...registerPassword("confirm_password", {
-              required:
-                t("settings.profile.confirmPasswordRequired") ||
-                "Please confirm your new password",
-              validate: (value) =>
-                value === newPassword ||
-                t("settings.profile.passwordMismatch") ||
-                "Passwords do not match",
-            })}
-            placeholder={
-              t("settings.profile.confirmPasswordPlaceholder") ||
-              "Confirm your new password"
-            }
-            className="focus-ring w-full px-4 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-neutral-100 focus:border-transparent"
-          />
-          {passwordErrors.confirm_password && (
-            <p className="mt-1 text-sm text-red-400">
-              {passwordErrors.confirm_password.message}
-            </p>
-          )}
-        </div>
-
-        {/* Submit Button */}
-        <Button
-          type="submit"
-          disabled={changePasswordMutation.isPending}
-          className="w-full"
-        >
-          {changePasswordMutation.isPending
-            ? t("settings.profile.saving")
-            : t("settings.profile.updatePassword") || "Update Password"}
-        </Button>
-      </form>
-
-      <Dialog
-        isOpen={Boolean(selectedImageUrl)}
-        onClose={onCropCancel}
-        title={t("settings.profile.cropPhoto")}
-      >
-        <div className="space-y-4">
-          {selectedImageUrl && (
-            <div className="overflow-auto">
-              <ReactCrop
-                crop={crop}
-                onChange={(_, percentCrop) => setCrop(percentCrop)}
-                onComplete={(cropPixels) => setCompletedCrop(cropPixels)}
-                aspect={1}
-                circularCrop
-                keepSelection
-              >
-                <img
-                  decoding="async"
-                  ref={imageRef}
-                  src={selectedImageUrl}
-                  alt={t("settings.profile.profilePictureAlt")}
-                  className="max-h-[60dvh] w-auto"
-                  onLoad={(event) => {
-                    const { width, height } = event.currentTarget;
-                    setCrop(centerAspectCrop(width, height, 1));
-                  }}
-                />
-              </ReactCrop>
-            </div>
-          )}
-          <div className="flex gap-2 justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCropCancel}
-              disabled={uploadAvatarMutation.isPending}
-            >
-              {t("settings.profile.cancelCrop")}
-            </Button>
-            <Button
-              type="button"
-              onClick={onCropApply}
-              disabled={uploadAvatarMutation.isPending || !completedCrop}
-            >
-              {uploadAvatarMutation.isPending
-                ? t("settings.profile.uploading")
-                : t("settings.profile.applyCrop")}
-            </Button>
-          </div>
-        </div>
-      </Dialog>
+      <AvatarCropDialog
+        selectedImageUrl={selectedImageUrl}
+        crop={crop}
+        completedCrop={completedCrop}
+        imageRef={imageRef}
+        isUploading={uploadAvatarMutation.isPending}
+        onCropChange={setCrop}
+        onCropComplete={setCompletedCrop}
+        onCancel={onCropCancel}
+        onApply={onCropApply}
+      />
     </div>
   );
 }
