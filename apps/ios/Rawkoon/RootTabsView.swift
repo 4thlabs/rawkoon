@@ -88,7 +88,7 @@ struct RootTabsView: View {
         tabRoot(tab)
             .background(NavigationBottomInset(
                 bottom: model.activeBook() == nil ? 0 : MiniPlayerInset.height,
-                mountedTabs: 0
+                stacks: 0
             ))
             // Kept-alive sidebar tabs share the zoom namespace; only the shown one registers plain ids.
             .environment(\.isActiveRootTab, tab == shownTab)

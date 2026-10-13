@@ -9,8 +9,8 @@ import UIKit
 struct NavigationBottomInset: UIViewControllerRepresentable {
     let bottom: CGFloat
     var top: CGFloat = 0
-    /// Changes when a tab is first mounted, so its new stack gets the inset too.
-    let mountedTabs: Int
+    /// Never read: changing it when a stack is created or rebuilt re-runs the update for the new stack.
+    let stacks: Int
 
     func makeUIViewController(context _: Context) -> Probe {
         Probe()
@@ -20,6 +20,8 @@ struct NavigationBottomInset: UIViewControllerRepresentable {
         probe.bottom = bottom
         probe.top = top
         probe.apply()
+        // A newly mounted stack's navigation controller is attached after this update.
+        DispatchQueue.main.async { probe.apply() }
     }
 
     final class Probe: UIViewController {
