@@ -456,6 +456,7 @@ export async function finishPostProcess(
 ): Promise<PostProcessOutcome> {
   let mediaId: number | null | undefined;
   let bookEditionId: number | null | undefined;
+  let isUpgrade = false;
   let episodeId: number | null | undefined;
   try {
     const dh = await prisma.downloadHistory.findUnique({
@@ -475,7 +476,7 @@ export async function finishPostProcess(
     bookEditionId = dh?.bookEditionId;
     episodeId = dh?.episodeId;
     const season = dh?.season;
-    const isUpgrade = dh?.isUpgrade ?? false;
+    isUpgrade = dh?.isUpgrade ?? false;
 
     // Its library item was removed: the row only seeds now, there is nothing to import.
     if (dh && dh.mediaId == null && dh.bookEditionId == null) {
@@ -630,7 +631,7 @@ export async function finishPostProcess(
         const { notifyAdminsBookImportFailed } = await import(
           "@rawkoon/api/workers/notifyBookEvents"
         );
-        await notifyAdminsBookImportFailed(bookEditionId, msg);
+        await notifyAdminsBookImportFailed(bookEditionId, msg, isUpgrade);
       } else {
         await notifyAdminsPostProcessFailed(
           downloadHistoryId,
