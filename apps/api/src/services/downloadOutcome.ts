@@ -425,6 +425,7 @@ function rejectableFrom(
     mediaId: number | null;
     episodeId: number | null;
     bookEditionId: number | null;
+    isUpgrade: boolean;
     torrentHash: string | null;
     releaseTitle: string;
     indexer: string | null;
@@ -435,6 +436,7 @@ function rejectableFrom(
     mediaId: dh.mediaId,
     episodeId: dh.episodeId,
     bookEditionId: dh.bookEditionId,
+    isUpgrade: dh.isUpgrade,
     torrentHash: dh.torrentHash,
     releaseTitle: dh.releaseTitle,
     indexer: dh.indexer,
@@ -553,7 +555,11 @@ export async function finishPostProcess(
         const { notifyAdminsBookImportFailed } = await import(
           "@rawkoon/api/workers/notifyBookEvents"
         );
-        await notifyAdminsBookImportFailed(bookEditionId, result.reason);
+        await notifyAdminsBookImportFailed(
+          bookEditionId,
+          result.reason,
+          isUpgrade,
+        );
       } else {
         await notifyAdminsPostProcessFailed(
           downloadHistoryId,
@@ -594,7 +600,7 @@ export async function finishPostProcess(
       const { notifyAdminsBookDownloaded } = await import(
         "@rawkoon/api/workers/notifyBookEvents"
       );
-      await notifyAdminsBookDownloaded(bookEditionId);
+      await notifyAdminsBookDownloaded(bookEditionId, isUpgrade);
     }
     if (dh?.torrentHash) {
       const { evaluateSeedRelease } = await import(

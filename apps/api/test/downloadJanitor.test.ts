@@ -164,6 +164,21 @@ describe("rejectRelease", () => {
     expect(deps.notifyBookRejected).toHaveBeenCalledWith(
       11,
       "blocked file type: a.exe",
+      false,
+    );
+  });
+
+  it("marks the book notice as an upgrade when the rejected grab was one", async () => {
+    await rejectRelease(
+      { ...dh, mediaId: null, bookEditionId: 11, isUpgrade: true },
+      "stalled",
+      "stalled - no progress",
+      deps,
+    );
+    expect(deps.notifyBookRejected).toHaveBeenCalledWith(
+      11,
+      "stalled - no progress",
+      true,
     );
   });
 });

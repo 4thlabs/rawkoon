@@ -293,12 +293,14 @@ function rejectable(dh: {
   releaseTitle?: string;
   indexer?: string | null;
   bookEditionId?: number | null;
+  isUpgrade?: boolean;
 }) {
   return {
     id: dh.id,
     mediaId: dh.mediaId,
     episodeId: dh.episodeId,
     bookEditionId: dh.bookEditionId ?? null,
+    isUpgrade: dh.isUpgrade ?? false,
     torrentHash: dh.torrentHash,
     releaseTitle: dh.releaseTitle ?? "",
     indexer: dh.indexer ?? null,
@@ -322,6 +324,7 @@ export async function reconcilePendingDownloads(
     releaseTitle?: string;
     indexer?: string | null;
     bookEditionId?: number | null;
+    isUpgrade?: boolean;
   }>,
   opts: {
     treatMissingAsFailed?: boolean;
@@ -555,6 +558,7 @@ async function runDownloadCompletionPass(): Promise<void> {
         episodeId: true,
         // Without bookEditionId a failed book grab never reverted its edition.
         bookEditionId: true,
+        isUpgrade: true,
         torrentHash: true,
         grabbedAt: true,
         releaseTitle: true,

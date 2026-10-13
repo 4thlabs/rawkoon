@@ -377,7 +377,11 @@ export async function grabBookRelease(opts: {
   }
 
   try {
-    await notifyAdminsBookGrabbed(opts.editionId, releaseTitle);
+    await notifyAdminsBookGrabbed(
+      opts.editionId,
+      releaseTitle,
+      opts.isUpgrade ?? false,
+    );
   } catch (e) {
     console.warn("[bookGrabber] grab notification failed:", e);
   }
