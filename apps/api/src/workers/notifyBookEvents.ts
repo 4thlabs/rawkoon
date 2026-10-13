@@ -89,15 +89,18 @@ async function notifyAdmins(opts: {
 export async function notifyAdminsBookGrabbed(
   editionId: number,
   releaseTitle: string,
+  isUpgrade = false,
 ): Promise<void> {
   const ctx = await editionContext(editionId);
   if (!ctx) return;
   const release = truncateReleaseTitle(releaseTitle);
   await notifyAdmins({
     build: (locale) => ({
-      title: notificationCopy(locale, "bookGrabbedTitle", {
-        kind: notificationCopy(locale, ctx.kindKey),
-      }),
+      title: notificationCopy(
+        locale,
+        isUpgrade ? "bookUpgradeGrabbedTitle" : "bookGrabbedTitle",
+        { kind: notificationCopy(locale, ctx.kindKey) },
+      ),
       body: notificationCopy(locale, "bookEventBody", {
         body: `${ctx.label} — ${release}`,
       }),
@@ -105,7 +108,7 @@ export async function notifyAdminsBookGrabbed(
       url: `/books/${ctx.bookId}`,
     }),
     imageUrl: ctx.coverUrl,
-    metadata: { book_id: ctx.bookId },
+    metadata: { book_id: ctx.bookId, is_upgrade: isUpgrade },
     preferenceKey: "book_grabbed",
     logTag: "notifyAdminsBookGrabbed",
   });
@@ -113,22 +116,27 @@ export async function notifyAdminsBookGrabbed(
 
 export async function notifyAdminsBookDownloaded(
   editionId: number,
+  isUpgrade = false,
 ): Promise<void> {
   const ctx = await editionContext(editionId);
   if (!ctx) return;
   await notifyAdmins({
     build: (locale) => ({
-      title: notificationCopy(locale, "bookDownloadedTitle", {
-        kind: notificationCopy(locale, ctx.kindKey),
-      }),
-      body: notificationCopy(locale, "bookEventBody", {
-        body: `${ctx.label} is now in your library.`,
-      }),
+      title: notificationCopy(
+        locale,
+        isUpgrade ? "bookUpgradedTitle" : "bookDownloadedTitle",
+        { kind: notificationCopy(locale, ctx.kindKey) },
+      ),
+      body: isUpgrade
+        ? notificationCopy(locale, "bookUpgradedBody", { label: ctx.label })
+        : notificationCopy(locale, "bookEventBody", {
+            body: `${ctx.label} is now in your library.`,
+          }),
       type: "book_downloaded",
       url: `/books/${ctx.bookId}`,
     }),
     imageUrl: ctx.coverUrl,
-    metadata: { book_id: ctx.bookId },
+    metadata: { book_id: ctx.bookId, is_upgrade: isUpgrade },
     preferenceKey: "book_downloaded",
     logTag: "notifyAdminsBookDownloaded",
   });
@@ -137,22 +145,31 @@ export async function notifyAdminsBookDownloaded(
 export async function notifyAdminsBookImportFailed(
   editionId: number,
   reason: string,
+  isUpgrade = false,
 ): Promise<void> {
   const ctx = await editionContext(editionId);
   if (!ctx) return;
   await notifyAdmins({
     build: (locale) => ({
-      title: notificationCopy(locale, "bookImportFailedTitle", {
-        kind: notificationCopy(locale, ctx.kindKey),
-      }),
-      body: notificationCopy(locale, "bookEventBody", {
-        body: `${ctx.label}: ${reason}`,
-      }),
+      title: notificationCopy(
+        locale,
+        isUpgrade ? "bookUpgradeFailedTitle" : "bookImportFailedTitle",
+        { kind: notificationCopy(locale, ctx.kindKey) },
+      ),
+      // A failed upgrade still leaves a copy in the library, unlike a failed first grab.
+      body: isUpgrade
+        ? notificationCopy(locale, "bookUpgradeFailedBody", {
+            label: ctx.label,
+            reason,
+          })
+        : notificationCopy(locale, "bookEventBody", {
+            body: `${ctx.label}: ${reason}`,
+          }),
       type: "book_import_failed",
       url: `/books/${ctx.bookId}`,
     }),
     imageUrl: ctx.coverUrl,
-    metadata: { book_id: ctx.bookId },
+    metadata: { book_id: ctx.bookId, is_upgrade: isUpgrade },
     preferenceKey: "book_failed",
     logTag: "notifyAdminsBookImportFailed",
   });

@@ -425,6 +425,7 @@ function rejectableFrom(
     mediaId: number | null;
     episodeId: number | null;
     bookEditionId: number | null;
+    isUpgrade: boolean;
     torrentHash: string | null;
     releaseTitle: string;
     indexer: string | null;
@@ -435,6 +436,7 @@ function rejectableFrom(
     mediaId: dh.mediaId,
     episodeId: dh.episodeId,
     bookEditionId: dh.bookEditionId,
+    isUpgrade: dh.isUpgrade,
     torrentHash: dh.torrentHash,
     releaseTitle: dh.releaseTitle,
     indexer: dh.indexer,
@@ -454,6 +456,7 @@ export async function finishPostProcess(
 ): Promise<PostProcessOutcome> {
   let mediaId: number | null | undefined;
   let bookEditionId: number | null | undefined;
+  let isUpgrade = false;
   let episodeId: number | null | undefined;
   try {
     const dh = await prisma.downloadHistory.findUnique({
@@ -473,7 +476,7 @@ export async function finishPostProcess(
     bookEditionId = dh?.bookEditionId;
     episodeId = dh?.episodeId;
     const season = dh?.season;
-    const isUpgrade = dh?.isUpgrade ?? false;
+    isUpgrade = dh?.isUpgrade ?? false;
 
     // Its library item was removed: the row only seeds now, there is nothing to import.
     if (dh && dh.mediaId == null && dh.bookEditionId == null) {
@@ -553,7 +556,11 @@ export async function finishPostProcess(
         const { notifyAdminsBookImportFailed } = await import(
           "@rawkoon/api/workers/notifyBookEvents"
         );
-        await notifyAdminsBookImportFailed(bookEditionId, result.reason);
+        await notifyAdminsBookImportFailed(
+          bookEditionId,
+          result.reason,
+          isUpgrade,
+        );
       } else {
         await notifyAdminsPostProcessFailed(
           downloadHistoryId,
@@ -594,7 +601,7 @@ export async function finishPostProcess(
       const { notifyAdminsBookDownloaded } = await import(
         "@rawkoon/api/workers/notifyBookEvents"
       );
-      await notifyAdminsBookDownloaded(bookEditionId);
+      await notifyAdminsBookDownloaded(bookEditionId, isUpgrade);
     }
     if (dh?.torrentHash) {
       const { evaluateSeedRelease } = await import(
@@ -624,7 +631,7 @@ export async function finishPostProcess(
         const { notifyAdminsBookImportFailed } = await import(
           "@rawkoon/api/workers/notifyBookEvents"
         );
-        await notifyAdminsBookImportFailed(bookEditionId, msg);
+        await notifyAdminsBookImportFailed(bookEditionId, msg, isUpgrade);
       } else {
         await notifyAdminsPostProcessFailed(
           downloadHistoryId,

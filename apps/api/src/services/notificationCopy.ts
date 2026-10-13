@@ -209,13 +209,34 @@ const COPY = {
     en: (p) => `${p.kind} grabbed`,
     fr: (p) => `${p.kind} saisi`,
   },
+  bookUpgradeGrabbedTitle: {
+    en: (p) => `${p.kind} upgrade grabbed`,
+    fr: (p) => `Mise à niveau ${p.kind} saisie`,
+  },
   bookDownloadedTitle: {
     en: (p) => `${p.kind} downloaded`,
     fr: (p) => `${p.kind} téléchargé`,
   },
+  bookUpgradedTitle: {
+    en: (p) => `${p.kind} upgraded`,
+    fr: (p) => `${p.kind} mis à niveau`,
+  },
+  bookUpgradedBody: {
+    en: (p) => `${p.label}: the better copy is now in your library.`,
+    fr: (p) => `${p.label} : la meilleure copie est dans votre bibliothèque.`,
+  },
   bookImportFailedTitle: {
     en: (p) => `${p.kind} import failed`,
     fr: (p) => `Échec import ${p.kind}`,
+  },
+  bookUpgradeFailedTitle: {
+    en: (p) => `${p.kind} upgrade failed`,
+    fr: (p) => `Échec mise à niveau ${p.kind}`,
+  },
+  bookUpgradeFailedBody: {
+    en: (p) => `${p.label}: ${p.reason}. The book is still in your library.`,
+    fr: (p) =>
+      `${p.label} : ${p.reason}. Le livre reste dans votre bibliothèque.`,
   },
   bookSearchSkippedTitle: {
     en: (p) => `${p.kind} search gave up`,
