@@ -99,7 +99,7 @@ export async function searchBookUpgrades(): Promise<void> {
     where: { monitored: true, status: "downloaded" },
     select: {
       id: true,
-      files: { select: { format: true } },
+      files: { select: { format: true, audioBitrate: true } },
       bookQualityProfile: {
         select: { allowedFormats: true, cutoffFormat: true },
       },
@@ -129,6 +129,8 @@ export async function searchBookUpgrades(): Promise<void> {
     };
     if (meetsBookCutoff(best, scoreProfile)) continue;
 
+    const heldBitrate = highestBitrate(edition.files, best);
+
     try {
       const { releases, error } = await searchBookReleases(edition.id);
       if (error) continue;
@@ -140,7 +142,13 @@ export async function searchBookUpgrades(): Promise<void> {
         if (!(r.download_url ?? r.magnet_url)) return false;
         const idx = profile.allowedFormats.indexOf(r.format);
         if (idx === -1) return false;
-        return idx < profile.allowedFormats.indexOf(best);
+        if (idx >= profile.allowedFormats.indexOf(best)) return false;
+        // A better container at a lower bitrate is a sidegrade, not an upgrade.
+        return !(
+          heldBitrate != null &&
+          r.audio_bitrate != null &&
+          r.audio_bitrate < heldBitrate
+        );
       });
       if (upgrades.length === 0) continue;
 
@@ -179,6 +187,19 @@ export async function searchBookUpgrades(): Promise<void> {
       );
     }
   }
+}
+
+/** Highest known bitrate among the held files of one format, or null. */
+function highestBitrate(
+  files: { format: string; audioBitrate: number | null }[],
+  format: BookFormat,
+): number | null {
+  let max: number | null = null;
+  for (const f of files) {
+    if (f.format !== format || f.audioBitrate == null) continue;
+    if (max == null || f.audioBitrate > max) max = f.audioBitrate;
+  }
+  return max;
 }
 
 export async function checkBookReleases(): Promise<void> {

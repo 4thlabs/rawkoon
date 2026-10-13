@@ -12,7 +12,7 @@ type Edition = {
 
 type UpgradeEdition = {
   id: number;
-  files: { format: string }[];
+  files: { format: string; audioBitrate?: number | null }[];
   bookQualityProfile: {
     allowedFormats: string[];
     cutoffFormat: string | null;
@@ -322,6 +322,89 @@ describe("searchBookUpgrades", () => {
     await searchBookUpgrades();
 
     expect(state.searchCalls).toEqual([]);
+  });
+
+  describe("audiobook bitrate", () => {
+    const mp3Edition = (audioBitrate: number | null): UpgradeEdition => ({
+      id: 7,
+      files: [
+        { format: "mp3", audioBitrate },
+        { format: "mp3", audioBitrate },
+      ],
+      bookQualityProfile: {
+        allowedFormats: ["m4b", "mp3"],
+        cutoffFormat: "m4b",
+      },
+    });
+
+    it("ignores a better format at a lower bitrate than what is held", async () => {
+      state.upgradable = [mp3Edition(192)];
+      state.searchResult = {
+        releases: [release({ format: "m4b", audio_bitrate: 128 })],
+      };
+
+      await searchBookUpgrades();
+
+      expect(state.searchCalls).toEqual([7]);
+      expect(state.grabCalls).toEqual([]);
+    });
+
+    it("compares against the highest bitrate among the held files", async () => {
+      state.upgradable = [
+        {
+          ...mp3Edition(null),
+          files: [
+            { format: "mp3", audioBitrate: 64 },
+            { format: "mp3", audioBitrate: 192 },
+          ],
+        },
+      ];
+      state.searchResult = {
+        releases: [release({ format: "m4b", audio_bitrate: 128 })],
+      };
+
+      await searchBookUpgrades();
+
+      expect(state.grabCalls).toEqual([]);
+    });
+
+    it("grabs a better format at the same bitrate", async () => {
+      state.upgradable = [mp3Edition(128)];
+      state.searchResult = {
+        releases: [release({ format: "m4b", audio_bitrate: 128 })],
+      };
+
+      await searchBookUpgrades();
+
+      expect(state.grabCalls).toHaveLength(1);
+    });
+
+    it("picks the release that keeps the bitrate over one that lowers it", async () => {
+      state.upgradable = [mp3Edition(192)];
+      state.searchResult = {
+        releases: [
+          release({ title: "Low", format: "m4b", audio_bitrate: 64 }),
+          release({ title: "High", format: "m4b", audio_bitrate: 256 }),
+        ],
+      };
+
+      await searchBookUpgrades();
+
+      expect(state.grabCalls).toHaveLength(1);
+      expect(state.grabCalls[0]?.releaseTitle).toBe("High");
+    });
+
+    // An unknown bitrate on either side cannot prove a downgrade.
+    it("still grabs when the bitrate is unknown", async () => {
+      state.upgradable = [mp3Edition(null)];
+      state.searchResult = {
+        releases: [release({ format: "m4b", audio_bitrate: 96 })],
+      };
+
+      await searchBookUpgrades();
+
+      expect(state.grabCalls).toHaveLength(1);
+    });
   });
 
   it("skips an edition with no profile, since there is no cutoff to compare to", async () => {
