@@ -106,6 +106,8 @@ const emptyPayload: QualityProfileFormPayload = {
   prefer_hdr: false,
   cutoff_resolution: null,
   min_seeders: 0,
+  grab_delay_minutes: 0,
+  bypass_delay_if_cutoff_met: true,
   custom_formats: [],
 };
 
@@ -352,6 +354,37 @@ export function QualityProfileForm({
         onChange={(e) => set("min_seeders", Number(e.target.value) || 0)}
         placeholder={t("customFormats.minSeedersHelp")}
       />
+
+      <FormInput
+        label={t("settings.qualityProfiles.grabDelayMinutes")}
+        type="number"
+        min="0"
+        max={43200}
+        // Empty shows the "0" placeholder, so the field can be cleared while typing.
+        value={form.grab_delay_minutes || ""}
+        onChange={(e) =>
+          set(
+            "grab_delay_minutes",
+            Math.min(43200, Math.max(0, Number(e.target.value) || 0)),
+          )
+        }
+        placeholder="0"
+      />
+      <p className="-mt-3 text-xs text-neutral-400">
+        {t("settings.qualityProfiles.grabDelayHelp")}
+      </p>
+      {form.grab_delay_minutes > 0 && (
+        <label className="flex items-center gap-2.5 cursor-pointer select-none text-sm text-neutral-200">
+          <input
+            type="checkbox"
+            checked={form.bypass_delay_if_cutoff_met}
+            onChange={(e) =>
+              set("bypass_delay_if_cutoff_met", e.target.checked)
+            }
+          />
+          {t("settings.qualityProfiles.bypassDelayIfCutoffMet")}
+        </label>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <FieldLabel>{t("customFormats.title")}</FieldLabel>

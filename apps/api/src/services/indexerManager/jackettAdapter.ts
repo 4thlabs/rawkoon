@@ -7,6 +7,7 @@ import type {
   GrabResult,
   SearchResult,
 } from "./types";
+import { parsePublishDate } from "./publishDate";
 import type { IndexerIntegrationConfig } from "../../utils/integrations/types";
 import { randomUUID } from "crypto";
 
@@ -19,6 +20,7 @@ const releasePayloads = new Map<
     isMagnet: boolean;
     title: string;
     indexer: string | null;
+    sizeBytes: number | null;
     expiresAt: number;
   }
 >();
@@ -39,6 +41,7 @@ function storeDownloadUrl(
   isMagnet: boolean,
   title: string,
   indexer: string | null,
+  sizeBytes: number | null,
 ): string {
   cleanupExpired();
   const token = randomUUID();
@@ -47,6 +50,7 @@ function storeDownloadUrl(
     isMagnet,
     title,
     indexer,
+    sizeBytes,
     expiresAt: Date.now() + RELEASE_TTL_MS,
   });
   return token;
@@ -57,6 +61,7 @@ function takeDownloadUrl(token: string): {
   isMagnet: boolean;
   title: string;
   indexer: string | null;
+  sizeBytes: number | null;
 } | null {
   cleanupExpired();
   const entry = releasePayloads.get(token);
@@ -67,6 +72,7 @@ function takeDownloadUrl(token: string): {
     isMagnet: entry.isMagnet,
     title: entry.title,
     indexer: entry.indexer,
+    sizeBytes: entry.sizeBytes,
   };
 }
 
@@ -314,6 +320,7 @@ export class JackettAdapter implements IndexerManagerAdapter {
         magnetUrl: stored.url,
         title: stored.title,
         indexer: stored.indexer,
+        sizeBytes: stored.sizeBytes,
       };
     }
     return {
@@ -321,6 +328,7 @@ export class JackettAdapter implements IndexerManagerAdapter {
       downloadUrl: stored.url,
       title: stored.title,
       indexer: stored.indexer,
+      sizeBytes: stored.sizeBytes,
     };
   }
 
@@ -332,6 +340,7 @@ export class JackettAdapter implements IndexerManagerAdapter {
       url.startsWith("magnet:"),
       release.title,
       release.indexer,
+      release.sizeBytes,
     );
   }
 
@@ -366,6 +375,7 @@ export class JackettAdapter implements IndexerManagerAdapter {
       protocol: "torrent",
       sizeBytes: toNumber(raw.Size) ?? toNumber(raw.size) ?? null,
       age: null,
+      publishedAt: parsePublishDate(raw.PublishDate ?? raw.publishDate),
       seeders: toNumber(raw.Seeders) ?? toNumber(raw.seeders) ?? null,
       leechers: toNumber(raw.Peers) ?? toNumber(raw.peers) ?? null,
       rejected: false,

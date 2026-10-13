@@ -63,6 +63,7 @@ export const queryKeys = {
       [...queryKeys.downloads.all, "seeding", preview ?? false] as const,
     orphans: () => [...queryKeys.downloads.all, "orphans"] as const,
     seedRules: () => [...queryKeys.downloads.all, "seed-rules"] as const,
+    pendingReleases: () => [...queryKeys.downloads.all, "pending"] as const,
     janitorStats: () => [...queryKeys.downloads.all, "janitor-stats"] as const,
   },
 

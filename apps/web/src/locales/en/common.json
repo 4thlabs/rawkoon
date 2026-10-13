@@ -208,6 +208,9 @@
       "liveBadge": "● Live",
       "transfer": "Transfer",
       "downloadClientNotConfigured": "Download client not configured",
+      "pendingDelay": "Pending (delay)",
+      "pendingGrabAt": "grab at {{time}}",
+      "pendingMore": "+{{count}} more",
       "choresPending": "{{count}} pending",
       "choresAllCaughtUp": "All caught up!",
       "choresMore": "+{{count}} more {{label}}",
@@ -818,6 +821,9 @@
       "maxSizeGbPlaceholder": "Leave empty for no limit",
       "cutoffResolution": "Cutoff resolution (optional)",
       "noCutoff": "No cutoff",
+      "grabDelayMinutes": "Grab delay (minutes)",
+      "grabDelayHelp": "Automatic grabs wait this long after a release is published to collect better ones. 0 = grab immediately. Manual grabs are never delayed.",
+      "bypassDelayIfCutoffMet": "Skip the delay when a release already meets the cutoff resolution",
       "requireHdr": "Require HDR",
       "preferHdr": "Prefer HDR (bonus score)",
       "save": "Save changes",
@@ -1682,9 +1688,11 @@
       "invalid": "Use a file extension like exe or .iso.",
       "stats": "Last 30 days: {{malware}} rejected for blocked files, {{stalled}} for stalling, {{imports}} for unusable content.",
       "statsLink": "View them in the blocklist",
-      "save": "Save file types",
-      "saved": "File types saved.",
-      "saveError": "Couldn't save file types."
+      "minFreeLabel": "Minimum free space (GB)",
+      "minFreeHelp": "Refuse to grab a release that would leave less than this free on the download volume. 0 turns the check off.",
+      "save": "Save",
+      "saved": "Saved.",
+      "saveError": "Couldn't save."
     },
     "transcode": {
       "title": "Re-encode"

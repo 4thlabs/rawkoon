@@ -5,6 +5,7 @@ import type { TooltipContentProps } from "recharts";
 import { AreaChart, Area, Tooltip, ResponsiveContainer } from "recharts";
 
 import { useDownloadsSpeed } from "@/pages/_component/useDownloadsSpeed";
+import { usePendingReleases } from "@/pages/_component/usePendingReleases";
 import { formatSpeed } from "@/lib/utils/format";
 import {
   Kicker,
@@ -13,6 +14,7 @@ import {
 } from "@/pages/_component/widgetPrimitives";
 
 const SPEED_RING_SIZE = 60;
+const PENDING_SHOWN = 3;
 
 type SpeedSample = { dl: number; ul: number };
 
@@ -45,6 +47,7 @@ function SpeedTooltip({
 export function DownloadsPanel() {
   const { t } = useTranslation("common");
   const { data, isLoading } = useDownloadsSpeed();
+  const pending = usePendingReleases().data?.items ?? [];
 
   const ringRef = useRef<SpeedSample[]>([]);
   const [speedHistory, setSpeedHistory] = useState<SpeedSample[]>([]);
@@ -85,6 +88,42 @@ export function DownloadsPanel() {
           <p className="py-2 text-sm text-neutral-400 text-center">
             {t("dashboard.home.downloadClientNotConfigured")}
           </p>
+        )}
+
+        {pending.length > 0 && (
+          <div>
+            <Kicker>
+              {t("dashboard.home.pendingDelay")} ({pending.length})
+            </Kicker>
+            <ul className="mt-2 space-y-1.5">
+              {pending.slice(0, PENDING_SHOWN).map((p) => (
+                <li key={p.target_key} className="min-w-0 text-xs">
+                  <p className="truncate text-neutral-200">
+                    {p.media_title}
+                    {p.season != null &&
+                      ` S${String(p.season).padStart(2, "0")}${
+                        p.episode != null
+                          ? `E${String(p.episode).padStart(2, "0")}`
+                          : ""
+                      }`}
+                  </p>
+                  <p className="truncate text-neutral-500">{p.release_title}</p>
+                  <p className="tabular-nums text-neutral-400">
+                    {t("dashboard.home.pendingGrabAt", {
+                      time: new Date(p.grab_after).toLocaleString(),
+                    })}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            {pending.length > PENDING_SHOWN && (
+              <p className="mt-1 text-xs text-neutral-500">
+                {t("dashboard.home.pendingMore", {
+                  count: pending.length - PENDING_SHOWN,
+                })}
+              </p>
+            )}
+          </div>
         )}
 
         {data?.enabled && (

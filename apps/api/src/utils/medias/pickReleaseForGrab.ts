@@ -43,7 +43,9 @@ function resolveAiPick(
 }
 
 /** Case-insensitive, like searchAndGrab; grabRelease re-checks by title and hash. */
-async function blocklistedTitles(titles: string[]): Promise<Set<string>> {
+export async function blocklistedTitles(
+  titles: string[],
+): Promise<Set<string>> {
   if (titles.length === 0) return new Set();
   try {
     const rows = await prisma.grabBlocklist.findMany({

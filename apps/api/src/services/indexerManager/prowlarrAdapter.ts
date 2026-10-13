@@ -7,6 +7,7 @@ import type {
   GrabResult,
   SearchResult,
 } from "./types";
+import { parsePublishDate } from "./publishDate";
 import type { IndexerIntegrationConfig } from "../../utils/integrations/types";
 import {
   toRecord,
@@ -16,6 +17,7 @@ import {
   infoHashFromMagnet,
   indexerNameFromRaw,
   releaseTitleFromRaw,
+  sizeBytesFromRaw,
   toBoolean,
 } from "../../utils/medias/prowlarrSearchUtils";
 import { randomUUID } from "crypto";
@@ -229,10 +231,23 @@ export class ProwlarrAdapter implements IndexerManagerAdapter {
     }
     const title = releaseTitleFromRaw(payload) ?? undefined;
     const indexer = indexerNameFromRaw(payload);
+    const sizeBytes = sizeBytesFromRaw(payload) ?? undefined;
     if (target.isMagnet) {
-      return { success: true, magnetUrl: target.url, title, indexer };
+      return {
+        success: true,
+        magnetUrl: target.url,
+        title,
+        indexer,
+        sizeBytes,
+      };
     }
-    return { success: true, downloadUrl: target.url, title, indexer };
+    return {
+      success: true,
+      downloadUrl: target.url,
+      title,
+      indexer,
+      sizeBytes,
+    };
   }
 
   storeReleaseToken(release: NormalizedRelease): string | null {
@@ -318,6 +333,7 @@ export class ProwlarrAdapter implements IndexerManagerAdapter {
       protocol: toStringOrNull(row.protocol),
       sizeBytes: toNumberOrNull(row.size),
       age: toNumberOrNull(row.age),
+      publishedAt: parsePublishDate(row.publishDate),
       seeders: toNumberOrNull(row.seeders),
       leechers: toNumberOrNull(row.leechers),
       rejected: toBoolean(row.rejected),

@@ -7,5 +7,6 @@ export const DOWNLOADS_ENDPOINTS = {
   SEED_RULES: "/api/downloads/seed-rules",
   SEED_RULE: (indexer: string) =>
     `/api/downloads/seed-rules/${encodeURIComponent(indexer)}`,
+  PENDING_RELEASES: "/api/downloads/pending-releases",
   JANITOR_STATS: "/api/downloads/janitor-stats",
 } as const;

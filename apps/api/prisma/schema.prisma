@@ -315,6 +315,10 @@ model QualityProfile {
   preferHdr                Boolean  @default(false) @map("prefer_hdr")
   cutoffResolution         Int?     @map("cutoff_resolution")
   minSeeders               Int      @default(0) @map("min_seeders")
+  /// Minutes an automatic grab waits after a release's publish time; 0 = grab at once.
+  grabDelayMinutes         Int      @default(0) @map("grab_delay_minutes")
+  /// A release that already meets the cutoff skips the delay.
+  bypassDelayIfCutoffMet   Boolean  @default(true) @map("bypass_delay_if_cutoff_met")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt @map("updated_at")
 
@@ -325,6 +329,35 @@ model QualityProfile {
   mediaRequests      MediaRequest[]
 
   @@map("quality_profiles")
+}
+
+/// A release held back by a profile's grab delay until grab_after, so later,
+/// better candidates for the same target can be collected first.
+model PendingRelease {
+  id           Int       @id @default(autoincrement())
+  /// "m:<mediaId>" movie, "e:<episodeId>" episode, "s:<mediaId>:<season>" pack.
+  targetKey    String    @map("target_key")
+  mediaId      Int       @map("media_id")
+  episodeId    Int?      @map("episode_id")
+  season       Int?
+  releaseGuid  String    @map("release_guid")
+  releaseTitle String    @map("release_title")
+  indexer      String?
+  /// NormalizedRelease minus rawPayload: enough to re-score and grab later.
+  release      Json
+  score        Float
+  /// Grab origin to replay ("rss"), null for scheduled searches.
+  source       String?
+  publishedAt  DateTime? @map("published_at")
+  grabAfter    DateTime  @map("grab_after")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  media LibraryMedia @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([targetKey, releaseGuid], map: "uq_pending_release_target_guid")
+  @@index([grabAfter], map: "ix_pending_releases_grab_after")
+  @@index([mediaId], map: "ix_pending_releases_media_id")
+  @@map("pending_releases")
 }
 
 model CustomFormat {
@@ -474,6 +507,7 @@ model LibraryMedia {
   mediaRequests     MediaRequest[]
   titles            LibraryMediaTitle[]
   transcodeJobs     TranscodeJob[]
+  pendingReleases   PendingRelease[]
 
   @@index([type], map: "ix_library_media_type")
   @@index([status], map: "ix_library_media_status")
@@ -736,6 +770,8 @@ model MediaSettings {
   /// Off until an admin opts in: the first sweep would otherwise release every old torrent at once.
   seedSweepEnabled        Boolean  @default(false) @map("seed_sweep_enabled")
   blockedExtensions       String[] @default(["exe", "scr", "lnk", "bat", "cmd", "com", "msi", "pif", "vbs", "ps1", "jar", "apk"]) @map("blocked_extensions")
+  /// Refuse a grab that would leave less than this on the download volume. 0 disables the check.
+  minFreeSpaceGb          Int      @default(10) @map("min_free_space_gb")
 
   // ── Books ──────────────────────────────────────────
   booksLibraryPath            String?  @map("books_library_path")

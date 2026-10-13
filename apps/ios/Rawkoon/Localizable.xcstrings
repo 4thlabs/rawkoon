@@ -1,6 +1,56 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Grab delay (minutes)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Délai avant téléchargement (minutes)"
+          }
+        }
+      }
+    },
+    "Skip delay when cutoff is met": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignorer le délai si le seuil est atteint"
+          }
+        }
+      }
+    },
+    "The delay holds automatic grabs so a better release can show up. Manual grabs are never delayed.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le délai retient les téléchargements automatiques pour laisser le temps à une meilleure version d'apparaître. Les téléchargements manuels ne sont jamais retardés."
+          }
+        }
+      }
+    },
+    "Keep free (GB)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garder libre (Go)"
+          }
+        }
+      }
+    },
+    "Automatic and manual grabs are refused if they would leave less than this free on the download disk. 0 turns the check off.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les téléchargements automatiques et manuels sont refusés s'ils laissaient moins que cette quantité de libre sur le disque de téléchargement. 0 désactive la vérification."
+          }
+        }
+      }
+    },
     "Library growth": {
       "localizations": {
         "fr": {

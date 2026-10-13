@@ -28,6 +28,8 @@ export interface NormalizedRelease {
   protocol: string | null;
   sizeBytes: number | null;
   age: number | null;
+  /** Indexer publish time (ISO); the grab-delay clock starts here when present. */
+  publishedAt?: string | null;
   seeders: number | null;
   leechers: number | null;
   rejected: boolean;
@@ -61,6 +63,8 @@ export interface GrabResult {
   /** Release title from the stored token — needed to call grabRelease(). */
   title?: string;
   indexer?: string | null;
+  /** Size recorded server-side at search time, for the free-space check. */
+  sizeBytes?: number | null;
   error?: string;
 }
 

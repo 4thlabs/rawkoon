@@ -17,7 +17,14 @@ import {
   qualityProfileFormatsInclude,
   type CandidateRow,
 } from "@rawkoon/api/services/mediaGrabberHelpers";
+import {
+  clearPending,
+  delaySettingsOf,
+  evaluateDelay,
+  toDelayCandidate,
+} from "@rawkoon/api/services/grabDelay";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
+import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import {
   releaseMatchesExpectedTitles,
   resolveSearchTitles,
@@ -38,7 +45,7 @@ export async function searchAndGrab(opts: {
   aiConfig?: AiProviderConfig | null;
 }): Promise<
   | { grabbed: true; releaseTitle: string; aiPicked?: boolean }
-  | { grabbed: false; reason: string }
+  | { grabbed: false; reason: string; delayed?: true }
 > {
   try {
     const {
@@ -104,12 +111,16 @@ export async function searchAndGrab(opts: {
     const rows: CandidateRow[] = [];
 
     let profileInput: QualityProfileScoreInput | null = null;
+    let delaySettings = delaySettingsOf(null);
     if (qualityProfileId != null) {
       const prof = await prisma.qualityProfile.findUnique({
         where: { id: qualityProfileId },
         include: qualityProfileFormatsInclude,
       });
-      if (prof) profileInput = profileToScoreInput(prof);
+      if (prof) {
+        profileInput = profileToScoreInput(prof);
+        delaySettings = delaySettingsOf(prof);
+      }
     }
 
     for (const release of releases) {
@@ -156,6 +167,7 @@ export async function searchAndGrab(opts: {
           title,
           size,
           seeders: release.seeders,
+          release,
         });
       } else {
         rows.push({
@@ -200,6 +212,39 @@ export async function searchAndGrab(opts: {
       (r) => !blocklistTitles.has(r.title.toLowerCase()) && r.raw._downloadUrl,
     );
 
+    // Only unattended, non-upgrade searches wait; manual and upgrade searches act at once.
+    const delayTarget = {
+      mediaId,
+      episodeId: episodeId ?? null,
+      season: season ?? null,
+    };
+    if (
+      trigger === "scheduled" &&
+      !isUpgrade &&
+      delaySettings.minutes > 0 &&
+      profileInput
+    ) {
+      try {
+        const decision = await evaluateDelay({
+          target: delayTarget,
+          settings: delaySettings,
+          cutoffResolution: profileInput.cutoffResolution,
+          candidates: viable.flatMap((r) =>
+            r.release ? [toDelayCandidate(r.release, r.score)] : [],
+          ),
+        });
+        if (decision.delay) {
+          return {
+            grabbed: false,
+            delayed: true,
+            reason: `Held by grab delay until ${decision.grabAfter.toISOString()}`,
+          };
+        }
+      } catch (e) {
+        console.warn("[mediaGrabber] delay check failed:", e);
+      }
+    }
+
     let aiRow: CandidateRow | null = null;
     if (viable.length >= 2) {
       const aiConfig =
@@ -241,6 +286,7 @@ export async function searchAndGrab(opts: {
       ? [aiRow, ...viable.filter((r) => r !== aiRow)]
       : viable;
 
+    let spaceRefusal: string | null = null;
     for (const candidate of ordered) {
       const downloadUrl = candidate.raw._downloadUrl;
 
@@ -254,18 +300,33 @@ export async function searchAndGrab(opts: {
         qualityParsed: candidate.parsed,
         isUpgrade,
         aiPicked: candidate === aiRow,
+        sizeBytes: candidate.size,
       });
 
-      if (result.grabbed) return { ...result, aiPicked: candidate === aiRow };
+      if (result.grabbed) {
+        // Only profiles with a delay ever hold rows; delay 0 stays query-for-query as before.
+        if (delaySettings.minutes > 0) {
+          await clearPending(delayTarget).catch(() => {});
+        }
+        return { ...result, aiPicked: candidate === aiRow };
+      }
 
-      // Only continue to the next candidate on a hash-level blocklist hit.
+      // Only continue to the next candidate on a blocklist hit or a space refusal.
       // All other failures (network, download client) are terminal.
       if (!result.grabbed && result.reason.startsWith("Blocklisted:")) continue;
+      // Smaller candidates further down may still fit.
+      if (!result.grabbed && result.reason.startsWith(SPACE_REFUSAL_PREFIX)) {
+        spaceRefusal ??= result.reason;
+        continue;
+      }
 
       return result;
     }
 
-    return { grabbed: false, reason: "No matching releases found" };
+    return {
+      grabbed: false,
+      reason: spaceRefusal ?? "No matching releases found",
+    };
   } catch (e) {
     console.warn("[mediaGrabber] searchAndGrab failed:", e);
     return {
@@ -296,7 +357,7 @@ export async function searchAndGrabWithTitleFallback(opts: {
   trigger?: AiTrigger;
 }): Promise<
   | { grabbed: true; releaseTitle: string; aiPicked?: boolean }
-  | { grabbed: false; reason: string }
+  | { grabbed: false; reason: string; delayed?: true }
 > {
   let lastReason = "No matching releases found";
   const aiConfig = await loadEnabledAiProviderConfig().catch(() => null);

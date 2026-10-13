@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@rawkoon/api/db";
+import type { NormalizedRelease } from "@rawkoon/api/services/indexerManager/types";
 import { getIntegrationConfigRecord } from "@rawkoon/api/services/integrationConfigCache";
 import {
   parseReleaseTitle,
@@ -77,6 +78,8 @@ export type CandidateRow = {
   title: string;
   size: number | null;
   seeders: number | null;
+  /** Source release, kept so a delayed grab can be stored and replayed. */
+  release?: NormalizedRelease;
 };
 
 export async function checkBlocklist(

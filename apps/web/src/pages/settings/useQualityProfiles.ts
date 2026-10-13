@@ -36,6 +36,8 @@ export type QualityProfileFormPayload = {
   prefer_hdr: boolean;
   cutoff_resolution: number | null;
   min_seeders: number;
+  grab_delay_minutes: number;
+  bypass_delay_if_cutoff_met: boolean;
   custom_formats: {
     custom_format_id: number;
     score: number;
@@ -117,6 +119,8 @@ export function profileToForm(p: QualityProfile): QualityProfileFormPayload {
     prefer_hdr: p.prefer_hdr,
     cutoff_resolution: p.cutoff_resolution,
     min_seeders: p.min_seeders ?? 0,
+    grab_delay_minutes: p.grab_delay_minutes ?? 0,
+    bypass_delay_if_cutoff_met: p.bypass_delay_if_cutoff_met ?? true,
     custom_formats: (p.custom_formats ?? []).map(
       ({ custom_format_id, score, required, forbidden }) => ({
         custom_format_id,

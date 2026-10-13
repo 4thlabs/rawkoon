@@ -2,8 +2,9 @@ import { prisma } from "@rawkoon/api/db";
 import { searchAndGrabWithTitleFallback } from "@rawkoon/api/services/mediaGrabberSearch";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 import { refreshLibraryMovieDigitalDate } from "@rawkoon/api/services/libraryTmdbRefresh";
+import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import { MAX_CRON_GRAB_ATTEMPTS } from "@rawkoon/api/constants/libraryGrab";
-import { notifyAdminsLibraryGrabSkipped } from "@rawkoon/api/workers/notifyLibraryGrabSkipped";
+import { recordMovieMiss } from "@rawkoon/api/services/grabAttempts";
 import {
   APP_DISPLAY_TIMEZONE,
   localDateYmd,
@@ -73,25 +74,12 @@ export async function checkMovieReleases(): Promise<void> {
         qualityProfileId: m.qualityProfileId,
       });
 
-      if (result.grabbed) continue;
+      // A grab held by the profile's delay isn't a miss; don't burn an attempt.
+      if (result.grabbed || result.delayed) continue;
+      // A full disk is not the release's fault and clears on its own; keep the item wanted.
+      if (result.reason.startsWith(SPACE_REFUSAL_PREFIX)) continue;
 
-      const next = m.searchAttempts + 1;
-      const reachedCap = next >= MAX_CRON_GRAB_ATTEMPTS;
-      await prisma.libraryMedia.update({
-        where: { id: m.id },
-        data: {
-          searchAttempts: next,
-          ...(reachedCap ? { status: "skipped" } : {}),
-        },
-      });
-
-      if (reachedCap) {
-        await notifyAdminsLibraryGrabSkipped({
-          mediaId: m.id,
-          reason: `No matching release after ${MAX_CRON_GRAB_ATTEMPTS} attempts (${result.reason})`,
-          scope: "movie",
-        });
-      }
+      await recordMovieMiss(m, result.reason);
     } catch (e) {
       console.warn(`[checkMovieReleases] Failed for movie ${m.id}:`, e);
     }
