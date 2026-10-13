@@ -44,7 +44,7 @@ struct PhoneTabsView<Root: View>: View {
         .background(NavigationBottomInset(
             bottom: keyboardShown ? 0 : chromeHeight,
             top: model.isOffline ? offlineStripHeight : 0,
-            mountedTabs: visited.count
+            stacks: visited.count + stackResets.values.reduce(0, +)
         ))
         .overlay(alignment: .top) {
             if model.isOffline {
