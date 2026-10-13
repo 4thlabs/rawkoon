@@ -22,6 +22,7 @@ struct MediaLibrarySettingsView: View {
     @State private var activeManager: String? = nil
     @State private var defaultMovieProfile: Int? = nil
     @State private var defaultShowProfile: Int? = nil
+    @State private var minFreeSpaceGb: Int? = 10
     @State private var profiles: [QualityProfile] = []
 
     @State private var scanPath = ""
@@ -45,12 +46,14 @@ struct MediaLibrarySettingsView: View {
         var activeManager: String?
         var defaultMovieProfile: Int?
         var defaultShowProfile: Int?
+        var minFreeSpaceGb: Int?
     }
 
     @State private var loaded = FormValues(
         ppEnabled: false, moviesPath: "", showsPath: "", downloadsPath: "",
         fileOperation: "hardlink", movieTemplate: "", episodeTemplate: "",
-        minSeedRatioText: "0", activeManager: nil, defaultMovieProfile: nil, defaultShowProfile: nil
+        minSeedRatioText: "0", activeManager: nil, defaultMovieProfile: nil, defaultShowProfile: nil,
+        minFreeSpaceGb: 10
     )
 
     private var current: FormValues {
@@ -58,7 +61,7 @@ struct MediaLibrarySettingsView: View {
                    downloadsPath: downloadsPath, fileOperation: fileOperation, movieTemplate: movieTemplate,
                    episodeTemplate: episodeTemplate, minSeedRatioText: minSeedRatioText,
                    activeManager: activeManager, defaultMovieProfile: defaultMovieProfile,
-                   defaultShowProfile: defaultShowProfile)
+                   defaultShowProfile: defaultShowProfile, minFreeSpaceGb: minFreeSpaceGb)
     }
 
     private var isDirty: Bool {
@@ -107,6 +110,11 @@ struct MediaLibrarySettingsView: View {
                     LabeledTextFieldRow(title: "Shows path", text: $showsPath, keyboard: .URL, mono: true)
                     LabeledTextFieldRow(title: "Downloads path", text: $downloadsPath, keyboard: .URL, mono: true)
                 } header: { Text("Paths") }
+                Section {
+                    NumberFieldRow("Keep free (GB)", value: $minFreeSpaceGb, range: 0 ... 100_000)
+                } footer: {
+                    Text("Automatic and manual grabs are refused if they would leave less than this free on the download disk. 0 turns the check off.")
+                }
                 Section {
                     PickerRow(title: "File operation", selection: $fileOperation, options: Self.fileOpOptions)
                     LabeledTextFieldRow(title: "Movie template", text: $movieTemplate, mono: true)
@@ -205,6 +213,7 @@ struct MediaLibrarySettingsView: View {
             activeManager = settings.activeIndexerManager
             defaultMovieProfile = settings.defaultMovieQualityProfileId
             defaultShowProfile = settings.defaultShowQualityProfileId
+            minFreeSpaceGb = settings.minFreeSpaceGb ?? 10
             loaded = current
         } catch {
             loadError = settingsErrorMessage(error)
@@ -228,7 +237,8 @@ struct MediaLibrarySettingsView: View {
                     minSeedRatio: Double(minSeedRatioText) ?? 0,
                     activeIndexerManager: activeManager,
                     defaultMovieQualityProfileId: defaultMovieProfile,
-                    defaultShowQualityProfileId: defaultShowProfile
+                    defaultShowQualityProfileId: defaultShowProfile,
+                    minFreeSpaceGb: minFreeSpaceGb
                 )
             )
             loaded = current

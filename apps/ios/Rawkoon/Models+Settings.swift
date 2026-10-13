@@ -19,6 +19,8 @@ nonisolated struct QualityProfile: Decodable, Identifiable, Sendable {
     let cutoffResolution: Int?
     let maxSizeGb: Double?
     let minSeeders: Int?
+    let grabDelayMinutes: Int?
+    let bypassDelayIfCutoffMet: Bool?
     let requireHdr: Bool?
     let preferHdr: Bool?
     let preferredSources: [String]?
@@ -59,12 +61,15 @@ nonisolated struct SaveQualityProfileBody: Encodable, Sendable {
     var requireHdr: Bool
     var preferHdr: Bool
     var minSeeders: Int
+    var grabDelayMinutes: Int
+    var bypassDelayIfCutoffMet: Bool
     var customFormats: [CustomFormatAssignmentBody]
 
     enum CodingKeys: String, CodingKey {
         case name, minResolution, cutoffResolution, preferredSources, preferredCodecs
         case preferredLanguages, preferredSearchLanguage, prioritizedTrackers
         case preferTrackerOverQuality, maxSizeGb, requireHdr, preferHdr, minSeeders, customFormats
+        case grabDelayMinutes, bypassDelayIfCutoffMet
     }
 
     func encode(to encoder: Encoder) throws {
@@ -82,6 +87,8 @@ nonisolated struct SaveQualityProfileBody: Encodable, Sendable {
         try c.encode(requireHdr, forKey: .requireHdr)
         try c.encode(preferHdr, forKey: .preferHdr)
         try c.encode(minSeeders, forKey: .minSeeders)
+        try c.encode(grabDelayMinutes, forKey: .grabDelayMinutes)
+        try c.encode(bypassDelayIfCutoffMet, forKey: .bypassDelayIfCutoffMet)
         try c.encode(customFormats, forKey: .customFormats)
     }
 }
