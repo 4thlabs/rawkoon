@@ -9,7 +9,7 @@ import UIKit
 struct NavigationBottomInset: UIViewControllerRepresentable {
     let bottom: CGFloat
     var top: CGFloat = 0
-    /// Changes when a tab's stack is created or rebuilt, so the new stack gets the inset too.
+    /// Never read: changing it when a stack is created or rebuilt re-runs the update for the new stack.
     let stacks: Int
 
     func makeUIViewController(context _: Context) -> Probe {
