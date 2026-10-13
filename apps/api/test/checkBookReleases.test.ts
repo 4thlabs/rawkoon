@@ -349,6 +349,25 @@ describe("searchBookUpgrades", () => {
       expect(state.grabCalls).toEqual([]);
     });
 
+    it("compares against the highest bitrate among the held files", async () => {
+      state.upgradable = [
+        {
+          ...mp3Edition(null),
+          files: [
+            { format: "mp3", audioBitrate: 64 },
+            { format: "mp3", audioBitrate: 192 },
+          ],
+        },
+      ];
+      state.searchResult = {
+        releases: [release({ format: "m4b", audio_bitrate: 128 })],
+      };
+
+      await searchBookUpgrades();
+
+      expect(state.grabCalls).toEqual([]);
+    });
+
     it("grabs a better format at the same bitrate", async () => {
       state.upgradable = [mp3Edition(128)];
       state.searchResult = {
