@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "@tanstack/react-router";
 import { MediaPosterCard } from "@/components/MediaPosterCard";
@@ -43,6 +43,13 @@ export function PosterRail({
   emptyLabel = "Nothing here yet",
 }: PosterRailProps) {
   const navigate = useNavigate();
+  const scroller = useRef<HTMLDivElement>(null);
+  const leadingDrop = items[0]?.animateIn ? items[0].id : null;
+  // A card dropped in at the front is the news: bring the rail back to its start.
+  useEffect(() => {
+    if (leadingDrop)
+      scroller.current?.scrollTo?.({ left: 0, behavior: "smooth" });
+  }, [leadingDrop]);
   return (
     <section className="rounded-xl border border-neutral-800 bg-neutral-900 overflow-hidden">
       <WidgetHeader title={title} />
@@ -66,7 +73,11 @@ export function PosterRail({
             {emptyLabel}
           </p>
         ) : (
-          <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div
+            ref={scroller}
+            // Without this, scroll anchoring keeps the old first card in view and pushes a prepended one off-screen.
+            className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 [overflow-anchor:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {items.map((item) => {
               // Internal library destinations navigate client-side (no new
               // tab); external URLs keep MediaPosterCard's new-tab default.
