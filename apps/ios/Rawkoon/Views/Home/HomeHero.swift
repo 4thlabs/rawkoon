@@ -35,8 +35,8 @@ extension AppModel {
 }
 
 /// Home's opening film: a rotating backdrop deck with the greeting overlaid.
-/// Its backdrop bleeds up under the status bar (Home hides its navigation bar
-/// while the hero shows); the bottom corners are rounded.
+/// Home scrolls under the status bar while it shows, so the backdrop reaches
+/// the top edge and the text is pushed below the status bar by `topInset`.
 struct HomeHero<Greeting: View>: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -44,6 +44,8 @@ struct HomeHero<Greeting: View>: View {
     @Environment(\.isActiveRootTab) private var isActiveRootTab
 
     let hero: DashboardHeroResponse
+    /// Status-bar height: Home scrolls under it while the hero shows, so the text moves down by this much.
+    let topInset: CGFloat
     let greeting: () -> Greeting
 
     @State private var storedIndex = 0
@@ -52,8 +54,9 @@ struct HomeHero<Greeting: View>: View {
 
     private let height: CGFloat = 460
 
-    init(hero: DashboardHeroResponse, @ViewBuilder greeting: @escaping () -> Greeting) {
+    init(hero: DashboardHeroResponse, topInset: CGFloat, @ViewBuilder greeting: @escaping () -> Greeting) {
         self.hero = hero
+        self.topInset = topInset
         self.greeting = greeting
     }
 
@@ -75,7 +78,7 @@ struct HomeHero<Greeting: View>: View {
         if items.indices.contains(index) {
             let item = items[index]
             content(item)
-                .frame(height: height)
+                .frame(height: height + topInset)
                 .background {
                     ZStack {
                         backdrop(item)
@@ -91,8 +94,6 @@ struct HomeHero<Greeting: View>: View {
                         )
                     }
                     .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 28, bottomTrailingRadius: 28))
-                    // The film runs up under the status bar; the text stays clear of it.
-                    .ignoresSafeArea(edges: .top)
                 }
             .task(id: RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab)) {
                 await rotate()
@@ -152,7 +153,7 @@ struct HomeHero<Greeting: View>: View {
             dots
         }
         .padding(.horizontal, 16)
-        .padding(.top, 12)
+        .padding(.top, 12 + topInset)
         .padding(.bottom, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -168,7 +169,8 @@ struct HomeHero<Greeting: View>: View {
     private func metaLine(_ item: DashboardHeroItem) -> String? {
         var parts: [String] = []
         if hero.source == .arrivals {
-            let relative = ActivityPresentation.relativeTime(item.arrivedAt)
+            // French abbreviated renders a past time as "-14 min"; the full style reads "il y a 14 minutes".
+            let relative = ActivityPresentation.relativeTime(item.arrivedAt, style: .full)
             if !relative.isEmpty {
                 parts.append(String(localized: "arrived \(relative)"))
             }

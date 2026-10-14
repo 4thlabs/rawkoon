@@ -53,11 +53,18 @@ struct HomeView: View {
         hero?.items.isEmpty == false
     }
 
+    /// Read from the window: inside a scroll view that ignores the safe area, SwiftUI reports no inset.
+    private var windowTopInset: CGFloat {
+        let scene = UIApplication.shared.connectedScenes
+            .first { $0.activationState == .foregroundActive } as? UIWindowScene
+        return scene?.keyWindow?.safeAreaInsets.top ?? 0
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 if let hero, showsHero {
-                    HomeHero(hero: hero) { greeting(onHero: true) }
+                    HomeHero(hero: hero, topInset: windowTopInset) { greeting(onHero: true) }
                 } else {
                     greeting(onHero: false)
                 }
@@ -77,6 +84,8 @@ struct HomeView: View {
             // fade in rather than popping into place on first load.
             .rawkoonMotion(RawkoonMotion.spring, value: loading)
         }
+        // Only the scroll view goes under the status bar; overlays such as the landed banner keep the safe area.
+        .ignoresSafeArea(edges: showsHero ? .top : [])
         .reportsTabBarScroll()
         .background(Theme.base)
         .onChange(of: model.pendingMediaLink, initial: true) { _, link in

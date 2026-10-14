@@ -147,7 +147,10 @@ struct ActivityPresentation {
 
     /// Parses the server's ISO-8601 timestamp (with or without fractional
     /// seconds) into an abbreviated relative string; empty when absent/unparsed.
-    static func relativeTime(_ isoString: String?) -> String {
+    static func relativeTime(
+        _ isoString: String?,
+        style: RelativeDateTimeFormatter.UnitsStyle = .abbreviated
+    ) -> String {
         guard let isoString else { return "" }
         let withFraction = ISO8601DateFormatter()
         withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -157,7 +160,7 @@ struct ActivityPresentation {
             return ""
         }
         let relative = RelativeDateTimeFormatter()
-        relative.unitsStyle = .abbreviated
+        relative.unitsStyle = style
         return relative.localizedString(for: date, relativeTo: Date())
     }
 }
