@@ -34,24 +34,6 @@ final class HeroRotationTests: XCTestCase {
             (1, 5, -30, 0, nil), (1, 5, -80, 90, nil), (0, 1, -80, 0, nil),
         ]
         for (current, count, dx, dy, expected) in table {
-            XCTAssertEqual(HeroRotation.swipe(from: current, count: count, dx: dx, dy: dy), expected,
-                           "\(current)/\(count) dx \(dx) dy \(dy)")
-        }
-    }
-
-    func testPreviousWrapsAndTolerates() {
-        let table: [(Int, Int, Int)] = [(0, 5, 4), (3, 5, 2), (0, 1, 0), (0, 0, 0), (7, 3, 1), (-2, 3, 2)]
-        for (current, count, expected) in table {
-            XCTAssertEqual(HeroRotation.previous(before: current, count: count), expected, "\(current)/\(count)")
-        }
-    }
-
-    func testSwipeDecidesDirectionAndIgnoresScrolls() {
-        let table: [(Int, Int, Double, Double, Int?)] = [
-            (1, 5, -80, 10, 2), (1, 5, 80, 10, 0), (4, 5, -80, 0, 0), (0, 5, 80, 0, 4),
-            (1, 5, -30, 0, nil), (1, 5, -80, 90, nil), (0, 1, -80, 0, nil),
-        ]
-        for (current, count, dx, dy, expected) in table {
             XCTAssertEqual(
                 HeroRotation.swipe(from: current, count: count, dx: dx, dy: dy), expected,
                 "\(current)/\(count) dx \(dx) dy \(dy)"
