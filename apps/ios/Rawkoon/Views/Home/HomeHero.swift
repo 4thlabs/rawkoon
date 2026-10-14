@@ -50,7 +50,7 @@ struct HomeHero<Greeting: View>: View {
     @State private var added: Set<Int> = []
     @State private var adding = false
 
-    private static var height: CGFloat { 460 }
+    private static let height: CGFloat = 460
 
     init(hero: DashboardHeroResponse, @ViewBuilder greeting: @escaping () -> Greeting) {
         self.hero = hero
@@ -277,7 +277,9 @@ private struct KenBurnsBackdrop: View {
         .scaleEffect(zoomed ? 1.14 : 1.04)
         .rawkoonMotion(.easeInOut(duration: 18).repeatForever(autoreverses: true), value: zoomed)
         .task {
-            if animates { zoomed = true }
+            if animates {
+                zoomed = true
+            }
         }
     }
 }
