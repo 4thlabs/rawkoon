@@ -4,6 +4,7 @@ import {
   injectMediaType,
   shuffle,
 } from "@rawkoon/api/routes/medias/tmdb/tmdbRouteHelpers";
+import { IMG_BACKDROP } from "@rawkoon/api/utils/medias/tmdbFetcherTypes";
 import { mapTmdbSearchItem, toRecord } from "@rawkoon/api/utils/medias/mappers";
 import type { FallbackInput, RecommendationProvider, SeedInput } from "./types";
 
@@ -26,6 +27,7 @@ export function toDeckItem(raw: unknown): DiscoverDeckItem | null {
   const rawVote = row?.vote_average;
   const vote_average =
     typeof rawVote === "number" && rawVote > 0 ? rawVote : null;
+  const backdropPath = row?.backdrop_path;
   return {
     id: base.id,
     tmdb_id: base.tmdb_id,
@@ -33,6 +35,9 @@ export function toDeckItem(raw: unknown): DiscoverDeckItem | null {
     title: base.title,
     release_year: base.release_year,
     poster_url: base.poster_url,
+    ...(typeof backdropPath === "string" && backdropPath
+      ? { backdrop_url: `${IMG_BACKDROP}${backdropPath}` }
+      : {}),
     overview: base.overview,
     vote_average,
     genre_ids,

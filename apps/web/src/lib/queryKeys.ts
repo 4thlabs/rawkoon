@@ -90,6 +90,8 @@ export const queryKeys = {
     jellyfinNowPlaying: () =>
       [...queryKeys.dashboard.all, "jellyfin-now-playing"] as const,
     upcoming: () => [...queryKeys.dashboard.all, "upcoming"] as const,
+    hero: (titleLanguage: string) =>
+      [...queryKeys.dashboard.all, "hero", titleLanguage] as const,
   },
 
   users: {
@@ -331,6 +333,9 @@ export const queryKeys = {
       [...queryKeys.transcode.all, "jobs", status] as const,
     settings: () => [...queryKeys.transcode.all, "settings"] as const,
     summary: () => [...queryKeys.transcode.all, "summary"] as const,
+  },
+  home: {
+    landed: () => ["home", "landed"] as const,
   },
   library: {
     all: ["library"] as const,

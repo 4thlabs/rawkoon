@@ -50,6 +50,10 @@ extension APIClient {
         try await get(Endpoints.upcoming)
     }
 
+    func dashboardHero() async throws -> DashboardHeroResponse {
+        try await get(Endpoints.dashboardHero())
+    }
+
     /// Home widgets
     func recentlyAdded(limit: Int = 24) async throws -> LibraryListResponse {
         try await get(Endpoints.recentlyAdded(limit: limit))

@@ -7,7 +7,9 @@ export type GreetingSubtitle =
   | "weekend"
   | "monday"
   | "friday"
+  | "earlyMorning"
   | "morning"
+  | "lateMorning"
   | "afternoon"
   | "evening";
 
@@ -29,5 +31,8 @@ export function greetingSubtitle(
   if (weekday === 0 || weekday === 6) return "weekend";
   if (weekday === 1) return "monday";
   if (weekday === 5) return "friday";
+  // 5h-8h is still dark for most people: "overnight" would read as night talk.
+  if (hour >= 5 && hour < 8) return "earlyMorning";
+  if (hour >= 9 && hour < 12) return "lateMorning";
   return period;
 }

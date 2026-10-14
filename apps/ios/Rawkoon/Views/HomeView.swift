@@ -8,11 +8,12 @@ import SwiftUI
 /// integration is off or has no data.
 struct HomeView: View {
     @Environment(AppModel.self) var model
-    @Environment(\.isActiveRootTab) private var isActiveRootTab
+    @Environment(\.isActiveRootTab) var isActiveRootTab
 
-    @State private var recent: [LibraryMedia] = []
+    @State var recent: [LibraryMedia] = []
     @State private var upcoming: [UpcomingItem] = []
     @State private var discover: DiscoverDeckResponse?
+    @State private var hero: DashboardHeroResponse?
     @State var nowPlaying: NowPlayingResponse?
     @State var speed: SpeedResponse?
     @State var attention: [AttentionItem] = []
@@ -23,6 +24,7 @@ struct HomeView: View {
     @State private var booksEnabled: Bool?
     @State var reencodeSummary: TranscodeSummary?
     @State private var loading = true
+    @State private var measuredTopInset: CGFloat = 0
     /// When the last full refresh finished, so switching back to Home within a
     /// few seconds doesn't refetch every rail.
     @State private var lastLoadedAt: Date?
@@ -34,6 +36,9 @@ struct HomeView: View {
     /// resolve the full item (for its tmdbId/poster) then push its detail.
     @State var attentionTarget: AttentionRoute?
     @State var resolvingAttentionId: Int?
+    /// The just-landed banner while it's up, and a counter that fires its haptic.
+    @State var landedBanner: LandedArrival?
+    @State var landedBannerCount = 0
 
     /// Resolved detail destination for an attention row — Hashable so it can
     /// drive `navigationDestination(item:)`, which `LibraryMedia` can't.
@@ -45,10 +50,27 @@ struct HomeView: View {
         let posterUrl: String?
     }
 
+    private var showsHero: Bool {
+        hero?.items.isEmpty == false
+    }
+
+    /// Status-bar height, measured live so rotation and resizes follow; the window is a cold-start fallback.
+    private var heroTopInset: CGFloat {
+        if measuredTopInset > 0 {
+            return measuredTopInset
+        }
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        return scenes.lazy.compactMap(\.keyWindow).first?.safeAreaInsets.top ?? 0
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                greeting
+                if let hero, showsHero {
+                    HomeHero(hero: hero, topInset: heroTopInset) { greeting(onHero: true) }
+                } else {
+                    greeting(onHero: false)
+                }
 
                 if loading, recent.isEmpty {
                     homeSkeleton
@@ -58,11 +80,30 @@ struct HomeView: View {
                         .transition(.rawkoonSwap)
                 }
             }
-            .padding(.vertical, 12)
-            .padding(.bottom, 96)
+            // The hero runs to the top edge; without it the greeting keeps its inset.
+            .padding(.top, showsHero ? 0 : 12)
+            .padding(.bottom, 108)
             // Crossfade skeleton → content instead of a hard cut, so the rails
             // fade in rather than popping into place on first load.
             .rawkoonMotion(RawkoonMotion.spring, value: loading)
+            // A hero arriving after first paint swaps the header and drops the nav bar; ease it, don't jump.
+            .rawkoonMotion(RawkoonMotion.spring, value: showsHero)
+        }
+        // Behind the status bar, so rails scrolled past the hero don't run under the clock bare.
+        .overlay(alignment: .top) {
+            if showsHero {
+                LinearGradient(colors: [Theme.base.opacity(0.85), .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: heroTopInset)
+                    .allowsHitTesting(false)
+            }
+        }
+        // Only the scroll view goes under the status bar; overlays such as the landed banner keep the safe area.
+        .ignoresSafeArea(edges: showsHero ? .top : [])
+        .background {
+            // A reader that itself reaches into the status bar reports that bar's height as its top inset.
+            Color.clear
+                .ignoresSafeArea()
+                .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { measuredTopInset = $0 }
         }
         .reportsTabBarScroll()
         .background(Theme.base)
@@ -78,27 +119,12 @@ struct HomeView: View {
         }
         .navigationTitle("Home")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            // The sidebar has Notifications and Watchlist tabs of its own.
-            if UIDevice.current.userInterfaceIdiom == .phone {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        WatchlistView()
-                    } label: {
-                        Image(systemName: "bookmark")
-                    }
-                    .accessibilityLabel("Watchlist")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        NotificationsListView()
-                    } label: {
-                        NotificationBell(unread: model.unreadNotificationCount)
-                    }
-                    .accessibilityLabel("Notifications")
-                }
-            }
-        }
+        // The hero is the header: no title bar over the film.
+        .toolbarVisibility(showsHero ? .hidden : .automatic, for: .navigationBar)
+        .overlay(alignment: .top) { landedBannerLayer }
+        .sensoryFeedback(RawkoonHaptics.feedback(for: .success), trigger: landedBannerCount)
+        .onChange(of: model.recentArrivals.first) { _, arrival in landedArrived(arrival) }
+        .task(id: landedBanner?.ts) { await autoDismissLandedBanner() }
         .onAppear(perform: hydrateFromCache)
         .task { await load() }
         // Kept-alive iPhone tabs never re-appear, so a revisit refreshes like the old TabView did.
@@ -145,8 +171,8 @@ struct HomeView: View {
                     .padding(.horizontal, 16)
                     .transition(.rawkoonSwap)
             }
-            if !recent.isEmpty {
-                rail("Recently added", recent.map(RailItem.library))
+            if !recent.isEmpty || !model.recentArrivals.isEmpty {
+                recentlyAddedRail
             }
             if !upcoming.isEmpty {
                 rail("Upcoming", upcoming.map(RailItem.upcoming))
@@ -163,7 +189,7 @@ struct HomeView: View {
 
     // MARK: Greeting
 
-    private var greeting: some View {
+    private func greeting(onHero: Bool) -> some View {
         // Re-evaluated each minute so a Home left open overnight doesn't keep saying "Good morning".
         TimelineView(.everyMinute) { context in
             let calendar = Calendar.current
@@ -173,14 +199,23 @@ struct HomeView: View {
                 greetingLine(HomeGreeting.period(hour: hour))
                     .font(.display(28))
                     .foregroundStyle(Theme.textStrong)
-                Text(subtitleKey(HomeGreeting.subtitle(hour: hour, weekday: weekday)))
+                subtitle(hour: hour, weekday: weekday, now: context.date)
                     .font(.subheadline)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(onHero ? Theme.text : Theme.muted)
             }
         }
-        .padding(.horizontal, 16)
+        // On the hero, the hero's own content inset applies.
+        .padding(.horizontal, onHero ? 0 : 16)
         // The name arrives after first render; the load-swap spring must not animate its reflow.
         .transaction { $0.animation = nil }
+    }
+
+    /// A fresh arrival outranks the time-of-day line.
+    private func subtitle(hour: Int, weekday: Int, now: Date) -> Text {
+        if let landed = LandedArrivals.fresh(model.recentArrivals, now: Self.epochMillis(now)).first {
+            return landedSubtitle(display(landed))
+        }
+        return Text(subtitleKey(HomeGreeting.subtitle(hour: hour, weekday: weekday)))
     }
 
     /// With no name known yet the greeting stands alone rather than addressing
@@ -206,7 +241,9 @@ struct HomeView: View {
         case .weekend: "Weekends are made for marathons."
         case .monday: "New week, new episodes."
         case .friday: "Friday. Pick tonight's movie."
-        case .morning: "Here's what landed overnight."
+        case .earlyMorning: "The world's still asleep. Your library isn't."
+        case .morning: "Coffee's ready. So is the library."
+        case .lateMorning: "Coffee break? One episode fits right in."
         case .afternoon: "Here's what's happening."
         case .evening: "Showtime. What are we watching?"
         }
@@ -264,6 +301,9 @@ struct HomeView: View {
         if upcoming.isEmpty, let cached = client.cached(Endpoints.upcoming) {
             upcoming = cached.value.items
         }
+        if hero == nil, let cached = client.cached(Endpoints.dashboardHero()) {
+            hero = cached.value
+        }
         if discover == nil, let cached = client.cached(Endpoints.discoverDeck(limit: 12)) {
             discover = cached.value
         }
@@ -304,6 +344,7 @@ struct HomeView: View {
         async let recentR = client.recentlyAdded()
         async let upcomingR = client.upcoming()
         async let discoverR = client.discoverDeck(exclude: [], limit: 12)
+        async let heroR = client.dashboardHero()
         async let npR = client.nowPlaying()
         async let speedR = client.speed()
         async let attnR = client.libraryAttention()
@@ -332,6 +373,9 @@ struct HomeView: View {
         if let deck = try? await discoverR {
             discover = deck
             Task { await WidgetSnapshotWriter.shared.updateSuggestion(deck, model: model) }
+        }
+        if let fresh = try? await heroR {
+            hero = fresh
         }
         if let np = try? await npR {
             nowPlaying = np

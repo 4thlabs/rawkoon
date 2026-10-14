@@ -13,5 +13,6 @@ export const DASHBOARD_ENDPOINTS = {
     ADD: "/api/dashboard/upcoming/add",
     STATUS: "/api/dashboard/upcoming/status",
   },
+  HERO: "/api/dashboard/hero",
   DOWNLOADS: DOWNLOADS_ENDPOINTS,
 } as const;

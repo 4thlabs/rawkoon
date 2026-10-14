@@ -180,7 +180,7 @@ struct SettingsView: View {
         }
         .listRowBackground(Theme.raised)
 
-        // The sidebar has Activity and Requests tabs of its own; the phone reaches them only here.
+        // The sidebar has Activity, Requests and Watchlist tabs of its own; the phone reaches them only here.
         if scope == .all {
             Section("Activity") {
                 NavigationLink {
@@ -192,6 +192,11 @@ struct SettingsView: View {
                     RequestsView()
                 } label: {
                     SettingsNavRow(title: "Requests", systemImage: "tray.and.arrow.down")
+                }
+                NavigationLink {
+                    WatchlistView()
+                } label: {
+                    SettingsNavRow(title: "Watchlist", systemImage: "bookmark")
                 }
             }
             .listRowBackground(Theme.raised)

@@ -144,7 +144,7 @@ extension HomeView {
 
     /// Resolve a library item by id (the attention feed omits tmdbId/poster) and
     /// push its detail. Silent no-op on missing api; toasts on fetch failure.
-    private func openAttention(mediaId: Int) {
+    func openAttention(mediaId: Int) {
         guard let client = model.api(), resolvingAttentionId == nil else { return }
         resolvingAttentionId = mediaId
         Task {

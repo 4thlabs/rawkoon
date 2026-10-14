@@ -35,11 +35,17 @@ describe("greetingSubtitle", () => {
     expect(greetingSubtitle(10, SAT)).toBe("weekend");
     expect(greetingSubtitle(15, SUN)).toBe("weekend");
     expect(greetingSubtitle(9, MON)).toBe("monday");
+    expect(greetingSubtitle(6, MON)).toBe("monday");
+    expect(greetingSubtitle(6, SAT)).toBe("weekend");
     expect(greetingSubtitle(19, FRI)).toBe("friday");
   });
 
   it("falls back to the period midweek", () => {
+    expect(greetingSubtitle(6, WED)).toBe("earlyMorning");
+    expect(greetingSubtitle(7, WED)).toBe("earlyMorning");
     expect(greetingSubtitle(8, WED)).toBe("morning");
+    expect(greetingSubtitle(9, WED)).toBe("lateMorning");
+    expect(greetingSubtitle(11, WED)).toBe("lateMorning");
     expect(greetingSubtitle(14, WED)).toBe("afternoon");
     expect(greetingSubtitle(20, WED)).toBe("evening");
   });
@@ -52,7 +58,9 @@ describe("greeting locale keys", () => {
     "weekend",
     "monday",
     "friday",
+    "earlyMorning",
     "morning",
+    "lateMorning",
     "afternoon",
     "evening",
   ] as const;
@@ -62,6 +70,8 @@ describe("greeting locale keys", () => {
     ["fr", fr],
   ])("%s has every greeting and subtitle", (_, locale) => {
     for (const p of periods) expect(locale.dashboard.greeting[p]).toBeTruthy();
+    for (const k of ["stamp", "subtitle", "subtitleNoCode"] as const)
+      expect(locale.dashboard.landed[k]).toBeTruthy();
     for (const s of subtitles)
       expect(locale.dashboard.greetingSubtitle[s]).toBeTruthy();
   });

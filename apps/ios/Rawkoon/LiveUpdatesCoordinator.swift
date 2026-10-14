@@ -40,6 +40,10 @@ final class LiveUpdatesCoordinator {
     /// is the live source, mirroring the web app's cache patch.
     private(set) var downloadProgress: [Int: [Int: LiveDownload]] = [:]
 
+    /// Imports that just finished, newest first, for Home to pin and name while
+    /// they are fresh. Fed by `.landed` SSE events through the Kit's `insert`.
+    private(set) var recentArrivals: [LandedArrival] = []
+
     /// Kept live by the notification stream and by `NotificationsListView`'s
     /// own REST calls; drives the Home bell badge.
     private(set) var unreadNotificationCount = 0
@@ -172,6 +176,12 @@ final class LiveUpdatesCoordinator {
             logSSE("library", "media id=\(id)")
             SSEEventRegistry.apply(.media(id: id), to: store)
             libraryChangeToken += 1
+        case let .landed(arrival):
+            logSSE("library", "landed id=\(arrival.mediaId)")
+            SSEEventRegistry.apply(.landed(id: arrival.mediaId), to: store)
+            libraryChangeToken += 1
+            let now = Int(Date().timeIntervalSince1970 * 1000)
+            recentArrivals = LandedArrivals.insert(recentArrivals, arrival.received(at: now), now: now)
         case let .book(id):
             logSSE("library", "book id=\(id)")
             SSEEventRegistry.apply(.book(id: id), to: store)

@@ -314,6 +314,22 @@ export interface DownloadProgressItem {
   etaSeconds: number | null;
 }
 
+/**
+ * A movie or episode that just finished importing, pushed as a `landed` SSE
+ * event. `season`/`episode` are null for a movie, `episode` is null for a
+ * season pack (which carries `episodeCount`). `ts` is epoch milliseconds.
+ */
+export interface LandedArrival {
+  mediaId: number;
+  mediaType: "movie" | "tv";
+  title: string;
+  posterUrl: string | null;
+  season: number | null;
+  episode: number | null;
+  episodeCount: number | null;
+  ts: number;
+}
+
 /** Server-pushed live download progress for one library media. */
 export interface DownloadProgressEvent {
   kind: "download-progress";

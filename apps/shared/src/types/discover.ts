@@ -8,6 +8,8 @@ export interface DiscoverDeckItem {
   title: string;
   release_year: number | null;
   poster_url: string | null;
+  /** Present only when TMDB has a backdrop; the Home hero needs one. */
+  backdrop_url?: string;
   overview: string | null;
   vote_average: number | null;
   genre_ids: number[];

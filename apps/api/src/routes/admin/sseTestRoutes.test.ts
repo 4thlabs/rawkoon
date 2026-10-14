@@ -7,6 +7,7 @@ mock.module("@rawkoon/api/services/libraryEvents", () => ({
   emitLibraryUpdate,
   emitBookUpdate,
   emitSeedState: () => {},
+  emitLibraryLanded: () => {},
 }));
 
 const { sseTestRoutes } = await import("./sseTestRoutes");

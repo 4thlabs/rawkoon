@@ -3121,6 +3121,36 @@
         }
       }
     },
+    "Just arrived": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vient d'arriver"
+          }
+        }
+      }
+    },
+    "arrived %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "arrivé %@"
+          }
+        }
+      }
+    },
+    "Show %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher %@"
+          }
+        }
+      }
+    },
     "Add %@": {
       "localizations": {
         "fr": {
@@ -9847,12 +9877,32 @@
         }
       }
     },
-    "Here's what landed overnight.": {
+    "Coffee's ready. So is the library.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Voici ce qui est arrivé pendant la nuit."
+            "value": "Le café est prêt. La bibliothèque aussi."
+          }
+        }
+      }
+    },
+    "Coffee break? One episode fits right in.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une petite pause ? Un épisode, ça passe vite."
+          }
+        }
+      }
+    },
+    "The world's still asleep. Your library isn't.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le monde dort encore. Pas ta bibliothèque."
           }
         }
       }
@@ -10063,6 +10113,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Récent"
+          }
+        }
+      }
+    },
+    "%@ %@ just landed.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@ vient d'arriver."
+          }
+        }
+      }
+    },
+    "%@ just landed.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vient d'arriver."
+          }
+        }
+      }
+    },
+    "Just landed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vient d'arriver"
           }
         }
       }

@@ -22,7 +22,10 @@ import {
   getLastRssRun,
   getRssRunHistory,
 } from "@rawkoon/api/services/rssRunStatus";
-import { libraryEventBus } from "@rawkoon/api/services/libraryEvents";
+import {
+  libraryEventBus,
+  type LibraryLandedEvent,
+} from "@rawkoon/api/services/libraryEvents";
 import { ensureAdmin, requireUser } from "@rawkoon/api/middleware/hono/auth";
 import { jsonV } from "@rawkoon/api/middleware/validate";
 
@@ -212,6 +215,10 @@ export const libraryJobWorkerRoutes = new Hono<Env>()
       );
     }
 
+    function onLanded(payload: LibraryLandedEvent) {
+      send(`data: ${JSON.stringify({ kind: "landed", ...payload })}\n\n`);
+    }
+
     function onSeedState(payload: { torrents: unknown[]; ts: number }) {
       send(`data: ${JSON.stringify({ kind: "seed-state", ...payload })}\n\n`);
     }
@@ -220,6 +227,7 @@ export const libraryJobWorkerRoutes = new Hono<Env>()
 
     libraryEventBus.on("update", onUpdate);
     libraryEventBus.on("book-update", onBookUpdate);
+    libraryEventBus.on("landed", onLanded);
     libraryEventBus.on("download-progress", onDownloadProgress);
     if (receivesSeedState) libraryEventBus.on("seed-state", onSeedState);
     const heartbeat = setInterval(() => send(": ping\n\n"), 15_000);
@@ -228,6 +236,7 @@ export const libraryJobWorkerRoutes = new Hono<Env>()
       closed = true;
       libraryEventBus.off("update", onUpdate);
       libraryEventBus.off("book-update", onBookUpdate);
+      libraryEventBus.off("landed", onLanded);
       libraryEventBus.off("download-progress", onDownloadProgress);
       libraryEventBus.off("seed-state", onSeedState);
       clearInterval(heartbeat);

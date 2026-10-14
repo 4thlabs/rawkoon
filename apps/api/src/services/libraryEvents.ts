@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import type {
   DownloadProgressItem,
+  LandedArrival,
   SeedStateItem,
 } from "@rawkoon/shared/types";
 
@@ -8,6 +9,8 @@ export interface LibraryUpdateEvent {
   mediaId: number;
   ts: number;
 }
+
+export type LibraryLandedEvent = LandedArrival;
 
 export interface BookUpdateEvent {
   bookId: number;
@@ -29,6 +32,16 @@ export function emitLibraryUpdate(mediaId: number): void {
     mediaId,
     ts: Date.now(),
   } satisfies LibraryUpdateEvent);
+}
+
+/** A movie or episode just finished importing; Home shows it live. */
+export function emitLibraryLanded(
+  arrival: Omit<LibraryLandedEvent, "ts">,
+): void {
+  libraryEventBus.emit("landed", {
+    ...arrival,
+    ts: Date.now(),
+  } satisfies LibraryLandedEvent);
 }
 
 /**

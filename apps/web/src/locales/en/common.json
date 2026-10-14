@@ -111,12 +111,32 @@
       "evening": "Good evening",
       "night": "Still up"
     },
+    "landed": {
+      "stamp": "Just landed",
+      "subtitle": "{{title}} {{code}} just landed.",
+      "subtitleNoCode": "{{title}} just landed."
+    },
+    "hero": {
+      "kicker": {
+        "arrivals": "Just arrived",
+        "forYou": "For you",
+        "trending": "Trending"
+      },
+      "arrived": "arrived {{relative}}",
+      "details": "Details",
+      "add": "Add",
+      "added": "Added",
+      "addFailed": "Couldn't add \"{{title}}\"",
+      "goTo": "Show {{title}}"
+    },
     "greetingSubtitle": {
       "night": "One more episode? We won't tell.",
       "weekend": "Weekends are made for marathons.",
       "monday": "New week, new episodes.",
       "friday": "Friday. Pick tonight's movie.",
-      "morning": "Here's what landed overnight.",
+      "earlyMorning": "The world's still asleep. Your library isn't.",
+      "morning": "Coffee's ready. So is the library.",
+      "lateMorning": "Coffee break? One episode fits right in.",
       "afternoon": "Here's what's happening.",
       "evening": "Showtime. What are we watching?"
     },

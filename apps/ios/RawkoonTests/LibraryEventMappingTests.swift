@@ -1,5 +1,6 @@
 import Foundation
 @testable import Rawkoon
+import RawkoonKit
 import Testing
 
 /// Covers the SSE stream's DTO → `LibraryEvent` mapping, including the decode of
@@ -73,5 +74,30 @@ struct LibraryEventMappingTests {
             return
         }
         #expect(id == 10)
+    }
+
+    @Test func landedEventCarriesTheArrival() throws {
+        let dto = try decode(#"""
+        {"kind":"landed","mediaId":5,"mediaType":"tv","title":"Show (2024)","posterUrl":"/p.jpg",
+         "season":1,"episode":4,"episodeCount":null,"ts":1700000000000}
+        """#)
+        guard case let .landed(arrival) = LibraryEvent.from(dto) else {
+            Issue.record("expected landed")
+            return
+        }
+        #expect(arrival.mediaId == 5)
+        #expect(arrival.title == "Show (2024)")
+        #expect(arrival.code == "S01E04")
+        #expect(arrival.posterUrl == "/p.jpg")
+        #expect(arrival.ts == 1_700_000_000_000)
+    }
+
+    @Test func landedWithoutTitleFallsBackToMedia() throws {
+        let dto = try decode(#"{"kind":"landed","mediaId":5,"ts":1}"#)
+        guard case let .media(id) = LibraryEvent.from(dto) else {
+            Issue.record("expected media fallthrough")
+            return
+        }
+        #expect(id == 5)
     }
 }

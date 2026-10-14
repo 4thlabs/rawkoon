@@ -111,12 +111,32 @@
       "evening": "Bonsoir",
       "night": "Encore debout"
     },
+    "landed": {
+      "stamp": "Vient d'arriver",
+      "subtitle": "{{title}} {{code}} vient d'arriver.",
+      "subtitleNoCode": "{{title}} vient d'arriver."
+    },
+    "hero": {
+      "kicker": {
+        "arrivals": "Vient d'arriver",
+        "forYou": "Pour vous",
+        "trending": "Tendances"
+      },
+      "arrived": "arrivé {{relative}}",
+      "details": "Détails",
+      "add": "Ajouter",
+      "added": "Ajouté",
+      "addFailed": "Impossible d'ajouter « {{title}} »",
+      "goTo": "Afficher {{title}}"
+    },
     "greetingSubtitle": {
       "night": "Un dernier épisode ? On ne dira rien.",
       "weekend": "La fin de semaine est faite pour les marathons.",
       "monday": "Nouvelle semaine, nouveaux épisodes.",
       "friday": "Vendredi. Choisissez le film de ce soir.",
-      "morning": "Voici ce qui est arrivé pendant la nuit.",
+      "earlyMorning": "Le monde dort encore. Pas votre bibliothèque.",
+      "morning": "Le café est prêt. La bibliothèque aussi.",
+      "lateMorning": "Une petite pause ? Un épisode, ça passe vite.",
       "afternoon": "Voici ce qui se passe.",
       "evening": "C'est l'heure du film. On regarde quoi ?"
     },
