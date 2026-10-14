@@ -64,6 +64,7 @@ const item = (
   n: number,
   over: Partial<DashboardHeroItem> = {},
 ): DashboardHeroItem => ({
+  source: "arrivals",
   library_id: n,
   tmdb_id: n * 10,
   media_type: "movie",
@@ -109,7 +110,6 @@ afterEach(() => {
 describe("HomeHero", () => {
   it("shows an arrival with greeting, kicker, relative time and Details", async () => {
     render({
-      source: "arrivals",
       items: [
         item(1, {
           media_type: "tv",
@@ -138,8 +138,9 @@ describe("HomeHero", () => {
 
   it("offers Add and Details for a for-you pick", async () => {
     render({
-      source: "for_you",
-      items: [item(2, { library_id: null, arrived_at: null })],
+      items: [
+        item(2, { source: "for_you", library_id: null, arrived_at: null }),
+      ],
     });
     expect(
       await screen.findByText("dashboard.hero.kicker.forYou"),
@@ -159,8 +160,9 @@ describe("HomeHero", () => {
   ])("Add for admin=%s posts to %s", async (isAdmin, endpoint) => {
     auth.isAdmin = isAdmin;
     const { fetcher } = render({
-      source: "for_you",
-      items: [item(2, { library_id: null, arrived_at: null })],
+      items: [
+        item(2, { source: "for_you", library_id: null, arrived_at: null }),
+      ],
     });
     fireEvent.click(
       await screen.findByRole("button", { name: "dashboard.hero.add" }),
@@ -179,10 +181,35 @@ describe("HomeHero", () => {
     auth.isAdmin = false;
   });
 
+  it("gives each slide its own kicker and buttons when arrivals and picks mix", async () => {
+    render({
+      items: [
+        item(1),
+        item(2, { source: "for_you", library_id: null, arrived_at: null }),
+      ],
+    });
+    expect(
+      await screen.findByText("dashboard.hero.kicker.arrivals"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "dashboard.hero.add" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "dashboard.hero.goTo title:Film 2" }),
+    );
+    expect(
+      await screen.findByText("dashboard.hero.kicker.forYou"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "dashboard.hero.add" }),
+    ).toBeInTheDocument();
+  });
+
   it("labels a trending pick", async () => {
     render({
-      source: "trending",
-      items: [item(3, { library_id: null, arrived_at: null })],
+      items: [
+        item(3, { source: "trending", library_id: null, arrived_at: null }),
+      ],
     });
     expect(
       await screen.findByText("dashboard.hero.kicker.trending"),
@@ -190,7 +217,7 @@ describe("HomeHero", () => {
   });
 
   it.each([
-    ["no items", { source: "arrivals", items: [] } as DashboardHeroResponse],
+    ["no items", { items: [] } as DashboardHeroResponse],
     ["an error", new Error("boom")],
   ])("renders only the greeting on %s", async (_label, payload) => {
     const { fetcher } = render(payload);
@@ -200,7 +227,7 @@ describe("HomeHero", () => {
   });
 
   it("rotates every 8 seconds, pauses on hover and follows the dots", async () => {
-    render({ source: "arrivals", items: [item(1), item(2), item(3)] });
+    render({ items: [item(1), item(2), item(3)] });
     await screen.findByText("Film 1");
 
     // Swap to fake timers, then bounce hover so the rotation timer is re-armed on them.
@@ -232,7 +259,7 @@ describe("HomeHero", () => {
 
   it("does not auto-rotate under reduced motion", async () => {
     mockReducedMotion(true);
-    render({ source: "arrivals", items: [item(1), item(2)] });
+    render({ items: [item(1), item(2)] });
     await screen.findByText("Film 1");
 
     vi.useFakeTimers();

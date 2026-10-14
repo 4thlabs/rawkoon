@@ -72,11 +72,9 @@ function toSearchItem(item: DashboardHeroItem): TmdbMediaSearchItem {
 }
 
 function HeroCarousel({
-  source,
   items,
   userName,
 }: {
-  source: DashboardHeroSource;
   items: DashboardHeroItem[];
   userName: string;
 }) {
@@ -95,6 +93,8 @@ function HeroCarousel({
   const count = items.length;
   const index = clampHeroIndex(stored, count);
   const item = items[index];
+  // Each slide says why it is here: arrivals first, then deck picks.
+  const source = item.source;
 
   useEffect(() => {
     if (reduced || paused || count < 2) return;
@@ -279,7 +279,5 @@ export function HomeHero({ userName }: { userName: string }) {
   const { data } = useDashboardHero();
   const items = data?.items ?? [];
   if (!data || items.length === 0) return <GreetingCard userName={userName} />;
-  return (
-    <HeroCarousel source={data.source} items={items} userName={userName} />
-  );
+  return <HeroCarousel items={items} userName={userName} />;
 }

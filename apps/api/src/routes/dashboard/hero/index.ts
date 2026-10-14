@@ -18,7 +18,7 @@ export const dashboardHeroRoutes = new Hono<Env>()
       const titleLanguage = normalizeTitleLanguage(
         c.req.query("title_language"),
       );
-      const cacheKey = `dashboard:hero:v1:${userId}:${titleLanguage}`;
+      const cacheKey = `dashboard:hero:v2:${userId}:${titleLanguage}`;
 
       const cached = await getJsonCache<DashboardHeroResponse>(cacheKey);
       if (cached) return ok(cached);

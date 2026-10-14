@@ -53,6 +53,7 @@ async function buildArrivalItems(
       (await deps.loadTmdbBackdrop(c.mediaType, c.tmdbId).catch(() => null));
     if (!backdrop) return null;
     return {
+      source: "arrivals",
       library_id: c.libraryId,
       tmdb_id: c.tmdbId,
       media_type: c.mediaType,
@@ -82,10 +83,12 @@ async function buildArrivalItems(
 }
 
 function buildDeckItems(deck: DiscoverDeckResponse): DashboardHeroItem[] {
+  const source = deck.source === "personalized" ? "for_you" : "trending";
   const items: DashboardHeroItem[] = [];
   for (const d of deck.items) {
     if (!d.backdrop_url) continue;
     items.push({
+      source,
       library_id: null,
       tmdb_id: d.tmdb_id,
       media_type: d.media_type,
@@ -103,19 +106,19 @@ function buildDeckItems(deck: DiscoverDeckResponse): DashboardHeroItem[] {
   return items;
 }
 
-/** Recent arrivals when there are any, else the discover deck. */
+/** Recent arrivals first, then discover-deck picks to fill the hero. */
 export async function buildHomeHero(
   deps: HomeHeroDeps,
   now: Date = new Date(),
 ): Promise<DashboardHeroResponse> {
   const arrivals = await buildArrivalItems(deps, now);
-  if (arrivals.length > 0) return { source: "arrivals", items: arrivals };
+  if (arrivals.length >= HERO_MAX_ITEMS) return { items: arrivals };
 
   const deck = await deps.loadDeck(HERO_CANDIDATE_POOL * 2);
-  if (!deck) return { source: "trending", items: [] };
-  const items = buildDeckItems(deck);
-  return {
-    source: deck.source === "personalized" ? "for_you" : "trending",
-    items,
-  };
+  if (!deck) return { items: arrivals };
+  const shown = new Set(arrivals.map((i) => `${i.media_type}:${i.tmdb_id}`));
+  const picks = buildDeckItems(deck).filter(
+    (i) => !shown.has(`${i.media_type}:${i.tmdb_id}`),
+  );
+  return { items: [...arrivals, ...picks].slice(0, HERO_MAX_ITEMS) };
 }

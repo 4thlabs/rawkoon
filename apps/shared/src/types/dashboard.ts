@@ -130,6 +130,8 @@ export interface CalendarSubscription {
 export type DashboardHeroSource = "arrivals" | "for_you" | "trending";
 
 export interface DashboardHeroItem {
+  /** Why this slide is here: arrivals come first, deck picks fill the rest. */
+  source: DashboardHeroSource;
   /** Null for picks that are not in the library yet. */
   library_id: number | null;
   tmdb_id: number;
@@ -146,6 +148,5 @@ export interface DashboardHeroItem {
 }
 
 export interface DashboardHeroResponse {
-  source: DashboardHeroSource;
   items: DashboardHeroItem[];
 }

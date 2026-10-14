@@ -24,7 +24,7 @@ nonisolated struct NowPlayingSession: Decodable, Identifiable, Sendable {
     }
 }
 
-nonisolated enum DashboardHeroSource: String, Decodable, Sendable {
+nonisolated enum DashboardHeroSource: String, Decodable, Hashable, Sendable {
     case arrivals
     case forYou = "for_you"
     case trending
@@ -32,6 +32,8 @@ nonisolated enum DashboardHeroSource: String, Decodable, Sendable {
 
 /// One slide of the Home hero. Mirrors the API's `DashboardHeroItem`.
 nonisolated struct DashboardHeroItem: Decodable, Identifiable, Hashable, Sendable {
+    /// Why this slide is here: arrivals come first, deck picks fill the rest.
+    let source: DashboardHeroSource
     let libraryId: Int?
     let tmdbId: Int
     let mediaType: String // "movie" | "tv"
@@ -64,7 +66,6 @@ nonisolated struct DashboardHeroItem: Decodable, Identifiable, Hashable, Sendabl
 }
 
 nonisolated struct DashboardHeroResponse: Decodable, Sendable {
-    let source: DashboardHeroSource
     let items: [DashboardHeroItem]
 }
 

@@ -59,7 +59,9 @@ describe("buildHomeHero", () => {
       }),
       NOW,
     );
-    expect(res.source).toBe("arrivals");
+    expect(new Set(res.items.map((i) => i.source))).toEqual(
+      new Set(["arrivals"]),
+    );
     expect(res.items.map((i) => i.library_id)).toEqual([1, 2, 3, 4, 5]);
     expect(res.items[0]).toMatchObject({
       tmdb_id: 10,
@@ -172,7 +174,9 @@ describe("buildHomeHero", () => {
       }),
       NOW,
     );
-    expect(res.source).toBe("for_you");
+    expect(new Set(res.items.map((i) => i.source))).toEqual(
+      new Set(["for_you"]),
+    );
     expect(res.items).toHaveLength(5);
     expect(res.items[0]).toMatchObject({
       library_id: null,
@@ -192,8 +196,30 @@ describe("buildHomeHero", () => {
       }),
       NOW,
     );
-    expect(res.source).toBe("trending");
+    expect(res.items.map((i) => i.source)).toEqual(["trending"]);
     expect(res.items.map((i) => i.tmdb_id)).toEqual([2]);
+  });
+
+  it("tops up arrivals with deck picks, arrivals first, skipping duplicates", async () => {
+    const res = await buildHomeHero(
+      makeDeps({
+        loadArrivals: async () => [arrival(1), arrival(2)],
+        loadDeck: async () => ({
+          source: "personalized",
+          items: [10, 30, 40, 50, 60].map((id) =>
+            deckItem(id, `https://img/d${id}.jpg`),
+          ),
+        }),
+      }),
+      NOW,
+    );
+    expect(res.items.map((i) => [i.source, i.tmdb_id])).toEqual([
+      ["arrivals", 10],
+      ["arrivals", 20],
+      ["for_you", 30],
+      ["for_you", 40],
+      ["for_you", 50],
+    ]);
   });
 
   it("returns an empty deck when TMDB is not configured", async () => {

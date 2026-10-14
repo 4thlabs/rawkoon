@@ -138,7 +138,7 @@ struct HomeHero<Greeting: View>: View {
             greeting()
             Spacer(minLength: 24)
             VStack(alignment: .leading, spacing: 6) {
-                Text(kicker)
+                Text(kicker(item))
                     .font(.caption.weight(.semibold))
                     .textCase(.uppercase)
                     .tracking(1.6)
@@ -165,8 +165,8 @@ struct HomeHero<Greeting: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var kicker: LocalizedStringKey {
-        switch hero.source {
+    private func kicker(_ item: DashboardHeroItem) -> LocalizedStringKey {
+        switch item.source {
         case .arrivals: "Just arrived"
         case .forYou: "For you"
         case .trending: "Trending"
@@ -175,7 +175,7 @@ struct HomeHero<Greeting: View>: View {
 
     private func metaLine(_ item: DashboardHeroItem) -> String? {
         var parts: [String] = []
-        if hero.source == .arrivals {
+        if item.source == .arrivals {
             // French abbreviated renders a past time as "-14 min"; the full style reads "il y a 14 minutes".
             let relative = ActivityPresentation.relativeTime(item.arrivedAt, style: .full)
             if !relative.isEmpty {
@@ -185,7 +185,7 @@ struct HomeHero<Greeting: View>: View {
         if let code = item.episodeCode {
             parts.append(code)
         }
-        if hero.source != .arrivals, let year = item.year {
+        if item.source != .arrivals, let year = item.year {
             parts.append(String(year))
         }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
@@ -195,14 +195,14 @@ struct HomeHero<Greeting: View>: View {
 
     private func buttons(_ item: DashboardHeroItem) -> some View {
         HStack(spacing: 12) {
-            if hero.source != .arrivals {
+            if item.source != .arrivals {
                 addButton(item)
             }
             NavigationLink {
                 MediaDetailView(tmdbId: item.tmdbId, mediaType: item.mediaType,
                                 title: item.title, posterPath: item.posterUrl, libraryId: item.libraryId)
             } label: {
-                pill("Details", primary: hero.source == .arrivals)
+                pill("Details", primary: item.source == .arrivals)
             }
             .buttonStyle(.rawkoonPressable)
         }
