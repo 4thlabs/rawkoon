@@ -10067,6 +10067,36 @@
         }
       }
     },
+    "%@ %@ just landed.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@ vient d'arriver."
+          }
+        }
+      }
+    },
+    "%@ just landed.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vient d'arriver."
+          }
+        }
+      }
+    },
+    "Just landed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vient d'arriver"
+          }
+        }
+      }
+    },
     "Recently added": {
       "localizations": {
         "fr": {

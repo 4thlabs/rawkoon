@@ -1,4 +1,5 @@
 import Foundation
+import RawkoonKit
 
 // Home/dashboard widgets, APNs, SSO, notification center, and live library-event DTOs. Split out of Models.swift to stay under the file_length lint
 // threshold (spec §4.2). Pure data types, no behaviour.
@@ -144,6 +145,14 @@ nonisolated struct LibraryEventDTO: Decodable, Sendable {
     let mediaId: Int?
     let bookId: Int?
     let downloads: [DownloadProgressItemDTO]?
+    // `landed` payload.
+    let mediaType: String?
+    let title: String?
+    let posterUrl: String?
+    let season: Int?
+    let episode: Int?
+    let episodeCount: Int?
+    let ts: Int? // swiftlint:disable:this identifier_name
 }
 
 /// One row's pushed live progress inside a `download-progress` SSE event.
@@ -169,10 +178,11 @@ enum LibraryEvent: Sendable {
     case media(id: Int)
     case book(id: Int)
     case downloadProgress(mediaId: Int, items: [DownloadProgressEntry])
+    case landed(LandedArrival)
     case handshake
 
     /// Map a decoded stream DTO to an event, applying the precedence the SSE
-    /// consumer relies on: handshake, then live progress, then book, then the
+    /// consumer relies on: handshake, then live progress, then a landed arrival, then book, then the
     /// bare-`mediaId` media event an older server sends untagged. `nil` for a
     /// shape that carries nothing actionable.
     nonisolated static func from(_ dto: LibraryEventDTO) -> LibraryEvent? {
@@ -194,6 +204,12 @@ enum LibraryEvent: Sendable {
                 )
             }
             return .downloadProgress(mediaId: mediaId, items: items)
+        }
+        if dto.kind == "landed", let mediaId = dto.mediaId, let title = dto.title, let sentAt = dto.ts {
+            return .landed(LandedArrival(
+                mediaId: mediaId, mediaType: dto.mediaType ?? "movie", title: title, posterUrl: dto.posterUrl,
+                season: dto.season, episode: dto.episode, episodeCount: dto.episodeCount, ts: sentAt
+            ))
         }
         if let bookId = dto.bookId, dto.kind == "book" {
             return .book(id: bookId)

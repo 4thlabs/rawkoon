@@ -3,6 +3,7 @@ import Foundation
 enum SSEContractID: String, CaseIterable, Sendable {
     case libraryMediaUpdate = "library.media-update"
     case libraryBookUpdate = "library.book-update"
+    case libraryLanded = "library.landed"
     case libraryDownloadProgress = "library.download-progress"
     case librarySeedState = "library.seed-state"
     case libraryHandshake = "library.handshake"
@@ -15,6 +16,7 @@ enum SSEContractID: String, CaseIterable, Sendable {
 enum SSEContractEvent: Sendable {
     case media(id: Int)
     case book(id: Int)
+    case landed(id: Int)
     case libraryHandshake
     case notification
     case notificationsHandshake
@@ -25,6 +27,7 @@ enum SSEContractEvent: Sendable {
         switch self {
         case .media: .libraryMediaUpdate
         case .book: .libraryBookUpdate
+        case .landed: .libraryLanded
         case .libraryHandshake: .libraryHandshake
         case .notification: .notification
         case .notificationsHandshake: .notificationsHandshake
@@ -42,7 +45,7 @@ enum SSEEventRegistry {
     @MainActor
     static func apply(_ event: SSEContractEvent, to store: ServerStateStore) {
         switch event {
-        case let .media(id):
+        case let .media(id), let .landed(id):
             store.invalidate(.libraryItem(id))
         case let .book(id):
             store.invalidate(.bookItem(id))

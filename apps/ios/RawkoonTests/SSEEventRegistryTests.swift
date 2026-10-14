@@ -42,6 +42,17 @@ struct SSEEventRegistryTests {
         #expect(!store.isInvalidated(.bookList))
     }
 
+    @Test func landedEventInvalidatesLikeMedia() {
+        let store = ServerStateStore()
+        let key = LibraryListKey.default
+        store.seedLibraryList([movie(id: 1)], for: key)
+
+        SSEEventRegistry.apply(.landed(id: 1), to: store)
+
+        #expect(store.libraryList(key).isInvalidated)
+        #expect(store.isInvalidated(.libraryItem(1)))
+    }
+
     @Test func bookEventInvalidatesOnlyBookAndProgressFamilies() {
         let store = ServerStateStore()
         let key = LibraryListKey.default

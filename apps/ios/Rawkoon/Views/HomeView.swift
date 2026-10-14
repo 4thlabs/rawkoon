@@ -8,9 +8,9 @@ import SwiftUI
 /// integration is off or has no data.
 struct HomeView: View {
     @Environment(AppModel.self) var model
-    @Environment(\.isActiveRootTab) private var isActiveRootTab
+    @Environment(\.isActiveRootTab) var isActiveRootTab
 
-    @State private var recent: [LibraryMedia] = []
+    @State var recent: [LibraryMedia] = []
     @State private var upcoming: [UpcomingItem] = []
     @State private var discover: DiscoverDeckResponse?
     @State var nowPlaying: NowPlayingResponse?
@@ -34,6 +34,9 @@ struct HomeView: View {
     /// resolve the full item (for its tmdbId/poster) then push its detail.
     @State var attentionTarget: AttentionRoute?
     @State var resolvingAttentionId: Int?
+    /// The just-landed banner while it's up, and a counter that fires its haptic.
+    @State var landedBanner: LandedArrival?
+    @State var landedBannerCount = 0
 
     /// Resolved detail destination for an attention row — Hashable so it can
     /// drive `navigationDestination(item:)`, which `LibraryMedia` can't.
@@ -99,6 +102,10 @@ struct HomeView: View {
                 }
             }
         }
+        .overlay(alignment: .top) { landedBannerLayer }
+        .sensoryFeedback(RawkoonHaptics.feedback(for: .success), trigger: landedBannerCount)
+        .onChange(of: model.recentArrivals.first) { _, arrival in landedArrived(arrival) }
+        .task(id: landedBanner?.ts) { await autoDismissLandedBanner() }
         .onAppear(perform: hydrateFromCache)
         .task { await load() }
         // Kept-alive iPhone tabs never re-appear, so a revisit refreshes like the old TabView did.
@@ -145,8 +152,8 @@ struct HomeView: View {
                     .padding(.horizontal, 16)
                     .transition(.rawkoonSwap)
             }
-            if !recent.isEmpty {
-                rail("Recently added", recent.map(RailItem.library))
+            if !recent.isEmpty || !model.recentArrivals.isEmpty {
+                recentlyAddedRail
             }
             if !upcoming.isEmpty {
                 rail("Upcoming", upcoming.map(RailItem.upcoming))
@@ -173,7 +180,7 @@ struct HomeView: View {
                 greetingLine(HomeGreeting.period(hour: hour))
                     .font(.display(28))
                     .foregroundStyle(Theme.textStrong)
-                Text(subtitleKey(HomeGreeting.subtitle(hour: hour, weekday: weekday)))
+                subtitle(hour: hour, weekday: weekday, now: context.date)
                     .font(.subheadline)
                     .foregroundStyle(Theme.muted)
             }
@@ -181,6 +188,14 @@ struct HomeView: View {
         .padding(.horizontal, 16)
         // The name arrives after first render; the load-swap spring must not animate its reflow.
         .transaction { $0.animation = nil }
+    }
+
+    /// A fresh arrival outranks the time-of-day line.
+    private func subtitle(hour: Int, weekday: Int, now: Date) -> Text {
+        if let landed = LandedArrivals.fresh(model.recentArrivals, now: Self.epochMillis(now)).first {
+            return landedSubtitle(landed)
+        }
+        return Text(subtitleKey(HomeGreeting.subtitle(hour: hour, weekday: weekday)))
     }
 
     /// With no name known yet the greeting stands alone rather than addressing

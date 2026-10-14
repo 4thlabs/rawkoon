@@ -22,6 +22,10 @@ extension AppModel {
         liveUpdates.downloadProgress
     }
 
+    var recentArrivals: [LandedArrival] {
+        liveUpdates.recentArrivals
+    }
+
     var unreadNotificationCount: Int {
         liveUpdates.unreadNotificationCount
     }

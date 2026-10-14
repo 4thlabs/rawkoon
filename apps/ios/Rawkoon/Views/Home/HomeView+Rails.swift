@@ -6,11 +6,14 @@ extension HomeView {
 
     enum RailItem: Identifiable {
         case library(LibraryMedia)
+        case landed(LandedArrival)
         case upcoming(UpcomingItem)
         case discover(DiscoverDeckItem)
         var id: String {
             switch self {
             case let .library(m): "l\(m.id)"
+            // Same id as the library card, so expiry swaps in place without replaying the entrance.
+            case let .landed(a): "l\(a.mediaId)"
             case let .upcoming(u): "u\(u.id)"
             case let .discover(d): "d\(d.id)"
             }
@@ -25,8 +28,10 @@ extension HomeView {
                     ForEach(items) { item in
                         railCard(item)
                             .rawkoonEntrance(id: item.id)
+                            .transition(.rawkoonReveal)
                     }
                 }
+                .rawkoonMotion(RawkoonMotion.spring, value: items.map(\.id))
                 .padding(.horizontal, 16)
             }
             // One ledger per rail, so each rail cascades left to right on its own.
@@ -53,6 +58,14 @@ extension HomeView {
                 MediaPosterCard(title: m.title, posterURL: model.absoluteURL(m.posterUrl),
                                 width: RailPoster.width, corner: RailPoster.corner)
                     .rawkoonZoomSource(zoomID)
+            }
+            .buttonStyle(.rawkoonPressable)
+        case let .landed(a):
+            Button { openLanded(a) } label: {
+                MediaPosterCard(title: a.title, posterURL: model.absoluteURL(a.posterUrl),
+                                episode: a.code.isEmpty ? nil : a.code,
+                                width: RailPoster.width, corner: RailPoster.corner)
+                    .overlay(alignment: .topLeading) { landedStamp }
             }
             .buttonStyle(.rawkoonPressable)
         case let .upcoming(u):
