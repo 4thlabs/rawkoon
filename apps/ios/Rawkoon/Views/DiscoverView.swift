@@ -275,34 +275,8 @@ struct DiscoverView: View {
     private func handlePrimary(_ item: DiscoverDeckItem) {
         trackAction()
         Task {
-            guard let client = model.api() else { return }
             do {
-                if model.isAdmin {
-                    let type = item.mediaType == "tv" ? "show" : "movie"
-                    _ = try await model.serverStateStore.addToLibrary(
-                        provisional: .provisional(
-                            tmdbId: item.tmdbId,
-                            type: type,
-                            title: item.title,
-                            year: item.releaseYear,
-                            posterUrl: item.posterUrl,
-                            overview: item.overview
-                        ),
-                        request: { try await client.addToLibrary(tmdbId: item.tmdbId, type: type) }
-                    )
-                    await model.loadLibrary()
-                } else {
-                    _ = try await client.createRequest(CreateRequestBody(
-                        tmdbId: item.tmdbId,
-                        type: item.mediaType == "tv" ? "show" : "movie",
-                        title: item.title,
-                        posterUrl: item.posterUrl,
-                        year: item.releaseYear,
-                        googleVolumeId: nil,
-                        author: nil
-                    ))
-                }
-                model.requestPushAuthorization()
+                try await model.addDiscoverPick(item)
             } catch let error as APIError {
                 model.toast(message(for: error), style: .error)
             } catch {

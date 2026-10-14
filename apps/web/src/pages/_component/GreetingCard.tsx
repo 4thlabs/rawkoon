@@ -10,9 +10,11 @@ import { useRecentlyAdded } from "@/pages/_component/useRecentlyAdded";
 interface GreetingCardProps {
   /** Empty when the name isn't known yet; the greeting then stands alone. */
   userName: string;
+  /** Sits on the Home hero backdrop: brighter text with a soft shadow. */
+  onHero?: boolean;
 }
 
-export function GreetingCard({ userName }: GreetingCardProps) {
+export function GreetingCard({ userName, onHero = false }: GreetingCardProps) {
   const { t } = useTranslation("common");
   const now = useMinuteClock();
   const hour = now.getHours();
@@ -33,10 +35,14 @@ export function GreetingCard({ userName }: GreetingCardProps) {
 
   return (
     <div className="relative">
-      <h1 className="text-lg md:text-xl font-bold tracking-tight text-neutral-50">
+      <h1
+        className={`text-lg md:text-xl font-bold tracking-tight text-neutral-50 ${onHero ? "drop-shadow" : ""}`}
+      >
         {userName ? `${greeting}, ${userName}` : greeting}
       </h1>
-      <p className="mt-0.5 text-xs text-neutral-400 leading-relaxed">
+      <p
+        className={`mt-0.5 text-xs leading-relaxed ${onHero ? "text-neutral-200 drop-shadow" : "text-neutral-400"}`}
+      >
         {subtitle}
       </p>
     </div>

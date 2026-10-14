@@ -24,6 +24,50 @@ nonisolated struct NowPlayingSession: Decodable, Identifiable, Sendable {
     }
 }
 
+nonisolated enum DashboardHeroSource: String, Decodable, Sendable {
+    case arrivals
+    case forYou = "for_you"
+    case trending
+}
+
+/// One slide of the Home hero. Mirrors the API's `DashboardHeroItem`.
+nonisolated struct DashboardHeroItem: Decodable, Identifiable, Hashable, Sendable {
+    let libraryId: Int?
+    let tmdbId: Int
+    let mediaType: String // "movie" | "tv"
+    let title: String
+    let overview: String?
+    let backdropUrl: String
+    let posterUrl: String?
+    let arrivedAt: String?
+    let seasonNumber: Int?
+    let episodeNumber: Int?
+    let year: Int?
+
+    var id: String {
+        "\(mediaType)-\(tmdbId)"
+    }
+
+    /// `S01E04` when both are known (a season pack has no single episode).
+    var episodeCode: String? {
+        guard let seasonNumber, let episodeNumber else { return nil }
+        return String(format: "S%02dE%02d", seasonNumber, episodeNumber)
+    }
+
+    /// The shape the discover add flow takes.
+    var deckItem: DiscoverDeckItem {
+        DiscoverDeckItem(
+            id: id, tmdbId: tmdbId, mediaType: mediaType, title: title, releaseYear: year,
+            posterUrl: posterUrl, overview: overview, voteAverage: nil, genreIds: []
+        )
+    }
+}
+
+nonisolated struct DashboardHeroResponse: Decodable, Sendable {
+    let source: DashboardHeroSource
+    let items: [DashboardHeroItem]
+}
+
 nonisolated struct LibraryAttentionResponse: Decodable, Sendable {
     let items: [AttentionItem]
 }

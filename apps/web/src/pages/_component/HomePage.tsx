@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { CardErrorBoundary } from "@/components/ErrorBoundary";
 import { useCurrentUser } from "@/lib/auth/useAuth";
 import { getUserFirstName } from "@/lib/utils/format";
-import { GreetingCard } from "@/pages/_component/GreetingCard";
+import { HomeHero } from "@/pages/_component/HomeHero";
 import { RecentlyAddedRail } from "@/pages/_component/RecentlyAddedRail";
 import { UpcomingRail } from "@/pages/_component/UpcomingRail";
 import { WidgetGrid } from "@/pages/_component/WidgetGrid";
@@ -38,7 +38,7 @@ export function HomePage() {
 
   return (
     <PageLayout fullWidth>
-      <GreetingCard userName={getUserFirstName(user)} />
+      <HomeHero userName={getUserFirstName(user)} />
       <motion.div
         className="mt-6 space-y-8"
         variants={sectionsVariants}

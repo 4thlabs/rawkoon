@@ -126,3 +126,26 @@ export interface CalendarSubscription {
   url: string;
   webcal_url: string;
 }
+
+export type DashboardHeroSource = "arrivals" | "for_you" | "trending";
+
+export interface DashboardHeroItem {
+  /** Null for picks that are not in the library yet. */
+  library_id: number | null;
+  tmdb_id: number;
+  media_type: "movie" | "tv";
+  title: string;
+  overview: string | null;
+  backdrop_url: string;
+  poster_url: string | null;
+  /** When the newest import finished; null for non-arrivals. */
+  arrived_at: string | null;
+  season_number: number | null;
+  episode_number: number | null;
+  year: number | null;
+}
+
+export interface DashboardHeroResponse {
+  source: DashboardHeroSource;
+  items: DashboardHeroItem[];
+}

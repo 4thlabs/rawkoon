@@ -49,6 +49,10 @@ nonisolated enum Endpoints {
         ])
     }
 
+    static func dashboardHero() -> Endpoint<DashboardHeroResponse> {
+        Endpoint(path: "/api/dashboard/hero", query: ["title_language": APIClient.titleLanguage])
+    }
+
     static func recentlyAdded(limit: Int = 24) -> Endpoint<LibraryListResponse> {
         libraryList(limit: limit, sortBy: "added_at", sortDir: "desc")
     }

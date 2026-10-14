@@ -13,6 +13,7 @@ struct HomeView: View {
     @State var recent: [LibraryMedia] = []
     @State private var upcoming: [UpcomingItem] = []
     @State private var discover: DiscoverDeckResponse?
+    @State private var hero: DashboardHeroResponse?
     @State var nowPlaying: NowPlayingResponse?
     @State var speed: SpeedResponse?
     @State var attention: [AttentionItem] = []
@@ -51,7 +52,11 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                greeting
+                if let hero, !hero.items.isEmpty {
+                    HomeHero(hero: hero) { greeting(onHero: true) }
+                } else {
+                    greeting(onHero: false)
+                }
 
                 if loading, recent.isEmpty {
                     homeSkeleton
@@ -170,7 +175,7 @@ struct HomeView: View {
 
     // MARK: Greeting
 
-    private var greeting: some View {
+    private func greeting(onHero: Bool) -> some View {
         // Re-evaluated each minute so a Home left open overnight doesn't keep saying "Good morning".
         TimelineView(.everyMinute) { context in
             let calendar = Calendar.current
@@ -182,7 +187,7 @@ struct HomeView: View {
                     .foregroundStyle(Theme.textStrong)
                 subtitle(hour: hour, weekday: weekday, now: context.date)
                     .font(.subheadline)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(onHero ? Theme.text : Theme.muted)
             }
         }
         .padding(.horizontal, 16)
@@ -279,6 +284,9 @@ struct HomeView: View {
         if upcoming.isEmpty, let cached = client.cached(Endpoints.upcoming) {
             upcoming = cached.value.items
         }
+        if hero == nil, let cached = client.cached(Endpoints.dashboardHero()) {
+            hero = cached.value
+        }
         if discover == nil, let cached = client.cached(Endpoints.discoverDeck(limit: 12)) {
             discover = cached.value
         }
@@ -319,6 +327,7 @@ struct HomeView: View {
         async let recentR = client.recentlyAdded()
         async let upcomingR = client.upcoming()
         async let discoverR = client.discoverDeck(exclude: [], limit: 12)
+        async let heroR = client.dashboardHero()
         async let npR = client.nowPlaying()
         async let speedR = client.speed()
         async let attnR = client.libraryAttention()
@@ -347,6 +356,9 @@ struct HomeView: View {
         if let deck = try? await discoverR {
             discover = deck
             Task { await WidgetSnapshotWriter.shared.updateSuggestion(deck, model: model) }
+        }
+        if let fresh = try? await heroR {
+            hero = fresh
         }
         if let np = try? await npR {
             nowPlaying = np

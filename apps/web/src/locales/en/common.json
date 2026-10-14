@@ -116,6 +116,19 @@
       "subtitle": "{{title}} {{code}} just landed.",
       "subtitleNoCode": "{{title}} just landed."
     },
+    "hero": {
+      "kicker": {
+        "arrivals": "Just arrived",
+        "forYou": "For you",
+        "trending": "Trending"
+      },
+      "arrived": "arrived {{relative}}",
+      "details": "Details",
+      "add": "Add",
+      "added": "Added",
+      "addFailed": "Couldn't add \"{{title}}\"",
+      "goTo": "Show {{title}}"
+    },
     "greetingSubtitle": {
       "night": "One more episode? We won't tell.",
       "weekend": "Weekends are made for marathons.",

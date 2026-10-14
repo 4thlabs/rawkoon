@@ -3121,6 +3121,36 @@
         }
       }
     },
+    "Just arrived": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vient d'arriver"
+          }
+        }
+      }
+    },
+    "arrived %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "arrivé %@"
+          }
+        }
+      }
+    },
+    "Show %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher %@"
+          }
+        }
+      }
+    },
     "Add %@": {
       "localizations": {
         "fr": {

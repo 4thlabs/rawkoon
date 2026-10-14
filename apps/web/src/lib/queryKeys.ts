@@ -90,6 +90,8 @@ export const queryKeys = {
     jellyfinNowPlaying: () =>
       [...queryKeys.dashboard.all, "jellyfin-now-playing"] as const,
     upcoming: () => [...queryKeys.dashboard.all, "upcoming"] as const,
+    hero: (titleLanguage: string) =>
+      [...queryKeys.dashboard.all, "hero", titleLanguage] as const,
   },
 
   users: {

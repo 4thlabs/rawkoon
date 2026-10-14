@@ -116,6 +116,19 @@
       "subtitle": "{{title}} {{code}} vient d'arriver.",
       "subtitleNoCode": "{{title}} vient d'arriver."
     },
+    "hero": {
+      "kicker": {
+        "arrivals": "Vient d'arriver",
+        "forYou": "Pour vous",
+        "trending": "Tendances"
+      },
+      "arrived": "arrivé {{relative}}",
+      "details": "Détails",
+      "add": "Ajouter",
+      "added": "Ajouté",
+      "addFailed": "Impossible d'ajouter « {{title}} »",
+      "goTo": "Afficher {{title}}"
+    },
     "greetingSubtitle": {
       "night": "Un dernier épisode ? On ne dira rien.",
       "weekend": "La fin de semaine est faite pour les marathons.",
