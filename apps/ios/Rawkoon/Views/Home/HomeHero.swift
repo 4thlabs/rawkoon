@@ -36,7 +36,8 @@ extension AppModel {
 
 /// Home's opening film: a rotating backdrop deck with the greeting overlaid.
 /// Home scrolls under the status bar while it shows, so the backdrop reaches
-/// the top edge and the text is pushed below the status bar by `topInset`.
+/// the top edge and the text is pushed below the status bar by `topInset`. It
+/// has no corners: the bottom fades into the page.
 struct HomeHero<Greeting: View>: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -84,16 +85,21 @@ struct HomeHero<Greeting: View>: View {
                         backdrop(item)
                             .id(item.id)
                             .transition(.opacity)
+                        // Fully page-coloured before the edge, so the film melts into Home without a seam.
                         LinearGradient(
-                            colors: [.clear, Theme.base.opacity(0.55), Theme.base],
-                            startPoint: .center, endPoint: .bottom
+                            stops: [
+                                .init(color: .clear, location: 0.45),
+                                .init(color: Theme.base.opacity(0.6), location: 0.75),
+                                .init(color: Theme.base, location: 0.94),
+                            ],
+                            startPoint: .top, endPoint: .bottom
                         )
                         LinearGradient(
                             colors: [Theme.base.opacity(0.7), .clear],
                             startPoint: .leading, endPoint: .trailing
                         )
                     }
-                    .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 28, bottomTrailingRadius: 28))
+                    .clipped()
                 }
             .task(id: RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab)) {
                 await rotate()
