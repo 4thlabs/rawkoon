@@ -24,6 +24,7 @@ struct HomeView: View {
     @State private var booksEnabled: Bool?
     @State var reencodeSummary: TranscodeSummary?
     @State private var loading = true
+    @State private var measuredTopInset: CGFloat = 0
     /// When the last full refresh finished, so switching back to Home within a
     /// few seconds doesn't refetch every rail.
     @State private var lastLoadedAt: Date?
@@ -53,18 +54,18 @@ struct HomeView: View {
         hero?.items.isEmpty == false
     }
 
-    /// Read from the window: inside a scroll view that ignores the safe area, SwiftUI reports no inset.
-    private var windowTopInset: CGFloat {
-        let scene = UIApplication.shared.connectedScenes
-            .first { $0.activationState == .foregroundActive } as? UIWindowScene
-        return scene?.keyWindow?.safeAreaInsets.top ?? 0
+    /// Status-bar height, measured live so rotation and resizes follow; the window is a cold-start fallback.
+    private var heroTopInset: CGFloat {
+        if measuredTopInset > 0 { return measuredTopInset }
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        return scenes.lazy.compactMap(\.keyWindow).first?.safeAreaInsets.top ?? 0
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 if let hero, showsHero {
-                    HomeHero(hero: hero, topInset: windowTopInset) { greeting(onHero: true) }
+                    HomeHero(hero: hero, topInset: heroTopInset) { greeting(onHero: true) }
                 } else {
                     greeting(onHero: false)
                 }
@@ -83,9 +84,25 @@ struct HomeView: View {
             // Crossfade skeleton → content instead of a hard cut, so the rails
             // fade in rather than popping into place on first load.
             .rawkoonMotion(RawkoonMotion.spring, value: loading)
+            // A hero arriving after first paint swaps the header and drops the nav bar; ease it, don't jump.
+            .rawkoonMotion(RawkoonMotion.spring, value: showsHero)
+        }
+        // Behind the status bar, so rails scrolled past the hero don't run under the clock bare.
+        .overlay(alignment: .top) {
+            if showsHero {
+                LinearGradient(colors: [Theme.base.opacity(0.85), .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: heroTopInset)
+                    .allowsHitTesting(false)
+            }
         }
         // Only the scroll view goes under the status bar; overlays such as the landed banner keep the safe area.
         .ignoresSafeArea(edges: showsHero ? .top : [])
+        .background {
+            // A reader that itself reaches into the status bar reports that bar's height as its top inset.
+            Color.clear
+                .ignoresSafeArea()
+                .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { measuredTopInset = $0 }
+        }
         .reportsTabBarScroll()
         .background(Theme.base)
         .onChange(of: model.pendingMediaLink, initial: true) { _, link in
