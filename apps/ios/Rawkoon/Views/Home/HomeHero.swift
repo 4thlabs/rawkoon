@@ -50,6 +50,8 @@ struct HomeHero<Greeting: View>: View {
     let greeting: () -> Greeting
 
     @State private var storedIndex = 0
+    /// Bumped per swipe so the haptic fires on a swipe, not on auto-rotation.
+    @State private var swipes = 0
     @State private var added: Set<Int> = []
     @State private var adding = false
 
@@ -101,6 +103,19 @@ struct HomeHero<Greeting: View>: View {
                     }
                     .clipped()
                 }
+            // Simultaneous so a vertical drag still scrolls Home; only a clearly horizontal one changes slide.
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 20).onEnded { value in
+                    if let target = HeroRotation.swipe(
+                        from: index, count: items.count,
+                        dx: value.translation.width, dy: value.translation.height
+                    ) {
+                        select(target)
+                        swipes += 1
+                    }
+                }
+            )
+            .sensoryFeedback(RawkoonHaptics.feedback(for: .tap), trigger: swipes)
             .task(id: RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab)) {
                 await rotate()
             }
