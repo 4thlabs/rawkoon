@@ -28,7 +28,11 @@ export function RecentlyAddedRail() {
       libraryId: a.mediaId,
       badge: t("dashboard.landed.stamp"),
       animateIn: true,
-      meta: landedEpisodeCode(a.season, a.episode) || undefined,
+      meta: landedEpisodeCode(a.season, a.episode) ? (
+        <span className="text-[11px] font-semibold text-primary-300">
+          {landedEpisodeCode(a.season, a.episode)}
+        </span>
+      ) : undefined,
     })),
     ...(data ?? [])
       .filter((m) => !landedIds.has(m.id))
