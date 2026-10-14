@@ -105,7 +105,7 @@ describe("finishPostProcess landed event", () => {
       {
         mediaId: 42,
         mediaType: "tv",
-        title: "Some Show (2024)",
+        title: "Some Show",
         posterUrl: "/p.jpg",
         season: 1,
         episode: 4,

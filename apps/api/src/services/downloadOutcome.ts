@@ -3,7 +3,6 @@ import {
   emitLibraryLanded,
   emitLibraryUpdate,
 } from "@rawkoon/api/services/libraryEvents";
-import { showLabel } from "@rawkoon/api/services/notificationCopy";
 import { triggerJellyfinLibraryScan } from "@rawkoon/api/services/jellyfinLibraryRefresh";
 import { notifyRequestAvailable } from "@rawkoon/api/services/mediaRequests";
 import { postProcess } from "@rawkoon/api/services/postProcessorSingle";
@@ -54,7 +53,7 @@ async function emitLanded(
   try {
     const media = await prisma.libraryMedia.findUnique({
       where: { id: mediaId },
-      select: { title: true, year: true, type: true, posterUrl: true },
+      select: { title: true, type: true, posterUrl: true },
     });
     if (!media) return;
     const episode =
@@ -67,7 +66,7 @@ async function emitLanded(
     emitLibraryLanded({
       mediaId,
       mediaType: media.type === "movie" ? "movie" : "tv",
-      title: showLabel(media.title, media.year),
+      title: media.title,
       posterUrl: media.posterUrl,
       season:
         episode?.season ?? (media.type === "movie" ? null : (season ?? null)),
