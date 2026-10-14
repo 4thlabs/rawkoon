@@ -40,7 +40,7 @@ extension AppModel {
 struct HomeHero<Greeting: View>: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    // Kept-alive tabs never disappear, so the hero must stop itself off-screen.
+    /// Kept-alive tabs never disappear, so the hero must stop itself off-screen.
     @Environment(\.isActiveRootTab) private var isActiveRootTab
 
     let hero: DashboardHeroResponse
