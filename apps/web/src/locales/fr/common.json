@@ -135,7 +135,8 @@
       "monday": "Nouvelle semaine, nouveaux épisodes.",
       "friday": "Vendredi. Choisissez le film de ce soir.",
       "earlyMorning": "Le monde dort encore. Pas votre bibliothèque.",
-      "morning": "Voici ce qui est arrivé pendant la nuit.",
+      "morning": "Le café est prêt. La bibliothèque aussi.",
+      "lateMorning": "Une petite pause ? Un épisode, ça passe vite.",
       "afternoon": "Voici ce qui se passe.",
       "evening": "C'est l'heure du film. On regarde quoi ?"
     },

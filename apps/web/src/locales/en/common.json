@@ -135,7 +135,8 @@
       "monday": "New week, new episodes.",
       "friday": "Friday. Pick tonight's movie.",
       "earlyMorning": "The world's still asleep. Your library isn't.",
-      "morning": "Here's what landed overnight.",
+      "morning": "Coffee's ready. So is the library.",
+      "lateMorning": "Coffee break? One episode fits right in.",
       "afternoon": "Here's what's happening.",
       "evening": "Showtime. What are we watching?"
     },

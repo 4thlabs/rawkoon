@@ -240,7 +240,8 @@ struct HomeView: View {
         case .monday: "New week, new episodes."
         case .friday: "Friday. Pick tonight's movie."
         case .earlyMorning: "The world's still asleep. Your library isn't."
-        case .morning: "Here's what landed overnight."
+        case .morning: "Coffee's ready. So is the library."
+        case .lateMorning: "Coffee break? One episode fits right in."
         case .afternoon: "Here's what's happening."
         case .evening: "Showtime. What are we watching?"
         }

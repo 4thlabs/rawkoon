@@ -44,6 +44,8 @@ describe("greetingSubtitle", () => {
     expect(greetingSubtitle(6, WED)).toBe("earlyMorning");
     expect(greetingSubtitle(7, WED)).toBe("earlyMorning");
     expect(greetingSubtitle(8, WED)).toBe("morning");
+    expect(greetingSubtitle(9, WED)).toBe("lateMorning");
+    expect(greetingSubtitle(11, WED)).toBe("lateMorning");
     expect(greetingSubtitle(14, WED)).toBe("afternoon");
     expect(greetingSubtitle(20, WED)).toBe("evening");
   });
@@ -58,6 +60,7 @@ describe("greeting locale keys", () => {
     "friday",
     "earlyMorning",
     "morning",
+    "lateMorning",
     "afternoon",
     "evening",
   ] as const;
