@@ -15,11 +15,17 @@ extension HomeView {
             : Text("\(arrival.title) \(arrival.code) just landed.")
     }
 
+    /// Prefers the fetched row's title and poster: the event can't know the user's title language.
+    func display(_ arrival: LandedArrival) -> LandedArrival {
+        guard let item = recent.first(where: { $0.id == arrival.mediaId }) else { return arrival }
+        return arrival.displayed(title: item.title, posterUrl: item.posterUrl)
+    }
+
     /// Fresh arrivals first, then the fetched items minus the ones already pinned.
     func recentlyAddedItems(at date: Date) -> [RailItem] {
         let landed = LandedArrivals.fresh(model.recentArrivals, now: Self.epochMillis(date))
         let pinned = Set(landed.map(\.mediaId))
-        return landed.map(RailItem.landed) + recent.filter { !pinned.contains($0.id) }.map(RailItem.library)
+        return landed.map { RailItem.landed(display($0)) } + recent.filter { !pinned.contains($0.id) }.map(RailItem.library)
     }
 
     var recentlyAddedRail: some View {
@@ -66,7 +72,7 @@ extension HomeView {
             }
         }
         guard isActiveRootTab else { return }
-        withRawkoonMotion(RawkoonMotion.spring) { landedBanner = arrival }
+        withRawkoonMotion(RawkoonMotion.spring) { landedBanner = display(arrival) }
         landedBannerCount += 1
     }
 

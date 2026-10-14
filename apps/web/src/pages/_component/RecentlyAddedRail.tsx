@@ -18,11 +18,13 @@ export function RecentlyAddedRail() {
   const landed = useFreshLanded(useMinuteClock());
 
   const landedIds = new Set(landed.map((a) => a.mediaId));
+  const fetched = new Map((data ?? []).map((m) => [m.id, m]));
   const items = [
     ...landed.map((a) => ({
       id: `landed-${a.mediaId}`,
-      title: a.title,
-      posterUrl: a.posterUrl,
+      // The fetched row carries the user's title language; the event can't.
+      title: fetched.get(a.mediaId)?.title ?? a.title,
+      posterUrl: fetched.get(a.mediaId)?.poster_url ?? a.posterUrl,
       libraryId: a.mediaId,
       badge: t("dashboard.landed.stamp"),
       animateIn: true,

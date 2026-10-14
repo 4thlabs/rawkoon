@@ -193,7 +193,7 @@ struct HomeView: View {
     /// A fresh arrival outranks the time-of-day line.
     private func subtitle(hour: Int, weekday: Int, now: Date) -> Text {
         if let landed = LandedArrivals.fresh(model.recentArrivals, now: Self.epochMillis(now)).first {
-            return landedSubtitle(landed)
+            return landedSubtitle(display(landed))
         }
         return Text(subtitleKey(HomeGreeting.subtitle(hour: hour, weekday: weekday)))
     }

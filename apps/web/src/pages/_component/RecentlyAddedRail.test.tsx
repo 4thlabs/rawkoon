@@ -66,7 +66,7 @@ describe("RecentlyAddedRail", () => {
 });
 
 describe("RecentlyAddedRail just landed", () => {
-  it("pins a fresh arrival first, stamped, without duplicating it", async () => {
+  it("pins a fresh arrival first, stamped, with the fetched title, once", async () => {
     const fetcher = vi.fn().mockResolvedValue({
       items: [
         { id: 1, title: "Old", poster_url: "/o.jpg", added_at: "2026-01-01" },
@@ -81,7 +81,7 @@ describe("RecentlyAddedRail just landed", () => {
       recordLanded(queryClient, {
         mediaId: 2,
         mediaType: "tv",
-        title: "Show (2024)",
+        title: "Show (event title)",
         posterUrl: null,
         season: 1,
         episode: 4,
@@ -89,13 +89,14 @@ describe("RecentlyAddedRail just landed", () => {
         ts: Date.now(),
       }),
     );
-    expect(await screen.findByText("Show (2024)")).toBeInTheDocument();
+    expect(
+      await screen.findByText("dashboard.landed.stamp"),
+    ).toBeInTheDocument();
     expect(screen.getByText("S01E04")).toBeInTheDocument();
-    expect(screen.getByText("dashboard.landed.stamp")).toBeInTheDocument();
-    expect(screen.queryByText("Show")).not.toBeInTheDocument();
+    expect(screen.queryByText("Show (event title)")).not.toBeInTheDocument();
     const labels = screen
-      .getAllByText(/Show \(2024\)|Old/)
+      .getAllByText(/^(Show|Old)$/)
       .map((e) => e.textContent);
-    expect(labels).toEqual(["Show (2024)", "Old"]);
+    expect(labels).toEqual(["Show", "Old"]);
   });
 });

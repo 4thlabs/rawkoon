@@ -9,8 +9,15 @@ const state: {
   dh: Record<string, unknown>;
   skipped: boolean;
   mediaThrows: boolean;
+  overrides: Record<string, unknown> | null;
   landed: Record<string, unknown>[];
-} = { dh: {}, skipped: false, mediaThrows: false, landed: [] };
+} = {
+  dh: {},
+  skipped: false,
+  mediaThrows: false,
+  overrides: null,
+  landed: [],
+};
 
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
@@ -26,6 +33,7 @@ mock.module("@rawkoon/api/db", () => ({
           year: 2024,
           type: "show",
           posterUrl: "/p.jpg",
+          overrides: state.overrides,
         };
       },
     },
@@ -95,6 +103,7 @@ beforeEach(() => {
   };
   state.skipped = false;
   state.mediaThrows = false;
+  state.overrides = null;
   state.landed = [];
 });
 
@@ -112,6 +121,15 @@ describe("finishPostProcess landed event", () => {
         episodeCount: null,
       },
     ]);
+  });
+
+  it("uses the title and poster overrides when set", async () => {
+    state.overrides = { title: "Custom", poster_url: "/custom.jpg" };
+    await finishPostProcess(1);
+    expect(state.landed[0]).toMatchObject({
+      title: "Custom",
+      posterUrl: "/custom.jpg",
+    });
   });
 
   it("emits nothing for a skipped import or an upgrade", async () => {

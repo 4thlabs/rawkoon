@@ -180,9 +180,8 @@ final class LiveUpdatesCoordinator {
             logSSE("library", "landed id=\(arrival.mediaId)")
             SSEEventRegistry.apply(.landed(id: arrival.mediaId), to: store)
             libraryChangeToken += 1
-            recentArrivals = LandedArrivals.insert(
-                recentArrivals, arrival, now: Int(Date().timeIntervalSince1970 * 1000)
-            )
+            let now = Int(Date().timeIntervalSince1970 * 1000)
+            recentArrivals = LandedArrivals.insert(recentArrivals, arrival.received(at: now), now: now)
         case let .book(id):
             logSSE("library", "book id=\(id)")
             SSEEventRegistry.apply(.book(id: id), to: store)

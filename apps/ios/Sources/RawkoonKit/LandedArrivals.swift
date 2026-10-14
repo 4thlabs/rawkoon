@@ -40,6 +40,18 @@ public struct LandedArrival: Equatable, Sendable, Identifiable {
     public var code: String {
         LandedArrivals.episodeCode(season: season, episode: episode)
     }
+
+    /// Re-stamped with the local receipt time, so a skewed device clock can't expire it on arrival.
+    public func received(at ts: Int) -> LandedArrival {
+        LandedArrival(mediaId: mediaId, mediaType: mediaType, title: title, posterUrl: posterUrl,
+                      season: season, episode: episode, episodeCount: episodeCount, ts: ts)
+    }
+
+    /// The same arrival shown with the fetched row's title and poster, which honour the user's language.
+    public func displayed(title: String, posterUrl: String?) -> LandedArrival {
+        LandedArrival(mediaId: mediaId, mediaType: mediaType, title: title, posterUrl: posterUrl ?? self.posterUrl,
+                      season: season, episode: episode, episodeCount: episodeCount, ts: ts)
+    }
 }
 
 /// Which fresh arrivals Home pins and names. Mirrors the web's

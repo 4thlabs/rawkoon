@@ -53,7 +53,7 @@ async function emitLanded(
   try {
     const media = await prisma.libraryMedia.findUnique({
       where: { id: mediaId },
-      select: { title: true, type: true, posterUrl: true },
+      select: { title: true, type: true, posterUrl: true, overrides: true },
     });
     if (!media) return;
     const episode =
@@ -63,11 +63,13 @@ async function emitLanded(
             select: { season: true, episode: true },
           })
         : null;
+    const ov = (media.overrides ?? {}) as Record<string, unknown>;
     emitLibraryLanded({
       mediaId,
       mediaType: media.type === "movie" ? "movie" : "tv",
-      title: media.title,
-      posterUrl: media.posterUrl,
+      title: typeof ov.title === "string" ? ov.title : media.title,
+      posterUrl:
+        typeof ov.poster_url === "string" ? ov.poster_url : media.posterUrl,
       season:
         episode?.season ?? (media.type === "movie" ? null : (season ?? null)),
       episode: episode?.episode ?? null,

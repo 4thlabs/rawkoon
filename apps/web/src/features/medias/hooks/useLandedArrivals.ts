@@ -6,9 +6,13 @@ import { queryKeys } from "@/lib/queryKeys";
 
 /** Records an arrival in the client-side store that Home reads. */
 export function recordLanded(queryClient: QueryClient, arrival: LandedArrival) {
+  // Written while Home may be unmounted, so it must outlive the default 5-minute gcTime.
+  queryClient.setQueryDefaults(queryKeys.home.landed(), { gcTime: Infinity });
+  const now = Date.now();
+  // Expire on receipt time, not the server's clock, so a skewed device clock can't hide it.
   queryClient.setQueryData<LandedArrival[]>(
     queryKeys.home.landed(),
-    (current) => insertLanded(current ?? [], arrival, Date.now()),
+    (current) => insertLanded(current ?? [], { ...arrival, ts: now }, now),
   );
 }
 

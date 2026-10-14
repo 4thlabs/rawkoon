@@ -5,6 +5,7 @@ import {
   useFreshLanded,
   useMinuteClock,
 } from "@/features/medias/hooks/useLandedArrivals";
+import { useRecentlyAdded } from "@/pages/_component/useRecentlyAdded";
 
 interface GreetingCardProps {
   /** Empty when the name isn't known yet; the greeting then stands alone. */
@@ -17,12 +18,16 @@ export function GreetingCard({ userName }: GreetingCardProps) {
   const hour = now.getHours();
   const greeting = t(`dashboard.greeting.${greetingPeriod(hour)}`);
   const landed = useFreshLanded(now)[0];
+  const { data: recent } = useRecentlyAdded();
+  // Same cached query as the rail: its row carries the user's title language.
+  const landedTitle =
+    recent?.find((m) => m.id === landed?.mediaId)?.title ?? landed?.title;
   const code = landed ? landedEpisodeCode(landed.season, landed.episode) : "";
   // A fresh arrival outranks the time-of-day line.
   const subtitle = landed
     ? t(
         code ? "dashboard.landed.subtitle" : "dashboard.landed.subtitleNoCode",
-        { title: landed.title, code },
+        { title: landedTitle, code },
       )
     : t(`dashboard.greetingSubtitle.${greetingSubtitle(hour, now.getDay())}`);
 

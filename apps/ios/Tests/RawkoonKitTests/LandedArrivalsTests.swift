@@ -53,4 +53,22 @@ final class LandedArrivalsTests: XCTestCase {
             XCTAssertEqual(LandedArrivals.episodeCode(season: season, episode: episode), code)
         }
     }
+
+    func testReceivedRestampsOnlyTheTime() {
+        let a = LandedArrival(mediaId: 1, mediaType: "tv", title: "Show", posterUrl: "/p.jpg",
+                              season: 1, episode: 4, episodeCount: nil, ts: 5)
+        let r = a.received(at: 99)
+        XCTAssertEqual(r.ts, 99)
+        XCTAssertEqual(r.title, "Show")
+        XCTAssertEqual(r.code, "S01E04")
+    }
+
+    func testDisplayedKeepsTheEventPosterWhenTheRowHasNone() {
+        let a = LandedArrival(mediaId: 1, mediaType: "movie", title: "Film", posterUrl: "/p.jpg",
+                              season: nil, episode: nil, episodeCount: nil, ts: 5)
+        let d = a.displayed(title: "Le film", posterUrl: nil)
+        XCTAssertEqual(d.title, "Le film")
+        XCTAssertEqual(d.posterUrl, "/p.jpg")
+        XCTAssertEqual(d.ts, 5)
+    }
 }
