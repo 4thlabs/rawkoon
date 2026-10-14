@@ -156,7 +156,10 @@ struct HomeHero<Greeting: View>: View {
             .id(item.id)
             // Two titles fading through each other read as a smear; the old one leaves at once.
             .transition(.asymmetric(insertion: .opacity, removal: .identity))
+            // Same swap as the title: a slide's buttons never morph into the next slide's.
             buttons(item)
+                .id(item.id)
+                .transition(.asymmetric(insertion: .opacity, removal: .identity))
             dots
         }
         .padding(.horizontal, 16)
