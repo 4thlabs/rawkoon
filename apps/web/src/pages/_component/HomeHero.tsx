@@ -143,7 +143,7 @@ function HeroCarousel({
   return (
     <section
       data-testid="home-hero"
-      className="relative isolate -mx-4 min-h-[26rem] overflow-hidden bg-neutral-950 sm:-mx-6 sm:min-h-[30rem] lg:-mx-8"
+      className="relative isolate -mx-4 -mt-8 min-h-[26rem] overflow-hidden bg-neutral-950 sm:-mx-6 sm:min-h-[30rem] lg:-mx-8"
       // Mouse only: a tap's emulated hover would otherwise pause until the next tap elsewhere.
       onPointerEnter={(e) => e.pointerType === "mouse" && setHovered(true)}
       onPointerLeave={(e) => e.pointerType === "mouse" && setHovered(false)}
