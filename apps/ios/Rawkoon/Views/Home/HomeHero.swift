@@ -50,7 +50,7 @@ struct HomeHero<Greeting: View>: View {
     @State private var added: Set<Int> = []
     @State private var adding = false
 
-    private static let height: CGFloat = 460
+    private let height: CGFloat = 460
 
     init(hero: DashboardHeroResponse, @ViewBuilder greeting: @escaping () -> Greeting) {
         self.hero = hero
@@ -88,7 +88,7 @@ struct HomeHero<Greeting: View>: View {
                 )
                 content(item)
             }
-            .frame(height: Self.height)
+            .frame(height: height)
             .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 28, bottomTrailingRadius: 28))
             .onLongPressGesture(
                 minimumDuration: .infinity, maximumDistance: 50, perform: {},
