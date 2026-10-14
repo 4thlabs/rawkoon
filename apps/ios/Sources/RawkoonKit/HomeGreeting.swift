@@ -23,7 +23,9 @@ public enum HomeGreeting {
     public static func subtitle(hour: Int, weekday: Int) -> Subtitle {
         let period = period(hour: hour)
         // Late night wins over the day flavour: 2am Saturday is a night, not a weekend.
-        if period == .night { return .night }
+        if period == .night {
+            return .night
+        }
         switch weekday {
         case 1, 7: return .weekend
         case 2: return .monday
