@@ -19,6 +19,8 @@ export function createHomeHeroDeps(
   titleLanguage: TitleLanguage,
 ): HomeHeroDeps {
   const tmdbLanguage = toTmdbLanguage(titleLanguage);
+  let tmdbConfig: ReturnType<typeof loadEnabledTmdbConfig> | undefined;
+  const loadTmdbConfig = () => (tmdbConfig ??= loadEnabledTmdbConfig());
 
   return {
     async loadArrivals(since, limit) {
@@ -28,6 +30,8 @@ export function createHomeHeroDeps(
         where: {
           mediaId: { not: null },
           failed: false,
+          // An upgrade replaces a file the user already had; it isn't an arrival.
+          isUpgrade: false,
           completedAt: { gte: since },
           postProcessDestinationPath: { not: null },
           postProcessError: null,
@@ -70,7 +74,7 @@ export function createHomeHeroDeps(
     },
 
     async loadTmdbBackdrop(mediaType, tmdbId) {
-      const config = await loadEnabledTmdbConfig();
+      const config = await loadTmdbConfig();
       if (!config) return null;
       const details = await fetchMediaDetails(
         config.api_key,
@@ -82,7 +86,7 @@ export function createHomeHeroDeps(
     },
 
     async loadDeck(limit) {
-      const config = await loadEnabledTmdbConfig();
+      const config = await loadTmdbConfig();
       if (!config) return null;
       return buildDiscoverDeck({
         provider: new TmdbProvider(config.api_key),

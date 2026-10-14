@@ -190,7 +190,8 @@ struct HomeView: View {
                     .foregroundStyle(onHero ? Theme.text : Theme.muted)
             }
         }
-        .padding(.horizontal, 16)
+        // On the hero, the hero's own content inset applies.
+        .padding(.horizontal, onHero ? 0 : 16)
         // The name arrives after first render; the load-swap spring must not animate its reflow.
         .transaction { $0.animation = nil }
     }

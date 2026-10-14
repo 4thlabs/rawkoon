@@ -69,6 +69,36 @@ describe("buildHomeHero", () => {
     });
   });
 
+  it("stops looking up backdrops once the hero is full", async () => {
+    let lookups = 0;
+    const res = await buildHomeHero(
+      makeDeps({
+        loadArrivals: async () =>
+          Array.from({ length: 15 }, (_, i) => arrival(i + 1)),
+        loadTmdbBackdrop: async (_t, id) => {
+          lookups++;
+          return `https://img/b${id}.jpg`;
+        },
+      }),
+      NOW,
+    );
+    expect(res.items).toHaveLength(5);
+    expect(lookups).toBe(5);
+  });
+
+  it("keeps looking past titles without a backdrop, in order", async () => {
+    const res = await buildHomeHero(
+      makeDeps({
+        loadArrivals: async () =>
+          Array.from({ length: 10 }, (_, i) => arrival(i + 1)),
+        loadTmdbBackdrop: async (_t, id) =>
+          id % 20 === 0 ? null : `https://img/b${id}.jpg`,
+      }),
+      NOW,
+    );
+    expect(res.items.map((i) => i.library_id)).toEqual([1, 3, 5, 7, 9]);
+  });
+
   it("asks for a seven day window", async () => {
     let since: Date | null = null;
     await buildHomeHero(

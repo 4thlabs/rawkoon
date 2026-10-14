@@ -4,7 +4,7 @@ import SwiftUI
 extension AppModel {
     /// Adds a discover pick: admins put it straight in the library, everyone else files a request.
     func addDiscoverPick(_ item: DiscoverDeckItem) async throws {
-        guard let client = api() else { return }
+        guard let client = api() else { throw URLError(.notConnectedToInternet) }
         let type = item.mediaType == "tv" ? "show" : "movie"
         if isAdmin {
             _ = try await serverStateStore.addToLibrary(
@@ -40,13 +40,13 @@ extension AppModel {
 struct HomeHero<Greeting: View>: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    // Kept-alive tabs never disappear, so the hero must stop itself off-screen.
+    @Environment(\.isActiveRootTab) private var isActiveRootTab
 
     let hero: DashboardHeroResponse
     let greeting: () -> Greeting
 
     @State private var storedIndex = 0
-    /// True while a finger is down on the hero, so a slide never changes under it.
-    @State private var interacting = false
     @State private var added: Set<Int> = []
     @State private var adding = false
 
@@ -90,11 +90,7 @@ struct HomeHero<Greeting: View>: View {
             }
             .frame(height: height)
             .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 28, bottomTrailingRadius: 28))
-            .onLongPressGesture(
-                minimumDuration: .infinity, maximumDistance: 50, perform: {},
-                onPressingChanged: { interacting = $0 }
-            )
-            .task(id: RotationKey(index: index, count: items.count, paused: interacting || adding)) {
+            .task(id: RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab)) {
                 await rotate()
             }
         }
@@ -103,7 +99,7 @@ struct HomeHero<Greeting: View>: View {
     // MARK: Rotation
 
     private func rotate() async {
-        guard !reduceMotion, !interacting, !adding, items.count > 1 else { return }
+        guard !reduceMotion, isActiveRootTab, !adding, items.count > 1 else { return }
         try? await Task.sleep(for: .seconds(HeroRotation.rotateSeconds))
         guard !Task.isCancelled else { return }
         withRawkoonMotion(.easeInOut(duration: 0.9)) {
@@ -118,7 +114,7 @@ struct HomeHero<Greeting: View>: View {
     // MARK: Layers
 
     private func backdrop(_ item: DashboardHeroItem) -> some View {
-        KenBurnsBackdrop(url: model.absoluteURL(item.backdropUrl), animates: !reduceMotion)
+        KenBurnsBackdrop(url: model.absoluteURL(item.backdropUrl), animates: !reduceMotion && isActiveRootTab)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipped()
     }
@@ -199,7 +195,8 @@ struct HomeHero<Greeting: View>: View {
     @ViewBuilder
     private func addButton(_ item: DashboardHeroItem) -> some View {
         if added.contains(item.tmdbId) {
-            pill("Added", primary: false).opacity(0.7)
+            // A non-admin's tap files a request rather than adding.
+            pill(model.isAdmin ? "Added" : "Requested", primary: false).opacity(0.7)
         } else {
             Button {
                 add(item)
@@ -275,11 +272,11 @@ private struct KenBurnsBackdrop: View {
             Theme.raised
         }
         .scaleEffect(zoomed ? 1.14 : 1.04)
-        .rawkoonMotion(.easeInOut(duration: 18).repeatForever(autoreverses: true), value: zoomed)
-        .task {
-            if animates {
-                zoomed = true
-            }
-        }
+        .rawkoonMotion(
+            animates ? .easeInOut(duration: 18).repeatForever(autoreverses: true) : .easeOut(duration: 0.6),
+            value: zoomed
+        )
+        // Follows Reduce Motion and tab visibility live, not just at first appearance.
+        .onChange(of: animates, initial: true) { _, on in zoomed = on }
     }
 }

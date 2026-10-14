@@ -83,7 +83,9 @@ function HeroCarousel({
   const { t, i18n } = useTranslation("common");
   const reduced = usePrefersReducedMotion();
   const [stored, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const paused = hovered || focused;
   const [detail, setDetail] = useState<TmdbMediaSearchItem | null>(null);
   const [added, setAdded] = useState<Set<number>>(() => new Set());
   const addToLibrary = useAddToLibrary();
@@ -142,10 +144,14 @@ function HeroCarousel({
     <section
       data-testid="home-hero"
       className="relative isolate -mx-4 min-h-[26rem] overflow-hidden bg-neutral-950 sm:-mx-6 sm:min-h-[30rem] lg:-mx-8"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
+      // Mouse only: a tap's emulated hover would otherwise pause until the next tap elsewhere.
+      onPointerEnter={(e) => e.pointerType === "mouse" && setHovered(true)}
+      onPointerLeave={(e) => e.pointerType === "mouse" && setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={(e) =>
+        !e.currentTarget.contains(e.relatedTarget as Node | null) &&
+        setFocused(false)
+      }
     >
       <AnimatePresence>
         <motion.div
@@ -199,7 +205,9 @@ function HeroCarousel({
                   className={`${buttonBase} bg-white/15 text-white/80`}
                   aria-live="polite"
                 >
-                  {t("dashboard.hero.added")}
+                  {user?.is_admin
+                    ? t("dashboard.hero.added")
+                    : t("requests.requested")}
                 </span>
               ) : (
                 <button

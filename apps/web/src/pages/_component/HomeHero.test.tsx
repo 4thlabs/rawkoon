@@ -171,6 +171,11 @@ describe("HomeHero", () => {
         expect.objectContaining({ method: "POST" }),
       ),
     );
+    expect(
+      await screen.findByText(
+        isAdmin ? "dashboard.hero.added" : "requests.requested",
+      ),
+    ).toBeInTheDocument();
     auth.isAdmin = false;
   });
 
@@ -201,19 +206,19 @@ describe("HomeHero", () => {
     // Swap to fake timers, then bounce hover so the rotation timer is re-armed on them.
     vi.useFakeTimers();
     const hero = screen.getByTestId("home-hero");
-    fireEvent.mouseEnter(hero);
-    fireEvent.mouseLeave(hero);
+    fireEvent.pointerEnter(hero, { pointerType: "mouse" });
+    fireEvent.pointerLeave(hero, { pointerType: "mouse" });
     act(() => {
       vi.advanceTimersByTime(8000);
     });
     expect(screen.getByText("Film 2")).toBeInTheDocument();
 
-    fireEvent.mouseEnter(hero);
+    fireEvent.pointerEnter(hero, { pointerType: "mouse" });
     act(() => {
       vi.advanceTimersByTime(30_000);
     });
     expect(screen.getByText("Film 2")).toBeInTheDocument();
-    fireEvent.mouseLeave(hero);
+    fireEvent.pointerLeave(hero, { pointerType: "mouse" });
 
     fireEvent.click(
       screen.getByRole("button", { name: "dashboard.hero.goTo title:Film 1" }),

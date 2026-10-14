@@ -8,6 +8,8 @@ export const HERO_MAX_ITEMS = 5;
 export const HERO_ARRIVAL_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 /** Candidates examined before giving up on finding enough backdrops. */
 const HERO_CANDIDATE_POOL = 15;
+/** Backdrop lookups run this many at a time, and stop once the hero is full. */
+const HERO_BACKDROP_BATCH = 5;
 
 export interface HeroArrivalCandidate {
   libraryId: number;
@@ -43,30 +45,40 @@ async function buildArrivalItems(
   const since = new Date(now.getTime() - HERO_ARRIVAL_WINDOW_MS);
   const candidates = await deps.loadArrivals(since, HERO_CANDIDATE_POOL);
 
-  const resolved = await Promise.all(
-    candidates.map(async (c): Promise<DashboardHeroItem | null> => {
-      const backdrop =
-        c.overrideBackdropUrl ??
-        (await deps.loadTmdbBackdrop(c.mediaType, c.tmdbId).catch(() => null));
-      if (!backdrop) return null;
-      return {
-        library_id: c.libraryId,
-        tmdb_id: c.tmdbId,
-        media_type: c.mediaType,
-        title: c.title,
-        overview: c.overview,
-        backdrop_url: backdrop,
-        poster_url: c.posterUrl,
-        arrived_at: c.arrivedAt.toISOString(),
-        season_number: c.seasonNumber,
-        episode_number: c.episodeNumber,
-        year: c.year,
-      };
-    }),
-  );
-  return resolved
-    .filter((i): i is DashboardHeroItem => i !== null)
-    .slice(0, HERO_MAX_ITEMS);
+  const resolve = async (
+    c: HeroArrivalCandidate,
+  ): Promise<DashboardHeroItem | null> => {
+    const backdrop =
+      c.overrideBackdropUrl ??
+      (await deps.loadTmdbBackdrop(c.mediaType, c.tmdbId).catch(() => null));
+    if (!backdrop) return null;
+    return {
+      library_id: c.libraryId,
+      tmdb_id: c.tmdbId,
+      media_type: c.mediaType,
+      title: c.title,
+      overview: c.overview,
+      backdrop_url: backdrop,
+      poster_url: c.posterUrl,
+      arrived_at: c.arrivedAt.toISOString(),
+      season_number: c.seasonNumber,
+      episode_number: c.episodeNumber,
+      year: c.year,
+    };
+  };
+
+  const items: DashboardHeroItem[] = [];
+  for (
+    let i = 0;
+    i < candidates.length && items.length < HERO_MAX_ITEMS;
+    i += HERO_BACKDROP_BATCH
+  ) {
+    const batch = await Promise.all(
+      candidates.slice(i, i + HERO_BACKDROP_BATCH).map(resolve),
+    );
+    for (const item of batch) if (item) items.push(item);
+  }
+  return items.slice(0, HERO_MAX_ITEMS);
 }
 
 function buildDeckItems(deck: DiscoverDeckResponse): DashboardHeroItem[] {
