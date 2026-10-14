@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { greetingPeriod, greetingSubtitle } from "@/pages/_component/greeting";
+import en from "@/locales/en/common.json";
+import fr from "@/locales/fr/common.json";
 
 // Same table as RawkoonKit's HomeGreetingTests; change both together.
 describe("greetingPeriod", () => {
@@ -40,5 +42,27 @@ describe("greetingSubtitle", () => {
     expect(greetingSubtitle(8, WED)).toBe("morning");
     expect(greetingSubtitle(14, WED)).toBe("afternoon");
     expect(greetingSubtitle(20, WED)).toBe("evening");
+  });
+});
+
+describe("greeting locale keys", () => {
+  const periods = ["morning", "afternoon", "evening", "night"] as const;
+  const subtitles = [
+    "night",
+    "weekend",
+    "monday",
+    "friday",
+    "morning",
+    "afternoon",
+    "evening",
+  ] as const;
+
+  it.each([
+    ["en", en],
+    ["fr", fr],
+  ])("%s has every greeting and subtitle", (_, locale) => {
+    for (const p of periods) expect(locale.dashboard.greeting[p]).toBeTruthy();
+    for (const s of subtitles)
+      expect(locale.dashboard.greetingSubtitle[s]).toBeTruthy();
   });
 });
