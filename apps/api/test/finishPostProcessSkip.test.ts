@@ -52,6 +52,7 @@ mock.module("@rawkoon/api/services/libraryEvents", () => ({
   emitLibraryUpdate: () => {},
   emitBookUpdate: () => {},
   emitSeedState: () => {},
+  emitLibraryLanded: () => {},
 }));
 
 mock.module("@rawkoon/api/services/seeding/seedSweep", () => ({

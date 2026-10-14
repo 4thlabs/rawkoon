@@ -14,6 +14,22 @@
     "ios_policy": "invalidate"
   },
   {
+    "id": "library.landed",
+    "path": "/api/library/events",
+    "routing": { "type": "payload-field", "field": "kind", "value": "landed" },
+    "payload": {
+      "mediaId": "number",
+      "mediaType": "string",
+      "title": "string",
+      "posterUrl": "string|null",
+      "season": "number|null",
+      "episode": "number|null",
+      "episodeCount": "number|null",
+      "ts": "number"
+    },
+    "ios_policy": "invalidate"
+  },
+  {
     "id": "library.download-progress",
     "path": "/api/library/events",
     "routing": {

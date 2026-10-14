@@ -9,6 +9,7 @@ export const SSE_ROUTE_DECLARATIONS = {
     ids: [
       "library.media-update",
       "library.book-update",
+      "library.landed",
       "library.download-progress",
       "library.seed-state",
       "library.handshake",

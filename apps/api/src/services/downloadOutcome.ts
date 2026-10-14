@@ -1,5 +1,9 @@
 import { prisma } from "@rawkoon/api/db";
-import { emitLibraryUpdate } from "@rawkoon/api/services/libraryEvents";
+import {
+  emitLibraryLanded,
+  emitLibraryUpdate,
+} from "@rawkoon/api/services/libraryEvents";
+import { showLabel } from "@rawkoon/api/services/notificationCopy";
 import { triggerJellyfinLibraryScan } from "@rawkoon/api/services/jellyfinLibraryRefresh";
 import { notifyRequestAvailable } from "@rawkoon/api/services/mediaRequests";
 import { postProcess } from "@rawkoon/api/services/postProcessorSingle";
@@ -39,6 +43,41 @@ export type DownloadRef = {
   /** Set instead of mediaId/episodeId when the grab was for a book edition. */
   bookEditionId?: number | null;
 };
+
+/** Tells live clients what just finished importing; must never break the import. */
+async function emitLanded(
+  mediaId: number,
+  episodeId: number | null | undefined,
+  season: number | null | undefined,
+  episodeCount: number | null | undefined,
+): Promise<void> {
+  try {
+    const media = await prisma.libraryMedia.findUnique({
+      where: { id: mediaId },
+      select: { title: true, year: true, type: true, posterUrl: true },
+    });
+    if (!media) return;
+    const episode =
+      episodeId != null
+        ? await prisma.libraryEpisode.findUnique({
+            where: { id: episodeId },
+            select: { season: true, episode: true },
+          })
+        : null;
+    emitLibraryLanded({
+      mediaId,
+      mediaType: media.type === "movie" ? "movie" : "tv",
+      title: showLabel(media.title, media.year),
+      posterUrl: media.posterUrl,
+      season:
+        episode?.season ?? (media.type === "movie" ? null : (season ?? null)),
+      episode: episode?.episode ?? null,
+      episodeCount: episode ? null : (episodeCount ?? null),
+    });
+  } catch (e) {
+    console.warn(`[downloadOutcome] landed event failed media=${mediaId}:`, e);
+  }
+}
 
 /**
  * If no other active grab exists for the item, unblock it: `downloading` falls
@@ -588,6 +627,9 @@ export async function finishPostProcess(
       emitLibraryUpdate(mediaId);
       if (!result.skipped) {
         const packEpisodeCount = result.episodeCount;
+        if (!isUpgrade) {
+          await emitLanded(mediaId, episodeId, season, packEpisodeCount);
+        }
         await notifyAdminsMediaDownloaded({
           mediaId,
           episodeId,
