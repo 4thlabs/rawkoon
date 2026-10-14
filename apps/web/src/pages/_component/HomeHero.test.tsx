@@ -49,6 +49,11 @@ vi.mock("motion/react", async () => {
   };
 });
 
+const auth = vi.hoisted(() => ({ isAdmin: false }));
+vi.mock("@/lib/auth/useAuth", () => ({
+  useCurrentUser: () => ({ data: { id: 1, is_admin: auth.isAdmin } }),
+}));
+
 vi.mock("@/pages/medias/_component/ExploreCardDetailDialog", () => ({
   ExploreCardDetailDialog: ({ item }: { item: { tmdb_id: number } }) => (
     <div data-testid="detail-dialog">detail:{item.tmdb_id}</div>
@@ -146,6 +151,27 @@ describe("HomeHero", () => {
       screen.getByRole("button", { name: "dashboard.hero.details" }),
     );
     expect(screen.getByTestId("detail-dialog")).toHaveTextContent("detail:20");
+  });
+
+  it.each([
+    [false, "/api/requests"],
+    [true, "/api/library"],
+  ])("Add for admin=%s posts to %s", async (isAdmin, endpoint) => {
+    auth.isAdmin = isAdmin;
+    const { fetcher } = render({
+      source: "for_you",
+      items: [item(2, { library_id: null, arrived_at: null })],
+    });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "dashboard.hero.add" }),
+    );
+    await waitFor(() =>
+      expect(fetcher).toHaveBeenCalledWith(
+        endpoint,
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+    auth.isAdmin = false;
   });
 
   it("labels a trending pick", async () => {

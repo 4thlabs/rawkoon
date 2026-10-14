@@ -9,6 +9,8 @@ import type {
   TmdbMediaSearchItem,
 } from "@rawkoon/shared/types";
 import { useAddToLibrary } from "@/features/medias/hooks/useAddToLibrary";
+import { useCurrentUser } from "@/lib/auth/useAuth";
+import { useCreateRequest } from "@/pages/requests/_hooks/useRequests";
 import { formatRelativeTime } from "@/lib/utils/relativeTime";
 import { ExploreCardDetailDialog } from "@/pages/medias/_component/ExploreCardDetailDialog";
 import { GreetingCard } from "@/pages/_component/GreetingCard";
@@ -85,6 +87,8 @@ function HeroCarousel({
   const [detail, setDetail] = useState<TmdbMediaSearchItem | null>(null);
   const [added, setAdded] = useState<Set<number>>(() => new Set());
   const addToLibrary = useAddToLibrary();
+  const createRequest = useCreateRequest();
+  const { data: user } = useCurrentUser();
 
   const count = items.length;
   const index = clampHeroIndex(stored, count);
@@ -111,17 +115,27 @@ function HeroCarousel({
 
   const onAdd = () => {
     const tmdbId = item.tmdb_id;
-    addToLibrary.mutate(
-      {
-        tmdb_id: tmdbId,
-        type: item.media_type === "tv" ? "show" : "movie",
-      },
-      {
-        onSuccess: () => setAdded((prev) => new Set(prev).add(tmdbId)),
-        onError: () =>
-          toast.error(t("dashboard.hero.addFailed", { title: item.title })),
-      },
-    );
+    const type = item.media_type === "tv" ? "show" : "movie";
+    const callbacks = {
+      onSuccess: () => setAdded((prev) => new Set(prev).add(tmdbId)),
+      onError: () =>
+        toast.error(t("dashboard.hero.addFailed", { title: item.title })),
+    };
+    // Adding to the library is admin-only; everyone else files a request, as on iOS.
+    if (user?.is_admin) {
+      addToLibrary.mutate({ tmdb_id: tmdbId, type }, callbacks);
+    } else {
+      createRequest.mutate(
+        {
+          tmdb_id: tmdbId,
+          type,
+          title: item.title,
+          poster_url: item.poster_url,
+          year: item.year,
+        },
+        callbacks,
+      );
+    }
   };
 
   return (
@@ -191,7 +205,7 @@ function HeroCarousel({
                 <button
                   type="button"
                   onClick={onAdd}
-                  disabled={addToLibrary.isPending}
+                  disabled={addToLibrary.isPending || createRequest.isPending}
                   className={`${buttonBase} bg-primary-500 text-white hover:bg-primary-400 disabled:opacity-60`}
                 >
                   {t("dashboard.hero.add")}
