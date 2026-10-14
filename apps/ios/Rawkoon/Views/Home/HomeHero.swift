@@ -148,7 +148,8 @@ struct HomeHero<Greeting: View>: View {
                 }
             }
             .id(item.id)
-            .transition(.opacity)
+            // Two titles fading through each other read as a smear; the old one leaves at once.
+            .transition(.asymmetric(insertion: .opacity, removal: .identity))
             buttons(item)
             dots
         }
