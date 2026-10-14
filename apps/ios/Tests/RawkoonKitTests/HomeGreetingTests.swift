@@ -21,10 +21,14 @@ final class HomeGreetingTests: XCTestCase {
         XCTAssertEqual(HomeGreeting.subtitle(hour: 10, weekday: 7), .weekend)
         XCTAssertEqual(HomeGreeting.subtitle(hour: 15, weekday: 1), .weekend)
         XCTAssertEqual(HomeGreeting.subtitle(hour: 9, weekday: 2), .monday)
+        XCTAssertEqual(HomeGreeting.subtitle(hour: 6, weekday: 2), .monday)
+        XCTAssertEqual(HomeGreeting.subtitle(hour: 6, weekday: 7), .weekend)
         XCTAssertEqual(HomeGreeting.subtitle(hour: 19, weekday: 6), .friday)
     }
 
     func testMidweekFallsBackToPeriod() {
+        XCTAssertEqual(HomeGreeting.subtitle(hour: 6, weekday: 4), .earlyMorning)
+        XCTAssertEqual(HomeGreeting.subtitle(hour: 7, weekday: 4), .earlyMorning)
         XCTAssertEqual(HomeGreeting.subtitle(hour: 8, weekday: 4), .morning)
         XCTAssertEqual(HomeGreeting.subtitle(hour: 14, weekday: 4), .afternoon)
         XCTAssertEqual(HomeGreeting.subtitle(hour: 20, weekday: 4), .evening)

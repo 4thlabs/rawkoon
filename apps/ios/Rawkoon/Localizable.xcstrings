@@ -9887,6 +9887,16 @@
         }
       }
     },
+    "The world's still asleep. Your library isn't.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le monde dort encore. Pas ta bibliothèque."
+          }
+        }
+      }
+    },
     "Here's what's happening.": {
       "localizations": {
         "fr": {

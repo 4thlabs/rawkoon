@@ -35,10 +35,14 @@ describe("greetingSubtitle", () => {
     expect(greetingSubtitle(10, SAT)).toBe("weekend");
     expect(greetingSubtitle(15, SUN)).toBe("weekend");
     expect(greetingSubtitle(9, MON)).toBe("monday");
+    expect(greetingSubtitle(6, MON)).toBe("monday");
+    expect(greetingSubtitle(6, SAT)).toBe("weekend");
     expect(greetingSubtitle(19, FRI)).toBe("friday");
   });
 
   it("falls back to the period midweek", () => {
+    expect(greetingSubtitle(6, WED)).toBe("earlyMorning");
+    expect(greetingSubtitle(7, WED)).toBe("earlyMorning");
     expect(greetingSubtitle(8, WED)).toBe("morning");
     expect(greetingSubtitle(14, WED)).toBe("afternoon");
     expect(greetingSubtitle(20, WED)).toBe("evening");
@@ -52,6 +56,7 @@ describe("greeting locale keys", () => {
     "weekend",
     "monday",
     "friday",
+    "earlyMorning",
     "morning",
     "afternoon",
     "evening",

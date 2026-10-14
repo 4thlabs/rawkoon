@@ -7,7 +7,7 @@ public enum HomeGreeting {
     }
 
     public enum Subtitle: Equatable, Sendable {
-        case night, weekend, monday, friday, morning, afternoon, evening
+        case night, weekend, monday, friday, earlyMorning, morning, afternoon, evening
     }
 
     public static func period(hour: Int) -> Period {
@@ -30,6 +30,8 @@ public enum HomeGreeting {
         case 1, 7: return .weekend
         case 2: return .monday
         case 6: return .friday
+        // 5h-8h is still dark for most people: "overnight" would read as night talk.
+        case _ where (5 ..< 8).contains(hour): return .earlyMorning
         default:
             switch period {
             case .morning: return .morning
