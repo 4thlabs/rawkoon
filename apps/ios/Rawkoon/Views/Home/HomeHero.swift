@@ -35,8 +35,8 @@ extension AppModel {
 }
 
 /// Home's opening film: a rotating backdrop deck with the greeting overlaid.
-/// Sits at the top of the scroll content with rounded bottom corners, so the
-/// navigation bar and the tab-bar scroll inset stay exactly as they are.
+/// Its backdrop bleeds up under the status bar (Home hides its navigation bar
+/// while the hero shows); the bottom corners are rounded.
 struct HomeHero<Greeting: View>: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -74,22 +74,26 @@ struct HomeHero<Greeting: View>: View {
     var body: some View {
         if items.indices.contains(index) {
             let item = items[index]
-            ZStack(alignment: .bottomLeading) {
-                backdrop(item)
-                    .id(item.id)
-                    .transition(.opacity)
-                LinearGradient(
-                    colors: [.clear, Theme.base.opacity(0.55), Theme.base],
-                    startPoint: .center, endPoint: .bottom
-                )
-                LinearGradient(
-                    colors: [Theme.base.opacity(0.7), .clear],
-                    startPoint: .leading, endPoint: .trailing
-                )
-                content(item)
-            }
-            .frame(height: height)
-            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 28, bottomTrailingRadius: 28))
+            content(item)
+                .frame(height: height)
+                .background {
+                    ZStack {
+                        backdrop(item)
+                            .id(item.id)
+                            .transition(.opacity)
+                        LinearGradient(
+                            colors: [.clear, Theme.base.opacity(0.55), Theme.base],
+                            startPoint: .center, endPoint: .bottom
+                        )
+                        LinearGradient(
+                            colors: [Theme.base.opacity(0.7), .clear],
+                            startPoint: .leading, endPoint: .trailing
+                        )
+                    }
+                    .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 28, bottomTrailingRadius: 28))
+                    // The film runs up under the status bar; the text stays clear of it.
+                    .ignoresSafeArea(edges: .top)
+                }
             .task(id: RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab)) {
                 await rotate()
             }
@@ -114,8 +118,11 @@ struct HomeHero<Greeting: View>: View {
     // MARK: Layers
 
     private func backdrop(_ item: DashboardHeroItem) -> some View {
-        KenBurnsBackdrop(url: model.absoluteURL(item.backdropUrl), animates: !reduceMotion && isActiveRootTab)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // An aspect-filled image reports its own (wider) size; as an overlay it can't widen the hero.
+        Color.clear
+            .overlay {
+                KenBurnsBackdrop(url: model.absoluteURL(item.backdropUrl), animates: !reduceMotion && isActiveRootTab)
+            }
             .clipped()
     }
 

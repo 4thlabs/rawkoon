@@ -49,10 +49,14 @@ struct HomeView: View {
         let posterUrl: String?
     }
 
+    private var showsHero: Bool {
+        hero?.items.isEmpty == false
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                if let hero, !hero.items.isEmpty {
+                if let hero, showsHero {
                     HomeHero(hero: hero) { greeting(onHero: true) }
                 } else {
                     greeting(onHero: false)
@@ -66,8 +70,9 @@ struct HomeView: View {
                         .transition(.rawkoonSwap)
                 }
             }
-            .padding(.vertical, 12)
-            .padding(.bottom, 96)
+            // The hero runs to the top edge; without it the greeting keeps its inset.
+            .padding(.top, showsHero ? 0 : 12)
+            .padding(.bottom, 108)
             // Crossfade skeleton → content instead of a hard cut, so the rails
             // fade in rather than popping into place on first load.
             .rawkoonMotion(RawkoonMotion.spring, value: loading)
@@ -86,27 +91,8 @@ struct HomeView: View {
         }
         .navigationTitle("Home")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            // The sidebar has Notifications and Watchlist tabs of its own.
-            if UIDevice.current.userInterfaceIdiom == .phone {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        WatchlistView()
-                    } label: {
-                        Image(systemName: "bookmark")
-                    }
-                    .accessibilityLabel("Watchlist")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        NotificationsListView()
-                    } label: {
-                        NotificationBell(unread: model.unreadNotificationCount)
-                    }
-                    .accessibilityLabel("Notifications")
-                }
-            }
-        }
+        // The hero is the header: no title bar over the film.
+        .toolbarVisibility(showsHero ? .hidden : .automatic, for: .navigationBar)
         .overlay(alignment: .top) { landedBannerLayer }
         .sensoryFeedback(RawkoonHaptics.feedback(for: .success), trigger: landedBannerCount)
         .onChange(of: model.recentArrivals.first) { _, arrival in landedArrived(arrival) }
