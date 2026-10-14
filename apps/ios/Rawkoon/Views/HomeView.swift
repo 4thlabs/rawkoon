@@ -56,7 +56,9 @@ struct HomeView: View {
 
     /// Status-bar height, measured live so rotation and resizes follow; the window is a cold-start fallback.
     private var heroTopInset: CGFloat {
-        if measuredTopInset > 0 { return measuredTopInset }
+        if measuredTopInset > 0 {
+            return measuredTopInset
+        }
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         return scenes.lazy.compactMap(\.keyWindow).first?.safeAreaInsets.top ?? 0
     }
