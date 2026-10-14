@@ -62,6 +62,8 @@ describe("greeting locale keys", () => {
     ["fr", fr],
   ])("%s has every greeting and subtitle", (_, locale) => {
     for (const p of periods) expect(locale.dashboard.greeting[p]).toBeTruthy();
+    for (const k of ["stamp", "subtitle", "subtitleNoCode"] as const)
+      expect(locale.dashboard.landed[k]).toBeTruthy();
     for (const s of subtitles)
       expect(locale.dashboard.greetingSubtitle[s]).toBeTruthy();
   });

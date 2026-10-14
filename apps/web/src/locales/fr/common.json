@@ -111,6 +111,11 @@
       "evening": "Bonsoir",
       "night": "Encore debout"
     },
+    "landed": {
+      "stamp": "Vient d'arriver",
+      "subtitle": "{{title}} {{code}} vient d'arriver.",
+      "subtitleNoCode": "{{title}} vient d'arriver."
+    },
     "greetingSubtitle": {
       "night": "Un dernier épisode ? On ne dira rien.",
       "weekend": "La fin de semaine est faite pour les marathons.",

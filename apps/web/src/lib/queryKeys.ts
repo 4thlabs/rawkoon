@@ -332,6 +332,9 @@ export const queryKeys = {
     settings: () => [...queryKeys.transcode.all, "settings"] as const,
     summary: () => [...queryKeys.transcode.all, "summary"] as const,
   },
+  home: {
+    landed: () => ["home", "landed"] as const,
+  },
   library: {
     all: ["library"] as const,
     infinite: (filters?: {

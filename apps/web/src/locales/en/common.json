@@ -111,6 +111,11 @@
       "evening": "Good evening",
       "night": "Still up"
     },
+    "landed": {
+      "stamp": "Just landed",
+      "subtitle": "{{title}} {{code}} just landed.",
+      "subtitleNoCode": "{{title}} just landed."
+    },
     "greetingSubtitle": {
       "night": "One more episode? We won't tell.",
       "weekend": "Weekends are made for marathons.",

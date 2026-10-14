@@ -10,6 +10,9 @@ vi.mock("@/lib/auth/useAuth", () => ({
   useAuth: () => ({ user: null, isAuthenticated: false, isLoading: false }),
 }));
 
+vi.mock("@/features/medias/hooks/useLibraryEvents", () => ({
+  useLibraryEvents: () => {},
+}));
 vi.mock("@/pages/_component/RecentlyAddedRail", () => ({
   RecentlyAddedRail: () => <div data-testid="s-recent" />,
 }));

@@ -1,20 +1,14 @@
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { landedEpisodeCode } from "@rawkoon/shared/utils";
 import { greetingPeriod, greetingSubtitle } from "@/pages/_component/greeting";
+import {
+  useFreshLanded,
+  useMinuteClock,
+} from "@/features/medias/hooks/useLandedArrivals";
 
 interface GreetingCardProps {
   /** Empty when the name isn't known yet; the greeting then stands alone. */
   userName: string;
-}
-
-/** Re-renders once a minute so a tab left open overnight doesn't keep saying "Good morning". */
-function useMinuteClock(): Date {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return now;
 }
 
 export function GreetingCard({ userName }: GreetingCardProps) {
@@ -22,9 +16,15 @@ export function GreetingCard({ userName }: GreetingCardProps) {
   const now = useMinuteClock();
   const hour = now.getHours();
   const greeting = t(`dashboard.greeting.${greetingPeriod(hour)}`);
-  const subtitle = t(
-    `dashboard.greetingSubtitle.${greetingSubtitle(hour, now.getDay())}`,
-  );
+  const landed = useFreshLanded(now)[0];
+  const code = landed ? landedEpisodeCode(landed.season, landed.episode) : "";
+  // A fresh arrival outranks the time-of-day line.
+  const subtitle = landed
+    ? t(
+        code ? "dashboard.landed.subtitle" : "dashboard.landed.subtitleNoCode",
+        { title: landed.title, code },
+      )
+    : t(`dashboard.greetingSubtitle.${greetingSubtitle(hour, now.getDay())}`);
 
   return (
     <div className="relative">

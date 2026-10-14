@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { motion } from "motion/react";
 import { useNavigate } from "@tanstack/react-router";
 import { MediaPosterCard } from "@/components/MediaPosterCard";
 import { WidgetHeader } from "@/pages/_component/widgetPrimitives";
@@ -15,6 +16,10 @@ interface PosterRailItem {
   onClick?: () => void;
   /** Small line rendered under the title in the card's glass panel. */
   meta?: ReactNode;
+  /** Stamp pinned to the card's top-left corner. */
+  badge?: string;
+  /** Drops the card in on mount (honours reduced motion via MotionConfig). */
+  animateIn?: boolean;
 }
 
 export interface PosterRailProps {
@@ -75,7 +80,18 @@ export function PosterRail({
                   : item.onClick;
               const href = item.libraryId != null ? undefined : item.href;
               return (
-                <div key={item.id} className="w-32 shrink-0 snap-start sm:w-36">
+                <motion.div
+                  key={item.id}
+                  className="relative w-32 shrink-0 snap-start sm:w-36"
+                  initial={item.animateIn ? { y: -24, scale: 0.92 } : false}
+                  animate={{ y: 0, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                >
+                  {item.badge && (
+                    <span className="pointer-events-none absolute left-2 top-2 z-10 rounded-full bg-primary-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow">
+                      {item.badge}
+                    </span>
+                  )}
                   <MediaPosterCard
                     posterUrl={item.posterUrl}
                     title={item.title}
@@ -84,7 +100,7 @@ export function PosterRail({
                   >
                     {item.meta}
                   </MediaPosterCard>
-                </div>
+                </motion.div>
               );
             })}
           </div>

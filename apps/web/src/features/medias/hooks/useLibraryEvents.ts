@@ -2,12 +2,14 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type {
   DownloadProgressItem,
+  LandedArrival,
   LibraryDownloadsResponse,
   SeedingResponse,
   SeedStateEvent,
   SeedStateItem,
 } from "@rawkoon/shared/types";
 import { mergeSeedState } from "@/features/seeding/lib/mergeSeedState";
+import { recordLanded } from "@/features/medias/hooks/useLandedArrivals";
 import { queryKeys } from "@/lib/queryKeys";
 import { mergeDownloadProgress } from "../lib/mergeDownloadProgress";
 
@@ -32,7 +34,12 @@ export function useLibraryEvents() {
       try {
         const payload = JSON.parse(e.data as string) as {
           connected?: boolean;
-          kind?: "media" | "book" | "download-progress" | "seed-state";
+          kind?:
+            | "media"
+            | "book"
+            | "download-progress"
+            | "seed-state"
+            | "landed";
           mediaId?: number;
           downloads?: DownloadProgressItem[];
           torrents?: SeedStateItem[];
@@ -76,6 +83,15 @@ export function useLibraryEvents() {
               queryKey: queryKeys.downloads.orphans(),
             });
           }
+          return;
+        }
+
+        if (payload.kind === "landed") {
+          const { kind: _kind, ...arrival } = payload;
+          if (typeof arrival.mediaId === "number") {
+            recordLanded(queryClient, arrival as LandedArrival);
+          }
+          queryClient.invalidateQueries({ queryKey: queryKeys.library.all });
           return;
         }
 

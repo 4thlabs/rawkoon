@@ -1,4 +1,5 @@
 import { motion, type Variants } from "motion/react";
+import { useLibraryEvents } from "@/features/medias/hooks/useLibraryEvents";
 import { PageLayout } from "@/components/PageLayout";
 import { CardErrorBoundary } from "@/components/ErrorBoundary";
 import { useCurrentUser } from "@/lib/auth/useAuth";
@@ -33,6 +34,7 @@ const sectionVariants: Variants = {
  */
 export function HomePage() {
   const { data: user } = useCurrentUser();
+  useLibraryEvents();
 
   return (
     <PageLayout fullWidth>

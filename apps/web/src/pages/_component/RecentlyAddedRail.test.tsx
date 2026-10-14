@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
+import { recordLanded } from "@/features/medias/hooks/useLandedArrivals";
 import { RecentlyAddedRail } from "@/pages/_component/RecentlyAddedRail";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -61,5 +62,40 @@ describe("RecentlyAddedRail", () => {
         screen.getByText("dashboard.home.recentlyAddedEmpty"),
       ).toBeInTheDocument(),
     );
+  });
+});
+
+describe("RecentlyAddedRail just landed", () => {
+  it("pins a fresh arrival first, stamped, without duplicating it", async () => {
+    const fetcher = vi.fn().mockResolvedValue({
+      items: [
+        { id: 1, title: "Old", poster_url: "/o.jpg", added_at: "2026-01-01" },
+        { id: 2, title: "Show", poster_url: "/s.jpg", added_at: "2026-01-02" },
+      ],
+    });
+    const { queryClient } = renderWithProviders(<RecentlyAddedRail />, {
+      fetcher,
+    });
+    await waitFor(() => expect(screen.getByText("Old")).toBeInTheDocument());
+    act(() =>
+      recordLanded(queryClient, {
+        mediaId: 2,
+        mediaType: "tv",
+        title: "Show (2024)",
+        posterUrl: null,
+        season: 1,
+        episode: 4,
+        episodeCount: null,
+        ts: Date.now(),
+      }),
+    );
+    expect(await screen.findByText("Show (2024)")).toBeInTheDocument();
+    expect(screen.getByText("S01E04")).toBeInTheDocument();
+    expect(screen.getByText("dashboard.landed.stamp")).toBeInTheDocument();
+    expect(screen.queryByText("Show")).not.toBeInTheDocument();
+    const labels = screen
+      .getAllByText(/Show \(2024\)|Old/)
+      .map((e) => e.textContent);
+    expect(labels).toEqual(["Show (2024)", "Old"]);
   });
 });
