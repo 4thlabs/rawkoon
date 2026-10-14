@@ -164,13 +164,19 @@ struct HomeView: View {
     // MARK: Greeting
 
     private var greeting: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            greetingLine
-                .font(.display(28))
-                .foregroundStyle(Theme.textStrong)
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(Theme.muted)
+        // Re-evaluated each minute so a Home left open overnight doesn't keep saying "Good morning".
+        TimelineView(.everyMinute) { context in
+            let calendar = Calendar.current
+            let hour = calendar.component(.hour, from: context.date)
+            let weekday = calendar.component(.weekday, from: context.date)
+            VStack(alignment: .leading, spacing: 4) {
+                greetingLine(HomeGreeting.period(hour: hour))
+                    .font(.display(28))
+                    .foregroundStyle(Theme.textStrong)
+                Text(subtitleKey(HomeGreeting.subtitle(hour: hour, weekday: weekday)))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.muted)
+            }
         }
         .padding(.horizontal, 16)
         // The name arrives after first render; the load-swap spring must not animate its reflow.
@@ -179,27 +185,30 @@ struct HomeView: View {
 
     /// With no name known yet the greeting stands alone rather than addressing
     /// a placeholder.
-    private var greetingLine: Text {
-        guard let name = model.userFirstName, !name.isEmpty else {
-            return Text(timeGreeting)
-        }
-        return Text(timeGreeting) + Text(verbatim: ", ") + Text(verbatim: name)
+    private func greetingLine(_ period: HomeGreeting.Period) -> Text {
+        let greeting = Text(greetingKey(period))
+        guard let name = model.userFirstName, !name.isEmpty else { return greeting }
+        return greeting + Text(verbatim: ", ") + Text(verbatim: name)
     }
 
-    private var timeGreeting: LocalizedStringKey {
-        switch Calendar.current.component(.hour, from: Date()) {
-        case 5 ..< 12: "Good morning"
-        case 12 ..< 18: "Good afternoon"
-        default: "Good evening"
+    private func greetingKey(_ period: HomeGreeting.Period) -> LocalizedStringKey {
+        switch period {
+        case .morning: "Good morning"
+        case .afternoon: "Good afternoon"
+        case .evening: "Good evening"
+        case .night: "Still up"
         }
     }
 
-    private var subtitle: LocalizedStringKey {
-        switch Calendar.current.component(.weekday, from: Date()) {
-        case 1, 7: "Enjoy your weekend."
-        case 2: "A fresh week begins."
-        case 6: "The weekend's nearly here."
-        default: "Here's what's happening."
+    private func subtitleKey(_ subtitle: HomeGreeting.Subtitle) -> LocalizedStringKey {
+        switch subtitle {
+        case .night: "One more episode? We won't tell."
+        case .weekend: "Weekends are made for marathons."
+        case .monday: "New week, new episodes."
+        case .friday: "Friday. Pick tonight's movie."
+        case .morning: "Here's what landed overnight."
+        case .afternoon: "Here's what's happening."
+        case .evening: "Showtime. What are we watching?"
         }
     }
 

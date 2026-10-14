@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import { motion, type Variants } from "motion/react";
 import { PageLayout } from "@/components/PageLayout";
 import { CardErrorBoundary } from "@/components/ErrorBoundary";
@@ -33,12 +32,11 @@ const sectionVariants: Variants = {
  * edit mode, or persistence.
  */
 export function HomePage() {
-  const { t } = useTranslation("common");
   const { data: user } = useCurrentUser();
 
   return (
     <PageLayout fullWidth>
-      <GreetingCard userName={getUserFirstName(user, t("dashboard.user"))} />
+      <GreetingCard userName={getUserFirstName(user)} />
       <motion.div
         className="mt-6 space-y-8"
         variants={sectionsVariants}

@@ -9657,16 +9657,6 @@
         }
       }
     },
-    "A fresh week begins.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Une nouvelle semaine commence."
-          }
-        }
-      }
-    },
     "Add an audiobook edition, then search releases to play and download chapters offline.": {
       "localizations": {
         "fr": {
@@ -9787,16 +9777,6 @@
         }
       }
     },
-    "Enjoy your weekend.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bonne fin de semaine."
-          }
-        }
-      }
-    },
     "Good afternoon": {
       "localizations": {
         "fr": {
@@ -9817,6 +9797,86 @@
         }
       }
     },
+    "Still up": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encore debout"
+          }
+        }
+      }
+    },
+    "One more episode? We won't tell.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un dernier épisode ? On ne dira rien."
+          }
+        }
+      }
+    },
+    "Weekends are made for marathons.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La fin de semaine est faite pour les marathons."
+          }
+        }
+      }
+    },
+    "New week, new episodes.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelle semaine, nouveaux épisodes."
+          }
+        }
+      }
+    },
+    "Friday. Pick tonight's movie.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vendredi. Choisissez le film de ce soir."
+          }
+        }
+      }
+    },
+    "Here's what landed overnight.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voici ce qui est arrivé pendant la nuit."
+          }
+        }
+      }
+    },
+    "Here's what's happening.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voici ce qui se passe."
+          }
+        }
+      }
+    },
+    "Showtime. What are we watching?": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'est l'heure du film. On regarde quoi ?"
+          }
+        }
+      }
+    },
     "Good morning": {
       "localizations": {
         "fr": {
@@ -9833,16 +9893,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Récupération ignorée"
-          }
-        }
-      }
-    },
-    "Here's what's happening.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voici ce qui se passe."
           }
         }
       }
@@ -10133,16 +10183,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Série TV"
-          }
-        }
-      }
-    },
-    "The weekend's nearly here.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La fin de semaine approche."
           }
         }
       }
