@@ -14,6 +14,7 @@ export function useUpdateAiProviderIntegration() {
     mutationFn: (data: {
       base_url: string;
       model: string;
+      transcription_model?: string | null;
       api_key?: string;
       enabled: boolean;
       input_price_per_million: number | null;

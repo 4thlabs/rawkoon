@@ -80,6 +80,22 @@ describe("normalizeAiProviderConfig prices", () => {
     });
   });
 
+  it("keeps a trimmed transcription model and drops a blank or non-string one", () => {
+    const base = { base_url: "http://h", model: "m" };
+    expect(
+      normalizeAiProviderConfig({
+        ...base,
+        transcription_model: " whisper-x ",
+      }),
+    ).toEqual({ ...base, transcription_model: "whisper-x" });
+    expect(
+      normalizeAiProviderConfig({ ...base, transcription_model: "  " }),
+    ).toEqual(base);
+    expect(
+      normalizeAiProviderConfig({ ...base, transcription_model: 3 }),
+    ).toEqual(base);
+  });
+
   it("omits an invalid budget and empty features", () => {
     const result = normalizeAiProviderConfig({
       base_url: "http://h",

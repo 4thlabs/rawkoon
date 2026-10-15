@@ -97,6 +97,7 @@ export const aiProviderIntegrationRoutes = new Hono<Env>()
           enabled: integration?.enabled ?? false,
           base_url: config?.base_url ?? "",
           model: config?.model ?? "",
+          transcription_model: config?.transcription_model ?? null,
           has_api_key: Boolean(config?.api_key),
           input_price_per_million: config?.input_price_per_million ?? null,
           output_price_per_million: config?.output_price_per_million ?? null,
@@ -115,6 +116,7 @@ export const aiProviderIntegrationRoutes = new Hono<Env>()
       z.object({
         base_url: z.string(),
         model: z.string(),
+        transcription_model: z.string().nullable().optional(),
         api_key: z.string().optional(),
         enabled: z.boolean().optional(),
         input_price_per_million: priceField,
@@ -136,6 +138,11 @@ export const aiProviderIntegrationRoutes = new Hono<Env>()
       // An empty api_key means "keep whatever is stored", so the form can be
       // submitted without re-entering a secret it is never shown.
       const existing = await loadAiConfig();
+      // Absent keeps the stored value; blank or null clears it back to the default.
+      const transcriptionModel =
+        body.transcription_model === undefined
+          ? (existing?.transcription_model ?? null)
+          : body.transcription_model?.trim() || null;
       const apiKey = body.api_key?.trim() || existing?.api_key || "";
       // Older clients (iOS) never send prices, so absent keeps the stored value.
       const inputPrice =
@@ -160,6 +167,9 @@ export const aiProviderIntegrationRoutes = new Hono<Env>()
       const providerConfig = {
         base_url: baseUrl,
         model: body.model.trim(),
+        ...(transcriptionModel
+          ? { transcription_model: transcriptionModel }
+          : {}),
         ...(apiKey ? { api_key: encrypt(apiKey) } : {}),
         ...(inputPrice !== null ? { input_price_per_million: inputPrice } : {}),
         ...(outputPrice !== null
@@ -203,6 +213,7 @@ export const aiProviderIntegrationRoutes = new Hono<Env>()
             enabled: integration.enabled,
             base_url: baseUrl,
             model: body.model.trim(),
+            transcription_model: transcriptionModel,
             has_api_key: Boolean(apiKey),
             input_price_per_million: inputPrice,
             output_price_per_million: outputPrice,

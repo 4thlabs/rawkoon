@@ -1358,14 +1358,14 @@ model TranscodeSettings {
 /// One row per HTTP attempt to the AI provider; the usage ledger behind the AI settings page.
 model AiCall {
   id            Int      @id @default(autoincrement())
-  /// release_pick_rss | release_pick_interactive | release_pick_search | book_release_pick
+  /// release_pick_rss | release_pick_interactive | release_pick_search | book_release_pick | book_sync
   feature       String
   model         String
   /// true = json_schema response_format, false = json_object fallback
   structured    Boolean
   /// ok | invalid_pick | rate_limited | error
   status        String
-  /// rss | scheduled | upgrade | interactive | manual_search
+  /// rss | scheduled | upgrade | interactive | manual_search; null for on-demand calls such as book_sync
   trigger       String?
   /// Short message only; never keys, query strings or prompt text.
   error         String?  @db.Text
