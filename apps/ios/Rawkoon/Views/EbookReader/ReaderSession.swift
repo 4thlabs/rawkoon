@@ -80,13 +80,22 @@ final class ReaderSession {
         save(position(from: locator, editionId: editionId, now: now))
     }
 
+    /// Where the reader is, in the form the server's handoff matcher takes.
+    func currentSpot() -> (spinePath: String, progression: Double)? {
+        guard let locator = currentLocator ?? navigator.currentLocation else { return nil }
+        return (spine(for: locator).path, locator.locations.progression ?? 0)
+    }
+
+    private func spine(for locator: Locator) -> (index: Int, path: String) {
+        // Unknown to the reading order: report the locator's own href, not spine item 0's.
+        guard let index = publication.readingOrder.firstIndexWithHREF(locator.href),
+              publication.readingOrder.indices.contains(index)
+        else { return (0, locator.href.string) }
+        return (index, publication.readingOrder[index].href)
+    }
+
     private func position(from locator: Locator, editionId: Int, now: Int64) -> ReadingPosition {
-        let index = publication.readingOrder.firstIndexWithHREF(locator.href) ?? 0
-        let spinePath: String = if publication.readingOrder.indices.contains(index) {
-            publication.readingOrder[index].href
-        } else {
-            locator.href.string
-        }
+        let (index, spinePath) = spine(for: locator)
         return ReadingPosition(
             editionId: editionId,
             fileId: fileId,
