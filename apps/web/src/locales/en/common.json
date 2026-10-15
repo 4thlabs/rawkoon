@@ -1305,6 +1305,10 @@
       "description": "Connect an OpenAI-compatible model to help pick releases, and see what it costs and how well it performs.",
       "inputPrice": "Input price (USD per million tokens)",
       "outputPrice": "Output price (USD per million tokens)",
+      "transcriptionModel": {
+        "label": "Transcription model",
+        "help": "Speech-to-text model used to sync an audiobook with its ebook. Leave blank for whisper-large-v3-turbo."
+      },
       "priceHelp": "Used to estimate cost. Find your model's price on your provider's pricing page.",
       "budget": {
         "label": "Daily budget (USD)",
@@ -1318,7 +1322,8 @@
         "release_pick_rss": "RSS auto-grab",
         "release_pick_search": "Scheduled & upgrade searches",
         "release_pick_interactive": "Interactive search suggestion",
-        "book_release_pick": "Book grabs"
+        "book_release_pick": "Book grabs",
+        "book_sync": "Audiobook and ebook sync"
       },
       "usageTitle": "Usage",
       "loading": "Loading...",
@@ -1366,7 +1371,8 @@
         "release_pick_rss": "Auto-grab (RSS)",
         "release_pick_interactive": "Interactive search pick",
         "release_pick_search": "Automatic search",
-        "book_release_pick": "Book release pick"
+        "book_release_pick": "Book release pick",
+        "book_sync": "Audiobook/ebook sync"
       },
       "statuses": {
         "ok": "OK",

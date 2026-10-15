@@ -484,3 +484,53 @@ export interface BookDiscoverySourcesResponse {
     lists: BookDiscoveryList[];
   }[];
 }
+
+/** The subset of a Readium Locator the reader needs to open at a sentence. */
+export interface BookReadiumLocator {
+  /** OPF-relative spine href, the same format stored as a reading position's spine_path. */
+  href: string;
+  type: string;
+  locations: {
+    progression: number;
+    totalProgression: number;
+  };
+  text?: {
+    before?: string;
+    highlight?: string;
+    after?: string;
+  };
+}
+
+export interface BookHandoffToEbookRequest {
+  /** Whole-book audiobook seconds. */
+  position_secs: number;
+}
+
+export interface BookHandoffToEbookResponse {
+  locator: BookReadiumLocator;
+  spine_index: number;
+  spine_path: string;
+  /** 0..1 within the spine document. */
+  progression: number;
+  /** 0..1 across the whole ebook text. */
+  total_progression: number;
+  /** 0..1 match confidence. */
+  score: number;
+  transcript: string;
+}
+
+export interface BookHandoffToAudiobookRequest {
+  spine_path: string;
+  /** 0..1 within the spine document. */
+  progression: number;
+}
+
+export interface BookHandoffToAudiobookResponse {
+  /** Whole-book audiobook seconds. */
+  position_secs: number;
+  /** 0..1 confidence of the last matched pass. */
+  score: number;
+  /** Transcription calls spent. */
+  calls: number;
+  transcript: string;
+}

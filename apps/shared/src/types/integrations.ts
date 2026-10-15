@@ -175,6 +175,8 @@ export interface AiProviderIntegration {
   enabled: boolean;
   base_url: string;
   model: string;
+  /** Speech-to-text model for audiobook/ebook sync; null means the server default. */
+  transcription_model: string | null;
   /** The key itself is never returned; this only says whether one is stored. */
   has_api_key: boolean;
   /** USD per million tokens, used to estimate cost; null when unset. */

@@ -52,6 +52,9 @@ function AiProviderIntegrationSectionImpl({
 
   const [baseUrl, setBaseUrl] = useState(data?.integration?.base_url ?? "");
   const [model, setModel] = useState(data?.integration?.model ?? "");
+  const [transcriptionModel, setTranscriptionModel] = useState(
+    data?.integration?.transcription_model ?? "",
+  );
   const [apiKey, setApiKey] = useState("");
   const [inputPrice, setInputPrice] = useState(
     priceToText(data?.integration?.input_price_per_million),
@@ -75,6 +78,7 @@ function AiProviderIntegrationSectionImpl({
   const isDirty =
     baseUrl !== (data?.integration?.base_url ?? "") ||
     model !== (data?.integration?.model ?? "") ||
+    transcriptionModel !== (data?.integration?.transcription_model ?? "") ||
     apiKey !== "" ||
     inputPrice !== priceToText(data?.integration?.input_price_per_million) ||
     outputPrice !== priceToText(data?.integration?.output_price_per_million) ||
@@ -94,6 +98,7 @@ function AiProviderIntegrationSectionImpl({
   const handleCancel = () => {
     setBaseUrl(data?.integration?.base_url ?? "");
     setModel(data?.integration?.model ?? "");
+    setTranscriptionModel(data?.integration?.transcription_model ?? "");
     setApiKey("");
     setInputPrice(priceToText(data?.integration?.input_price_per_million));
     setOutputPrice(priceToText(data?.integration?.output_price_per_million));
@@ -108,6 +113,7 @@ function AiProviderIntegrationSectionImpl({
       .mutateAsync({
         base_url: baseUrl,
         model,
+        transcription_model: transcriptionModel.trim() || null,
         api_key: apiKey,
         enabled,
         input_price_per_million: textToPrice(inputPrice),
@@ -167,6 +173,23 @@ function AiProviderIntegrationSectionImpl({
             onChange={(e) => setModel(e.target.value)}
             placeholder="llama3.2"
           />
+        </div>
+        <div className="space-y-1.5">
+          <label
+            htmlFor="ai-provider-integration-section-transcription-model"
+            className="block text-sm font-medium text-neutral-300"
+          >
+            {t("settings.ai.transcriptionModel.label")}
+          </label>
+          <Input
+            id="ai-provider-integration-section-transcription-model"
+            value={transcriptionModel}
+            onChange={(e) => setTranscriptionModel(e.target.value)}
+            placeholder="whisper-large-v3-turbo"
+          />
+          <p className="text-xs text-neutral-500">
+            {t("settings.ai.transcriptionModel.help")}
+          </p>
         </div>
         <div className="space-y-1.5">
           <label

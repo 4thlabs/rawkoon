@@ -228,9 +228,14 @@ export const normalizeAiProviderConfig = (
   const outputPrice = normalizePrice(cfg.output_price_per_million);
   const budget = normalizePrice(cfg.daily_budget_usd);
   const features = normalizeAiFeatures(cfg.features);
+  const transcriptionModel =
+    typeof cfg.transcription_model === "string"
+      ? cfg.transcription_model.trim()
+      : "";
   return {
     base_url: cfg.base_url.replace(/\/+$/, ""),
     model: cfg.model,
+    ...(transcriptionModel ? { transcription_model: transcriptionModel } : {}),
     ...(apiKey ? { api_key: apiKey } : {}),
     ...(inputPrice !== undefined
       ? { input_price_per_million: inputPrice }

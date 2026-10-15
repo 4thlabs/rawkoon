@@ -8,6 +8,7 @@ const integration: AiProviderIntegration = {
   enabled: true,
   base_url: "http://ai.test",
   model: "m",
+  transcription_model: null,
   has_api_key: false,
   input_price_per_million: null,
   output_price_per_million: null,
@@ -61,7 +62,7 @@ describe("AiProviderIntegrationSection controls", () => {
     });
     expect(rss).toHaveAttribute("aria-checked", "false");
     expect(books).toHaveAttribute("aria-checked", "true");
-    expect(screen.getAllByRole("switch")).toHaveLength(4);
+    expect(screen.getAllByRole("switch")).toHaveLength(5);
   });
 
   it("warns when a budget is set without prices", () => {

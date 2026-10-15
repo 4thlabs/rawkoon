@@ -41,6 +41,8 @@ export interface FanartIntegrationConfig {
 export interface AiProviderConfig {
   base_url: string;
   model: string;
+  /** Speech-to-text model for book_sync; callers fall back to a default when absent. */
+  transcription_model?: string;
   /** Optional: local servers need no auth, hosted OpenAI-compatible ones do. */
   api_key?: string;
   /** USD per million tokens; only used to estimate cost at read time. */

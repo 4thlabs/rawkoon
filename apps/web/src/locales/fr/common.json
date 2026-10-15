@@ -1305,6 +1305,10 @@
       "description": "Branchez un modèle compatible OpenAI pour aider au choix des versions, et suivez ce que ça coûte et comment il se débrouille.",
       "inputPrice": "Prix en entrée (USD par million de jetons)",
       "outputPrice": "Prix en sortie (USD par million de jetons)",
+      "transcriptionModel": {
+        "label": "Modèle de transcription",
+        "help": "Modèle de reconnaissance vocale utilisé pour synchroniser un livre audio et son livre numérique. Laisser vide pour whisper-large-v3-turbo."
+      },
       "priceHelp": "Sert à estimer le coût. Le prix de votre modèle se trouve sur la page de tarification de votre fournisseur.",
       "budget": {
         "label": "Budget quotidien (USD)",
@@ -1318,7 +1322,8 @@
         "release_pick_rss": "Ajout automatique par RSS",
         "release_pick_search": "Recherches planifiées et de mise à niveau",
         "release_pick_interactive": "Suggestion de la recherche interactive",
-        "book_release_pick": "Ajouts de livres"
+        "book_release_pick": "Ajouts de livres",
+        "book_sync": "Synchronisation livre audio et livre numérique"
       },
       "usageTitle": "Utilisation",
       "loading": "Chargement...",
@@ -1366,7 +1371,8 @@
         "release_pick_rss": "Téléchargement auto (RSS)",
         "release_pick_interactive": "Choix en recherche interactive",
         "release_pick_search": "Recherche automatique",
-        "book_release_pick": "Choix de version de livre"
+        "book_release_pick": "Choix de version de livre",
+        "book_sync": "Synchronisation livre audio/numérique"
       },
       "statuses": {
         "ok": "OK",

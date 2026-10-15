@@ -3,6 +3,7 @@ export const AI_FEATURES = [
   "release_pick_interactive",
   "release_pick_search",
   "book_release_pick",
+  "book_sync",
 ] as const;
 
 export type AiFeature = (typeof AI_FEATURES)[number];
