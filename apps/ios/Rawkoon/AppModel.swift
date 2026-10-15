@@ -123,6 +123,11 @@ final class AppModel {
         directory: FileStore.booksDirectory()
     )
     var lastProgressPosition: [Int: Double] = [:]
+    /// Automatic handoff matches already answered or running, so reopening a book
+    /// without moving does not transcribe again. In memory: a launch may recheck.
+    var handoffMemo = HandoffSuggestion.Memo()
+    /// Per book, when its audiobook and ebook positions last agreed through a handoff.
+    var handoffAgreedAtMillis: [Int: Int64] = [:]
 
     let journalURL: URL
     /// Not `let`: before the first unlock the Keychain is unreadable, so the
