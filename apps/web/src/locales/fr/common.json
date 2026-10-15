@@ -263,6 +263,19 @@
       "openLibraryLink": "Ouvrir la médiathèque"
     }
   },
+  "device": {
+    "title": "Connecter une télé",
+    "description": "Entrez le code affiché sur votre télé pour la connecter à votre compte Rawkoon.",
+    "codeLabel": "Code de la télé",
+    "warning": "N'approuvez qu'un code affiché sur votre propre télé. L'approuver donne à cette télé l'accès à votre compte.",
+    "approve": "Connecter",
+    "deny": "Refuser",
+    "invalidCode": "Ce code est invalide ou expiré. Vérifiez le code sur votre télé.",
+    "approvedTitle": "Votre télé est connectée",
+    "approvedBody": "Vous pouvez retourner à votre télé.",
+    "deniedTitle": "Connexion refusée",
+    "deniedBody": "La télé n'a pas été connectée."
+  },
   "login": {
     "welcome": "Bienvenue sur Rawkoon",
     "signIn": "Connectez-vous à Rawkoon",

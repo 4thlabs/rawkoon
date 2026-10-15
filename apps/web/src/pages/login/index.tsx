@@ -1,14 +1,20 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { getCurrentUser } from "@/lib/auth";
+import { safeRedirect } from "@/lib/auth/safeRedirect";
 import { useSetupStatus } from "@/lib/auth/useAuth";
 import { LoginForm } from "@/pages/login/_component/LoginForm";
 import { SetupForm } from "@/pages/login/_component/SetupForm";
 
+type LoginSearch = { redirect?: string };
+
 export const Route = createFileRoute("/login/")({
-  beforeLoad: async () => {
+  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
+  beforeLoad: async ({ search }) => {
     const user = await getCurrentUser().catch(() => null);
-    if (user) throw redirect({ to: "/" });
+    if (user) throw redirect({ href: safeRedirect(search.redirect) });
   },
   component: LoginPage,
 });
