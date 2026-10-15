@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { rateLimiter } from "hono-rate-limiter";
 import { z } from "zod";
 
 import {
@@ -20,6 +21,19 @@ import {
   handoffToEbook,
   type HandoffErrorCode,
 } from "@rawkoon/api/services/books/handoff/bookHandoff";
+
+/**
+ * Transcription is billed per audio second and logs no tokens, so the AI daily
+ * budget cannot cap it; a per-user ceiling does instead (each request makes up
+ * to 3 transcription calls).
+ */
+const handoffRateLimit = rateLimiter<Env>({
+  windowMs: 60 * 60 * 1000,
+  limit: 60,
+  keyGenerator: (c) => `book_handoff:${c.get("user").id}`,
+  message: "Too many book sync requests, try again later",
+  standardHeaders: true,
+});
 
 const bookIdParam = z.object({ bookId: z.coerce.number().int() });
 
@@ -60,6 +74,7 @@ export const bookHandoffRoutes = new Hono<Env>()
   .post(
     "/:bookId/handoff/to-ebook",
     requireUser,
+    handoffRateLimit,
     paramV(bookIdParam),
     jsonV(toEbookBody),
     async (c) => {
@@ -72,6 +87,7 @@ export const bookHandoffRoutes = new Hono<Env>()
   .post(
     "/:bookId/handoff/to-audiobook",
     requireUser,
+    handoffRateLimit,
     paramV(bookIdParam),
     jsonV(toAudiobookBody),
     async (c) => {

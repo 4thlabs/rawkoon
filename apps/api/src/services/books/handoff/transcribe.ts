@@ -99,8 +99,11 @@ async function extractClip(
   const timer = setTimeout(() => proc.kill(), FFMPEG_TIMEOUT_MS);
   try {
     const stderr = await new Response(proc.stderr).text();
-    if ((await proc.exited) !== 0) {
-      throw new TranscriptionError(`ffmpeg failed: ${stderr.slice(0, 120)}`);
+    const code = await proc.exited;
+    if (code !== 0) {
+      // stderr names library paths, so it goes to the log, never the ledger.
+      console.error("[bookHandoff] ffmpeg failed:", stderr.slice(0, 500));
+      throw new TranscriptionError(`ffmpeg failed (exit ${code})`);
     }
   } finally {
     clearTimeout(timer);

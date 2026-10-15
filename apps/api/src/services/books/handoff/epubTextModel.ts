@@ -118,6 +118,24 @@ const NAMED_ENTITIES: Record<string, string> = {
   icirc: "î",
   euml: "ë",
   iuml: "ï",
+  ugrave: "ù",
+  uuml: "ü",
+  ouml: "ö",
+  auml: "ä",
+  aacute: "á",
+  iacute: "í",
+  oacute: "ó",
+  uacute: "ú",
+  ntilde: "ñ",
+  oelig: "œ",
+  aelig: "æ",
+  szlig: "ß",
+  shy: "",
+  thinsp: " ",
+  ensp: " ",
+  emsp: " ",
+  bull: "•",
+  middot: "·",
 };
 
 export function decodeEntities(input: string): string {
@@ -130,7 +148,11 @@ export function decodeEntities(input: string): string {
           ? String.fromCodePoint(code)
           : match;
       }
-      return NAMED_ENTITIES[(name ?? "").toLowerCase()] ?? match;
+      const key = name ?? "";
+      const decoded = NAMED_ENTITIES[key.toLowerCase()];
+      if (decoded === undefined) return match;
+      // `&Eacute;` is the capital of `&eacute;`; the table holds lowercase only.
+      return /^[A-Z][a-z]/.test(key) ? decoded.toUpperCase() : decoded;
     },
   );
 }
@@ -142,7 +164,10 @@ export function htmlToText(html: string): string {
     .replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, " ")
     .replace(/<!--[\s\S]*?-->/g, " ");
   const stripped = body
-    .replace(/<\/?(?:p|div|br|h[1-6]|li|tr|blockquote|section)\b[^>]*>/gi, " ")
+    .replace(
+      /<\/?(?:p|div|br|h[1-6]|li|ul|ol|tr|td|th|dt|dd|blockquote|section|article|aside|header|footer|figcaption)\b[^>]*>/gi,
+      " ",
+    )
     .replace(/<[^>]+>/g, "");
   return decodeEntities(stripped).replace(/\s+/g, " ").trim();
 }
@@ -318,12 +343,30 @@ export function offsetToPosition(
 }
 
 /** Inverse of offsetToPosition; null when the href is not in the spine. */
+/**
+ * Exact href first; then a unique suffix match, since a Readium client may
+ * prefix the OPF directory (`OEBPS/ch1.xhtml`) or drop it.
+ */
+function findSpineDoc(
+  model: EpubTextModel,
+  href: string,
+): EpubSpineDoc | undefined {
+  const exact = model.docs.find((d) => sameHref(d.href, href));
+  if (exact) return exact;
+  const wanted = safeDecode(stripFragment(href));
+  const suffixed = model.docs.filter((d) => {
+    const have = safeDecode(stripFragment(d.href));
+    return wanted.endsWith(`/${have}`) || have.endsWith(`/${wanted}`);
+  });
+  return suffixed.length === 1 ? suffixed[0] : undefined;
+}
+
 export function positionToOffset(
   model: EpubTextModel,
   href: string,
   progression: number,
 ): number | null {
-  const doc = model.docs.find((d) => sameHref(d.href, href));
+  const doc = findSpineDoc(model, href);
   if (!doc) return null;
   const p = Math.min(Math.max(progression, 0), 1);
   return doc.normStart + Math.round(p * doc.norm.length);

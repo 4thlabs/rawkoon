@@ -2,6 +2,9 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { rm } from "node:fs/promises";
 
 import {
+  buildEpubTextModel,
+  decodeEntities,
+  htmlToText,
   loadEpubTextModel,
   normalizeText,
   offsetToPosition,
@@ -124,5 +127,48 @@ describe("offset and position mapping", () => {
     );
     expect(snippet.highlight.startsWith("glacée")).toBe(true);
     expect(snippet.before.endsWith("La rivière était ")).toBe(true);
+  });
+});
+
+describe("review fixes", () => {
+  const model = buildEpubTextModel(
+    [
+      { href: "text/ch1.xhtml", text: "Le premier chapitre commence ici." },
+      { href: "text/ch2.xhtml", text: "Le second chapitre suit." },
+    ],
+    "fr",
+  );
+
+  test("a spine path with or without the OPF directory still resolves", () => {
+    expect(positionToOffset(model, "OEBPS/text/ch2.xhtml", 0)).toBe(
+      positionToOffset(model, "text/ch2.xhtml", 0),
+    );
+    expect(positionToOffset(model, "ch2.xhtml", 0)).toBe(
+      positionToOffset(model, "text/ch2.xhtml", 0),
+    );
+  });
+
+  test("an ambiguous suffix is rejected rather than guessed", () => {
+    const twins = buildEpubTextModel(
+      [
+        { href: "a/ch.xhtml", text: "Un." },
+        { href: "b/ch.xhtml", text: "Deux." },
+      ],
+      null,
+    );
+    expect(positionToOffset(twins, "ch.xhtml", 0)).toBeNull();
+  });
+
+  test("capitalised and extra named entities decode", () => {
+    expect(decodeEntities("&Eacute;t&eacute; o&ugrave; &oelig;uvre")).toBe(
+      "Été où œuvre",
+    );
+  });
+
+  test("table cells and list items never fuse into one word", () => {
+    expect(htmlToText("<table><tr><td>un</td><td>deux</td></tr></table>")).toBe(
+      "un deux",
+    );
+    expect(htmlToText("<dl><dt>mot</dt><dd>sens</dd></dl>")).toBe("mot sens");
   });
 });
