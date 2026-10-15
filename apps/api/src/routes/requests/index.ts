@@ -155,6 +155,7 @@ export const requestRoutes = new Hono<Env>()
             posterUrl: body.poster_url ?? null,
             year: body.year ?? null,
             userId: user.id,
+            autoApprove: !!user.is_admin,
           },
     );
     if (!result.ok) {
@@ -166,6 +167,7 @@ export const requestRoutes = new Hono<Env>()
       }
       return badRequest("Already in your library");
     }
+    // Only the id: the iOS app decodes this body strictly as [String: Int].
     return ok({ id: result.id });
   })
   // Admin-only: approve / deny
