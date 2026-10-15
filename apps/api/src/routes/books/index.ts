@@ -6,6 +6,7 @@ import { bookListeningStatsRoutes } from "./bookListeningStatsRoutes";
 import { bookListRoutes } from "./bookListRoutes";
 import { bookEditionRoutes } from "./bookEditionRoutes";
 import { bookGrabRoutes } from "./bookGrabRoutes";
+import { bookHandoffRoutes } from "./bookHandoffRoutes";
 import {
   bookContentRoutes,
   bookPlaybackRoutes,
@@ -48,6 +49,7 @@ export const bookRoutes = new Hono<Env>()
   .route("/", bookMetadataAdminRoutes)
   .route("/", bookOverridesRoutes)
   .route("/", bookEditionRoutes)
+  .route("/", bookHandoffRoutes)
   .route("/", bookGrabRoutes)
   .route("/", bookListRoutes)
   .notFound(() => notFound("Not found"))
