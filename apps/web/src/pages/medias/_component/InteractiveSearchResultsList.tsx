@@ -37,6 +37,11 @@ interface InteractiveSearchResultsListProps {
   languageFallbackSummary?: LanguageFallbackSummary | null;
   /** Quality profile the scores come from; names the pinned best match. */
   profileName?: string | null;
+  /** Releases in the server's order, so best-match ties keep it. */
+  serverOrder?: InteractiveReleaseItem[];
+  isUpgradeMode?: boolean;
+  /** Resolution of the file on disk, for upgrade mode. */
+  currentResolution?: number | null;
 }
 
 export function InteractiveSearchResultsList({
@@ -58,12 +63,24 @@ export function InteractiveSearchResultsList({
   aiPickKey,
   languageFallbackSummary = null,
   profileName = null,
+  serverOrder,
+  isUpgradeMode = false,
+  currentResolution = null,
 }: InteractiveSearchResultsListProps) {
   const { t } = useTranslation("common");
   const [fallbackOpen, setFallbackOpen] = useState(false);
   const groups = splitLanguageFallback(releases);
   // Pinned first, so the main list below skips it.
-  const bestMatch = pickBestMatch(groups.primary);
+  const visible = new Set(groups.primary);
+  const bestMatch = pickBestMatch(
+    serverOrder ? serverOrder.filter((r) => visible.has(r)) : groups.primary,
+    {
+      blockedTitles,
+      aiPickKey,
+      upgradeMode: isUpgradeMode,
+      upgradeOverResolution: currentResolution,
+    },
+  );
   const mainRows = groups.primary.filter((r) => r !== bestMatch);
   // With no preferred-language release the other versions lead, expanded.
   const leadWithFallback =

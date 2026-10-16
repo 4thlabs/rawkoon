@@ -114,7 +114,11 @@ function DownloadProgress({ item }: { item: LibraryMedia }) {
         });
 
   return (
-    <div className="w-full max-w-xs space-y-1" aria-live="polite">
+    <div className="w-full max-w-xs space-y-1">
+      {/* Only the state is announced, not every percent tick. */}
+      <span role="status" className="sr-only">
+        {t(libraryStatusPresentation(item.status).labelKey)}
+      </span>
       <p className="flex items-center gap-1.5 text-xs font-medium text-primary-200">
         <Loader2 size={12} className="animate-spin" aria-hidden="true" />
         {label}
@@ -127,6 +131,7 @@ function DownloadProgress({ item }: { item: LibraryMedia }) {
       {progress && progress.count === 1 && (
         <div
           role="progressbar"
+          aria-label={label}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={progress.percent}

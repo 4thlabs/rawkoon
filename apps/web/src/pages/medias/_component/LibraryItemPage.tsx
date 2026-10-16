@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useEffect } from "react";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useLibraryNavigation } from "@/features/medias/context/LibraryNavigationContext";
 import { useTranslation } from "react-i18next";
@@ -17,12 +17,10 @@ import {
 } from "@/features/medias/lib/itemPageActions";
 import { LibraryManagementPanel } from "./LibraryManagementPanel";
 import { SimilarMediasPanel } from "./SimilarMediasPanel";
+import { useReleaseSearchContext } from "./useReleaseSearchContext";
 import { LibraryItemHero } from "./LibraryItemHero";
 import { LibraryItemInfoTab } from "./LibraryItemInfoTab";
-import {
-  LibraryItemSearchTab,
-  type EpisodeSearchCtx,
-} from "./LibraryItemSearchTab";
+import { LibraryItemSearchTab } from "./LibraryItemSearchTab";
 
 export type LibraryItemSearchParams = {
   tab?: ItemPageTab;
@@ -64,10 +62,16 @@ export function LibraryItemPage() {
   const addToWatchlist = useAddToWatchlist();
   const removeFromWatchlist = useRemoveFromWatchlist();
 
-  const [episodeSearchCtx, setEpisodeSearchCtx] =
-    useState<EpisodeSearchCtx | null>(null);
-  const [seasonSearchCtx, setSeasonSearchCtx] = useState<number | null>(null);
-  const [upgradeSearchMode, setUpgradeSearchMode] = useState(false);
+  const {
+    episodeSearchCtx,
+    seasonSearchCtx,
+    upgradeSearchMode,
+    setEpisodeSearchCtx,
+    setSeasonSearchCtx,
+    setUpgradeSearchMode,
+    chooseRelease,
+    searchUpgrade,
+  } = useReleaseSearchContext(() => setActiveTab("releases"));
 
   const detailsData = modalData?.details ?? null;
   const ratingsData = modalData?.ratings ?? null;
@@ -200,11 +204,8 @@ export function LibraryItemPage() {
         isAdmin={isAdmin}
         onBack={() => goBack()}
         onWatchlistToggle={handleWatchlistToggle}
-        onChooseRelease={() => setActiveTab("releases")}
-        onUpgradeSearch={() => {
-          setUpgradeSearchMode(true);
-          setActiveTab("releases");
-        }}
+        onChooseRelease={chooseRelease}
+        onUpgradeSearch={searchUpgrade}
       />
 
       {/* ── Body ──────────────────────────────────────────────────────────── */}

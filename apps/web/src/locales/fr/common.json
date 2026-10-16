@@ -1972,7 +1972,9 @@
         "reasonTracker": "Tracker préféré ({{indexer}})",
         "reasonSeeders_one": "{{count}} seeder",
         "reasonSeeders_other": "{{count}} seeders",
-        "reasonSize": "{{size}}"
+        "reasonSize": "{{size}}",
+        "titleAi": "Choix de l'IA pour {{profile}}",
+        "titleAiNoProfile": "Choix de l'IA"
       }
     },
     "tmdb": {

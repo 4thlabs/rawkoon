@@ -95,10 +95,17 @@ export function ReleaseCard({
           <p className="flex items-center gap-1.5 text-xs font-semibold text-primary-300">
             <Trophy size={13} aria-hidden="true" />
             {profileName
-              ? t("medias.interactive.bestMatch.title", {
-                  profile: profileName,
-                })
-              : t("medias.interactive.bestMatch.titleNoProfile")}
+              ? t(
+                  isAiPick
+                    ? "medias.interactive.bestMatch.titleAi"
+                    : "medias.interactive.bestMatch.title",
+                  { profile: profileName },
+                )
+              : t(
+                  isAiPick
+                    ? "medias.interactive.bestMatch.titleAiNoProfile"
+                    : "medias.interactive.bestMatch.titleNoProfile",
+                )}
           </p>
           {reasons.length > 0 && (
             <ul className="flex flex-wrap gap-x-3 gap-y-1">

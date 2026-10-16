@@ -37,12 +37,68 @@ describe("pickBestMatch", () => {
     expect(best?.title).toBe("top");
   });
 
-  it("breaks a tie on title, like the search route", () => {
+  it("keeps the server's order on a tie", () => {
     const best = pickBestMatch([
       release("b release", { quality_score: 500 }),
       release("a release", { quality_score: 500 }),
     ]);
-    expect(best?.title).toBe("a release");
+    expect(best?.title).toBe("b release");
+  });
+
+  it("skips a title the user just blocked", () => {
+    const best = pickBestMatch(
+      [
+        release("top", { quality_score: 900 }),
+        release("next", { quality_score: 100 }),
+      ],
+      { blockedTitles: new Set(["top"]) },
+    );
+    expect(best?.title).toBe("next");
+  });
+
+  it("pins the AI pick over a higher score", () => {
+    const best = pickBestMatch(
+      [
+        release("top", { quality_score: 900 }),
+        release("ai", { quality_score: 100 }),
+      ],
+      { aiPickKey: "ai" },
+    );
+    expect(best?.title).toBe("ai");
+  });
+
+  it("ignores an AI pick that is blocked", () => {
+    const best = pickBestMatch(
+      [release("top", { quality_score: 900 }), release("ai", {})],
+      { aiPickKey: "ai", blockedTitles: new Set(["ai"]) },
+    );
+    expect(best?.title).toBe("top");
+  });
+
+  describe("upgrade mode", () => {
+    const at = (title: string, resolution: number, score: number) =>
+      release(title, {
+        quality_score: score,
+        parsed_quality: { resolution, source: null, codec: null, hdr: null },
+      });
+
+    it("pins only a release above the current file", () => {
+      const best = pickBestMatch(
+        [at("same", 1080, 900), at("higher", 2160, 100)],
+        { upgradeMode: true, upgradeOverResolution: 1080 },
+      );
+      expect(best?.title).toBe("higher");
+    });
+
+    it("pins nothing when no release beats the file or its resolution is unknown", () => {
+      const list = [at("same", 1080, 900)];
+      expect(
+        pickBestMatch(list, { upgradeMode: true, upgradeOverResolution: 1080 }),
+      ).toBeNull();
+      expect(
+        pickBestMatch(list, { upgradeMode: true, upgradeOverResolution: null }),
+      ).toBeNull();
+    });
   });
 
   it("is null without a profile score or without a candidate", () => {

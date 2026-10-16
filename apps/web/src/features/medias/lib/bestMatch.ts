@@ -1,20 +1,43 @@
 import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
 
-/** The release a profile-scoped auto search would grab: top score among those it may grab. */
+export interface BestMatchOptions {
+  /** Lower-cased titles the user just blocked; they can no longer be grabbed. */
+  blockedTitles?: Set<string>;
+  /** Guid of the AI pick; it wins over the score so the list shows one winner. */
+  aiPickKey?: string | null;
+  /** Upgrade mode: only a release above this resolution counts (null = unknown, so none). */
+  upgradeOverResolution?: number | null;
+  upgradeMode?: boolean;
+}
+
+/**
+ * The release auto search would grab: the AI pick when set, else the top score
+ * among releases it may grab. Pass releases in server order; ties keep it.
+ */
 export function pickBestMatch(
   releases: InteractiveReleaseItem[],
+  opts: BestMatchOptions = {},
 ): InteractiveReleaseItem | null {
+  const eligible = releases.filter((release) => {
+    if (release.rejected || release.language_fallback) return false;
+    if (opts.blockedTitles?.has(release.title.trim().toLowerCase()))
+      return false;
+    if (!opts.upgradeMode) return true;
+    const resolution = release.parsed_quality?.resolution;
+    return (
+      resolution != null &&
+      opts.upgradeOverResolution != null &&
+      resolution > opts.upgradeOverResolution
+    );
+  });
+  const picked = opts.aiPickKey
+    ? eligible.find((release) => release.guid === opts.aiPickKey)
+    : undefined;
+  if (picked) return picked;
   let best: InteractiveReleaseItem | null = null;
-  for (const release of releases) {
-    if (release.rejected || release.language_fallback) continue;
+  for (const release of eligible) {
     if (release.quality_score == null) continue;
-    // Same order as the search route: score descending, then title.
-    if (
-      best === null ||
-      release.quality_score > (best.quality_score ?? 0) ||
-      (release.quality_score === best.quality_score &&
-        release.title.localeCompare(best.title) < 0)
-    )
+    if (best === null || release.quality_score > (best.quality_score ?? 0))
       best = release;
   }
   return best;
