@@ -1,9 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { getCurrentUser } from "@/lib/auth";
-import { prefetchRouteData } from "@/lib/routing/prefetch";
-import { ExplorePage } from "@/pages/medias/_component/ExplorePage";
+import { FindPage } from "@/pages/find/_component/FindPage";
 
-type ExploreSearchParams = {
+type FindSearchParams = {
   type?: "movie" | "tv";
   provider?: number;
   genre?: number;
@@ -11,6 +10,7 @@ type ExploreSearchParams = {
   page?: number;
   lang?: string;
   q?: string;
+  hide_owned?: boolean;
 };
 
 const parseOptionalInt = (val: unknown): number | undefined =>
@@ -21,7 +21,7 @@ const parseOptionalInt = (val: unknown): number | undefined =>
       : undefined;
 
 export const Route = createFileRoute("/find/")({
-  validateSearch: (search: Record<string, unknown>): ExploreSearchParams => ({
+  validateSearch: (search: Record<string, unknown>): FindSearchParams => ({
     type:
       search.type === "movie" || search.type === "tv" ? search.type : undefined,
     provider: parseOptionalInt(search.provider),
@@ -32,6 +32,10 @@ export const Route = createFileRoute("/find/")({
     lang:
       typeof search.lang === "string" && search.lang ? search.lang : undefined,
     q: typeof search.q === "string" && search.q ? search.q : undefined,
+    hide_owned:
+      search.hide_owned === true || search.hide_owned === "true"
+        ? true
+        : undefined,
   }),
   beforeLoad: async () => {
     try {
@@ -43,8 +47,5 @@ export const Route = createFileRoute("/find/")({
       throw e;
     }
   },
-  loader: async ({ context }) => {
-    await prefetchRouteData(context.queryClient, "/find");
-  },
-  component: ExplorePage,
+  component: FindPage,
 });

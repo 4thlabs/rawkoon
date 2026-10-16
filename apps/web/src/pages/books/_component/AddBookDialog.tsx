@@ -16,10 +16,17 @@ import { BookRequestAction } from "./BookRequestAction";
  * rate-limited and returns intermittent 503s, so typing-triggered queries
  * would both waste quota and surface spurious failures.
  */
-export function AddBookDialog({ onClose }: { onClose: () => void }) {
+export function AddBookDialog({
+  onClose,
+  initialQuery = "",
+}: {
+  onClose: () => void;
+  /** Starts the search for this term as soon as the dialog opens. */
+  initialQuery?: string;
+}) {
   const { t } = useTranslation("common");
-  const [input, setInput] = useState("");
-  const [submitted, setSubmitted] = useState("");
+  const [input, setInput] = useState(initialQuery);
+  const [submitted, setSubmitted] = useState(initialQuery.trim());
   const [kinds, setKinds] = useState<BookEditionKind[]>(["ebook"]);
 
   const { data, isFetching, error } = useBookProviderSearch(

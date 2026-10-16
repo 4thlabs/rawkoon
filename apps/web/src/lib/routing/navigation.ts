@@ -1,5 +1,6 @@
 import { Activity, Compass, LayoutDashboard, Library } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { readFindMode } from "@/lib/routing/findMode";
 
 export interface NavItem {
   path: string;
@@ -27,4 +28,9 @@ export function isNavRouteActive(path: string, pathname: string): boolean {
 /** Books sit under Library, so every /books page keeps Library lit. */
 function isBooks(pathname: string): boolean {
   return pathname === "/books" || pathname.startsWith("/books/");
+}
+
+/** The nav entry for Find reopens the mode last used this session. */
+export function resolveNavPath(path: string): string {
+  return path === "/find" && readFindMode() === "swipe" ? "/find/swipe" : path;
 }

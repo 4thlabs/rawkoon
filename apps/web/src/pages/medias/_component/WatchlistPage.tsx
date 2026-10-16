@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FindBackLink } from "@/pages/find/_component/FindBackLink";
 import { useTranslation } from "react-i18next";
 import { useRemoveFromWatchlist } from "@/features/medias/hooks/useRemoveFromWatchlist";
 import { useWatchlist } from "@/features/medias/hooks/useWatchlist";
@@ -140,6 +141,7 @@ export function WatchlistPage() {
 
   return (
     <PageLayout>
+      <FindBackLink />
       <PageHeader
         icon={Bookmark}
         iconColor="text-amber-500"

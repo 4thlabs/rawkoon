@@ -1766,8 +1766,6 @@
       "ownedOf": "{{owned}}/{{total}}"
     },
     "explore": {
-      "pageTitle": "Explore",
-      "pageSubtitle": "Search TMDB and browse Discover.",
       "trending": "Trending",
       "popularMovies": "Popular Movies",
       "popularShows": "Popular TV Shows",
@@ -2961,5 +2959,34 @@
       "calendar": "Calendar",
       "history": "History"
     }
+  },
+  "find": {
+    "title": "Find",
+    "browse": "Browse",
+    "swipe": "Swipe",
+    "modeLabel": "Find mode",
+    "placeholder": "Search movies, shows, books and your library",
+    "clear": "Clear search",
+    "hideOwned": "Hide what I own",
+    "groups": {
+      "library": "In your library",
+      "titles": "Movies & shows",
+      "books": "Books"
+    },
+    "shelves": {
+      "label": "Shelves",
+      "watchlist": "Watchlist",
+      "watchlistHint": "Titles you saved for later",
+      "collections": "Collections",
+      "collectionsHint": "Complete the sets you started",
+      "bestsellers": "Bestsellers",
+      "bestsellersHint": "Book lists for your next read"
+    },
+    "countInList": "titles in this list",
+    "hiddenOnPage_one": "{{count}} title you own is hidden on this page",
+    "hiddenOnPage_other": "{{count}} titles you own are hidden on this page",
+    "allOwnedOnPage": "Everything on this page is already in your library.",
+    "nextPage": "Next page",
+    "searchingBooks": "Searching books..."
   }
 }

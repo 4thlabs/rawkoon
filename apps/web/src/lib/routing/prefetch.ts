@@ -8,7 +8,6 @@ import {
   DASHBOARD_ENDPOINTS,
   DOWNLOADS_ENDPOINTS,
   LIBRARY_ENDPOINTS,
-  MEDIAS_ENDPOINTS,
   NOTIFICATION_ENDPOINTS,
   INTEGRATION_ENDPOINTS,
   QUALITY_PROFILES_ENDPOINTS,
@@ -117,13 +116,6 @@ const routeQueryDefinitions = {
     {
       queryKey: queryKeys.dashboard.upcoming(),
       queryFn: () => webFetcher(DASHBOARD_ENDPOINTS.UPCOMING.LIST),
-    },
-  ],
-
-  "/find": () => [
-    {
-      queryKey: queryKeys.medias.explore(),
-      queryFn: () => webFetcher(`${MEDIAS_ENDPOINTS.EXPLORE}?language=en`),
     },
   ],
 

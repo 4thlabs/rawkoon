@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders, screen } from "@/test-utils/render";
 import { BooksExplorePage } from "./BooksExplorePage";
 
+vi.mock("@/pages/find/_component/FindBackLink", () => ({
+  FindBackLink: () => null,
+}));
+
 vi.mock("@/pages/books/_hooks/useBookDiscovery", () => ({
   useBookDiscoverySources: () => ({
     data: {

@@ -7,7 +7,11 @@ import { NavBadge } from "@/components/NavBadge";
 import { usePrefetchRoute } from "@/lib/routing/usePrefetchRoute";
 import { useTheme } from "@/lib/app/useTheme";
 import { cn } from "@/lib/utils";
-import { isNavRouteActive, navItems } from "@/lib/routing/navigation";
+import {
+  isNavRouteActive,
+  navItems,
+  resolveNavPath,
+} from "@/lib/routing/navigation";
 import { useActivityBadge } from "@/lib/notifications/useActivityBadge";
 import type { NavPosition } from "@rawkoon/shared/types";
 
@@ -90,7 +94,7 @@ export function Sidebar({ onOpenQuickActions, position }: SidebarProps) {
               return (
                 <Link
                   key={item.path}
-                  to={item.path}
+                  to={resolveNavPath(item.path)}
                   onMouseEnter={() => prefetchRoute(item.path)}
                   className={cn(
                     "relative flex items-center rounded-lg text-[13px] font-medium transition-colors duration-150",

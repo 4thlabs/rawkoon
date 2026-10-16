@@ -31,6 +31,7 @@ export function DiscoverPanel() {
   const sortBy = state.sort;
   const page = state.page;
   const originalLanguage = state.lang;
+  const hideOwned = state.hide_owned;
 
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -108,7 +109,17 @@ export function DiscoverPanel() {
     dataPage: data?.page,
   });
   const showSkeletonGrid = !data && isFetching;
-  const hasItems = (data?.items.length ?? 0) > 0;
+  // Filters the page in view: the API has no "not in library" parameter.
+  const items = hideOwned
+    ? data?.items.filter((item) => !item.already_exists)
+    : data?.items;
+  const hasItems = (items?.length ?? 0) > 0;
+  const hiddenCount = hideOwned
+    ? (data?.items.length ?? 0) - (items?.length ?? 0)
+    : 0;
+  const allOwnedOnPage =
+    hideOwned && !hasItems && (data?.items.length ?? 0) > 0;
+  const hasNextPage = page < totalPages;
 
   return (
     <section className="relative space-y-5">
@@ -125,7 +136,8 @@ export function DiscoverPanel() {
         )}
         {totalResults != null && data != null && (
           <span className="text-xs tabular-nums text-neutral-400">
-            {totalResults.toLocaleString()} {t("medias.discover.titles")}
+            {totalResults.toLocaleString()}{" "}
+            {hideOwned ? t("find.countInList") : t("medias.discover.titles")}
           </span>
         )}
       </div>
@@ -149,6 +161,23 @@ export function DiscoverPanel() {
           onSortChange={changeSort}
           onLanguageToggle={toggleLanguage}
         />
+        <button
+          type="button"
+          aria-pressed={hideOwned}
+          onClick={() => setState({ hide_owned: !hideOwned })}
+          className={`focus-ring rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+            hideOwned
+              ? "border-primary-500/50 bg-primary-500/10 text-primary-200"
+              : "border-neutral-700 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
+          }`}
+        >
+          {t("find.hideOwned")}
+        </button>
+        {hiddenCount > 0 && (
+          <p className="text-xs text-neutral-400">
+            {t("find.hiddenOnPage", { count: hiddenCount })}
+          </p>
+        )}
       </div>
 
       <DiscoverResultsGrid
@@ -157,9 +186,26 @@ export function DiscoverPanel() {
         hasItems={hasItems}
         gridKey={gridKey}
         isPlaceholderData={isPlaceholderData}
-        items={data?.items}
-        noResultsLabel={t("medias.discover.noResults")}
+        items={items}
+        noResultsLabel={
+          allOwnedOnPage
+            ? t("find.allOwnedOnPage")
+            : t("medias.discover.noResults")
+        }
       />
+
+      {allOwnedOnPage && hasNextPage && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setState({ page: page + 1 })}
+            disabled={isFetching}
+            className="focus-ring rounded-lg bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-100 hover:bg-neutral-700 disabled:opacity-50"
+          >
+            {t("find.nextPage")}
+          </button>
+        </div>
+      )}
 
       <DiscoverPagination
         page={page}

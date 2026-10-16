@@ -180,7 +180,6 @@ export const queryKeys = {
 
   medias: {
     all: ["medias"] as const,
-    explore: () => [...queryKeys.medias.all, "explore"] as const,
     similar: (tmdbId: number, type: "movie" | "tv") =>
       [...queryKeys.medias.all, "similar", tmdbId, type] as const,
     tmdbSearch: (
