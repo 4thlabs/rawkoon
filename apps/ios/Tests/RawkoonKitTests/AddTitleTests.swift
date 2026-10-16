@@ -33,7 +33,7 @@ final class AddTitleTests: XCTestCase {
         let start = Date(timeIntervalSince1970: 1000)
         XCTAssertEqual(gate.rotationDelay(at: start), HeroRotation.rotateSeconds)
         gate.touchBegan(at: start)
-        XCTAssertNil(gate.rotationDelay(at: start.addingTimeInterval(60)))
+        XCTAssertNil(gate.rotationDelay(at: start.addingTimeInterval(HeroInteractionGate.touchTimeout - 1)))
     }
 
     func testAStaleTouchCountsAsReleased() {
