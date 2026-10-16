@@ -26,6 +26,14 @@ struct NotificationDestinationTests {
         #expect(NotificationDestination.inbox.hostTab == .activity)
         #expect(NotificationDestination.calendar(date: nil).hostTab == .activity)
         #expect(NotificationDestination.watchlist.hostTab == .find)
-        #expect(NotificationDestination.requests.hostTab == nil)
+        #expect(NotificationDestination.requests.hostTab == .activity)
+        #expect(NotificationDestination.reencode.hostTab == nil)
+    }
+
+    @Test func tabHostedDestinationsNameTheirLane() {
+        #expect(NotificationDestination.inbox.activityLane == .inbox)
+        #expect(NotificationDestination.requests.activityLane == .requests)
+        #expect(NotificationDestination.calendar(date: "2026-10-16").activityLane == .calendar)
+        #expect(NotificationDestination.watchlist.activityLane == nil)
     }
 }

@@ -1,10 +1,13 @@
 import RawkoonKit
 import SwiftUI
 
-/// Requests tab: everyone sees their own (and others') pending/all requests;
+/// Requests lane of Activity: everyone sees their own (and others') pending/all requests;
 /// admins get approve/deny actions inline.
 struct RequestsView: View {
     @Environment(AppModel.self) private var model
+
+    /// True inside the Activity tab, which owns the navigation title.
+    var embedded = false
 
     private enum Filter: String, CaseIterable, Identifiable {
         case pending = "Pending"
@@ -66,8 +69,7 @@ struct RequestsView: View {
         .rawkoonMotion(RawkoonMotion.spring, value: adminNote)
         .readableWidth()
         .background(Theme.base)
-        .navigationTitle("Requests")
-        .navigationBarTitleDisplayMode(.inline)
+        .standaloneTitle("Requests", embedded: embedded)
         .onAppear(perform: hydrateFromCache)
         .task { await load() }
         .onChange(of: model.isOffline) { _, offline in
@@ -163,6 +165,7 @@ struct RequestsView: View {
         }
         // An approved or denied request leaves the Pending list with an animation; so does a filter switch.
         .rawkoonMotion(RawkoonMotion.spring, value: visibleRequests.map(\.id))
+        .reportsTabBarScroll()
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .refreshable { await load() }

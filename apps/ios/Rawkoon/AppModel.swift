@@ -90,6 +90,8 @@ final class AppModel {
     var findMode: FindMode = .browse
     /// A Find shelf a deep link asked to open; Find consumes it.
     var requestedFindShelf: FindShelf?
+    /// An Activity lane a deep link or an inbox action asked to open; Activity consumes it.
+    var requestedActivityLane: ActivityLane?
     /// Open requests awaiting an admin, for the Activity badge; zero for everyone else.
     var pendingRequestCount = 0
 
