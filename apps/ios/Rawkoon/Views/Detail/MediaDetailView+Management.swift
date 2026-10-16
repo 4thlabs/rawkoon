@@ -106,41 +106,7 @@ extension MediaDetailView {
                 .accessibilityLabel("More actions")
             }
 
-            if let note = item.lastSearchNote {
-                LastSearchLine(note: note, showsReason: true)
-            }
-
-            // The card's one lamp: searching releases is the primary reason an
-            // admin opens Management. Movies split it: tap auto-searches, the
-            // chevron opens the interactive sheet. Shows search per season/episode.
-            // Only a wanted movie: /search resets status to wanted and grabs as a
-            // first download, so a downloaded movie keeps the interactive lamp.
-            // A wanted item that came up empty swaps the lamp for explicit retry/choose buttons.
-            if let note = item.lastSearchNote, note.isMiss {
-                missActions
-            } else if mediaType == "movie", movieCanAutoSearch(type: "movie", status: item.status) {
-                MovieAutoSearchLamp(
-                    isSearching: autoSearching,
-                    onAutoSearch: { Task { await movieAutoSearch() } },
-                    onChoose: { openReleaseSearch() }
-                )
-                .disabled(applyingManagementChange)
-                .requiresConnection(model.isOffline)
-            } else {
-                Button {
-                    openReleaseSearch()
-                } label: {
-                    Label("Search releases", systemImage: "magnifyingglass")
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: 44)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.apricot)
-                .foregroundStyle(Theme.onAccent)
-                .fontWeight(.semibold)
-                .disabled(applyingManagementChange)
-                .requiresConnection(model.isOffline)
-            }
+            searchControls(item)
 
             managementDivider
 
@@ -185,6 +151,46 @@ extension MediaDetailView {
                 }
                 .environment(model)
             }
+        }
+    }
+
+    /// The last outcome line and the one search control the item needs now.
+    @ViewBuilder
+    private func searchControls(_ item: LibraryMedia) -> some View {
+        if let note = item.lastSearchNote {
+            LastSearchLine(note: note, showsReason: true)
+        }
+
+        // The card's one lamp: searching releases is the primary reason an
+        // admin opens Management. Movies split it: tap auto-searches, the
+        // chevron opens the interactive sheet. Shows search per season/episode.
+        // Only a wanted movie: /search resets status to wanted and grabs as a
+        // first download, so a downloaded movie keeps the interactive lamp.
+        // A wanted item that came up empty swaps the lamp for explicit retry/choose buttons.
+        if let note = item.lastSearchNote, note.isMiss {
+            missActions
+        } else if mediaType == "movie", movieCanAutoSearch(type: "movie", status: item.status) {
+            MovieAutoSearchLamp(
+                isSearching: autoSearching,
+                onAutoSearch: { Task { await movieAutoSearch() } },
+                onChoose: { openReleaseSearch() }
+            )
+            .disabled(applyingManagementChange)
+            .requiresConnection(model.isOffline)
+        } else {
+            Button {
+                openReleaseSearch()
+            } label: {
+                Label("Search releases", systemImage: "magnifyingglass")
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.apricot)
+            .foregroundStyle(Theme.onAccent)
+            .fontWeight(.semibold)
+            .disabled(applyingManagementChange)
+            .requiresConnection(model.isOffline)
         }
     }
 

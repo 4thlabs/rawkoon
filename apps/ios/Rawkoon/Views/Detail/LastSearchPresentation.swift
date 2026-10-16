@@ -12,8 +12,8 @@ enum LastSearchCopy {
         case .grabbed: String(localized: "Searched, grabbed a release")
         case .error: String(localized: "Search failed")
         }
-        guard note.showsAge, let at = note.at else { return title }
-        return "\(title) · \(age(at, now: now))"
+        guard note.showsAge, let searchedAt = note.searchedAt else { return title }
+        return "\(title) · \(age(searchedAt, now: now))"
     }
 
     static func age(_ date: Date, now: Date) -> String {

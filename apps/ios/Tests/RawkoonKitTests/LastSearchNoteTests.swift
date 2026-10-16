@@ -3,10 +3,10 @@ import XCTest
 
 final class LastSearchNoteTests: XCTestCase {
     private func note(
-        status: String = "wanted", outcome: String? = "no_match", at: String? = "2026-10-16T17:38:10.872Z",
+        status: String = "wanted", outcome: String? = "no_match", time: String? = "2026-10-16T17:38:10.872Z",
         reason: String? = "No matching releases found"
     ) -> LastSearchNote? {
-        LastSearchNote(status: status, outcome: outcome, at: at, reason: reason)
+        LastSearchNote(status: status, outcome: outcome, at: time, reason: reason)
     }
 
     func testNoMatchOnWantedItem() throws {
@@ -32,10 +32,10 @@ final class LastSearchNoteTests: XCTestCase {
     }
 
     func testTimeParsesWithAndWithoutFraction() throws {
-        XCTAssertNotNil(try XCTUnwrap(note(at: "2026-10-16T17:38:10Z")).at)
-        XCTAssertNotNil(try XCTUnwrap(note(at: "2026-10-16T17:38:10.872Z")).at)
-        XCTAssertNil(try XCTUnwrap(note(at: "garbage")).at)
-        XCTAssertFalse(try XCTUnwrap(note(at: nil)).showsAge)
+        XCTAssertNotNil(try XCTUnwrap(note(time: "2026-10-16T17:38:10Z")).searchedAt)
+        XCTAssertNotNil(try XCTUnwrap(note(time: "2026-10-16T17:38:10.872Z")).searchedAt)
+        XCTAssertNil(try XCTUnwrap(note(time: "garbage")).searchedAt)
+        XCTAssertFalse(try XCTUnwrap(note(time: nil)).showsAge)
     }
 
     func testOnlyNoMatchAndErrorAreMisses() throws {
@@ -50,20 +50,20 @@ final class LastSearchNoteTests: XCTestCase {
     }
 
     func testRecentMissesNewestFirstAndCapped() {
-        struct Row { let id: Int; let outcome: String?; let at: String? }
+        struct Row { let id: Int; let outcome: String?; let time: String? }
         let rows = [
-            Row(id: 1, outcome: "no_match", at: "2026-10-16T10:00:00Z"),
-            Row(id: 2, outcome: "delayed", at: "2026-10-16T12:00:00Z"),
-            Row(id: 3, outcome: "no_match", at: "2026-10-16T11:00:00Z"),
-            Row(id: 4, outcome: "error", at: nil),
-            Row(id: 5, outcome: nil, at: nil),
+            Row(id: 1, outcome: "no_match", time: "2026-10-16T10:00:00Z"),
+            Row(id: 2, outcome: "delayed", time: "2026-10-16T12:00:00Z"),
+            Row(id: 3, outcome: "no_match", time: "2026-10-16T11:00:00Z"),
+            Row(id: 4, outcome: "error", time: nil),
+            Row(id: 5, outcome: nil, time: nil)
         ]
         let all = LastSearchNote.recentMisses(rows, limit: 10) {
-            LastSearchNote(status: "wanted", outcome: $0.outcome, at: $0.at, reason: nil)
+            LastSearchNote(status: "wanted", outcome: $0.outcome, at: $0.time, reason: nil)
         }
         XCTAssertEqual(all.map(\.id), [3, 1, 4])
         let capped = LastSearchNote.recentMisses(rows, limit: 2) {
-            LastSearchNote(status: "wanted", outcome: $0.outcome, at: $0.at, reason: nil)
+            LastSearchNote(status: "wanted", outcome: $0.outcome, at: $0.time, reason: nil)
         }
         XCTAssertEqual(capped.map(\.id), [3, 1])
     }

@@ -307,42 +307,8 @@ struct LibraryMediaView: View {
                 )
                 .transition(.rawkoonSwap)
         } else if mediaItem.status == "wanted" || mediaItem.status == "missing" {
-            wantedBadge(for: mediaItem)
+            WantedBadge(media: mediaItem)
                 .transition(.rawkoonSwap)
-        }
-    }
-
-    /// Says why a wanted title is still wanted: a miss gets words, the rest a glyph with a spoken label.
-    @ViewBuilder
-    private func wantedBadge(for mediaItem: LibraryMedia) -> some View {
-        let note = mediaItem.lastSearchNote
-        if note?.outcome == .noMatch {
-            Text("No match")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Theme.base)
-                .lineLimit(1)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(Theme.terracotta, in: Capsule())
-        } else {
-            let glyph = wantedGlyph(status: mediaItem.status, note: note)
-            Circle().fill(Theme.muted.opacity(0.9)).frame(width: 22, height: 22)
-                .overlay(
-                    Image(systemName: glyph.symbol)
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Theme.base)
-                )
-                .accessibilityElement()
-                .accessibilityLabel(glyph.label)
-        }
-    }
-
-    private func wantedGlyph(status: String, note: LastSearchNote?) -> (symbol: String, label: LocalizedStringKey) {
-        switch note?.outcome {
-        case .delayed: ("clock", "Held by the grab delay")
-        case .notReleased: ("calendar", "Not released yet")
-        case .error: ("exclamationmark", "Search failed")
-        default: status == "missing" ? ("exclamationmark", "Missing") : ("hourglass", "Wanted")
         }
     }
 

@@ -45,9 +45,9 @@ public struct HomeDownloadsSummary: Equatable, Sendable {
     public static func make(_ lines: [HomeDownloadLine], limit: Int) -> HomeDownloadsSummary {
         let active = lines.filter { DownloadPhase.classify($0.state) != .seeding }
         let ranked = active.enumerated().sorted { lhs, rhs in
-            let (l, r) = (lhs.element, rhs.element)
-            if l.speed != r.speed {
-                return l.speed > r.speed
+            let (left, right) = (lhs.element, rhs.element)
+            if left.speed != right.speed {
+                return left.speed > right.speed
             }
             return lhs.offset < rhs.offset
         }.map(\.element)

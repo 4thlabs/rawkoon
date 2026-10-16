@@ -115,7 +115,8 @@ extension HomeView {
                 speedLabel("up", speed.ulSpeed, Theme.muted)
             }
         } else {
-            Text(LocalizedStringKey(speed?.enabled == true ? "Download client offline." : "No download client configured."))
+            let offline = speed?.enabled == true
+            Text(LocalizedStringKey(offline ? "Download client offline." : "No download client configured."))
                 .font(.subheadline).foregroundStyle(Theme.muted)
         }
     }
@@ -191,7 +192,8 @@ extension HomeView {
                         HStack(spacing: 6) {
                             Spacer(minLength: 0)
                             Text("See all missing").font(.caption.weight(.medium)).foregroundStyle(Theme.apricotSoft)
-                            Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(Theme.faint)
+                            Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
+                                .foregroundStyle(Theme.faint)
                         }
                         .frame(minHeight: 32)
                         .contentShape(Rectangle())
