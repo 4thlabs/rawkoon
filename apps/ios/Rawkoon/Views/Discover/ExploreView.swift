@@ -14,6 +14,7 @@ struct ExploreView: View {
 
     @State var filters = ExploreFilters()
     @State var query = ""
+    @FocusState private var searchFocused: Bool
     @State var items: [TmdbSearchItem] = []
     @State var page = 1
     @State var totalPages = 1
@@ -69,6 +70,15 @@ struct ExploreView: View {
         .sheet(isPresented: $showFilters) {
             ExploreFilterSheet(filters: $filters)
         }
+        // Home's search button and a re-tap of the Explore tab both ask for the field.
+        .onChange(of: model.exploreSearchFocusRequest, initial: true) { _, requested in
+            guard requested else { return }
+            model.exploreSearchFocusRequest = false
+            Task {
+                try? await Task.sleep(for: .milliseconds(350))
+                searchFocused = true
+            }
+        }
         .task {
             if items.isEmpty, !loading {
                 await loadFirstPage()
@@ -120,7 +130,7 @@ struct ExploreView: View {
     private var gridScroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                MediaSearchField(query: $query)
+                MediaSearchField(query: $query, focus: $searchFocused)
 
                 if MediaSearchField.isActive(query) {
                     MediaSearchResults(query: query)

@@ -378,7 +378,7 @@ extension MediaDetailView {
     }
 
     // Admin: add straight to the library from TMDB.
-    func submitAdd() async {
+    func submitAdd(mode: AddMode = .standard) async {
         guard let client = model.api() else {
             requestError = String(localized: "Not logged in.")
             return
@@ -401,7 +401,9 @@ extension MediaDetailView {
                 ),
                 tmdbId: tmdbId,
                 type: type,
-                title: title
+                title: title,
+                searchOnAdd: mode.searchOnAdd,
+                announce: !mode.opensReleaseSheet
             )
             added = true
             model.requestPushAuthorization()
@@ -412,6 +414,9 @@ extension MediaDetailView {
             if showManagement {
                 detailTab = .manage
                 await refreshManagementData()
+            }
+            if mode.opensReleaseSheet {
+                openReleaseSearch()
             }
         } catch APIError.unauthorized {
             requestError = String(localized: "Admin only.")

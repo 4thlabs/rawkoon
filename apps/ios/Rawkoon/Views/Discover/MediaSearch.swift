@@ -5,12 +5,16 @@ import SwiftUI
 /// the grid; two or more characters swap the grid for `MediaSearchResults`.
 struct MediaSearchField: View {
     @Binding var query: String
+    var focus: FocusState<Bool>.Binding?
+
+    @FocusState private var unusedFocus: Bool
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(Theme.muted)
             TextField("Search movies, shows & books", text: $query)
+                .focused(focus ?? $unusedFocus)
                 .foregroundStyle(Theme.text)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
@@ -53,14 +57,15 @@ struct MediaSearchResults: View {
     @State private var searchError: String?
     @State private var addingVolumeId: String?
     @State private var requestingVolumeId: String?
+    /// Movie/show results being added or requested, added this session (with their library id), requested this session.
+    @State private var addingTitleIds: Set<String> = []
+    @State private var addedLibraryIds: [String: Int] = [:]
+    @State private var addedTitleIds: Set<String> = []
+    @State private var requestedTitleIds: Set<String> = []
     /// Volumes requested this session, so the row flips before (or without) a server echo.
     @State private var requestedVolumeIds: Set<String> = []
     /// What the results on screen were searched for.
     @State private var resultsKey: SearchKey?
-
-    /// Reserves space for a 2-line caption at the standard content size; grows
-    /// with Dynamic Type instead of clipping the title at larger sizes.
-    @ScaledMetric(relativeTo: .caption) private var captionMinHeight: CGFloat = 34
 
     private enum KindFilter: String, CaseIterable {
         case all = "All"
@@ -134,22 +139,14 @@ struct MediaSearchResults: View {
         .padding(.horizontal, 16)
     }
 
-    // MARK: Search grid
-
-    private var searchGridColumns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
-    }
+    // MARK: Search results
 
     @ViewBuilder
     private var searchContent: some View {
         if loadingSearch {
-            LazyVGrid(columns: searchGridColumns, spacing: 14) {
-                ForEach(0 ..< 9, id: \.self) { _ in
-                    VStack(alignment: .leading, spacing: 6) {
-                        ShimmerView(cornerRadius: 10)
-                            .aspectRatio(2.0 / 3.0, contentMode: .fit)
-                        ShimmerView(cornerRadius: 4).frame(height: 12)
-                    }
+            VStack(spacing: 10) {
+                ForEach(0 ..< 5, id: \.self) { _ in
+                    ShimmerView(cornerRadius: 14).frame(height: 120)
                 }
             }
             .padding(.horizontal, 16)
@@ -201,24 +198,15 @@ struct MediaSearchResults: View {
                             .foregroundStyle(Theme.textStrong)
                             .padding(.horizontal, 16)
                     }
-                    LazyVGrid(columns: searchGridColumns, spacing: 14) {
+                    LazyVStack(spacing: 10) {
                         ForEach(searchResults) { item in
-                            let zoomID = RawkoonZoom.media(tmdbId: item.tmdbId, mediaType: item.mediaType)
-                            NavigationLink {
-                                MediaDetailView(
-                                    tmdbId: item.tmdbId,
-                                    mediaType: item.mediaType,
-                                    title: item.title,
-                                    posterPath: item.posterUrl,
-                                    libraryId: item.libraryId
-                                )
-                                .rawkoonZoomDestination(zoomID)
-                            } label: {
-                                posterCard(item, fixedWidth: nil)
-                                    .rawkoonZoomSource(zoomID)
-                            }
-                            .buttonStyle(.rawkoonPressable)
-                            .rawkoonScrollSettle()
+                            SearchTitleRow(
+                                item: item,
+                                action: resultAction(for: item),
+                                busy: addingTitleIds.contains(item.id),
+                                libraryId: addedLibraryIds[item.id],
+                                onAdd: { mode in Task { await addTitle(item, mode: mode) } }
+                            )
                             .rawkoonEntrance(id: item.id)
                         }
                     }
@@ -329,58 +317,6 @@ struct MediaSearchResults: View {
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.border, lineWidth: 1))
     }
 
-    // MARK: Poster card
-
-    /// A 2:3 poster with a status chip, plus a title caption below the image.
-    /// Pass `fixedWidth` for a known point size; pass nil inside the search
-    /// grid, where the LazyVGrid column already constrains the width and the
-    /// view simply fills it while keeping the 2:3 ratio.
-    @ViewBuilder
-    private func posterCard(_ item: TmdbSearchItem, fixedWidth: CGFloat?) -> some View {
-        let image = CachedAsyncImage(url: model.absoluteURL(item.posterUrl), targetSize: CGSize(width: 160, height: 240)) { image in
-            image.resizable().scaledToFill()
-        } placeholder: {
-            Theme.raised
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(alignment: .topTrailing) {
-            statusChip(item)
-                .padding(6)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.06), lineWidth: 1)
-        )
-
-        VStack(alignment: .leading, spacing: 6) {
-            if let fixedWidth {
-                image.frame(width: fixedWidth, height: fixedWidth * 1.5)
-            } else {
-                image.aspectRatio(2.0 / 3.0, contentMode: .fit)
-            }
-
-            Text(item.title)
-                .font(.caption)
-                .foregroundStyle(Theme.textStrong)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .frame(minHeight: captionMinHeight, alignment: .top)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .frame(width: fixedWidth)
-    }
-
-    @ViewBuilder
-    private func statusChip(_ item: TmdbSearchItem) -> some View {
-        if item.alreadyExists == true {
-            Image(systemName: "checkmark")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color(hex: 0x10231A))
-                .frame(width: 22, height: 22)
-                .background(Theme.seed, in: Circle())
-                .accessibilityLabel("In library")
-        }
-    }
-
     // MARK: Search data
 
     private func runSearch(query: String, kind: KindFilter) async {
@@ -440,6 +376,43 @@ struct MediaSearchResults: View {
             searchError = firstError
         } else {
             searchError = nil
+        }
+    }
+
+    private func resultAction(for item: TmdbSearchItem) -> SearchResultAction {
+        .resolve(
+            inLibrary: item.alreadyExists == true,
+            canAdd: item.canAdd ?? true,
+            isAdmin: model.isAdmin,
+            addedHere: addedTitleIds.contains(item.id),
+            requestedHere: requestedTitleIds.contains(item.id)
+        )
+    }
+
+    private func addTitle(_ item: TmdbSearchItem, mode: AddMode) async {
+        guard addingTitleIds.insert(item.id).inserted else { return }
+        defer { addingTitleIds.remove(item.id) }
+        do {
+            let added = try await model.addPick(TitlePick(item), mode: mode)
+            markDone(item, library: added?.id)
+        } catch let error as APIError {
+            // 409: it is already added or requested, so show that state.
+            if error.isConflict {
+                markDone(item, library: nil)
+            } else {
+                model.toast(message(for: error), style: .error)
+            }
+        } catch {
+            model.toast(String(localized: "Can't reach the server. Try again in a moment."), style: .error)
+        }
+    }
+
+    private func markDone(_ item: TmdbSearchItem, library: Int?) {
+        if model.isAdmin {
+            addedTitleIds.insert(item.id)
+            addedLibraryIds[item.id] = library
+        } else {
+            requestedTitleIds.insert(item.id)
         }
     }
 

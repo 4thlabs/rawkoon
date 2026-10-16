@@ -124,6 +124,16 @@ struct RootTabsView: View {
                     .offlineStrip(isOffline: model.isOffline)
             }
         }
+        .onChange(of: model.requestedRootTab) { _, tab in
+            guard let tab else { return }
+            model.requestedRootTab = nil
+            selection = tab
+            // Explore consumes the focus request on mount; drop it if nothing did.
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                model.exploreSearchFocusRequest = false
+            }
+        }
         .focusedSceneValue(\.rootTabSelection, validSelection)
         .focusedSceneValue(\.showPlayer) { showFullPlayer = true }
         .onOpenURL { url in
