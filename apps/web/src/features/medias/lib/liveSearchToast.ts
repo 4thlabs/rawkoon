@@ -25,8 +25,8 @@ export interface LiveSearchContext {
   language: string;
   /** Opens the item page, on its release list when `releases` is set. */
   openItem: (releases: boolean) => void;
-  /** Runs a manual search now, skipping any grab delay. */
-  grabNow: (season?: number) => void;
+  /** Grabs the held target early (`target_key` of a delayed result). */
+  grabNow: (targetKey: string) => void;
 }
 
 interface Entry {
@@ -71,13 +71,25 @@ export function trackSearch(ctx: LiveSearchContext): void {
       id,
       duration: RESULT_TOAST_MS,
     });
+    // Stop hiding this item's grab popup once the toast has given up waiting.
+    scheduleCleanup(ctx.mediaId, entry);
   }, STILL_SEARCHING_MS);
+}
+
+function scheduleCleanup(mediaId: number, entry: Entry) {
+  if (entry.cleanup) clearTimeout(entry.cleanup);
+  entry.cleanup = setTimeout(
+    () => {
+      if (entries.get(mediaId) === entry) entries.delete(mediaId);
+    },
+    entry.ctx.isShow ? SHOW_GRACE_MS : MOVIE_GRACE_MS,
+  );
 }
 
 function button(
   ctx: LiveSearchContext,
   action: SearchToastAction,
-  season: number | undefined,
+  targetKey: string | undefined,
 ) {
   switch (action) {
     case "view":
@@ -96,12 +108,13 @@ function button(
         onClick: () => ctx.openItem(true),
       };
     case "grabNow":
+      if (!targetKey) return undefined;
       return {
         label: ctx.t("medias.searchToast.grabNow"),
         // Keep the toast: sonner would otherwise dismiss the one the new search just reused.
         onClick: (event: { preventDefault: () => void }) => {
           event.preventDefault();
-          ctx.grabNow(season);
+          ctx.grabNow(targetKey);
         },
       };
   }
@@ -120,23 +133,44 @@ export function applySearchResult(result: SearchResultPayload): void {
   const options = {
     id: toastIdFor(result.media_id),
     duration: RESULT_TOAST_MS,
-    action: first ? button(ctx, first, result.season) : undefined,
-    cancel: second ? button(ctx, second, result.season) : undefined,
+    action: first ? button(ctx, first, result.target_key) : undefined,
+    cancel: second ? button(ctx, second, result.target_key) : undefined,
   };
   if (view.variant === "error") toast.error(view.message, options);
   else if (view.variant === "success") toast.success(view.message, options);
   else toast.info(view.message, options);
 
+  settle(result.media_id, entry, rank);
+}
+
+function settle(mediaId: number, entry: Entry, rank: number) {
   entry.settledRank = rank;
   clearTimers(entry);
-  entry.cleanup = setTimeout(
-    () => {
-      if (entries.get(result.media_id) === entry) {
-        entries.delete(result.media_id);
-      }
-    },
-    ctx.isShow ? SHOW_GRACE_MS : MOVIE_GRACE_MS,
-  );
+  scheduleCleanup(mediaId, entry);
+}
+
+/** The answer to "Grab now" on a held item: a grab, or why nothing was grabbed. */
+export function applyGrabNowResult(
+  mediaId: number,
+  res: { grabbed: boolean; reason?: string | null },
+): void {
+  if (res.grabbed) {
+    applySearchResult({ media_id: mediaId, outcome: "grabbed" });
+    return;
+  }
+  const entry = entries.get(mediaId);
+  if (!entry) return;
+  const { t } = entry.ctx;
+  toast.info(t("dashboard.home.nothingGrabbed"), {
+    id: toastIdFor(mediaId),
+    duration: RESULT_TOAST_MS,
+    description: res.reason
+      ? t(`dashboard.home.grabMiss.${res.reason}`)
+      : undefined,
+    action: undefined,
+    cancel: undefined,
+  });
+  settle(mediaId, entry, outcomeRank("delayed"));
 }
 
 /** True while an item's live toast owns its grab news, so its popup stays quiet. */

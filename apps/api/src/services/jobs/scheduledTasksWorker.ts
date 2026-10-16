@@ -118,7 +118,8 @@ export async function processScheduledJob(job: Job) {
           mediaId: number;
           season?: number;
         };
-        await searchOnAdd(mediaId, season);
+        const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
+        await searchOnAdd(mediaId, season, isFinalAttempt);
         break;
       }
       case SCHEDULED_JOB_NAMES.REFRESH_GITHUB_RELEASES: {

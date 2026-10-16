@@ -5,13 +5,18 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type {
   AddToLibraryResponse,
+  GrabPendingReleaseResponse,
   LibrarySearchResponse,
 } from "@rawkoon/shared/types";
 import { useFetcher } from "@/lib/api/context";
-import { LIBRARY_ENDPOINTS } from "@/lib/endpoints";
+import { DOWNLOADS_ENDPOINTS } from "@/lib/endpoints/downloads";
 import { queryKeys } from "@/lib/queryKeys";
 import { addToastMessage } from "../lib/addToastMessage";
-import { applySearchResult, trackSearch } from "../lib/liveSearchToast";
+import {
+  applyGrabNowResult,
+  applySearchResult,
+  trackSearch,
+} from "../lib/liveSearchToast";
 
 interface SearchTarget {
   mediaId: number;
@@ -34,10 +39,7 @@ export function useLiveSearchToast() {
   return useMemo(() => {
     const language = i18n.language;
 
-    const track = (
-      target: SearchTarget,
-      request: (() => Promise<LibrarySearchResponse>) | null,
-    ) => {
+    const start = (target: SearchTarget) =>
       trackSearch({
         ...target,
         t,
@@ -48,16 +50,32 @@ export function useLiveSearchToast() {
             params: { libraryId: String(target.mediaId) },
             ...(releases ? { search: { tab: "search" as const } } : {}),
           }),
-        grabNow: (season) =>
-          track(target, () =>
-            fetcher<LibrarySearchResponse>(
-              season != null
-                ? LIBRARY_ENDPOINTS.SEARCH_SEASON(target.mediaId, season)
-                : LIBRARY_ENDPOINTS.SEARCH(target.mediaId),
-              { method: "POST", body: {} },
-            ),
-          ),
+        grabNow: (targetKey) => {
+          start(target);
+          fetcher<GrabPendingReleaseResponse>(
+            DOWNLOADS_ENDPOINTS.GRAB_PENDING_NOW,
+            { method: "POST", body: { target_key: targetKey } },
+          )
+            .then((res) => {
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.downloads.all,
+              });
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.library.all,
+              });
+              applyGrabNowResult(target.mediaId, res);
+            })
+            .catch(() =>
+              applySearchResult({ media_id: target.mediaId, outcome: "error" }),
+            );
+        },
       });
+
+    const track = (
+      target: SearchTarget,
+      request: (() => Promise<LibrarySearchResponse>) | null,
+    ) => {
+      start(target);
       if (!request) return;
       request()
         .then((response) => {

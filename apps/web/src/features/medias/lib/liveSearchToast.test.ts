@@ -11,6 +11,7 @@ const { toast } = vi.hoisted(() => ({
 vi.mock("sonner", () => ({ toast }));
 
 import {
+  applyGrabNowResult,
   applySearchResult,
   isGrabPopupSuppressed,
   resetLiveSearchToasts,
@@ -78,7 +79,7 @@ describe("live search toast", () => {
     expect(openItem.mock.calls).toEqual([[false], [true]]);
   });
 
-  it("Grab now runs a manual search for the held season", () => {
+  it("Grab now hands the held target's key to the grab", () => {
     const grabNow = vi.fn();
     trackSearch(ctx({ grabNow, isShow: true }));
     applySearchResult({
@@ -86,15 +87,47 @@ describe("live search toast", () => {
       season: 2,
       outcome: "delayed",
       delay_until: "2026-10-16T18:30:00.000Z",
+      target_key: "s:7:2",
     });
     const options = toast.info.mock.calls[0]![1] as {
       action: { onClick: (e: { preventDefault: () => void }) => void };
     };
     const preventDefault = vi.fn();
     options.action.onClick({ preventDefault });
-    expect(grabNow).toHaveBeenCalledWith(2);
+    expect(grabNow).toHaveBeenCalledWith("s:7:2");
     // The new search reuses this toast, so sonner must not dismiss it.
     expect(preventDefault).toHaveBeenCalled();
+  });
+
+  it("offers no Grab now when the held result names no target", () => {
+    trackSearch(ctx());
+    applySearchResult({ media_id: 7, outcome: "delayed" });
+    const options = toast.info.mock.calls[0]![1] as { action?: unknown };
+    expect(options.action).toBeUndefined();
+  });
+
+  it("explains why Grab now grabbed nothing, and a grab fills the toast", () => {
+    trackSearch(ctx());
+    applyGrabNowResult(7, { grabbed: false, reason: "no_space" });
+    expect(toast.info).toHaveBeenCalledWith(
+      "dashboard.home.nothingGrabbed",
+      expect.objectContaining({
+        description: "dashboard.home.grabMiss.no_space",
+      }),
+    );
+    applyGrabNowResult(7, { grabbed: true });
+    expect(toast.success).toHaveBeenCalledWith(
+      "medias.searchToast.grabbingHeld",
+      expect.anything(),
+    );
+  });
+
+  it("stops hiding the grab popup after it gives up waiting", () => {
+    trackSearch(ctx());
+    vi.advanceTimersByTime(STILL_SEARCHING_MS + 1);
+    expect(isGrabPopupSuppressed(7)).toBe(true);
+    vi.advanceTimersByTime(30_000);
+    expect(isGrabPopupSuppressed(7)).toBe(false);
   });
 
   it("uses the error style only for a real failure", () => {

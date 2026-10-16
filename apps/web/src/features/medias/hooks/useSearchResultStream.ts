@@ -20,6 +20,7 @@ export function useSearchResultStream() {
     const es = new EventSource("/api/library/events", {
       withCredentials: true,
     });
+    let refresh: ReturnType<typeof setTimeout> | null = null;
     es.onmessage = (e) => {
       try {
         const payload = JSON.parse(e.data as string) as
@@ -28,11 +29,18 @@ export function useSearchResultStream() {
         if (payload?.kind !== "search_result") return;
         applySearchResult(payload as SearchResultEvent);
         // The stored last outcome moved too, so cards and the item page refetch.
-        queryClient.invalidateQueries({ queryKey: queryKeys.library.all });
+        // Scheduled checks emit one event per wanted title, so coalesce refetches.
+        refresh ??= setTimeout(() => {
+          refresh = null;
+          queryClient.invalidateQueries({ queryKey: queryKeys.library.all });
+        }, 1000);
       } catch {
         // malformed event — ignore
       }
     };
-    return () => es.close();
+    return () => {
+      if (refresh) clearTimeout(refresh);
+      es.close();
+    };
   }, [isAdmin, queryClient]);
 }

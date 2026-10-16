@@ -58,6 +58,7 @@ describe("searchResultFrom", () => {
           grabbed: false,
           delayed: true,
           delayUntil: until,
+          delayTargetKey: "s:7:2",
           reason: "Held by grab delay",
         },
         2,
@@ -67,6 +68,7 @@ describe("searchResultFrom", () => {
       season: 2,
       outcome: "delayed",
       delay_until: until.toISOString(),
+      target_key: "s:7:2",
     });
   });
 
@@ -91,6 +93,21 @@ describe("searchResultFrom", () => {
         reason: "No indexer manager configured",
       }).outcome,
     ).toBe("error");
+  });
+
+  it("never passes raw error text to clients", () => {
+    const leaked = searchResultFrom(7, {
+      grabbed: false,
+      reason: "connect ECONNREFUSED http://indexer.internal:9696/api?apikey=k",
+    });
+    expect(leaked.outcome).toBe("error");
+    expect(leaked.reason).toBe("The search failed");
+    expect(
+      searchResultFrom(7, {
+        grabbed: false,
+        reason: "Not enough free space: needs 50.0 GB",
+      }).reason,
+    ).toBe("Not enough free disk space");
   });
 
   it("carries the digital release date for a title that is not out yet", () => {

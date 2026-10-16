@@ -2015,6 +2015,7 @@
       "searching": "Recherche de {{title}}…",
       "grabbing": "Téléchargement de {{release}}, {{quality}}",
       "grabbingPlain": "Téléchargement de {{release}}",
+      "grabbingHeld": "Téléchargement de la version retenue",
       "view": "Voir",
       "changeRelease": "Changer de version",
       "held": "Retenu par le délai de téléchargement — démarre à {{time}} sauf si une meilleure version apparaît",

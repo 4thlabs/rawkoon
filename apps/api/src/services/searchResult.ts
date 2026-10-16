@@ -1,6 +1,7 @@
 import { prisma } from "@rawkoon/api/db";
 import type { SearchResultPayload } from "@rawkoon/shared/types";
 import { emitSearchResult } from "@rawkoon/api/services/libraryEvents";
+import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import { NO_MATCH_REASON } from "@rawkoon/api/constants/libraryGrab";
 import type {
   SearchGrab,
@@ -33,20 +34,34 @@ export function searchResultFrom(
       ...(result.delayUntil
         ? { delay_until: result.delayUntil.toISOString() }
         : {}),
+      ...(result.delayTargetKey ? { target_key: result.delayTargetKey } : {}),
     };
   }
   // Only an empty search is a normal miss; any other reason is a real failure.
-  const isMiss =
-    result.languageFallback != null || result.reason === NO_MATCH_REASON;
-  return {
-    ...base,
-    outcome: isMiss ? "no_match" : "error",
-    reason: result.reason,
-    ...(result.languageFallback
-      ? { language_fallback_summary: result.languageFallback }
-      : {}),
-  };
+  if (result.languageFallback != null || result.reason === NO_MATCH_REASON) {
+    return {
+      ...base,
+      outcome: "no_match",
+      reason: result.reason,
+      ...(result.languageFallback
+        ? { language_fallback_summary: result.languageFallback }
+        : {}),
+    };
+  }
+  console.warn(`[searchResult] Search failed for ${mediaId}: ${result.reason}`);
+  return { ...base, outcome: "error", reason: safeErrorReason(result.reason) };
 }
+
+/** Raw reasons can carry indexer or client details; clients only see these fixed ones. */
+export function safeErrorReason(raw: string): string {
+  if (raw.startsWith(SPACE_REFUSAL_PREFIX)) return "Not enough free disk space";
+  if (raw.startsWith("No indexer manager")) return "No indexer is configured";
+  if (raw.startsWith("No download client"))
+    return "No download client is configured";
+  return GENERIC_ERROR_REASON;
+}
+
+export const GENERIC_ERROR_REASON = "The search failed";
 
 /** Releases are due on this day; the item waits until then. */
 export function notReleasedResult(

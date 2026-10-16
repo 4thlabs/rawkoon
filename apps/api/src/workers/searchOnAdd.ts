@@ -9,6 +9,7 @@ import {
 import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import type { SearchResultPayload } from "@rawkoon/shared/types";
 import {
+  GENERIC_ERROR_REASON,
   notReleasedResult,
   publishSearchResult,
   searchResultFrom,
@@ -34,17 +35,22 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 export async function searchOnAdd(
   mediaId: number,
   season?: number,
+  /** False while BullMQ will retry the job. */
+  isFinalAttempt = true,
 ): Promise<void> {
   try {
     await runSearchOnAdd(mediaId, season);
   } catch (e) {
-    // The live toast is waiting on an outcome; BullMQ still retries the job.
-    await publishSearchResult({
-      media_id: mediaId,
-      ...(season != null ? { season } : {}),
-      outcome: "error",
-      reason: e instanceof Error ? e.message : "Search failed",
-    });
+    console.warn(`[searchOnAdd] Search failed for ${mediaId}:`, e);
+    // A retry may still grab, so only the last attempt tells the toast it failed.
+    if (isFinalAttempt) {
+      await publishSearchResult({
+        media_id: mediaId,
+        ...(season != null ? { season } : {}),
+        outcome: "error",
+        reason: GENERIC_ERROR_REASON,
+      });
+    }
     throw e;
   }
 }
@@ -91,7 +97,7 @@ async function searchMovie(
       await publishSearchResult({
         media_id: media.id,
         outcome: "error",
-        reason: "Could not check the digital release date",
+        reason: GENERIC_ERROR_REASON,
       });
       return;
     }

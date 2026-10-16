@@ -385,6 +385,8 @@ export interface SearchResultPayload {
   };
   /** ISO time: when a held grab is released, or the digital release for not_released. */
   delay_until?: string;
+  /** For a held grab: the pending-release target, used to grab it early. */
+  target_key?: string;
   reason?: string;
   language_fallback_summary?: LanguageFallbackSummary;
 }

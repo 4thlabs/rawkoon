@@ -76,9 +76,11 @@ export function searchResultView(
       const name = release ? shortReleaseTitle(release.title) : "";
       return {
         variant: "success",
-        message: quality
-          ? t("medias.searchToast.grabbing", { release: name, quality })
-          : t("medias.searchToast.grabbingPlain", { release: name }),
+        message: !release
+          ? t("medias.searchToast.grabbingHeld")
+          : quality
+            ? t("medias.searchToast.grabbing", { release: name, quality })
+            : t("medias.searchToast.grabbingPlain", { release: name }),
         actions: ["view", "changeRelease"],
       };
     }

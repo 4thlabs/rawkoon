@@ -20,6 +20,7 @@ type Ep = {
 let media: Record<string, unknown> | null;
 let episodes: Ep[];
 let refreshedDate: Date | null;
+let searchError: Error | null = null;
 let packResult: { grabbed: boolean; reason: string; delayed?: true };
 const searches: Array<{ suffix: string; season?: number; episodeId?: number }> =
   [];
@@ -40,6 +41,7 @@ mock.module("@rawkoon/api/services/mediaGrabberSearch", () => ({
       episodeId: o.episodeId,
     });
     expect(o.trigger).toBe("scheduled");
+    if (searchError) throw searchError;
     return o.episodeId == null && o.season != null
       ? packResult
       : { grabbed: false, reason: "No matching releases found" };
@@ -108,6 +110,7 @@ beforeEach(() => {
   outcomes.length = 0;
   episodes = [];
   refreshedDate = null;
+  searchError = null;
   packResult = { grabbed: false, reason: "No matching releases found" };
 });
 
@@ -161,6 +164,23 @@ describe("searchOnAdd worker: movies", () => {
     refreshedDate = past;
     await searchOnAdd(1);
     expect(searches).toHaveLength(1);
+  });
+
+  it("tells the toast about a failure only on the last attempt", async () => {
+    media = {
+      ...base,
+      type: "movie",
+      status: "wanted",
+      digitalReleaseDate: past,
+      _count: { files: 0 },
+    };
+    searchError = new Error("connect ECONNREFUSED http://indexer.internal");
+    await expect(searchOnAdd(1, undefined, false)).rejects.toThrow();
+    expect(outcomes).toHaveLength(0);
+    await expect(searchOnAdd(1, undefined, true)).rejects.toThrow();
+    expect(outcomes).toMatchObject([
+      { lastSearchOutcome: "error", lastSearchReason: "The search failed" },
+    ]);
   });
 
   it("skips a movie that already has files", async () => {

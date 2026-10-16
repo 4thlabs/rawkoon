@@ -26,6 +26,7 @@ import {
   clearPending,
   delaySettingsOf,
   evaluateDelay,
+  targetKey,
   toDelayCandidate,
 } from "@rawkoon/api/services/grabDelay";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
@@ -56,6 +57,8 @@ export type SearchMiss = {
   delayed?: true;
   /** When a held grab is released by its delay. */
   delayUntil?: Date;
+  /** Key of the held target, for grabbing it early. */
+  delayTargetKey?: string;
   /** Set when only other versions of the preferred language were found. */
   languageFallback?: LanguageFallbackSummary;
 };
@@ -288,6 +291,7 @@ export async function searchAndGrab(opts: {
             grabbed: false,
             delayed: true,
             delayUntil: decision.grabAfter,
+            delayTargetKey: targetKey(delayTarget),
             reason: `Held by grab delay until ${decision.grabAfter.toISOString()}`,
           };
         }

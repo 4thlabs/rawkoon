@@ -2015,6 +2015,7 @@
       "searching": "Searching for {{title}}…",
       "grabbing": "Grabbing {{release}}, {{quality}}",
       "grabbingPlain": "Grabbing {{release}}",
+      "grabbingHeld": "Grabbing the held release",
       "view": "View",
       "changeRelease": "Change release",
       "held": "Held by grab delay — grabs at {{time}} unless a better release appears",

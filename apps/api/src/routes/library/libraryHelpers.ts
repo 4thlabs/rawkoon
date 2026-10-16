@@ -7,6 +7,8 @@ import {
   DEFAULT_TITLE_LANGUAGE,
   type TitleLanguage,
 } from "@rawkoon/shared/constants";
+import type { Context } from "hono";
+import type { Env } from "@rawkoon/api/honoEnv";
 import type { SearchOutcome } from "@rawkoon/shared/types";
 
 export function computeTotalSizeBytes(
@@ -34,6 +36,11 @@ type MappableEpisode = {
   season: number;
   files: { sizeBytes: bigint }[];
 };
+
+/** What the requester may see of an item; pass to mapLibraryMedia. */
+export function adminView(c: Context<Env>): { isAdmin: boolean } {
+  return { isAdmin: c.get("user")?.is_admin === true };
+}
 
 export function mapLibraryMedia(
   item: {
@@ -72,6 +79,8 @@ export function mapLibraryMedia(
     titles?: { language: string; title: string }[];
   },
   titleLanguage: TitleLanguage = DEFAULT_TITLE_LANGUAGE,
+  /** The last search reason is admin-only; omitting this hides it. */
+  view: { isAdmin?: boolean } = {},
 ) {
   const files = item.files ?? [];
   const episodes = item.episodes ?? [];
@@ -147,7 +156,7 @@ export function mapLibraryMedia(
     last_search_at: item.lastSearchAt?.toISOString() ?? null,
     last_search_outcome:
       (item.lastSearchOutcome as SearchOutcome | null | undefined) ?? null,
-    last_search_reason: item.lastSearchReason ?? null,
+    last_search_reason: view.isAdmin ? (item.lastSearchReason ?? null) : null,
     quality_profile: item.qualityProfile
       ? { id: item.qualityProfile.id, name: item.qualityProfile.name }
       : null,
