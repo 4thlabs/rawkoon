@@ -7,6 +7,7 @@ import {
 } from "@rawkoon/api/services/aiProvider/client";
 import { getActiveIndexerManager } from "@rawkoon/api/services/indexerManager";
 import { tieredSearch } from "@rawkoon/api/services/indexerManager/searchStrategy";
+import { parseReleaseSeasonSpan } from "@rawkoon/shared/utils/releaseStructure";
 import {
   isMultiSeasonRelease,
   multiSeasonReleaseCovers,
@@ -150,6 +151,27 @@ export async function searchAndGrab(opts: {
       }
     }
 
+    let usedSeasons: number[] | null = null;
+    const seasonsInUse = async (): Promise<number[]> => {
+      usedSeasons ??= (
+        await prisma.libraryEpisode.findMany({
+          where: { mediaId, season: { gt: 0 } },
+          select: {
+            season: true,
+            status: true,
+            _count: { select: { files: true } },
+          },
+        })
+      )
+        .filter(
+          (e) =>
+            e._count.files > 0 ||
+            ["downloaded", "downloading", "upgrading"].includes(e.status),
+        )
+        .map((e) => e.season);
+      return usedSeasons;
+    };
+
     const rows: CandidateRow[] = [];
     // Rejected for language only; reported on a miss, never grabbed.
     const fallbackTags: string[] = [];
@@ -186,15 +208,20 @@ export async function searchAndGrab(opts: {
       if (completeSeasons && !releaseCoversSeasons(title, completeSeasons)) {
         continue;
       }
-      // A multi-season pack found by a season search must carry that season.
+      // A multi-season pack found by a season search must carry that season,
+      // and none of the seasons it covers may already be downloaded or grabbed.
       if (
         !completeSeasons &&
         season != null &&
         episodeId == null &&
-        isMultiSeasonRelease(title) &&
-        !multiSeasonReleaseCovers(title, season)
+        isMultiSeasonRelease(title)
       ) {
-        continue;
+        if (!multiSeasonReleaseCovers(title, season)) continue;
+        const span = parseReleaseSeasonSpan(title);
+        const inUse = (await seasonsInUse()).some(
+          (s) => !span || (s >= span.from && s <= span.to),
+        );
+        if (inUse) continue;
       }
 
       // For episode grabs, require the release's SxxExx to match the episode.

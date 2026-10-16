@@ -240,9 +240,7 @@ export async function pollIndexerRss(): Promise<RssRunStats | null> {
   >();
 
   for (const release of releases) {
-    // A multi-season pack has no single season slot; it is found by the add-time search, not matched as season N.
-    if (parseReleaseSeasonSpan(release.title)) continue;
-    const parsed = extractTitleFromRelease(release.title);
+    const parsed = matchableRssRelease(release.title);
     if (!parsed) continue;
 
     if (parsed.season !== null && parsed.episode === null) {
@@ -519,6 +517,13 @@ function logRssMatch(
   console.log(
     `[pollIndexerRss] Match: "${best.release.title}" → ${label} (${via})`,
   );
+}
+
+/** A multi-season pack has no single season slot; the add-time search finds it, the feed doesn't match it as season N. */
+export function matchableRssRelease(
+  title: string,
+): ReturnType<typeof extractTitleFromRelease> {
+  return parseReleaseSeasonSpan(title) ? null : extractTitleFromRelease(title);
 }
 
 export function extractTitleFromRelease(title: string): {

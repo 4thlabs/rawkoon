@@ -10,26 +10,44 @@ const IMPORT_WINDOW_MS = 6 * 60 * 60 * 1000;
 /** Whether a season is carried by an in-flight show-level grab. */
 export type SeasonCover = (season: number) => boolean;
 
+/** Without post-processing nothing ever reports an import, so a completed row is done at once. */
+async function importWindowMs(): Promise<number> {
+  try {
+    const row = await prisma.mediaSettings.findUnique({
+      where: { id: 1 },
+      select: { postProcessingEnabled: true },
+    });
+    return row?.postProcessingEnabled === false ? 0 : IMPORT_WINDOW_MS;
+  } catch {
+    return IMPORT_WINDOW_MS;
+  }
+}
+
 /**
- * Show-level rows (no episode, no season) that still own their episodes: the
- * download is running, or it completed and its import hasn't reported yet
- * (no destination, skip or error). Episodes stay "wanted" until the import
- * lands, so season and episode searches must stand down meanwhile.
+ * Grab rows that still own their episodes: the download is running, or it
+ * completed and its import hasn't reported yet (no destination, skip or
+ * error). Episodes stay "wanted" until the import lands, so season and
+ * episode searches must stand down meanwhile.
  */
-const inFlight = () => ({
-  episodeId: null,
-  season: null,
-  failed: false,
-  OR: [
-    { completedAt: null },
-    {
-      completedAt: { gte: new Date(Date.now() - IMPORT_WINDOW_MS) },
-      postProcessDestinationPath: null,
-      postProcessSkipReason: null,
-      postProcessError: null,
-    },
-  ],
-});
+export async function inFlightGrabWhere() {
+  const windowMs = await importWindowMs();
+  return {
+    failed: false,
+    OR: [
+      { completedAt: null },
+      ...(windowMs > 0
+        ? [
+            {
+              completedAt: { gte: new Date(Date.now() - windowMs) },
+              postProcessDestinationPath: null,
+              postProcessSkipReason: null,
+              postProcessError: null,
+            },
+          ]
+        : []),
+    ],
+  };
+}
 
 /** A ranged pack ("S01-S03") carries only its seasons; a complete-series label carries them all. */
 function coverOf(releaseTitles: string[]): SeasonCover {
@@ -44,7 +62,12 @@ export async function activeShowGrabCovers(
 ): Promise<Map<number, SeasonCover>> {
   if (mediaIds.length === 0) return new Map();
   const rows = await prisma.downloadHistory.findMany({
-    where: { ...inFlight(), mediaId: { in: mediaIds } },
+    where: {
+      ...(await inFlightGrabWhere()),
+      episodeId: null,
+      season: null,
+      mediaId: { in: mediaIds },
+    },
     select: { mediaId: true, releaseTitle: true },
   });
   const titles = new Map<number, string[]>();

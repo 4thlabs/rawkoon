@@ -225,6 +225,29 @@ export async function postProcessSeasonPack(
       }`,
     );
   }
+  // A show-level pack spans seasons the show may already hold; those episodes keep their files unless this is an upgrade.
+  const withFiles =
+    dh.season == null && !dh.isUpgrade
+      ? new Set(
+          (
+            await prisma.mediaFile.findMany({
+              where: { mediaId: dh.media.id, episodeId: { not: null } },
+              select: { episodeId: true },
+            })
+          ).map((f) => f.episodeId),
+        )
+      : new Set<number | null>();
+  const placements = mapping.placements.filter(
+    (p) => !withFiles.has(p.episode.id),
+  );
+  if (placements.length === 0) {
+    return {
+      success: false,
+      reason:
+        "Every episode in this pack already has a file — nothing imported",
+    };
+  }
+
   if (skippedFiles.length) {
     console.warn(
       `[postProcess/pack] ${dh.media.title}: ${skippedFiles.length} file(s) could not be placed and were not imported: ${skippedFiles.join(", ")}`,
@@ -236,7 +259,7 @@ export async function postProcessSeasonPack(
   // sibling episodes are already hardlinked, and since `processed > 0` the
   // run would then clear postProcessError, mark the show downloaded, and
   // possibly remove the torrent — the opposite of all-or-nothing.
-  for (const placement of mapping.placements) {
+  for (const placement of placements) {
     if (placement.kind !== "merge") continue;
     const [a, b] = placement.sources;
     const [miA, miB] = await Promise.all([
@@ -259,7 +282,7 @@ export async function postProcessSeasonPack(
     | { ok: true; destinationPath: string; placed: boolean }
     | { ok: false; error: string; fatal?: boolean };
 
-  const destinationFor = (placement: (typeof mapping.placements)[number]) => {
+  const destinationFor = (placement: (typeof placements)[number]) => {
     const ep = placement.episode;
     const ext = placement.sources[0].ext;
     const epStem =
@@ -278,15 +301,15 @@ export async function postProcessSeasonPack(
     return join(root, `${epStem}${ext}`);
   };
   const pathUses = new Map<string, number>();
-  for (const placement of mapping.placements) {
+  for (const placement of placements) {
     const path = destinationFor(placement);
     pathUses.set(path, (pathUses.get(path) ?? 0) + 1);
   }
 
   const PACK_CONCURRENCY = 6;
   const episodeResults: (EpisodeResult | null)[] = [];
-  for (let i = 0; i < mapping.placements.length; i += PACK_CONCURRENCY) {
-    const chunk = mapping.placements.slice(i, i + PACK_CONCURRENCY);
+  for (let i = 0; i < placements.length; i += PACK_CONCURRENCY) {
+    const chunk = placements.slice(i, i + PACK_CONCURRENCY);
     const chunkResults = await Promise.all(
       chunk.map(async (placement): Promise<EpisodeResult | null> => {
         const ep = placement.episode;

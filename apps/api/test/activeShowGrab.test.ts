@@ -3,8 +3,12 @@ import { afterAll, describe, expect, it, mock } from "bun:test";
 const realDb = { ...(await import("@rawkoon/api/db")) };
 let rows: Array<{ mediaId: number | null; releaseTitle: string }> = [];
 let lastWhere: Record<string, unknown> = {};
+let postProcessing = true;
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
+    mediaSettings: {
+      findUnique: async () => ({ postProcessingEnabled: postProcessing }),
+    },
     downloadHistory: {
       findMany: async (a: { where: Record<string, unknown> }) => {
         lastWhere = a.where;
@@ -50,5 +54,13 @@ describe("activeShowGrabCover", () => {
     rows = [{ mediaId: 1, releaseTitle: "Show.S01-S03.COMPLETE.1080p" }];
     const cover = await activeShowGrabCover(1);
     expect([cover?.(1), cover?.(3), cover?.(5)]).toEqual([true, true, false]);
+  });
+
+  it("has no import grace when post-processing is disabled", async () => {
+    postProcessing = false;
+    rows = [];
+    await activeShowGrabCover(1);
+    expect(lastWhere.OR).toEqual([{ completedAt: null }]);
+    postProcessing = true;
   });
 });

@@ -24,7 +24,10 @@ mock.module("@rawkoon/api/db", () => ({
         originalTitle: null,
       })),
     },
-    libraryEpisode: { findUnique: mock(async () => null) },
+    libraryEpisode: {
+      findUnique: mock(async () => null),
+      findMany: mock(async () => episodeRows),
+    },
     qualityProfile: { findUnique: mock(async () => null) },
     grabBlocklist: { findMany: mock(async () => []) },
   },
@@ -44,6 +47,11 @@ const release = (title: string) => ({
 });
 
 let titles: string[] = [];
+let episodeRows: Array<{
+  season: number;
+  status: string;
+  _count: { files: number };
+}> = [];
 const tiered = mock(async (_adapter: unknown, _opts: unknown) => ({
   releases: titles.map(release),
   indexerWarnings: [],
@@ -104,6 +112,7 @@ beforeEach(() => {
   tiered.mockClear();
   freetext.mockClear();
   freeTitles = [];
+  episodeRows = [];
 });
 
 describe("searchAndGrab for a complete-series pack", () => {
@@ -188,5 +197,30 @@ describe("searchAndGrab for one season", () => {
     expect((await seasonSearch(2)).grabbed).toBe(true);
     const call = grabRelease.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(call.season).toBe(2);
+  });
+
+  it.each([
+    "Show.Name.S01-S03.COMPLETE.1080p.WEB-DL",
+    "Show.Name.Integrale.MULTi.1080p.WEB",
+  ])("rejects %s when a season it covers already has files", async (title) => {
+    freeTitles = [title];
+    episodeRows = [
+      { season: 1, status: "downloaded", _count: { files: 1 } },
+      { season: 2, status: "wanted", _count: { files: 0 } },
+    ];
+    expect((await seasonSearch(2)).grabbed).toBe(false);
+    expect(grabRelease).not.toHaveBeenCalled();
+  });
+
+  it("accepts a ranged pack when only seasons outside it have files", async () => {
+    freeTitles = ["Show.Name.S02-S03.1080p.WEB-DL"];
+    episodeRows = [{ season: 1, status: "downloaded", _count: { files: 1 } }];
+    expect((await seasonSearch(2)).grabbed).toBe(true);
+  });
+
+  it("rejects a multi-season pack when a covered season is mid-download", async () => {
+    freeTitles = ["Show.Name.S01-S03.1080p.WEB-DL"];
+    episodeRows = [{ season: 3, status: "downloading", _count: { files: 0 } }];
+    expect((await seasonSearch(2)).grabbed).toBe(false);
   });
 });

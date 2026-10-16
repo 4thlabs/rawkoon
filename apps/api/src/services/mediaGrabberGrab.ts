@@ -20,8 +20,11 @@ import { checkFreeSpaceForGrab } from "@rawkoon/api/services/grabSpaceCheck";
 import { resolveGrabSeason } from "@rawkoon/api/services/grabEpisodeResolver";
 import {
   activeShowGrabCover,
+  inFlightGrabWhere,
   SHOW_GRAB_ACTIVE_PREFIX,
 } from "@rawkoon/api/services/activeShowGrab";
+import { isMultiSeasonRelease } from "@rawkoon/api/utils/medias/completeSeries";
+import { parseReleaseSeasonSpan } from "@rawkoon/shared/utils/releaseStructure";
 
 /**
  * Why a grab was refused before anything was sent to the download client.
@@ -173,6 +176,38 @@ export async function grabRelease(opts: {
         reason: duplicateGrabReason(target, activeGrab.id),
         refusal: "already_active",
       };
+    }
+    // A show-level pack would overwrite a season or episode grab already running inside its seasons.
+    if (
+      media.type === "show" &&
+      target.episodeId == null &&
+      target.season == null &&
+      isMultiSeasonRelease(releaseTitle)
+    ) {
+      const span = parseReleaseSeasonSpan(releaseTitle);
+      const inside = (
+        await prisma.downloadHistory.findMany({
+          where: {
+            ...(await inFlightGrabWhere()),
+            mediaId,
+            AND: [
+              { OR: [{ episodeId: { not: null } }, { season: { not: null } }] },
+            ],
+          },
+          select: { season: true, episode: { select: { season: true } } },
+        })
+      ).some((r) => {
+        const s = r.season ?? r.episode?.season;
+        return span == null || s == null || (s >= span.from && s <= span.to);
+      });
+      if (inside) {
+        return {
+          grabbed: false,
+          reason:
+            "A season or episode download is already active inside this pack's seasons — cancel it first",
+          refusal: "already_active",
+        };
+      }
     }
     // A show-level pack already carries the seasons it names; a season or episode of those would double-grab.
     if (target.episodeId != null || target.season != null) {
