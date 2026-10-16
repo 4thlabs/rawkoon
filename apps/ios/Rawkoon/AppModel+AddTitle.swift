@@ -55,7 +55,8 @@ extension AppModel {
                 tmdbId: pick.tmdbId,
                 type: type,
                 title: pick.title,
-                searchOnAdd: mode.searchOnAdd
+                searchOnAdd: mode.searchOnAdd,
+                announce: !mode.opensReleaseSheet
             )
             added = item
             await loadLibrary()

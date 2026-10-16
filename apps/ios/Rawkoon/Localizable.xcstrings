@@ -13184,6 +13184,17 @@
           }
         }
       }
+    },
+    "Request %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander %@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

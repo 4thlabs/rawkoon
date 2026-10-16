@@ -52,6 +52,9 @@ public struct HeroInteractionGate: Equatable, Sendable {
     /// How long after the last touch the hero stays put.
     public static let resumeAfter: TimeInterval = 15
 
+    /// A touch with no release for this long is treated as released: a cancelled gesture never reports its end.
+    public static let touchTimeout: TimeInterval = 30
+
     public private(set) var touching = false
     public private(set) var lastTouch: Date?
 
@@ -67,9 +70,15 @@ public struct HeroInteractionGate: Equatable, Sendable {
         lastTouch = now
     }
 
+    /// True while a finger is down, unless the touch has gone stale.
+    public func isTouching(at now: Date) -> Bool {
+        guard touching, let lastTouch else { return false }
+        return now.timeIntervalSince(lastTouch) < Self.touchTimeout
+    }
+
     /// Seconds to wait before the next rotation, or nil while a finger is down.
     public func rotationDelay(at now: Date, interval: TimeInterval = HeroRotation.rotateSeconds) -> TimeInterval? {
-        guard !touching else { return nil }
+        guard !isTouching(at: now) else { return nil }
         guard let lastTouch else { return interval }
         let quiet = max(0, Self.resumeAfter - now.timeIntervalSince(lastTouch))
         return max(interval, quiet)

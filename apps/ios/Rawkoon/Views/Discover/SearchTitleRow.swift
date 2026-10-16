@@ -43,6 +43,8 @@ struct SearchTitleRow: View {
         HStack(alignment: .top, spacing: 12) {
             NavigationLink { destination } label: { poster }
                 .buttonStyle(.rawkoonPressable)
+                // The title link beside it opens the same page.
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 8) {
                 NavigationLink { destination } label: { facts }
                     .buttonStyle(.plain)
@@ -113,7 +115,7 @@ struct SearchTitleRow: View {
             } label: {
                 Group {
                     if busy {
-                        ProgressView().tint(Theme.onAccent)
+                        ProgressView().tint(Theme.onAccent).accessibilityLabel("Adding…")
                     } else {
                         Text(action == .add ? "Add" : "Request")
                             .font(.subheadline.weight(.semibold))
@@ -125,6 +127,7 @@ struct SearchTitleRow: View {
                 .foregroundStyle(Theme.onAccent)
             }
             .buttonStyle(.rawkoonPressable)
+            .accessibilityLabel(action == .add ? Text("Add \(item.title)") : Text("Request \(item.title)"))
             .disabled(busy)
             .requiresConnection(model.isOffline)
         case .inLibrary:

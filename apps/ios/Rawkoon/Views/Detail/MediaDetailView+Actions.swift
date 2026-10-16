@@ -401,7 +401,8 @@ extension MediaDetailView {
                 tmdbId: tmdbId,
                 type: type,
                 title: title,
-                searchOnAdd: mode.searchOnAdd
+                searchOnAdd: mode.searchOnAdd,
+                announce: !mode.opensReleaseSheet
             )
             added = true
             model.requestPushAuthorization()

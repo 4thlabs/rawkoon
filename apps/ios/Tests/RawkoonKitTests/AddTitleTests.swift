@@ -36,6 +36,16 @@ final class AddTitleTests: XCTestCase {
         XCTAssertNil(gate.rotationDelay(at: t0.addingTimeInterval(60)))
     }
 
+    func testAStaleTouchCountsAsReleased() {
+        var gate = HeroInteractionGate()
+        let t0 = Date(timeIntervalSince1970: 1000)
+        gate.touchBegan(at: t0)
+        XCTAssertTrue(gate.isTouching(at: t0.addingTimeInterval(HeroInteractionGate.touchTimeout - 1)))
+        let stale = t0.addingTimeInterval(HeroInteractionGate.touchTimeout + 1)
+        XCTAssertFalse(gate.isTouching(at: stale))
+        XCTAssertNotNil(gate.rotationDelay(at: stale))
+    }
+
     func testHeroWaitsAfterTheFingerLifts() {
         var gate = HeroInteractionGate()
         let t0 = Date(timeIntervalSince1970: 1000)

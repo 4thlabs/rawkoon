@@ -58,7 +58,7 @@ struct MediaSearchResults: View {
     @State private var addingVolumeId: String?
     @State private var requestingVolumeId: String?
     /// Movie/show results being added or requested, added this session (with their library id), requested this session.
-    @State private var addingTitleId: String?
+    @State private var addingTitleIds: Set<String> = []
     @State private var addedLibraryIds: [String: Int] = [:]
     @State private var addedTitleIds: Set<String> = []
     @State private var requestedTitleIds: Set<String> = []
@@ -203,7 +203,7 @@ struct MediaSearchResults: View {
                             SearchTitleRow(
                                 item: item,
                                 action: resultAction(for: item),
-                                busy: addingTitleId == item.id,
+                                busy: addingTitleIds.contains(item.id),
                                 libraryId: addedLibraryIds[item.id],
                                 onAdd: { mode in Task { await addTitle(item, mode: mode) } }
                             )
@@ -390,9 +390,8 @@ struct MediaSearchResults: View {
     }
 
     private func addTitle(_ item: TmdbSearchItem, mode: AddMode) async {
-        guard addingTitleId == nil else { return }
-        addingTitleId = item.id
-        defer { addingTitleId = nil }
+        guard addingTitleIds.insert(item.id).inserted else { return }
+        defer { addingTitleIds.remove(item.id) }
         do {
             let added = try await model.addPick(TitlePick(item), mode: mode)
             markDone(item, library: added?.id)

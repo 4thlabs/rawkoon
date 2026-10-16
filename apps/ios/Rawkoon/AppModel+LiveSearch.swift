@@ -355,7 +355,8 @@ extension AppModel {
     /// `searchOnAdd` nil follows the server's auto-grab setting.
     @discardableResult
     func addTitleToLibrary(
-        provisional: LibraryMedia, tmdbId: Int, type: String, title: String, searchOnAdd: Bool? = nil
+        provisional: LibraryMedia, tmdbId: Int, type: String, title: String, searchOnAdd: Bool? = nil,
+        announce: Bool = true
     ) async throws -> LibraryMedia {
         guard let client = api() else { throw URLError(.notConnectedToInternet) }
         let captured = CapturedAdd()
@@ -364,7 +365,7 @@ extension AppModel {
             captured.set(result)
             return result.item
         }
-        if let result = captured.value {
+        if announce, let result = captured.value {
             liveSearch.announceAdd(result, title: title)
         }
         return item

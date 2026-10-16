@@ -127,6 +127,11 @@ struct RootTabsView: View {
             guard let tab else { return }
             model.requestedRootTab = nil
             selection = tab
+            // Explore consumes the focus request on mount; drop it if nothing did.
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                model.exploreSearchFocusRequest = false
+            }
         }
         .focusedSceneValue(\.rootTabSelection, validSelection)
         .focusedSceneValue(\.showPlayer) { showFullPlayer = true }

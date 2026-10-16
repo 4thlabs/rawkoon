@@ -22,6 +22,8 @@ struct HomeHero<Greeting: View>: View {
     @State private var added: Set<Int> = []
     @State private var adding = false
     @State private var gate = HeroInteractionGate()
+    /// Resets itself when the system cancels the touch (a scroll takes over), unlike `onEnded`.
+    @GestureState private var fingerDown = false
     /// Bumped on every touch change so the rotation timer restarts from the gate's new answer.
     @State private var gateEpoch = 0
     /// The slide under the finger when it went down; the Add button acts on it even if the slide changes.
@@ -79,9 +81,8 @@ struct HomeHero<Greeting: View>: View {
                 // Simultaneous so a vertical drag still scrolls Home; only a clearly horizontal one changes slide.
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 0)
-                        .onChanged { _ in touchBegan() }
+                        .updating($fingerDown) { _, state, _ in state = true }
                         .onEnded { value in
-                            touchEnded()
                             guard abs(value.translation.width) >= 20 || abs(value.translation.height) >= 20 else { return }
                             if let target = HeroRotation.swipe(
                                 from: index, count: items.count,
@@ -92,6 +93,9 @@ struct HomeHero<Greeting: View>: View {
                             }
                         }
                 )
+                .onChange(of: fingerDown) { _, down in
+                    if down { touchBegan() } else { touchEnded() }
+                }
                 .sensoryFeedback(RawkoonHaptics.feedback(for: .tap), trigger: swipes)
                 .task(id: RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab, epoch: gateEpoch)) {
                     await rotate()
@@ -102,8 +106,14 @@ struct HomeHero<Greeting: View>: View {
     // MARK: Rotation
 
     private func rotate() async {
-        guard !reduceMotion, isActiveRootTab, !adding, items.count > 1,
-              let delay = gate.rotationDelay(at: Date()) else { return }
+        guard !reduceMotion, isActiveRootTab, !adding, items.count > 1 else { return }
+        guard let delay = gate.rotationDelay(at: Date()) else {
+            // A touch that never reports its end must not freeze the hero for good.
+            try? await Task.sleep(for: .seconds(HeroInteractionGate.touchTimeout))
+            guard !Task.isCancelled else { return }
+            gateEpoch += 1
+            return
+        }
         try? await Task.sleep(for: .seconds(delay))
         guard !Task.isCancelled, gate.rotationDelay(at: Date()) != nil else { return }
         pressedItemId = nil
@@ -118,7 +128,7 @@ struct HomeHero<Greeting: View>: View {
     }
 
     private func touchBegan() {
-        guard !gate.touching else { return }
+        guard !gate.isTouching(at: Date()) else { return }
         if items.indices.contains(index) {
             pressedItemId = items[index].id
         }
