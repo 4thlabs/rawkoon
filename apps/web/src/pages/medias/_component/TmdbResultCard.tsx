@@ -32,7 +32,7 @@ export function TmdbResultCard({
   const inLibrary = item.already_exists;
   const canAdd = !inLibrary && item.can_add && user?.is_admin === true;
 
-  const openLibraryItem = (search?: { tab: "search" }) => {
+  const openLibraryItem = (search?: { tab: "releases" }) => {
     if (libraryId == null) return;
     void navigate({
       to: "/library/$libraryId",
@@ -56,7 +56,7 @@ export function TmdbResultCard({
     void navigate({
       to: "/library/$libraryId",
       params: { libraryId: String(response.item.id) },
-      search: { tab: "search" },
+      search: { tab: "releases" },
     });
   };
 

@@ -94,7 +94,7 @@ describe("TmdbResultCard", () => {
     expect(navigate).toHaveBeenCalledWith({
       to: "/library/$libraryId",
       params: { libraryId: "7" },
-      search: { tab: "search" },
+      search: { tab: "releases" },
     });
   });
 
