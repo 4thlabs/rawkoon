@@ -6,6 +6,13 @@ import {
   pickReleaseWithAi,
 } from "@rawkoon/api/services/aiProvider/client";
 import { getActiveIndexerManager } from "@rawkoon/api/services/indexerManager";
+import { tieredSearch } from "@rawkoon/api/services/indexerManager/searchStrategy";
+import { parseReleaseSeasonSpan } from "@rawkoon/shared/utils/releaseStructure";
+import {
+  isMultiSeasonRelease,
+  multiSeasonReleaseCovers,
+  releaseCoversSeasons,
+} from "@rawkoon/api/utils/medias/completeSeries";
 import {
   parseReleaseSeasonEpisode,
   parseReleaseTitle,
@@ -28,8 +35,11 @@ import {
   evaluateDelay,
   toDelayCandidate,
 } from "@rawkoon/api/services/grabDelay";
-import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
-import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
+import { inFlightGrabWhere } from "@rawkoon/api/services/activeShowGrab";
+import {
+  grabRelease,
+  type GrabRefusal,
+} from "@rawkoon/api/services/mediaGrabberGrab";
 import {
   releaseMatchesExpectedTitles,
   resolveSearchTitles,
@@ -41,6 +51,8 @@ type SearchMiss = {
   grabbed: false;
   reason: string;
   delayed?: true;
+  /** Set when the grab was refused up front; callers branch on it, not on the reason. */
+  refusal?: GrabRefusal;
   /** Set when only other versions of the preferred language were found. */
   languageFallback?: LanguageFallbackSummary;
 };
@@ -50,6 +62,8 @@ export async function searchAndGrab(opts: {
   episodeId?: number;
   /** Set for season-pack searches — part of the grab target, see grabRelease. */
   season?: number | null;
+  /** Show-level search: only multi-season packs covering all of these seasons qualify. */
+  completeSeasons?: number[];
   mediaType: "tv" | "movie";
   searchQuery: string;
   qualityProfileId: number | null;
@@ -81,12 +95,28 @@ export async function searchAndGrab(opts: {
       return { grabbed: false, reason: "No indexer manager configured" };
     }
 
-    const { releases } = await adapter.search({
-      query: qTrim,
-      type: "freetext",
-      mediaType,
-      limit: 100,
-    });
+    const { completeSeasons } = opts;
+    const tmdbId = completeSeasons
+      ? ((
+          await prisma.libraryMedia.findUnique({
+            where: { id: mediaId },
+            select: { tmdbId: true },
+          })
+        )?.tmdbId ?? null)
+      : null;
+    const { releases } = completeSeasons
+      ? await tieredSearch(adapter, {
+          query: qTrim,
+          tmdbId,
+          complete: true,
+          mediaType: "tv",
+        })
+      : await adapter.search({
+          query: qTrim,
+          type: "freetext",
+          mediaType,
+          limit: 100,
+        });
 
     if (releases.length === 0) {
       return { grabbed: false, reason: NO_MATCH_REASON };
@@ -122,6 +152,51 @@ export async function searchAndGrab(opts: {
       }
     }
 
+    // Seasons already downloaded, grabbed or carried by a grab in flight; `all` when a series-wide pack is.
+    let inUse: { seasons: number[]; all: boolean } | null = null;
+    const seasonsInUse = async () => {
+      if (inUse) return inUse;
+      const [eps, grabs] = await Promise.all([
+        prisma.libraryEpisode.findMany({
+          where: { mediaId, season: { gt: 0 } },
+          select: {
+            season: true,
+            status: true,
+            _count: { select: { files: true } },
+          },
+        }),
+        prisma.downloadHistory.findMany({
+          where: { ...(await inFlightGrabWhere()), mediaId },
+          select: {
+            season: true,
+            episodeId: true,
+            releaseTitle: true,
+            episode: { select: { season: true } },
+          },
+        }),
+      ]);
+      const seasons = eps
+        .filter(
+          (e) =>
+            e._count.files > 0 ||
+            ["downloaded", "downloading", "upgrading"].includes(e.status),
+        )
+        .map((e) => e.season);
+      let all = false;
+      for (const g of grabs) {
+        const s = g.season ?? g.episode?.season;
+        if (s != null) {
+          seasons.push(s);
+          continue;
+        }
+        const span = parseReleaseSeasonSpan(g.releaseTitle);
+        if (!span) all = true;
+        else for (let n = span.from; n <= span.to; n++) seasons.push(n);
+      }
+      inUse = { seasons, all };
+      return inUse;
+    };
+
     const rows: CandidateRow[] = [];
     // Rejected for language only; reported on a miss, never grabbed.
     const fallbackTags: string[] = [];
@@ -153,6 +228,29 @@ export async function searchAndGrab(opts: {
       // Reject releases whose title doesn't begin with an expected show/movie
       // title (freetext indexer results are noisy for short titles like "FROM").
       if (!releaseMatchesExpectedTitles(title, matchTitles)) continue;
+
+      // A complete-series pack must name every wanted season, or the rest stays unfetched.
+      if (completeSeasons && !releaseCoversSeasons(title, completeSeasons)) {
+        continue;
+      }
+      // A multi-season pack found by a season search must carry that season,
+      // and none of the seasons it covers may already be downloaded or grabbed.
+      if (
+        !completeSeasons &&
+        season != null &&
+        episodeId == null &&
+        isMultiSeasonRelease(title)
+      ) {
+        if (!multiSeasonReleaseCovers(title, season)) continue;
+        const span = parseReleaseSeasonSpan(title);
+        const used = await seasonsInUse();
+        if (
+          used.all ||
+          used.seasons.some((s) => !span || (s >= span.from && s <= span.to))
+        ) {
+          continue;
+        }
+      }
 
       // For episode grabs, require the release's SxxExx to match the episode.
       if (expectedSeason != null && expectedEpisode != null) {
@@ -330,9 +428,13 @@ export async function searchAndGrab(opts: {
       const result = await grabRelease({
         mediaId,
         episodeId,
-        season,
         downloadUrl,
         releaseTitle: candidate.title,
+        // A multi-season pack is recorded show-level (with its span), never as one season's.
+        season:
+          !completeSeasons && isMultiSeasonRelease(candidate.title)
+            ? null
+            : season,
         indexer: null,
         qualityParsed: candidate.parsed,
         isUpgrade,
@@ -350,9 +452,16 @@ export async function searchAndGrab(opts: {
 
       // Only continue to the next candidate on a blocklist hit or a space refusal.
       // All other failures (network, download client) are terminal.
-      if (!result.grabbed && result.reason.startsWith("Blocklisted:")) continue;
+      if (result.refusal === "blocklisted") continue;
+      // A multi-season pack clashing with a running grab says nothing about the single-season candidates below it.
+      if (
+        result.refusal === "already_active" &&
+        isMultiSeasonRelease(candidate.title)
+      ) {
+        continue;
+      }
       // Smaller candidates further down may still fit.
-      if (!result.grabbed && result.reason.startsWith(SPACE_REFUSAL_PREFIX)) {
+      if (result.refusal === "no_space") {
         spaceRefusal ??= result.reason;
         continue;
       }
@@ -360,7 +469,9 @@ export async function searchAndGrab(opts: {
       return result;
     }
 
-    return spaceRefusal ? { grabbed: false, reason: spaceRefusal } : noMatch();
+    return spaceRefusal
+      ? { grabbed: false, reason: spaceRefusal, refusal: "no_space" }
+      : noMatch();
   } catch (e) {
     console.warn("[mediaGrabber] searchAndGrab failed:", e);
     return {
@@ -382,6 +493,7 @@ export async function searchAndGrabWithTitleFallback(opts: {
   episodeId?: number;
   /** Set for season-pack searches — part of the grab target, see grabRelease. */
   season?: number | null;
+  completeSeasons?: number[];
   mediaType: "tv" | "movie";
   titleBaseQueries: string[];
   suffix: string;
@@ -400,6 +512,7 @@ export async function searchAndGrabWithTitleFallback(opts: {
       mediaId: opts.mediaId,
       episodeId: opts.episodeId,
       season: opts.season,
+      completeSeasons: opts.completeSeasons,
       mediaType: opts.mediaType,
       searchQuery: `${base}${opts.suffix}`,
       qualityProfileId: opts.qualityProfileId,

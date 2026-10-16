@@ -4,14 +4,26 @@ import {
   searchOnAddJobId,
 } from "@rawkoon/api/services/searchOnAdd";
 
-function harness(enabled: boolean, fail = false, seasons: number[] = [1, 2]) {
+function harness(
+  enabled: boolean,
+  fail = false,
+  seasons: number[] = [1, 2],
+  completeSeries: number[] | null = null,
+) {
   const calls: Array<number | string> = [];
   const deps = {
     isEnabled: async () => enabled,
     airedSeasons: async () => seasons,
-    enqueue: async (mediaId: number, season?: number) => {
+    completeSeries: async () => completeSeries,
+    enqueue: async (mediaId: number, scope?: number | "series") => {
       if (fail) throw new Error("redis down");
-      calls.push(season == null ? mediaId : `${mediaId}-s${season}`);
+      calls.push(
+        scope == null
+          ? mediaId
+          : scope === "series"
+            ? `${mediaId}-series`
+            : `${mediaId}-s${scope}`,
+      );
     },
   };
   return { calls, deps };
@@ -44,6 +56,34 @@ describe("searchOnAddJobId per season", () => {
   it("adds a season suffix without ':'", () => {
     expect(searchOnAddJobId(8, 3)).toBe("search-on-add-8-s3");
     expect(searchOnAddJobId(8, 3)).not.toContain(":");
+  });
+});
+
+describe("searchOnAddJobId for the series job", () => {
+  it("is distinct from every season job and has no ':'", () => {
+    expect(searchOnAddJobId(8, "series")).toBe("search-on-add-8-series");
+    expect(searchOnAddJobId(8, "series")).not.toContain(":");
+  });
+});
+
+describe("queueSearchOnAdd complete-series first", () => {
+  it("queues only the series job for a clean-slate show", async () => {
+    const h = harness(true, false, [1, 2], [1, 2]);
+    const r = await queueSearchOnAdd(show, undefined, h.deps);
+    expect(r.search_queued).toBe(true);
+    expect(h.calls).toEqual(["8-series"]);
+  });
+
+  it("queues the season jobs directly otherwise", async () => {
+    const h = harness(true, false, [2], null);
+    await queueSearchOnAdd(show, undefined, h.deps);
+    expect(h.calls).toEqual(["8-s2"]);
+  });
+
+  it("never looks for a complete pack for a movie", async () => {
+    const h = harness(true, false, [1, 2], [1, 2]);
+    await queueSearchOnAdd(movie, undefined, h.deps);
+    expect(h.calls).toEqual([7]);
   });
 });
 

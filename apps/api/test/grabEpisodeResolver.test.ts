@@ -203,3 +203,37 @@ describe("resolveGrabSeason", () => {
     ).toBe(null);
   });
 });
+
+describe("resolveGrabSeason single-season integrale", () => {
+  it.each([
+    ["Show.Integrale.Saison.2.FRENCH.1080p", 2],
+    ["Show.Saison.1.Integrale.FRENCH.1080p", 1],
+    ["Show.Integrale.S03.FRENCH.1080p", 3],
+  ])("keys %s to season %s", (releaseTitle, season) => {
+    expect(
+      resolveGrabSeason({
+        mediaType: "show",
+        episodeId: null,
+        season: null,
+        releaseTitle,
+      }),
+    ).toBe(season);
+  });
+});
+
+describe("resolveGrabSeason multi-season packs", () => {
+  it.each([
+    "Show.S01-S03.COMPLETE.1080p.WEB",
+    "Show.Seasons.1-3.1080p.WEB",
+    "Show.Integrale.MULTi.1080p.WEB",
+  ])("keeps %s show-level, not season 1", (releaseTitle) => {
+    expect(
+      resolveGrabSeason({
+        mediaType: "show",
+        episodeId: null,
+        season: null,
+        releaseTitle,
+      }),
+    ).toBeNull();
+  });
+});

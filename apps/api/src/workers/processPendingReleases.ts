@@ -6,7 +6,6 @@ import {
 } from "@rawkoon/api/services/grabAttempts";
 import { blocklistedTitles } from "@rawkoon/api/utils/medias/pickReleaseForGrab";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
-import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import {
   profileToScoreInput,
   qualityProfileFormatsInclude,
@@ -212,9 +211,12 @@ export async function processPendingReleases(
           break;
         }
         lastReason = result.reason;
-        if (result.reason.startsWith(SPACE_REFUSAL_PREFIX)) spaceRefused = true;
+        if (result.refusal === "no_space") spaceRefused = true;
         // Another grab already owns the target; later candidates would hit the same wall.
-        if (result.reason.startsWith("A download is already active")) {
+        if (
+          result.refusal === "already_active" ||
+          result.refusal === "show_grab_active"
+        ) {
           alreadyActive = true;
           break;
         }
