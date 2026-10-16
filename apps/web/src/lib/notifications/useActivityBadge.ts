@@ -6,7 +6,7 @@ import { REQUEST_ENDPOINTS } from "@/lib/endpoints";
 import { useUnreadCount } from "@/lib/notifications/useUnreadCount";
 import type { MediaRequestsResponse } from "@rawkoon/shared/types";
 
-/** Unread inbox items, plus pending requests for admins. */
+/** Unread inbox items, plus pending requests for admins; a new request notifying an admin counts in both by design. */
 export function useActivityBadge(): number {
   const fetcher = useFetcher();
   const { data: user } = useCurrentUser();

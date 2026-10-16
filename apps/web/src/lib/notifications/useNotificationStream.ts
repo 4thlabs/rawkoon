@@ -64,11 +64,13 @@ export function useNotificationStream({
         const notification = data as StreamNotification;
         if (typeof notification.id !== "number") return;
 
-        // Keep the bell + notifications list in sync without a push round-trip.
+        // Keep the Activity badge + notifications list in sync without a push round-trip.
         queryClient.invalidateQueries({
           queryKey: queryKeys.notifications.all,
         });
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+        // The Activity badge counts pending requests for admins.
+        queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
 
         onNotificationRef.current(notification);
       } catch {

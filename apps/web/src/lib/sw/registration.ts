@@ -1,20 +1,10 @@
 import i18n from "@/lib/i18n";
 
-function syncBadge(): void {
+export function syncBadge(): void {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.ready.then((registration) => {
       if (registration.active) {
         registration.active.postMessage({ type: "syncBadge" });
-      }
-    });
-  }
-}
-
-export function clearBadge(): void {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.ready.then((registration) => {
-      if (registration.active) {
-        registration.active.postMessage({ type: "clearBadge" });
       }
     });
   }

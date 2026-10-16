@@ -5,7 +5,7 @@ import { type Notification } from "@rawkoon/shared/types";
 import { NotificationList } from "@/components/NotificationList";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
-import { clearBadge } from "@/lib/sw/registration";
+import { syncBadge } from "@/lib/sw/registration";
 import { Bell } from "lucide-react";
 
 export function NotificationsPage() {
@@ -25,7 +25,7 @@ export function NotificationsPage() {
 
   const handleMarkAllAsRead = async () => {
     await markAllAsReadMutation.mutateAsync();
-    clearBadge();
+    syncBadge();
   };
 
   const hasUnreadNotifications = notifications.some((n) => !n.read);
