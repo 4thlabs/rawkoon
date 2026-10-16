@@ -10,6 +10,11 @@ import { useLibraryScan } from "@/features/medias/hooks/useLibraryScan";
 import { useReindexLanguages } from "@/features/medias/hooks/useReindexLanguages";
 import { useReindexLanguagesStatus } from "@/features/medias/hooks/useReindexLanguagesStatus";
 import { useUpdateMediaPostProcessingSettings } from "@/features/medias/hooks/useUpdateMediaPostProcessingSettings";
+import { GrabReadinessChecklist } from "./GrabReadinessChecklist";
+import {
+  ReleaseCheckFieldset,
+  type ReleaseCheckValue,
+} from "@/pages/settings/_component/ReleaseCheckFieldset";
 import { useProwlarrIntegration } from "@/pages/settings/useProwlarrIntegration";
 import { useJackettIntegration } from "@/pages/settings/useJackettIntegration";
 import type {
@@ -74,6 +79,7 @@ export function MediaPostProcessingSettingsBody({
         episodeTemplate: z.string(),
         defaultMovieQualityProfileId: z.string(),
         defaultShowQualityProfileId: z.string(),
+        searchOnAdd: z.enum(["on", "off"]),
         activeIndexerManager: z.string(),
       }),
     [],
@@ -99,10 +105,15 @@ export function MediaPostProcessingSettingsBody({
         settings.default_movie_quality_profile_id?.toString() ?? "",
       defaultShowQualityProfileId:
         settings.default_show_quality_profile_id?.toString() ?? "",
+      searchOnAdd: settings.search_on_add ? "on" : "off",
       activeIndexerManager: settings.active_indexer_manager ?? "",
     },
   });
 
+  const [releaseCheck, setReleaseCheck] = useState<ReleaseCheckValue>({
+    cron: settings.release_check_cron,
+    valid: true,
+  });
   const [scanPath, setScanPath] = useState("");
   const [scanType, setScanType] = useState<"movie" | "show">("movie");
   const [lastScan, setLastScan] = useState<{
@@ -137,6 +148,8 @@ export function MediaPostProcessingSettingsBody({
           data.defaultShowQualityProfileId === ""
             ? null
             : parseInt(data.defaultShowQualityProfileId, 10),
+        search_on_add: data.searchOnAdd === "on",
+        release_check_cron: releaseCheck.cron,
         active_indexer_manager:
           data.activeIndexerManager === "prowlarr" ||
           data.activeIndexerManager === "jackett"
@@ -368,8 +381,43 @@ export function MediaPostProcessingSettingsBody({
             </p>
           </div>
 
+          <fieldset className="rounded-lg border border-neutral-700/60 bg-neutral-900/40 p-4">
+            <legend className="px-1 text-sm font-medium text-neutral-300">
+              {t("settings.mediaLibrary.searchOnAdd.title")}
+            </legend>
+            <div className="space-y-2">
+              {(["on", "off"] as const).map((value) => (
+                <label
+                  key={value}
+                  className="flex items-start gap-2 text-sm text-neutral-200"
+                >
+                  <input
+                    type="radio"
+                    value={value}
+                    {...register("searchOnAdd")}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    {value === "on"
+                      ? t("settings.mediaLibrary.searchOnAdd.on")
+                      : t("settings.mediaLibrary.searchOnAdd.off")}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <GrabReadinessChecklist />
+          </fieldset>
+
+          <ReleaseCheckFieldset
+            initialCron={settings.release_check_cron}
+            onChange={setReleaseCheck}
+          />
+
           <div className="pt-2 border-t border-neutral-700/60">
-            <Button type="submit" disabled={updateMut.isPending}>
+            <Button
+              type="submit"
+              disabled={updateMut.isPending || !releaseCheck.valid}
+            >
               {updateMut.isPending
                 ? t("settings.mediaLibrary.saving")
                 : t("settings.mediaLibrary.save")}

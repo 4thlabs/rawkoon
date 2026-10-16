@@ -13,12 +13,17 @@ export function MiniPlayer() {
   const onLogin = pathname === "/login";
   const onListen = /\/books\/[^/]+\/listen\/?$/.test(pathname);
 
+  // The mobile tab bar is hidden in the reader, so the player sits at the edge there.
+  const onRead = /\/books\/[^/]+\/read\/?$/.test(pathname);
+
   if (!player.loaded || onLogin || onListen) return null;
 
   const bookId = String(player.bookId ?? "");
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[var(--z-sticky)] border-t border-neutral-800 bg-neutral-950/95 px-3 py-2 backdrop-blur-md">
+    <div
+      className={`fixed inset-x-0 bottom-0 z-[var(--z-sticky)] ${onRead ? "" : "max-lg:bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))]"} border-t border-neutral-800 bg-neutral-950/95 px-3 py-2 backdrop-blur-md`}
+    >
       <div className="mx-auto flex max-w-7xl items-center gap-3">
         <Link
           to="/books/$bookId/listen"

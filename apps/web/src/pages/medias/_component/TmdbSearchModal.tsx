@@ -13,12 +13,15 @@ interface TmdbSearchModalProps {
    * within the user-gesture stack (required on iOS/Android to open the keyboard).
    */
   inputRef?: React.RefObject<HTMLInputElement | null>;
+  /** Close-after-add hook; defaults to leaving the sheet open. */
+  onAdded?: () => void;
 }
 
 export function TmdbSearchModal({
   isOpen,
   onClose,
   inputRef: externalInputRef,
+  onAdded,
 }: TmdbSearchModalProps) {
   const { t } = useTranslation("common");
   const internalRef = useRef<HTMLInputElement>(null);
@@ -88,7 +91,11 @@ export function TmdbSearchModal({
           </button>
         </div>
         <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
-          <TmdbMediaSearchPanel inputRef={inputRef} variant="modal" />
+          <TmdbMediaSearchPanel
+            inputRef={inputRef}
+            variant="modal"
+            onAdded={onAdded}
+          />
         </div>
       </div>
     </div>,

@@ -12,6 +12,7 @@ import { useAddToLibrary } from "@/features/medias/hooks/useAddToLibrary";
 import { useAddToWatchlist } from "@/features/medias/hooks/useAddToWatchlist";
 import { useRemoveFromLibrary } from "@/features/medias/hooks/useRemoveFromLibrary";
 import { useRemoveFromWatchlist } from "@/features/medias/hooks/useRemoveFromWatchlist";
+import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
 import { mergeBatch } from "./mergeBatch";
 import { useDismissMedia } from "./useDismissMedia";
 import { useUndismissMedia } from "./useUndismissMedia";
@@ -46,6 +47,7 @@ export function useDiscoverDeck() {
   const fetching = useRef(false);
 
   const addToLibrary = useAddToLibrary();
+  const liveSearchToast = useLiveSearchToast();
   const addToWatchlist = useAddToWatchlist();
   const removeFromLibrary = useRemoveFromLibrary();
   const removeFromWatchlist = useRemoveFromWatchlist();
@@ -135,24 +137,31 @@ export function useDiscoverDeck() {
 
   const current = queue[0] ?? null;
 
-  const addCurrent = useCallback(() => {
-    if (!current) return;
-    const item = current;
-    // Fire the grab in the background; advance the deck now.
-    const libraryId = addToLibrary
-      .mutateAsync({
-        tmdb_id: item.tmdb_id,
-        type: libraryType(item.media_type),
-      })
-      .then((r) => r.item.id)
-      .catch((e) => {
-        rollback(item, `Couldn't add "${item.title}"`);
-        throw e;
-      });
-    // Swallow late rejection so it doesn't surface as an unhandled rejection.
-    libraryId.catch(() => {});
-    advance({ kind: "add", item, libraryId });
-  }, [current, addToLibrary, advance, rollback]);
+  const addCurrent = useCallback(
+    (searchOnAdd?: boolean) => {
+      if (!current) return;
+      const item = current;
+      // Add in the background and advance the deck now; the server queues the search.
+      const libraryId = addToLibrary
+        .mutateAsync({
+          tmdb_id: item.tmdb_id,
+          type: libraryType(item.media_type),
+          ...(searchOnAdd === false ? { search_on_add: false } : {}),
+        })
+        .then((r) => {
+          liveSearchToast.announceAdd(r, item.title);
+          return r.item.id;
+        })
+        .catch((e) => {
+          rollback(item, `Couldn't add "${item.title}"`);
+          throw e;
+        });
+      // Swallow late rejection so it doesn't surface as an unhandled rejection.
+      libraryId.catch(() => {});
+      advance({ kind: "add", item, libraryId });
+    },
+    [current, addToLibrary, advance, rollback, liveSearchToast],
+  );
 
   const watchlistCurrent = useCallback(() => {
     if (!current) return;

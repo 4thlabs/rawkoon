@@ -12,6 +12,7 @@ import {
   enqueuePostProcess,
   revertToWantedIfNoActiveGrabs,
 } from "@rawkoon/api/services/downloadOutcome";
+import { estimateEtaSeconds } from "@rawkoon/api/services/downloadClient/eta";
 import { rescanLibraryItem } from "@rawkoon/api/services/library/rescan";
 import { pruneLibraryDirsAfterDelete } from "@rawkoon/api/services/library/pruneLibraryDirs";
 
@@ -118,7 +119,7 @@ export const libraryFilesRoutes = new Hono<Env>()
               liveByHash.set(key, {
                 progress: torrent.progress,
                 download_speed: torrent.dlSpeed,
-                eta_seconds: null,
+                eta_seconds: estimateEtaSeconds(torrent),
                 state: torrent.state,
               });
             }

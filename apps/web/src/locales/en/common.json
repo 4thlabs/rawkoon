@@ -12,7 +12,10 @@
     "collections": "Collections",
     "calendar": "Calendar",
     "logout": "Logout",
-    "positionTitle": "Navigation position"
+    "positionTitle": "Navigation position",
+    "search": "Search",
+    "more": "More",
+    "mobileTabs": "Main navigation"
   },
   "requests": {
     "title": "Requests",
@@ -215,8 +218,25 @@
       "downloadsTitle": "Downloads",
       "transfer": "Transfer",
       "downloadClientNotConfigured": "Download client not configured",
-      "pendingDelay": "Pending (delay)",
-      "pendingGrabAt": "grab at {{time}}",
+      "pendingDelay": "Waiting to grab",
+      "pendingGrabIn": "Grabs in {{time}}",
+      "pendingGrabDue": "Grabbing shortly",
+      "grabNow": "Grab now",
+      "nothingDownloading": "Nothing downloading",
+      "downloadClientUnreachable": "Download client unreachable",
+      "etaLeft": "{{time}} left",
+      "nothingGrabbed": "Nothing was grabbed",
+      "grabMiss": {
+        "not_wanted": "The title no longer needs this release.",
+        "already_active": "A download for it is already in progress.",
+        "no_space": "There is not enough free disk space.",
+        "all_failed": "Every held release was blocked or failed."
+      },
+      "downloadState": {
+        "stalled": "Stalled",
+        "paused": "Paused",
+        "error": "Error"
+      },
       "pendingMore": "+{{count}} more",
       "upcomingEmpty": "Nothing upcoming"
     },
@@ -434,14 +454,19 @@
     "expand": "Expand",
     "refetch": "Refresh",
     "quickActions": "Quick Actions",
-    "quickActionsPlaceholder": "Search pages and actions...",
-    "quickActionsHint": "Use arrow keys to move and Enter to run",
+    "quickActionsPlaceholder": "Search movies, series and pages...",
+    "quickActionsHint": "Type a title to search movies and series",
+    "quickActionsTitlesHint": "Enter adds or opens, Shift+Enter shows details",
+    "quickActionsTitlesHintTouch": "Tap a title to add it, or the info button for details",
+    "quickActionsTitlesFailed": "Movie and series search is unavailable right now.",
+    "quickActionsSearchingTitles": "Searching movies and series...",
+    "quickActionsSectionTitles": "Movies & series",
+    "quickActionsAdd": "Add",
+    "quickActionsDetails": "Details",
     "quickActionsNoResults": "No quick action found",
     "quickActionsNoResultsDescription": "Try a different keyword or open a section directly from the sidebar.",
     "quickActionsOpenPage": "Open {{page}}",
     "quickActionsRefreshCurrentPage": "Reload the current page",
-    "quickActionsSearchCollections": "Search media, chores, tasks",
-    "quickActionsLoadingResults": "Searching your content...",
     "quickActionsSectionActions": "Pages & actions",
     "quickActionsSectionBooks": "Books",
     "quickActionsSectionMedias": "Media",
@@ -860,7 +885,89 @@
       "scanRunning": "Scanning…",
       "scanResult": "Matched {{count}} title(s).",
       "scanUnmatched": "Unmatched",
-      "scanError": "Scan failed"
+      "scanError": "Scan failed",
+      "searchOnAdd": {
+        "title": "When you add a movie or show",
+        "on": "Search and grab it right away",
+        "off": "Add it to the library only (waits for the scheduled check or Search now)"
+      },
+      "grabReadiness": {
+        "title": "Ready to grab",
+        "checking": "Checking…",
+        "allClear": "Everything automatic grabbing needs is in place.",
+        "summary_one": "{{count}} thing to fix",
+        "summary_other": "{{count}} things to fix",
+        "recheck": "Re-check",
+        "loadError": "Couldn't run the checks.",
+        "status": {
+          "ok": "OK",
+          "warn": "Needs attention",
+          "error": "Not working"
+        },
+        "fix": {
+          "watchAll_one": "Watch it",
+          "watchAll_other": "Watch all {{count}}",
+          "pickDefault": "Pick a default",
+          "setMaximum": "Set a maximum for {{name}}",
+          "openIntegrations": "Open Integrations"
+        },
+        "checks": {
+          "indexer_manager": {
+            "ok_one": "{{manager}} is connected with {{count}} indexer enabled.",
+            "ok_other": "{{manager}} is connected with {{count}} indexers enabled.",
+            "warn": "{{manager}} is connected but has no enabled indexers, so searches find nothing.",
+            "not_configured": "No indexer manager is set up, so nothing can be searched.",
+            "unreachable": "Can't reach {{manager}}, so searches and RSS checks fail."
+          },
+          "download_client": {
+            "ok": "{{client}} is connected.",
+            "not_configured": "No download client is set up, so releases have nowhere to go.",
+            "unreachable": "Can't reach {{client}}, so grabs fail."
+          },
+          "default_movie_profile": {
+            "ok": "New movies use the {{name}} quality profile.",
+            "warn": "No default movie quality profile: new movies accept any release."
+          },
+          "default_show_profile": {
+            "ok": "New shows use the {{name}} quality profile.",
+            "warn": "No default show quality profile: new shows accept any release."
+          },
+          "rss_indexers": {
+            "ok": "RSS checks watch {{watched}} of {{total}} indexers.",
+            "warn": "RSS checks watch no indexer, so new releases are never picked up on their own."
+          },
+          "profiles_without_maximum": {
+            "ok": "Every quality profile has a maximum resolution.",
+            "warn_one": "{{count}} quality profile has no maximum resolution, so a 1080p profile can still grab 4K.",
+            "warn_other": "{{count}} quality profiles have no maximum resolution, so a 1080p profile can still grab 4K."
+          },
+          "search_on_add": {
+            "on": "Search starts as soon as a movie or show is added.",
+            "off": "Search waits for the scheduled check after a movie or show is added."
+          }
+        }
+      },
+      "releaseCheck": {
+        "title": "Check for new releases",
+        "description": "How often wanted movies and episodes are searched for a release.",
+        "presets": {
+          "hourly": "Every hour",
+          "every3h": "Every 3 hours",
+          "every6h": "Every 6 hours",
+          "every12h": "Every 12 hours",
+          "daily": "Every day at",
+          "custom": "Custom"
+        },
+        "defaultTag": "Default",
+        "timeLabel": "Time of day",
+        "customLabel": "Cron expression",
+        "customHint": "Five fields: minute, hour, day of month, month, day of week.",
+        "invalidCron": "This is not a valid cron expression. Use five fields, for example 0 */4 * * *.",
+        "tooFrequent": "This runs too often. Release checks must be at least {{minutes}} minutes apart.",
+        "invalidTime": "Pick a time of day.",
+        "summary": "Runs {{schedule}}.",
+        "timezoneHint": "Times follow the server's time zone."
+      }
     },
     "arrImport": {
       "title": "Import library from Radarr / Sonarr",
@@ -1671,6 +1778,10 @@
       "pageSubtitle": "Movies, shows and download tracking",
       "searchPlaceholder": "Search library…",
       "typeAll": "All",
+      "grabReadinessBanner_one": "Automatic grabs are limited: {{count}} thing to fix",
+      "grabReadinessBanner_other": "Automatic grabs are limited: {{count}} things to fix",
+      "grabReadinessReview": "Review",
+      "grabReadinessDismiss": "Dismiss",
       "moviesWithCount": "Movies ({{count}})",
       "showsWithCount": "Shows ({{count}})",
       "statusAll": "All",
@@ -1702,6 +1813,9 @@
         "digital_release_date": "Digital release",
         "file_size": "File size"
       },
+      "itemStatusPercent": "{{label}} {{percent}}%",
+      "itemStatusEpisodes_one": "{{label}} {{count}} episode",
+      "itemStatusEpisodes_other": "{{label}} {{count}} episodes",
       "itemStatus": {
         "wanted": "Missing",
         "downloading": "Downloading",
@@ -1811,7 +1925,6 @@
       "watchTrailer": "Watch Trailer",
       "tabInfo": "Info",
       "tabSimilar": "Similar",
-      "tabSearch": "Search",
       "tabManagement": "Management",
       "releaseDate": "Release:",
       "firstAir": "First aired:",
@@ -1844,7 +1957,8 @@
       "cast": "Cast",
       "searchingEpisode": "Searching for",
       "searchingSeasonPack": "Searching season pack",
-      "upgradeMode": "Upgrade mode — grab will replace the existing file"
+      "upgradeMode": "Upgrade mode — grab will replace the existing file",
+      "tabReleases": "Releases"
     },
     "addSuccess": "Added {{title}} to library.",
     "addFailed": "Failed to add media to library.",
@@ -1859,6 +1973,20 @@
       "loading": "Loading releases...",
       "empty": "No releases found.",
       "noMatches": "No releases match your current view.",
+      "languageFallback": {
+        "or": " or ",
+        "bannerTitle": "No {{languages}} release yet",
+        "bannerBodyFrench_one": "{{count}} release in other French versions: {{breakdown}}. Rawkoon keeps checking for {{languages}}.",
+        "bannerBodyFrench_other": "{{count}} releases in other French versions: {{breakdown}}. Rawkoon keeps checking for {{languages}}.",
+        "bannerBodyOther_one": "{{count}} release in other languages: {{breakdown}}. Rawkoon keeps checking for {{languages}}.",
+        "bannerBodyOther_other": "{{count}} releases in other languages: {{breakdown}}. Rawkoon keeps checking for {{languages}}.",
+        "groupFrench": "Other French versions",
+        "groupOther": "Other languages",
+        "collapsedFrench_one": "{{count}} other French version",
+        "collapsedFrench_other": "{{count}} other French versions",
+        "collapsedOther_one": "{{count}} release in other languages",
+        "collapsedOther_other": "{{count}} releases in other languages"
+      },
       "filtersTitle": "Filters",
       "filtersButton": "Advanced filters",
       "clearFilters": "Clear",
@@ -1889,8 +2017,8 @@
       "retry": "Retry",
       "errorTitle": "Could not load releases.",
       "errorDescription": "Please try again in a moment.",
-      "download": "Download this release",
-      "redownload": "Re-grab this release",
+      "download": "Grab",
+      "redownload": "Grab again",
       "downloading": "Starting...",
       "downloadStarted": "Release download started.",
       "downloadFailed": "Failed to start release download.",
@@ -1921,7 +2049,22 @@
       "blocked": "Blocked",
       "blockTitle": "Block this release so it's never grabbed again",
       "blockSuccess": "Release blocked. It won't be grabbed again.",
-      "blockFailed": "Could not block this release."
+      "blockFailed": "Could not block this release.",
+      "moreActions": "More actions",
+      "profileFallback": "profile",
+      "bestMatch": {
+        "title": "Best match for {{profile}}",
+        "titleNoProfile": "Best match",
+        "reasonQuality": "{{quality}}",
+        "reasonLanguage": "Preferred language ({{languages}})",
+        "reasonLanguageAny": "Preferred language",
+        "reasonTracker": "Preferred tracker ({{indexer}})",
+        "reasonSeeders_one": "{{count}} seeder",
+        "reasonSeeders_other": "{{count}} seeders",
+        "reasonSize": "{{size}}",
+        "titleAi": "AI pick for {{profile}}",
+        "titleAiNoProfile": "AI pick"
+      }
     },
     "tmdb": {
       "title": "Search and add from TMDB",
@@ -1934,7 +2077,10 @@
       "noResults": "No results found.",
       "inLibrary": "Already in library",
       "notConfigured": "Service not configured",
-      "add": "Click to add"
+      "searchFailed": "Title search failed. Try again.",
+      "addAction": "Add",
+      "chooseRelease": "Choose release",
+      "openInLibrary": "Open"
     },
     "history": {
       "tabLibrary": "Library",
@@ -1961,6 +2107,36 @@
       "daysAll": "All time",
       "empty": "No download history found.",
       "paginationRange": "{{start}}–{{end}} of {{total}}"
+    },
+    "addToast": {
+      "searching": "Added {{title}} — searching for a release",
+      "notReleased": "Added {{title}} — waiting for its digital release ({{date}})",
+      "notReleasedNoDate": "Added {{title}} — waiting for a digital release date"
+    },
+    "addSearch": {
+      "caption": "Searches for a release right away",
+      "addOnly": "Add only (don't search)",
+      "moreOptions": "More add options"
+    },
+    "searchToast": {
+      "searching": "Searching for {{title}}…",
+      "grabbing": "Grabbing {{release}}, {{quality}}",
+      "grabbingPlain": "Grabbing {{release}}",
+      "grabbingHeld": "Grabbing the held release",
+      "view": "View",
+      "changeRelease": "Change release",
+      "held": "Held by grab delay — grabs at {{time}} unless a better release appears",
+      "grabNow": "Grab now",
+      "noFit": "No release fits {{profile}} yet",
+      "noRelease": "No release found yet",
+      "chooseRelease": "Choose a release",
+      "notReleased": "Waiting for its digital release ({{date}})",
+      "notReleasedNoDate": "Waiting for a digital release date",
+      "notAiredYet": "Nothing has aired yet — next episode {{date}}",
+      "notAiredYetNoDate": "Nothing has aired yet",
+      "stillSearching": "Still searching — you'll get a notification",
+      "failed": "The search failed",
+      "failedWithReason": "The search failed: {{reason}}"
     }
   },
   "library": {
@@ -2061,6 +2237,9 @@
       "episodeSearch": "Grab episode",
       "grabbed": "Added to download client",
       "grabFailed": "No suitable release found",
+      "languageFallbackMissFrench": "No {{languages}} release yet; {{count}} in other French versions ({{breakdown}})",
+      "languageFallbackMissOther": "No {{languages}} release yet; {{count}} in other languages ({{breakdown}})",
+      "seeReleases": "See them",
       "delete": "Delete media",
       "deleteConfirmTitle": "Delete this media?",
       "deleteFilesLabel": "Also delete hardlinked files from disk",
@@ -2123,7 +2302,31 @@
       "storageByResolution": "Storage by resolution",
       "error": "Couldn't load library stats."
     },
-    "notFound": "Item not found in library."
+    "notFound": "Item not found in library.",
+    "lastSearch": {
+      "noMatch": "No match · {{relative}}",
+      "noMatchNoTime": "No match"
+    },
+    "itemActions": {
+      "chooseRelease": "Choose release",
+      "searchUpgrade": "Search for upgrade",
+      "downloadingPercent": "Downloading {{percent}}%",
+      "downloadingEpisodes_one": "Downloading {{count}} episode",
+      "downloadingEpisodes_other": "Downloading {{count}} episodes",
+      "eta": "ETA {{eta}}",
+      "paused": "Paused"
+    },
+    "statusLine": {
+      "profile": "Profile {{name}}",
+      "lastSearched": "Last searched {{relative}}",
+      "outcome": {
+        "grabbed": "grabbed a release",
+        "delayed": "release held",
+        "no_match": "no match",
+        "not_released": "not released yet",
+        "error": "search failed"
+      }
+    }
   },
   "downloadsImport": {
     "title": "Downloads import",
@@ -2198,15 +2401,15 @@
   },
   "scoring": {
     "reject": {
-      "resolutionBelowMin": "Below minimum resolution",
-      "resolutionAboveCutoff": "Exceeds cutoff resolution",
-      "hdrRequiredAbsent": "HDR required but not present",
-      "languageNoMatch": "Language does not match profile",
-      "sizeOverCap": "File size exceeds cap",
-      "isSample": "Sample file rejected",
-      "seedersBelowMin": "Not enough seeders",
-      "customFormatRequiredAbsent": "Required custom format absent",
-      "customFormatForbiddenPresent": "Forbidden custom format present"
+      "resolutionBelowMin": "Below the minimum resolution",
+      "resolutionAboveCutoff": "Above the {{profile}} limit",
+      "hdrRequiredAbsent": "No HDR, which the profile requires",
+      "languageNoMatch": "Not in a preferred language",
+      "sizeOverCap": "Larger than the size limit",
+      "isSample": "A sample file",
+      "seedersBelowMin": "Too few seeders",
+      "customFormatRequiredAbsent": "Missing a required custom format",
+      "customFormatForbiddenPresent": "Has a forbidden custom format"
     },
     "component": {
       "resolutionTier": "Resolution tier",

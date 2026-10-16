@@ -154,6 +154,7 @@ describe("searchAndGrab AI judge", () => {
     grabRelease.mockImplementationOnce(async () => ({
       grabbed: false,
       reason: "Blocklisted: hash",
+      refusal: "blocklisted" as const,
     }));
     await searchAndGrab({ ...base, aiConfig: aiConfig as never });
     expect(grabRelease).toHaveBeenCalledTimes(2);

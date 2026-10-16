@@ -9,16 +9,17 @@ import {
   Download,
   BarChart3,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useLibraryNavigation } from "@/features/medias/context/LibraryNavigationContext";
 import { PageLayout } from "@/components/PageLayout";
 import { type SegmentedTabItem } from "@/components/ui/segmented-tabs";
 import { useInfiniteLibrary } from "@/features/medias/hooks/useInfiniteLibrary";
 import { useLibraryLanguageTags } from "@/features/medias/hooks/useLibraryLanguageTags";
+import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
 import { useSearchLibraryMovie } from "@/features/medias/hooks/useSearchLibraryMovie";
 import { useLibraryEvents } from "@/features/medias/hooks/useLibraryEvents";
 import { useAuth } from "@/lib/auth/useAuth";
 import { type FilterType, type FilterStatus } from "@/utils/libraryUtils";
+import { GrabReadinessBanner } from "./GrabReadinessBanner";
 import { LibraryPageHeader } from "./LibraryPageHeader";
 import { LibraryMobileFilterSheet } from "./LibraryMobileFilterSheet";
 import { TmdbSearchModal } from "./TmdbSearchModal";
@@ -48,6 +49,7 @@ export function LibraryPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
 
   const searchMovie = useSearchLibraryMovie();
+  const liveSearchToast = useLiveSearchToast();
 
   // ─── Filter / sort state (URL-persisted) ───────────────────────────────────
   const { state, setState, activeFilterCount } = useLibraryPageState(
@@ -97,15 +99,15 @@ export function LibraryPage() {
   );
 
   const handleMovieSearch = (id: number) => {
-    searchMovie.mutate(
-      { id },
+    const item = sorted.find((m) => m.id === id);
+    liveSearchToast.announceSearch(
       {
-        onSuccess: (r) => {
-          if (r.grabbed) toast.success(t("library.management.grabbed"));
-          else toast.error(r.reason ?? t("library.management.grabFailed"));
-        },
-        onError: () => toast.error(t("library.management.grabFailed")),
+        mediaId: id,
+        title: item?.title ?? "",
+        profileName: item?.quality_profile?.name ?? null,
+        isShow: false,
       },
+      () => searchMovie.mutateAsync({ id }),
     );
   };
 
@@ -153,6 +155,8 @@ export function LibraryPage() {
         onAddClick={() => setAddModalOpen(true)}
         isAdmin={user?.is_admin ?? false}
       />
+
+      {user?.is_admin && <GrabReadinessBanner />}
 
       <div className="mt-3 space-y-4">
         <ManagementSection

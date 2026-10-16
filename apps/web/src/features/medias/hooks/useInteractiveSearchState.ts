@@ -308,6 +308,8 @@ export function useInteractiveSearchState({
 
   const totalReleases = activeQuery.data?.releases.length ?? 0;
   const indexerWarnings = activeQuery.data?.indexer_warnings ?? [];
+  const languageFallbackSummary =
+    activeQuery.data?.language_fallback_summary ?? null;
 
   // Re-arm the indexer-warning banner whenever a new fetch starts (render-time
   // state adjustment — see resetKey above).
@@ -401,6 +403,7 @@ export function useInteractiveSearchState({
     grabBusy,
     totalReleases,
     indexerWarnings,
+    languageFallbackSummary,
     hasAdvancedFilters,
     totalActiveFilters,
     hasViewOverrides,

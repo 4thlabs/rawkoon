@@ -12,6 +12,7 @@ export const SSE_ROUTE_DECLARATIONS = {
       "library.landed",
       "library.download-progress",
       "library.seed-state",
+      "library.search-result",
       "library.handshake",
     ],
   },

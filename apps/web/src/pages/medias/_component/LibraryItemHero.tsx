@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatRuntimeMinutes } from "@rawkoon/shared/utils";
+import { useStatusLabel } from "@/features/medias/hooks/useStatusLabel";
 import { libraryStatusPresentation } from "@/utils/libraryStatusPresentation";
+import { statusLineParts } from "@/features/medias/lib/itemPageActions";
+import { LibraryItemActions } from "./LibraryItemActions";
 import type {
   LibraryMedia,
   TmdbMediaDetailsResponse,
@@ -28,8 +31,11 @@ type Props = {
   isInWatchlist: boolean;
   watchlistPending: boolean;
   mediaType: "movie" | "tv";
+  isAdmin: boolean;
   onBack: () => void;
   onWatchlistToggle: () => void;
+  onChooseRelease: () => void;
+  onUpgradeSearch: () => void;
 };
 
 export function LibraryItemHero({
@@ -40,10 +46,13 @@ export function LibraryItemHero({
   isInWatchlist,
   watchlistPending,
   mediaType,
+  isAdmin,
   onBack,
   onWatchlistToggle,
+  onChooseRelease,
+  onUpgradeSearch,
 }: Props) {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const [backdropLoaded, setBackdropLoaded] = useState(false);
   const [posterError, setPosterError] = useState(false);
 
@@ -58,6 +67,10 @@ export function LibraryItemHero({
   const rtScore = ratingsData?.rotten_tomatoes ?? null;
   const tmdbUrl = `https://www.themoviedb.org/${mediaType}/${item.tmdb_id}`;
   const p = libraryStatusPresentation(item.status);
+  const statusLabel = useStatusLabel(item, p.labelKey);
+  const statusLine = isAdmin
+    ? statusLineParts(item, t, i18n.language).join(" · ")
+    : "";
 
   return (
     <div
@@ -160,9 +173,13 @@ export function LibraryItemHero({
                   p.badgeClass,
                 )}
               >
-                {t(p.labelKey)}
+                {statusLabel}
               </span>
             </div>
+
+            {statusLine && (
+              <p className="text-xs text-white/65">{statusLine}</p>
+            )}
 
             {/* Ratings */}
             {(voteAverage != null || rtScore) && (
@@ -215,6 +232,12 @@ export function LibraryItemHero({
 
             {/* Action buttons */}
             <div className="flex flex-wrap items-center gap-2 mt-0.5">
+              <LibraryItemActions
+                item={item}
+                isAdmin={isAdmin}
+                onChooseRelease={onChooseRelease}
+                onUpgradeSearch={onUpgradeSearch}
+              />
               <button
                 type="button"
                 onClick={onWatchlistToggle}

@@ -1,7 +1,8 @@
 import { prisma } from "@rawkoon/api/db";
 import { searchAndGrabWithTitleFallback } from "@rawkoon/api/services/mediaGrabberSearch";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
-import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
+import { activeShowGrabCovers } from "@rawkoon/api/services/activeShowGrab";
+import { isNoMissRefusal } from "@rawkoon/api/services/grabRefusal";
 import { MAX_CRON_GRAB_ATTEMPTS } from "@rawkoon/api/constants/libraryGrab";
 import {
   recordEpisodeMiss,
@@ -33,7 +34,7 @@ export async function checkEpisodeReleases(): Promise<void> {
     localDateYmd(APP_DISPLAY_TIMEZONE, nowMinusGrace),
   );
 
-  const episodes = await prisma.libraryEpisode.findMany({
+  const candidates = await prisma.libraryEpisode.findMany({
     where: {
       status: "wanted",
       monitored: true,
@@ -54,6 +55,14 @@ export async function checkEpisodeReleases(): Promise<void> {
       },
     },
   });
+
+  // Episodes stay "wanted" while a show-level pack carrying their season downloads or imports.
+  const covers = await activeShowGrabCovers([
+    ...new Set(candidates.map((ep) => ep.mediaId)),
+  ]);
+  const episodes = candidates.filter(
+    (ep) => !covers.get(ep.mediaId)?.(ep.season),
+  );
 
   // Group episodes by mediaId:season to detect pack-eligible seasons.
   const seasonGroups = new Map<string, (typeof episodes)[number][]>();
@@ -119,7 +128,11 @@ export async function checkEpisodeReleases(): Promise<void> {
       // A grab held by the profile's delay isn't a miss; don't burn an attempt.
       if (result.grabbed || result.delayed) continue;
       // A full disk is not the release's fault and clears on its own; keep them wanted.
-      if (result.reason.startsWith(SPACE_REFUSAL_PREFIX)) continue;
+      if (
+        isNoMissRefusal(result.refusal) ||
+        result.refusal === "already_active"
+      )
+        continue;
 
       await recordSeasonPackMiss(mediaId, season, groupEps, result.reason);
     } catch (e) {
@@ -153,7 +166,11 @@ export async function checkEpisodeReleases(): Promise<void> {
 
       // A grab held by the profile's delay isn't a miss; don't burn an attempt.
       if (result.grabbed || result.delayed) continue;
-      if (result.reason.startsWith(SPACE_REFUSAL_PREFIX)) continue;
+      if (
+        isNoMissRefusal(result.refusal) ||
+        result.refusal === "already_active"
+      )
+        continue;
 
       await recordEpisodeMiss(
         { id: ep.id, mediaId: ep.media.id, searchAttempts: ep.searchAttempts },

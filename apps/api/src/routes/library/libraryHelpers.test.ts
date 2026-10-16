@@ -28,6 +28,29 @@ const withTitles = {
   ],
 };
 
+describe("mapLibraryMedia last search", () => {
+  const searched = {
+    ...base,
+    lastSearchAt: new Date("2026-01-02T00:00:00Z"),
+    lastSearchOutcome: "error",
+    lastSearchReason: "The search failed",
+  };
+
+  it("hides the reason from non-admins but keeps the outcome", () => {
+    const out = mapLibraryMedia(searched, undefined, { isAdmin: false });
+    expect(out.last_search_reason).toBeNull();
+    expect(out.last_search_outcome).toBe("error");
+    expect(mapLibraryMedia(searched).last_search_reason).toBeNull();
+  });
+
+  it("shows the reason to admins", () => {
+    expect(
+      mapLibraryMedia(searched, undefined, { isAdmin: true })
+        .last_search_reason,
+    ).toBe("The search failed");
+  });
+});
+
 describe("mapLibraryMedia title language", () => {
   it("defaults to the English title", () => {
     expect(mapLibraryMedia(withTitles).title).toBe("The Godfather");

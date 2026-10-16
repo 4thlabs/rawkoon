@@ -2,9 +2,13 @@ import { prisma } from "@rawkoon/api/db";
 import { searchAndGrabWithTitleFallback } from "@rawkoon/api/services/mediaGrabberSearch";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 import { refreshLibraryMovieDigitalDate } from "@rawkoon/api/services/libraryTmdbRefresh";
-import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
+import { isNoMissRefusal } from "@rawkoon/api/services/grabRefusal";
 import { MAX_CRON_GRAB_ATTEMPTS } from "@rawkoon/api/constants/libraryGrab";
 import { recordMovieMiss } from "@rawkoon/api/services/grabAttempts";
+import {
+  publishSearchResult,
+  searchResultFrom,
+} from "@rawkoon/api/services/searchResult";
 import {
   APP_DISPLAY_TIMEZONE,
   localDateYmd,
@@ -74,10 +78,17 @@ export async function checkMovieReleases(): Promise<void> {
         qualityProfileId: m.qualityProfileId,
       });
 
+      await publishSearchResult(searchResultFrom(m.id, result));
+
       // A grab held by the profile's delay isn't a miss; don't burn an attempt.
       if (result.grabbed || result.delayed) continue;
       // A full disk is not the release's fault and clears on its own; keep the item wanted.
-      if (result.reason.startsWith(SPACE_REFUSAL_PREFIX)) continue;
+      // Another grab already running for it is not a miss either.
+      if (
+        isNoMissRefusal(result.refusal) ||
+        result.refusal === "already_active"
+      )
+        continue;
 
       await recordMovieMiss(m, result.reason);
     } catch (e) {

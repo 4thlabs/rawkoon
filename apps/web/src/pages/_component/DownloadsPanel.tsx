@@ -1,11 +1,18 @@
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDown, ArrowUp, Download } from "lucide-react";
-import type { TooltipContentProps } from "recharts";
-import { AreaChart, Area, Tooltip, ResponsiveContainer } from "recharts";
+import { ArrowDown, Download } from "lucide-react";
 
+import { useCurrentUser } from "@/lib/auth/useAuth";
+import { useActiveDownloads } from "@/features/medias/hooks/useActiveDownloads";
 import { useDownloadsSpeed } from "@/pages/_component/useDownloadsSpeed";
-import { usePendingReleases } from "@/pages/_component/usePendingReleases";
+import {
+  useGrabPendingNow,
+  usePendingReleases,
+} from "@/pages/_component/usePendingReleases";
+import {
+  ActiveDownloadRow,
+  PendingReleaseRow,
+} from "@/pages/_component/DownloadsQueueRows";
 import { formatSpeed } from "@/lib/utils/format";
 import {
   Kicker,
@@ -13,81 +20,104 @@ import {
   WidgetShell,
 } from "@/pages/_component/widgetPrimitives";
 
-const SPEED_RING_SIZE = 60;
+const ACTIVE_SHOWN = 5;
 const PENDING_SHOWN = 3;
+/** Relative "grabs in" labels only need to move about once a minute. */
+const CLOCK_TICK_MS = 30_000;
 
-type SpeedSample = { dl: number; ul: number };
-
-function SpeedTooltip({
-  active,
-  payload,
-}: TooltipContentProps<
-  number | string | ReadonlyArray<number | string>,
-  number | string
->) {
-  if (!active || !payload?.length) return null;
-  const dl = payload.find((p) => p.dataKey === "dl");
-  const ul = payload.find((p) => p.dataKey === "ul");
-  return (
-    <div className="rounded-lg border border-neutral-700 bg-neutral-900 px-2.5 py-1.5 shadow-sm text-[11px] space-y-0.5">
-      {dl && (
-        <p className="font-semibold tabular-nums text-sky-500">
-          ↓ {formatSpeed(Number(dl.value))}
-        </p>
-      )}
-      {ul && (
-        <p className="font-semibold tabular-nums text-emerald-500">
-          ↑ {formatSpeed(Number(ul.value))}
-        </p>
-      )}
-    </div>
-  );
+function useNow(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+    return () => clearInterval(id);
+  }, []);
+  return now;
 }
 
 export function DownloadsPanel() {
   const { t } = useTranslation("common");
-  const { data, isLoading } = useDownloadsSpeed();
-  const pending = usePendingReleases().data?.items ?? [];
+  const speed = useDownloadsSpeed();
+  // The queue names titles and releases, so only admins get it; others keep the speed total.
+  const isAdmin = useCurrentUser().data?.is_admin === true;
+  const active = useActiveDownloads({ enabled: isAdmin });
+  const pending = usePendingReleases(isAdmin).data?.items ?? [];
+  const grabNow = useGrabPendingNow();
+  const now = useNow();
 
-  const ringRef = useRef<SpeedSample[]>([]);
-  const [speedHistory, setSpeedHistory] = useState<SpeedSample[]>([]);
-
-  useEffect(() => {
-    if (!data?.connected) return;
-    const next = [
-      ...ringRef.current.slice(-(SPEED_RING_SIZE - 1)),
-      { dl: data.dl_speed, ul: data.ul_speed },
-    ];
-    ringRef.current = next;
-    setSpeedHistory(next);
-  }, [data]);
+  const items = active.data?.items ?? [];
+  const isLoading = speed.isLoading || (isAdmin && active.isLoading);
+  const enabled = speed.data?.enabled ?? active.data?.enabled ?? false;
+  const connected = speed.data?.connected ?? active.data?.connected ?? false;
+  const empty = items.length === 0 && pending.length === 0;
+  const showBody = isAdmin || isLoading || !enabled || !connected;
 
   return (
     <WidgetShell>
       <WidgetHeader
         icon={Download}
         title={t("dashboard.home.downloadsTitle")}
+        right={
+          enabled && connected ? (
+            <span
+              className="flex shrink-0 items-center gap-1 font-mono text-sm font-semibold tabular-nums text-sky-400"
+              title={t("dashboard.home.transfer")}
+            >
+              <ArrowDown size={13} aria-hidden />
+              {formatSpeed(speed.data?.dl_speed ?? 0)}
+            </span>
+          ) : undefined
+        }
       />
 
-      <div className="px-4 py-3 space-y-4">
+      <div className="space-y-4 px-4 py-3" hidden={!showBody}>
         {isLoading && (
           <div className="space-y-3">
-            <div className="h-2 w-16 rounded-full bg-neutral-800 animate-pulse" />
-            <div className="flex gap-6">
-              <div className="h-5 w-20 rounded bg-neutral-800 animate-pulse" />
-              <div
-                className="h-5 w-20 rounded bg-neutral-800 animate-pulse"
-                style={{ animationDelay: "80ms" }}
-              />
-            </div>
-            <div className="h-10 w-full rounded-lg bg-neutral-800 animate-pulse" />
+            {[0, 1].map((i) => (
+              <div key={i} className="flex gap-3">
+                <div className="h-[54px] w-9 shrink-0 animate-pulse rounded-md bg-neutral-800" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-2/3 animate-pulse rounded bg-neutral-800" />
+                  <div className="h-2 w-full animate-pulse rounded bg-neutral-800" />
+                  <div className="h-2 w-1/3 animate-pulse rounded bg-neutral-800" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        {!data?.enabled && !isLoading && (
-          <p className="py-2 text-sm text-neutral-400 text-center">
+        {!isLoading && !enabled && (
+          <p className="py-2 text-center text-sm text-neutral-400">
             {t("dashboard.home.downloadClientNotConfigured")}
           </p>
+        )}
+
+        {!isLoading && enabled && !connected && (
+          <p className="py-2 text-center text-sm text-amber-400">
+            {t("dashboard.home.downloadClientUnreachable")}
+          </p>
+        )}
+
+        {!isLoading && isAdmin && enabled && connected && empty && (
+          <p className="py-2 text-center text-sm text-neutral-400">
+            {t("dashboard.home.nothingDownloading")}
+          </p>
+        )}
+
+        {items.length > 0 && (
+          <div>
+            <ul className="space-y-3">
+              {items.slice(0, ACTIVE_SHOWN).map((item) => (
+                <ActiveDownloadRow key={item.id} item={item} />
+              ))}
+            </ul>
+            {items.length > ACTIVE_SHOWN && (
+              <p className="mt-2 text-xs text-neutral-500">
+                {t("dashboard.home.pendingMore", {
+                  count: items.length - ACTIVE_SHOWN,
+                })}
+              </p>
+            )}
+          </div>
         )}
 
         {pending.length > 0 && (
@@ -95,124 +125,23 @@ export function DownloadsPanel() {
             <Kicker>
               {t("dashboard.home.pendingDelay")} ({pending.length})
             </Kicker>
-            <ul className="mt-2 space-y-1.5">
+            <ul className="mt-2 space-y-3">
               {pending.slice(0, PENDING_SHOWN).map((p) => (
-                <li key={p.target_key} className="min-w-0 text-xs">
-                  <p className="truncate text-neutral-200">
-                    {p.media_title}
-                    {p.season != null &&
-                      ` S${String(p.season).padStart(2, "0")}${
-                        p.episode != null
-                          ? `E${String(p.episode).padStart(2, "0")}`
-                          : ""
-                      }`}
-                  </p>
-                  <p className="truncate text-neutral-500">{p.release_title}</p>
-                  <p className="tabular-nums text-neutral-400">
-                    {t("dashboard.home.pendingGrabAt", {
-                      time: new Date(p.grab_after).toLocaleString(),
-                    })}
-                  </p>
-                </li>
+                <PendingReleaseRow
+                  key={p.target_key}
+                  item={p}
+                  now={now}
+                  busy={grabNow.isPending && grabNow.variables === p.target_key}
+                  onGrabNow={(key) => grabNow.mutate(key)}
+                />
               ))}
             </ul>
             {pending.length > PENDING_SHOWN && (
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="mt-2 text-xs text-neutral-500">
                 {t("dashboard.home.pendingMore", {
                   count: pending.length - PENDING_SHOWN,
                 })}
               </p>
-            )}
-          </div>
-        )}
-
-        {data?.enabled && (
-          <div>
-            <Kicker>{t("dashboard.home.transfer")}</Kicker>
-            <div className="mt-2 flex items-center gap-6">
-              <div className="flex items-center gap-1.5 font-mono text-sm font-semibold tabular-nums text-sky-400">
-                <ArrowDown size={13} />
-                {formatSpeed(data.dl_speed)}
-              </div>
-              <div className="flex items-center gap-1.5 font-mono text-sm font-semibold tabular-nums text-emerald-400">
-                <ArrowUp size={13} />
-                {formatSpeed(data.ul_speed)}
-              </div>
-            </div>
-            {speedHistory.length > 2 && (
-              <div className="mt-2 h-10 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={speedHistory}
-                    margin={{ top: 2, right: 0, left: 0, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id="dlGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="5%"
-                          stopColor="#38bdf8"
-                          stopOpacity={0.3}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="#38bdf8"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                      <linearGradient
-                        id="ulGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="5%"
-                          stopColor="#10b981"
-                          stopOpacity={0.3}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="#10b981"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <Tooltip
-                      content={SpeedTooltip}
-                      cursor={{
-                        stroke: "#71717a",
-                        strokeWidth: 1,
-                        strokeDasharray: "3 3",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="dl"
-                      stroke="#38bdf8"
-                      fill="url(#dlGradient)"
-                      strokeWidth={1.5}
-                      dot={false}
-                      isAnimationActive={false}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="ul"
-                      stroke="#10b981"
-                      fill="url(#ulGradient)"
-                      strokeWidth={1.5}
-                      dot={false}
-                      isAnimationActive={false}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
             )}
           </div>
         )}

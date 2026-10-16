@@ -18,6 +18,27 @@ import {
 import { tryAdoptQbDuplicate } from "@rawkoon/api/services/mediaGrabberAdopt";
 import { checkFreeSpaceForGrab } from "@rawkoon/api/services/grabSpaceCheck";
 import { resolveGrabSeason } from "@rawkoon/api/services/grabEpisodeResolver";
+import {
+  activeShowGrabCover,
+  inFlightGrabWhere,
+  SHOW_GRAB_ACTIVE_PREFIX,
+} from "@rawkoon/api/services/activeShowGrab";
+import { isMultiSeasonRelease } from "@rawkoon/api/utils/medias/completeSeries";
+import { parseReleaseSeasonSpan } from "@rawkoon/shared/utils/releaseStructure";
+
+/**
+ * Why a grab was refused before anything was sent to the download client.
+ * Callers branch on this, never on the reason text.
+ */
+export type GrabRefusal =
+  | "blocklisted"
+  | "no_space"
+  | "already_active"
+  | "show_grab_active";
+
+export type GrabResult =
+  | { grabbed: true; releaseTitle: string }
+  | { grabbed: false; reason: string; refusal?: GrabRefusal };
 
 /**
  * Identifies what a grab is FOR. Movies are (media, null, null), single
@@ -65,9 +86,7 @@ export async function grabRelease(opts: {
   season?: number | null;
   /** Release size from the indexer; unknown (null/0) skips the free-space check. */
   sizeBytes?: number | null;
-}): Promise<
-  { grabbed: true; releaseTitle: string } | { grabbed: false; reason: string }
-> {
+}): Promise<GrabResult> {
   let pendingDownloadHistoryId: number | null = null;
   let grabCommittedOk = false;
   let successReleaseTitle: string | null = null;
@@ -116,14 +135,20 @@ export async function grabRelease(opts: {
     const earlyHash = isMagnet ? infoHashFromMagnet(downloadUrl) : null;
     const blockReason = await checkBlocklist(releaseTitle, earlyHash);
     if (blockReason) {
-      return { grabbed: false, reason: `Blocklisted: ${blockReason}` };
+      return {
+        grabbed: false,
+        reason: `Blocklisted: ${blockReason}`,
+        refusal: "blocklisted",
+      };
     }
 
     const spaceReason = await checkFreeSpaceForGrab({
       mediaType: media.type,
       sizeBytes: opts.sizeBytes,
     });
-    if (spaceReason) return { grabbed: false, reason: spaceReason };
+    if (spaceReason) {
+      return { grabbed: false, reason: spaceReason, refusal: "no_space" };
+    }
 
     // One active grab per target. Two scheduled jobs can fire on the same tick
     // (RSS poll + the 6-hourly release sweep) off the same "wanted" snapshot,
@@ -149,7 +174,62 @@ export async function grabRelease(opts: {
       return {
         grabbed: false,
         reason: duplicateGrabReason(target, activeGrab.id),
+        refusal: "already_active",
       };
+    }
+    // A show-level pack would overwrite a season or episode grab already running inside its seasons.
+    if (
+      media.type === "show" &&
+      target.episodeId == null &&
+      target.season == null &&
+      isMultiSeasonRelease(releaseTitle)
+    ) {
+      const span = parseReleaseSeasonSpan(releaseTitle);
+      const inside = (
+        await prisma.downloadHistory.findMany({
+          where: {
+            ...(await inFlightGrabWhere()),
+            mediaId,
+            AND: [
+              { OR: [{ episodeId: { not: null } }, { season: { not: null } }] },
+            ],
+          },
+          select: { season: true, episode: { select: { season: true } } },
+        })
+      ).some((r) => {
+        const s = r.season ?? r.episode?.season;
+        return span == null || s == null || (s >= span.from && s <= span.to);
+      });
+      if (inside) {
+        return {
+          grabbed: false,
+          reason:
+            "A season or episode download is already active inside this pack's seasons — cancel it first",
+          refusal: "already_active",
+        };
+      }
+    }
+    // A show-level pack already carries the seasons it names; a season or episode of those would double-grab.
+    if (target.episodeId != null || target.season != null) {
+      const cover = await activeShowGrabCover(mediaId);
+      if (cover) {
+        const episodeSeason =
+          target.episodeId != null
+            ? (
+                await prisma.libraryEpisode.findUnique({
+                  where: { id: target.episodeId },
+                  select: { season: true },
+                })
+              )?.season
+            : target.season;
+        if (episodeSeason == null || cover(episodeSeason)) {
+          return {
+            grabbed: false,
+            reason: `${SHOW_GRAB_ACTIVE_PREFIX} — cancel it before grabbing a single season or episode`,
+            refusal: "show_grab_active",
+          };
+        }
+      }
     }
 
     let dhRow: { id: number };
@@ -170,7 +250,11 @@ export async function grabRelease(opts: {
       // ux_download_history_active_target — the check above lost the race to a
       // concurrent grab that inserted between our read and this write.
       if ((e as { code?: string }).code === "P2002") {
-        return { grabbed: false, reason: duplicateGrabReason(target) };
+        return {
+          grabbed: false,
+          reason: duplicateGrabReason(target),
+          refusal: "already_active",
+        };
       }
       throw e;
     }

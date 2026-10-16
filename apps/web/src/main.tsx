@@ -15,6 +15,7 @@ import { registerServiceWorker } from "@/lib/sw/registration";
 import { bootstrapAuthFromWindow } from "@/lib/auth";
 import { useCloseReadNotifications } from "@/lib/notifications/useCloseReadNotifications";
 import { useIOSImprovements } from "@/lib/app/useIOSImprovements";
+import { useSearchResultStream } from "@/features/medias/hooks/useSearchResultStream";
 import { NotificationToastContainer } from "@/components/NotificationToastContainer";
 import { createQueryClient, setQueryClient } from "@/lib/api/queryClient";
 import { webFetcher } from "@/lib/api/fetcher";
@@ -34,6 +35,7 @@ bootstrapAuthFromWindow(queryClient);
 function AppWithServiceWorkerIntegration() {
   useCloseReadNotifications();
   useIOSImprovements();
+  useSearchResultStream();
 
   return (
     <>

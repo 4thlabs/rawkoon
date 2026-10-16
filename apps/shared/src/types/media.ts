@@ -35,6 +35,8 @@ export interface TmdbMediaSearchItem {
   source_id: number | null;
   /** Native library ID — when set, Management tab shows LibraryManagementPanel */
   library_id?: number | null;
+  /** Status of the library row (wanted, downloading, downloaded, ...) when the title is already in the library. */
+  library_status?: string | null;
 }
 
 export interface TmdbMediaSearchResponse {
@@ -124,6 +126,18 @@ export interface InteractiveReleaseItem {
   is_complete_series?: boolean;
   /** True when the release is freeleech on the tracker (Jackett-only) */
   freeleech?: boolean;
+  /** Rejected only for its language, yet in a preferred language's family (e.g. VFF under a VFQ profile). */
+  language_fallback?: boolean;
+  /** Display tag of a fallback release (VFF, VFI, MULTi, FRENCH, ...). */
+  language_fallback_tag?: string | null;
+}
+
+/** Preferred-language releases are missing while other versions of that language exist. */
+export interface LanguageFallbackSummary {
+  /** The quality profile's preferred languages. */
+  missing: string[];
+  /** Fallback releases per display tag. */
+  counts: Record<string, number>;
 }
 
 /** A release the grabber must never auto-download again. */
@@ -158,6 +172,8 @@ export interface MediaInteractiveSearchResponse {
   service: IndexerManagerType;
   releases: InteractiveReleaseItem[];
   indexer_warnings?: IndexerWarning[];
+  /** Null unless no release matches the preferred languages and fallback releases exist. */
+  language_fallback_summary?: LanguageFallbackSummary | null;
 }
 
 export interface SimilarMediasResponse {

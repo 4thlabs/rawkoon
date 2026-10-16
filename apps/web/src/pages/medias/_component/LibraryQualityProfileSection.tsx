@@ -7,6 +7,7 @@ import { useUpdateLibraryQualityProfile } from "@/features/medias/hooks/useUpdat
 import { useSearchLibraryMovie } from "@/features/medias/hooks/useSearchLibraryMovie";
 import { useUpgradeLibraryMedia } from "@/features/medias/hooks/useUpgradeLibraryMedia";
 import { useQualityProfilesList } from "@/pages/settings/useQualityProfiles";
+import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
 import { Button } from "@/components/ui/button";
 import { ManagementSection } from "./LibrarySharedUI";
 import { LibraryUpgradeModal } from "./LibraryUpgradeModal";
@@ -29,6 +30,7 @@ export function LibraryQualityProfileSection({
   });
   const updateProfile = useUpdateLibraryQualityProfile();
   const searchMovieMut = useSearchLibraryMovie();
+  const liveSearchToast = useLiveSearchToast();
   const upgradeMedia = useUpgradeLibraryMedia();
 
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
@@ -58,13 +60,15 @@ export function LibraryQualityProfileSection({
         type="button"
         size="sm"
         onClick={() => {
-          void searchMovieMut
-            .mutateAsync({ id: libraryId })
-            .then((r) => {
-              if (r.grabbed) toast.success(t("library.management.grabbed"));
-              else toast.error(r.reason ?? t("library.management.grabFailed"));
-            })
-            .catch(() => toast.error(t("library.management.grabFailed")));
+          liveSearchToast.announceSearch(
+            {
+              mediaId: libraryId,
+              title: item.title,
+              profileName: item.quality_profile?.name ?? null,
+              isShow: false,
+            },
+            () => searchMovieMut.mutateAsync({ id: libraryId }),
+          );
         }}
         disabled={searchMovieMut.isPending}
         className="gap-1.5 shrink-0"

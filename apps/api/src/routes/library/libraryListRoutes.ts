@@ -9,6 +9,7 @@ import { ensureAdmin, requireUser } from "@rawkoon/api/middleware/hono/auth";
 import { jsonV, queryV } from "@rawkoon/api/middleware/validate";
 import { addOrUpdateLibraryFromTmdb } from "@rawkoon/api/services/libraryFromTmdb";
 import { deleteCache } from "@rawkoon/api/services/cache";
+import { queueSearchOnAdd } from "@rawkoon/api/services/searchOnAdd";
 import { pruneLibraryDirsAfterDelete } from "@rawkoon/api/services/library/pruneLibraryDirs";
 import { TMDB_UPCOMING_CACHE_KEY } from "@rawkoon/api/utils/dashboard/tmdbUpcoming";
 import { getGlobalTmdbRegion } from "@rawkoon/api/utils/medias/tmdbRegion";
@@ -18,7 +19,11 @@ import {
   normalizeTitleLanguage,
 } from "@rawkoon/shared/constants";
 
-import { mapLibraryMedia, libraryMediaInclude } from "./libraryHelpers";
+import {
+  adminView,
+  mapLibraryMedia,
+  libraryMediaInclude,
+} from "./libraryHelpers";
 import {
   buildLocalizedCountQuery,
   buildLocalizedIdQuery,
@@ -123,7 +128,9 @@ export const libraryListRoutes = new Hono<Env>()
           include: libraryMediaInclude,
           take: 5000,
         });
-        mappedItems = items.map((r) => mapLibraryMedia(r, titleLanguage));
+        mappedItems = items.map((r) =>
+          mapLibraryMedia(r, titleLanguage, adminView(c)),
+        );
         if (titleLanguage !== DEFAULT_TITLE_LANGUAGE) {
           // This path sorts in SQL on the English title; re-sort on what the
           // caller will actually see.
@@ -150,7 +157,9 @@ export const libraryListRoutes = new Hono<Env>()
           });
           const sliced = slicePage(rows, take);
           has_more = sliced.has_more;
-          mappedItems = sliced.items.map((r) => mapLibraryMedia(r));
+          mappedItems = sliced.items.map((r) =>
+            mapLibraryMedia(r, undefined, adminView(c)),
+          );
         } else {
           // Prisma cannot order by a to-many relation column, so resolve the
           // page's ids in SQL and hydrate them through the normal include.
@@ -178,7 +187,7 @@ export const libraryListRoutes = new Hono<Env>()
           mappedItems = ids
             .map((id) => byId.get(id))
             .filter((r): r is (typeof rows)[number] => r !== undefined)
-            .map((r) => mapLibraryMedia(r, titleLanguage));
+            .map((r) => mapLibraryMedia(r, titleLanguage, adminView(c)));
         }
       }
 
@@ -221,7 +230,7 @@ export const libraryListRoutes = new Hono<Env>()
         items: ids
           .map((id) => byId.get(id))
           .filter((r): r is (typeof rows)[number] => r !== undefined)
-          .map((r) => mapLibraryMedia(r, titleLanguage)),
+          .map((r) => mapLibraryMedia(r, titleLanguage, adminView(c))),
       });
     } catch {
       return serverError("Failed to fetch random library items");
@@ -240,7 +249,9 @@ export const libraryListRoutes = new Hono<Env>()
       const itemTitleLanguage = normalizeTitleLanguage(
         c.req.query("title_language"),
       );
-      return ok({ item: mapLibraryMedia(item, itemTitleLanguage) });
+      return ok({
+        item: mapLibraryMedia(item, itemTitleLanguage, adminView(c)),
+      });
     } catch {
       return serverError("Failed to fetch library item");
     }
@@ -253,13 +264,14 @@ export const libraryListRoutes = new Hono<Env>()
       z.object({
         tmdb_id: z.number(),
         type: z.union([z.literal("movie"), z.literal("show")]),
+        search_on_add: z.boolean().optional(),
       }),
     ),
     async (c) => {
       const denied = ensureAdmin(c.get("user"));
       if (denied) return denied;
       try {
-        const { tmdb_id, type } = c.req.valid("json");
+        const { tmdb_id, type, search_on_add } = c.req.valid("json");
         if (type !== "movie" && type !== "show") {
           return badRequest("type must be 'movie' or 'show'");
         }
@@ -271,7 +283,11 @@ export const libraryListRoutes = new Hono<Env>()
             region,
           });
           await deleteCache(`${TMDB_UPCOMING_CACHE_KEY}:${region}`);
-          return ok({ item: mapLibraryMedia(item) });
+          const search = await queueSearchOnAdd(item, search_on_add);
+          return ok({
+            item: mapLibraryMedia(item, undefined, adminView(c)),
+            ...search,
+          });
         } catch (e) {
           const msg = e instanceof Error ? e.message : "";
           if (msg === "TMDB is not configured") {

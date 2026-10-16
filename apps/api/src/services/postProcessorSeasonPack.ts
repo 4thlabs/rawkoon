@@ -40,6 +40,7 @@ import {
 import {
   mapSeasonPack,
   parsePartMarker,
+  splitUnknownSeasons,
 } from "@rawkoon/api/services/library/seasonPackMapping";
 import {
   mkvAppend,
@@ -101,6 +102,12 @@ export async function postProcessSeasonPack(
   adapter: DownloadClientAdapter,
 ): Promise<
   | { success: true; destinationPath: string; episodeCount: number }
+  | {
+      success: true;
+      destinationPath: string;
+      skipped: true;
+      skipReason: string;
+    }
   | PostProcessFailure
 > {
   const hash = dh.torrentHash?.trim();
@@ -171,7 +178,16 @@ export async function postProcessSeasonPack(
     ];
   });
 
-  const mapping = mapSeasonPack(parsedSources, episodes, dh.season);
+  // A show-level pack (no season) spans seasons; one the provider doesn't know must not sink the rest.
+  const { placeable, skipped: unknownSeasonFiles } =
+    dh.season == null
+      ? splitUnknownSeasons(parsedSources, episodes)
+      : { placeable: parsedSources, skipped: [] as string[] };
+  const mapping = mapSeasonPack(placeable, episodes, dh.season);
+  const skippedFiles = [
+    ...(mapping.ok ? (mapping.skipped ?? []) : []),
+    ...unknownSeasonFiles,
+  ];
 
   /**
    * Abandon the whole pack, keeping its data: a refusal is often our numbering
@@ -196,6 +212,11 @@ export async function postProcessSeasonPack(
     return { success: false, reason };
   };
 
+  if (placeable.length === 0 && unknownSeasonFiles.length > 0) {
+    return refusePack(
+      `None of the seasons in this pack exist in the show — nothing imported. Unmatched: ${unknownSeasonFiles.join(", ")}`,
+    );
+  }
   if (!mapping.ok) {
     // Import nothing. A partially-correct season is worse than none: the files
     // that "work" get renamed to the wrong episode's title and look fine until
@@ -210,9 +231,53 @@ export async function postProcessSeasonPack(
       }`,
     );
   }
-  if (mapping.skipped?.length) {
+  // A show-level pack spans seasons the show may already hold; those episodes keep their files unless this is an upgrade.
+  const existingFiles =
+    dh.season == null && !dh.isUpgrade
+      ? await prisma.mediaFile.findMany({
+          where: { mediaId: dh.media.id, episodeId: { not: null } },
+          select: { episodeId: true, filePath: true },
+        })
+      : [];
+  const withFiles = new Set(existingFiles.map((f) => f.episodeId));
+  const placements = mapping.placements.filter(
+    (p) => !withFiles.has(p.episode.id),
+  );
+  if (placements.length === 0) {
+    // A harmless duplicate, not a failure: record why, keep the torrent seeding, blocklist nothing.
+    await prisma.libraryEpisode.updateMany({
+      where: {
+        id: { in: mapping.placements.map((p) => p.episode.id) },
+        status: { not: "downloaded" },
+      },
+      data: { status: "downloaded" },
+    });
+    await prisma.libraryMedia.update({
+      where: { id: dh.media.id },
+      data: {
+        status: resolveDownloadedStatus(dh.media.type, dh.media.tmdbStatus),
+      },
+    });
+    const destinationPath = existingFiles[0]!.filePath;
+    await prisma.downloadHistory.update({
+      where: { id: downloadHistoryId },
+      data: {
+        postProcessDestinationPath: destinationPath,
+        postProcessError: null,
+        postProcessSkipReason: "all-episodes-present",
+      },
+    });
+    return {
+      success: true,
+      destinationPath,
+      skipped: true,
+      skipReason: "all-episodes-present",
+    };
+  }
+
+  if (skippedFiles.length) {
     console.warn(
-      `[postProcess/pack] ${dh.media.title}: ${mapping.skipped.length} file(s) without a season could not be placed and were not imported: ${mapping.skipped.join(", ")}`,
+      `[postProcess/pack] ${dh.media.title}: ${skippedFiles.length} file(s) could not be placed and were not imported: ${skippedFiles.join(", ")}`,
     );
   }
 
@@ -221,7 +286,7 @@ export async function postProcessSeasonPack(
   // sibling episodes are already hardlinked, and since `processed > 0` the
   // run would then clear postProcessError, mark the show downloaded, and
   // possibly remove the torrent — the opposite of all-or-nothing.
-  for (const placement of mapping.placements) {
+  for (const placement of placements) {
     if (placement.kind !== "merge") continue;
     const [a, b] = placement.sources;
     const [miA, miB] = await Promise.all([
@@ -244,7 +309,7 @@ export async function postProcessSeasonPack(
     | { ok: true; destinationPath: string; placed: boolean }
     | { ok: false; error: string; fatal?: boolean };
 
-  const destinationFor = (placement: (typeof mapping.placements)[number]) => {
+  const destinationFor = (placement: (typeof placements)[number]) => {
     const ep = placement.episode;
     const ext = placement.sources[0].ext;
     const epStem =
@@ -263,15 +328,15 @@ export async function postProcessSeasonPack(
     return join(root, `${epStem}${ext}`);
   };
   const pathUses = new Map<string, number>();
-  for (const placement of mapping.placements) {
+  for (const placement of placements) {
     const path = destinationFor(placement);
     pathUses.set(path, (pathUses.get(path) ?? 0) + 1);
   }
 
   const PACK_CONCURRENCY = 6;
   const episodeResults: (EpisodeResult | null)[] = [];
-  for (let i = 0; i < mapping.placements.length; i += PACK_CONCURRENCY) {
-    const chunk = mapping.placements.slice(i, i + PACK_CONCURRENCY);
+  for (let i = 0; i < placements.length; i += PACK_CONCURRENCY) {
+    const chunk = placements.slice(i, i + PACK_CONCURRENCY);
     const chunkResults = await Promise.all(
       chunk.map(async (placement): Promise<EpisodeResult | null> => {
         const ep = placement.episode;
@@ -495,7 +560,7 @@ export async function postProcessSeasonPack(
       seedSweepEnabled: settings.seedSweepEnabled,
       // Failed episodes, skipped ones and files left out of the mapping still need their data.
       fullyImported:
-        errors.length === 0 && allPlaced && !mapping.skipped?.length,
+        errors.length === 0 && allPlaced && skippedFiles.length === 0,
     }),
     "postProcess/pack",
   );

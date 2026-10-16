@@ -9,7 +9,14 @@ import {
   tieredSearch,
 } from "@rawkoon/api/services/indexerManager";
 import type { NormalizedRelease } from "@rawkoon/api/services/indexerManager";
-import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
+import type {
+  InteractiveReleaseItem,
+  LanguageFallbackSummary,
+} from "@rawkoon/shared/types";
+import {
+  buildLanguageFallbackSummary,
+  classifyLanguageFallback,
+} from "@rawkoon/api/utils/medias/languageFallback";
 import { parseReleaseTitle } from "@rawkoon/api/utils/medias/filenameParser";
 import { scoreReleaseDetailed } from "@rawkoon/api/utils/medias/releaseScorer";
 import type { ScoreBreakdownDto } from "@rawkoon/shared/types";
@@ -65,6 +72,8 @@ function normalizedToInteractive(
     is_season_pack: isSeasonPack(r.title),
     is_complete_series: isCompleteSeries(r.title),
     freeleech: r.freeleech || undefined,
+    language_fallback: false,
+    language_fallback_tag: null,
   };
 }
 
@@ -327,6 +336,8 @@ export const mediasSearchRoutes = new Hono<Env>()
           return normalizedToInteractive(r, adapter.name, downloadToken);
         });
 
+        let languageFallbackSummary: LanguageFallbackSummary | null = null;
+
         const lmRaw = query.library_media_id;
         if (lmRaw != null && lmRaw !== "") {
           const libId =
@@ -355,6 +366,15 @@ export const mediasSearchRoutes = new Hono<Env>()
                   profile,
                 );
                 const qualityReject = breakdown.rejected;
+                // An indexer-side rejection keeps the release out of the fallback group.
+                const fallbackTag =
+                  !r.rejected && breakdown.rejected
+                    ? classifyLanguageFallback(
+                        r.title,
+                        breakdown.reasons.map((x) => x.code),
+                        profile.preferredLanguages,
+                      )
+                    : null;
                 const parsed_quality = {
                   resolution: parsed.resolution,
                   source: parsed.source,
@@ -396,8 +416,18 @@ export const mediasSearchRoutes = new Hono<Env>()
                   rejected,
                   rejection_reason,
                   score_breakdown,
+                  language_fallback: fallbackTag != null,
+                  language_fallback_tag: fallbackTag,
                 };
               });
+              if (!mapped.some((r) => !r.rejected)) {
+                languageFallbackSummary = buildLanguageFallbackSummary(
+                  profile.preferredLanguages,
+                  mapped.flatMap((r) =>
+                    r.language_fallback_tag ? [r.language_fallback_tag] : [],
+                  ),
+                );
+              }
               mapped.sort((a, b) => {
                 const ar = a.rejected ? 1 : 0;
                 const br = b.rejected ? 1 : 0;
@@ -415,6 +445,7 @@ export const mediasSearchRoutes = new Hono<Env>()
           success: true,
           service: adapter.name,
           releases: mapped,
+          language_fallback_summary: languageFallbackSummary,
           ...(indexerWarnings.length > 0
             ? { indexer_warnings: indexerWarnings }
             : {}),

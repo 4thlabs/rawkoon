@@ -34,6 +34,7 @@ export const SCHEDULED_JOB_NAMES = {
   CHECK_LIBRARY_INTEGRITY: "check-library-integrity",
   POLL_INDEXER_RSS: "poll-indexer-rss",
   UPGRADE_MEDIA_SEARCH: "upgrade-media-search",
+  SEARCH_ON_ADD: "search-on-add",
   REFRESH_GITHUB_RELEASES: "refresh-github-releases",
   SYNC_LIBRARY_ATTENTION_ALERTS: "sync-library-attention-alerts",
   CHECK_BOOK_RELEASES: "check-book-releases",
@@ -307,6 +308,12 @@ export function initWorkers() {
 export async function setupScheduledJobs() {
   console.log("⏰ Setting up scheduled jobs...");
 
+  // Lazy: the schedule service imports this module for the queue.
+  const { loadReleaseCheckCron, registerSchedulers } = await import(
+    "./releaseCheckSchedule"
+  );
+  const releaseCheckCron = await loadReleaseCheckCron();
+
   const jobs = [
     { name: SCHEDULED_JOB_NAMES.CLEANUP_NOTIFICATIONS, pattern: "0 0 * * *" },
     { name: SCHEDULED_JOB_NAMES.REFRESH_UPCOMING, pattern: "30 */12 * * *" },
@@ -316,11 +323,11 @@ export async function setupScheduledJobs() {
     }, // hourly :20 — day-before movie (watchlist)
     {
       name: SCHEDULED_JOB_NAMES.CHECK_LIBRARY_MOVIE_RELEASES,
-      pattern: "0 */6 * * *",
+      pattern: releaseCheckCron,
     },
     {
       name: SCHEDULED_JOB_NAMES.CHECK_LIBRARY_EPISODE_RELEASES,
-      pattern: "0 */6 * * *",
+      pattern: releaseCheckCron,
     },
     {
       name: SCHEDULED_JOB_NAMES.SYNC_LIBRARY_SHOW_EPISODES,
@@ -388,12 +395,5 @@ export async function setupScheduledJobs() {
     await scheduledTasksQueue.removeJobScheduler(scheduler.key);
   }
 
-  for (const job of jobs) {
-    await scheduledTasksQueue.upsertJobScheduler(
-      job.name,
-      { pattern: job.pattern },
-      { name: job.name, data: {} },
-    );
-    console.log(`   - Scheduled ${job.name} with pattern ${job.pattern}`);
-  }
+  await registerSchedulers(jobs);
 }

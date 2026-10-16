@@ -59,6 +59,8 @@ export const queryKeys = {
   downloads: {
     all: ["downloads"] as const,
     speed: () => [...queryKeys.downloads.all, "speed"] as const,
+    active: () => [...queryKeys.downloads.all, "active"] as const,
+    progress: () => [...queryKeys.downloads.all, "progress"] as const,
     seeding: (preview?: boolean) =>
       [...queryKeys.downloads.all, "seeding", preview ?? false] as const,
     orphans: () => [...queryKeys.downloads.all, "orphans"] as const,
@@ -368,6 +370,13 @@ export const queryKeys = {
       [...queryKeys.library.all, "downloads", id] as const,
     downloadsImport: () =>
       [...queryKeys.library.all, "downloads-import"] as const,
+    // Nested under the settings key so a settings save also refreshes the checklist.
+    grabReadiness: () =>
+      [
+        ...queryKeys.library.all,
+        "post-processing-settings",
+        "grab-readiness",
+      ] as const,
     postProcessingSettings: () =>
       [...queryKeys.library.all, "post-processing-settings"] as const,
     languageTags: () => [...queryKeys.library.all, "language-tags"] as const,

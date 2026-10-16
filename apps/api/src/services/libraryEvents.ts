@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import type {
   DownloadProgressItem,
   LandedArrival,
+  SearchResultEvent,
   SeedStateItem,
 } from "@rawkoon/shared/types";
 
@@ -85,4 +86,14 @@ export function emitSeedState(torrents: SeedStateItem[]): void {
     torrents,
     ts: Date.now(),
   } satisfies SeedStateUpdateEvent);
+}
+
+/** A search (automatic or "Search now") finished; clients update their live toast. */
+export function emitSearchResult(
+  payload: Omit<SearchResultEvent, "kind" | "ts">,
+): void {
+  libraryEventBus.emit("search-result", {
+    ...payload,
+    ts: Date.now(),
+  } satisfies Omit<SearchResultEvent, "kind">);
 }

@@ -5,10 +5,17 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type {
   DashboardHeroItem,
+  AddToLibraryResponse,
   DashboardHeroSource,
   TmdbMediaSearchItem,
 } from "@rawkoon/shared/types";
+import {
+  AddOnlyMenu,
+  AddSearchCaption,
+} from "@/features/medias/components/AddSearchControls";
 import { useAddToLibrary } from "@/features/medias/hooks/useAddToLibrary";
+import { useSearchOnAddEnabled } from "@/features/medias/hooks/useSearchOnAddEnabled";
+import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
 import { useCurrentUser } from "@/lib/auth/useAuth";
 import { useCreateRequest } from "@/pages/requests/_hooks/useRequests";
 import { formatRelativeTime } from "@/lib/utils/relativeTime";
@@ -87,6 +94,8 @@ function HeroCarousel({
   const [detail, setDetail] = useState<TmdbMediaSearchItem | null>(null);
   const [added, setAdded] = useState<Set<number>>(() => new Set());
   const addToLibrary = useAddToLibrary();
+  const searchOnAddEnabled = useSearchOnAddEnabled();
+  const liveSearchToast = useLiveSearchToast();
   const createRequest = useCreateRequest();
   const { data: user } = useCurrentUser();
 
@@ -105,6 +114,8 @@ function HeroCarousel({
     return () => clearTimeout(id);
   }, [index, count, paused, reduced]);
 
+  const showSearchHint = searchOnAddEnabled && user?.is_admin === true;
+
   const relative =
     source === "arrivals"
       ? formatRelativeTime(item.arrived_at, i18n.language)
@@ -115,7 +126,7 @@ function HeroCarousel({
     source === "arrivals" ? null : item.year,
   ].filter((part) => part != null && part !== "");
 
-  const onAdd = () => {
+  const onAdd = (searchOnAdd?: boolean) => {
     const tmdbId = item.tmdb_id;
     const type = item.media_type === "tv" ? "show" : "movie";
     const callbacks = {
@@ -123,9 +134,23 @@ function HeroCarousel({
       onError: () =>
         toast.error(t("dashboard.hero.addFailed", { title: item.title })),
     };
+    const addCallbacks = {
+      ...callbacks,
+      onSuccess: (response: AddToLibraryResponse) => {
+        callbacks.onSuccess();
+        liveSearchToast.announceAdd(response, item.title);
+      },
+    };
     // Adding to the library is admin-only; everyone else files a request, as on iOS.
     if (user?.is_admin) {
-      addToLibrary.mutate({ tmdb_id: tmdbId, type }, callbacks);
+      addToLibrary.mutate(
+        {
+          tmdb_id: tmdbId,
+          type,
+          ...(searchOnAdd === false ? { search_on_add: false } : {}),
+        },
+        addCallbacks,
+      );
     } else {
       createRequest.mutate(
         {
@@ -210,14 +235,30 @@ function HeroCarousel({
                     : t("requests.requested")}
                 </span>
               ) : (
-                <button
-                  type="button"
-                  onClick={onAdd}
-                  disabled={addToLibrary.isPending || createRequest.isPending}
-                  className={`${buttonBase} bg-primary-500 text-white hover:bg-primary-400 disabled:opacity-60`}
-                >
-                  {t("dashboard.hero.add")}
-                </button>
+                <div className="flex flex-col items-start gap-1">
+                  <div className="inline-flex items-stretch">
+                    <button
+                      type="button"
+                      onClick={() => onAdd()}
+                      disabled={
+                        addToLibrary.isPending || createRequest.isPending
+                      }
+                      className={`${buttonBase} bg-primary-500 text-white hover:bg-primary-400 disabled:opacity-60 ${showSearchHint ? "rounded-r-none pr-4" : ""}`}
+                    >
+                      {t("dashboard.hero.add")}
+                    </button>
+                    {showSearchHint && (
+                      <AddOnlyMenu
+                        onAddOnly={() => onAdd(false)}
+                        disabled={addToLibrary.isPending}
+                        className="h-10 rounded-r-full border-l border-white/25 bg-primary-500 px-2.5 text-white hover:bg-primary-400"
+                      />
+                    )}
+                  </div>
+                  {showSearchHint && (
+                    <AddSearchCaption className="text-neutral-300" />
+                  )}
+                </div>
               ))}
             {item.library_id != null ? (
               <Link

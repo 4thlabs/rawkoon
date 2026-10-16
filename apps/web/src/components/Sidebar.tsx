@@ -1,9 +1,8 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { motion } from "motion/react";
 import { useState } from "react";
-import { clearUser } from "@/lib/auth";
-import { useLogout } from "@/lib/auth/useAuth";
+import { useSignOut } from "@/lib/auth/useSignOut";
 import { useUpdateProfile } from "@/pages/settings/useUsers";
 import { formatDisplayName } from "@/lib/utils/format";
 import { NotificationsMenu } from "@/components/NotificationsBell";
@@ -31,8 +30,6 @@ export function Sidebar({ onOpenQuickActions, position }: SidebarProps) {
   const { t, i18n } = useTranslation("common");
   const router = useRouterState();
   const currentPath = router.location.pathname;
-  const navigate = useNavigate();
-  const logoutMutation = useLogout();
   const prefetchRoute = usePrefetchRoute();
 
   useTheme();
@@ -65,41 +62,7 @@ export function Sidebar({ onOpenQuickActions, position }: SidebarProps) {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      let subscriptionEndpoint: string | undefined;
-      if ("serviceWorker" in navigator && "PushManager" in window) {
-        try {
-          const registration = await navigator.serviceWorker.ready;
-          const subscription = await registration.pushManager.getSubscription();
-          if (subscription) {
-            subscriptionEndpoint = subscription.endpoint;
-            try {
-              await subscription.unsubscribe();
-            } catch (error) {
-              console.warn(
-                "Failed to unsubscribe from service worker on logout:",
-                error,
-              );
-            }
-          }
-        } catch (error) {
-          console.warn(
-            "Could not get subscription endpoint for logout:",
-            error,
-          );
-        }
-      }
-
-      await logoutMutation.mutateAsync(subscriptionEndpoint);
-      clearUser();
-      navigate({ to: "/login" });
-    } catch (error) {
-      console.error("Logout error:", error);
-      clearUser();
-      navigate({ to: "/login" });
-    }
-  };
+  const handleLogout = useSignOut();
 
   function handleContextMenu(e: React.MouseEvent) {
     if ((e.target as HTMLElement).closest("a")) return;

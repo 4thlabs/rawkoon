@@ -142,7 +142,7 @@ describe("processPendingReleases", () => {
   it("leaves targets alone while their window is still open", async () => {
     rows = [row(1, "a", 1, 10)];
     const r = await processPendingReleases(NOW);
-    expect(r).toEqual({ grabbed: 0, dropped: 0 });
+    expect(r).toEqual({ grabbed: 0, dropped: 0, reason: null });
     expect(grabRelease).not.toHaveBeenCalled();
     expect(rows).toHaveLength(1);
   });
@@ -161,6 +161,7 @@ describe("processPendingReleases", () => {
     grabRelease.mockImplementationOnce(async () => ({
       grabbed: false,
       reason: "Blocklisted: bad",
+      refusal: "blocklisted" as const,
     }));
     const r = await processPendingReleases(NOW);
     expect(grabRelease).toHaveBeenCalledTimes(2);
@@ -173,7 +174,7 @@ describe("processPendingReleases", () => {
     rows = [row(1, "a", 1, -5)];
     episode = { ...wantedEpisode, status: "downloaded" };
     const r = await processPendingReleases(NOW);
-    expect(r).toEqual({ grabbed: 0, dropped: 1 });
+    expect(r).toEqual({ grabbed: 0, dropped: 1, reason: "not_wanted" });
     expect(grabRelease).not.toHaveBeenCalled();
     expect(rows).toHaveLength(0);
   });
@@ -240,6 +241,7 @@ describe("processPendingReleases", () => {
     grabRelease.mockImplementation(async () => ({
       grabbed: false,
       reason: "Not enough free space: needs 1.0 GB, 0.5 GB free, keeping 10 GB",
+      refusal: "no_space" as const,
     }));
     await processPendingReleases(NOW);
     expect(grabRelease.mock.calls[0]?.[0]).toMatchObject({ sizeBytes: 1e9 });
@@ -252,6 +254,19 @@ describe("processPendingReleases", () => {
     grabRelease.mockImplementation(async () => ({
       grabbed: false,
       reason: "A download is already active for episode 7",
+      refusal: "already_active" as const,
+    }));
+    await processPendingReleases(NOW);
+    expect(episodeUpdate).not.toHaveBeenCalled();
+    expect(rows).toHaveLength(0);
+  });
+
+  it("does not count a miss while a show-level pack carries the target", async () => {
+    rows = [row(1, "a", 1, -5)];
+    grabRelease.mockImplementation(async () => ({
+      grabbed: false,
+      reason: "A complete-series download is already active — cancel it",
+      refusal: "show_grab_active" as const,
     }));
     await processPendingReleases(NOW);
     expect(episodeUpdate).not.toHaveBeenCalled();
@@ -271,6 +286,18 @@ describe("processPendingReleases", () => {
       data: { searchAttempts: 24, status: "skipped" },
     });
     expect(notifySkipped).toHaveBeenCalledTimes(1);
+  });
+
+  it("grabs only the requested target when one is named", async () => {
+    rows = [
+      row(1, "a", 1, -5),
+      { ...row(2, "b", 1, -5), targetKey: "e:8", episodeId: 8 },
+    ];
+    const r = await processPendingReleases(NOW, "e:8");
+    expect(r.grabbed).toBe(1);
+    expect(grabRelease).toHaveBeenCalledTimes(1);
+    expect(grabRelease.mock.calls[0]![0].downloadUrl).toBe("magnet:?xt=b");
+    expect(rows.map((x) => x.targetKey)).toEqual(["e:7"]);
   });
 
   it("expires rows older than a week", async () => {

@@ -2,15 +2,12 @@ import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import * as Popover from "@radix-ui/react-popover";
-import { useUpdateProfile } from "@/pages/settings/useUsers";
 import type { User } from "@rawkoon/shared/types";
 import { formatDisplayName } from "@/lib/utils/format";
+import { useLanguageToggle } from "@/lib/app/useLanguageToggle";
 import { useTheme } from "@/lib/app/useTheme";
-import { cn } from "@/lib/utils";
 import { ChevronDown, LogOut, Settings } from "lucide-react";
 import { usePrefetchRoute } from "@/lib/routing/usePrefetchRoute";
-import { visibleNavSections } from "@/lib/routing/navigation";
-import { useFeatures } from "@/lib/routing/useFeatures";
 
 interface UserMenuProps {
   user: User;
@@ -18,39 +15,14 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ user, onLogout }: UserMenuProps) {
-  const { data: features } = useFeatures();
-  const sections = visibleNavSections(features ?? {});
-  const { t, i18n } = useTranslation("common");
+  const { t } = useTranslation("common");
   const router = useRouterState();
   const currentPath = router.location.pathname;
   const [isOpen, setIsOpen] = useState(false);
   useTheme();
-  const updateProfile = useUpdateProfile();
   const prefetchRoute = usePrefetchRoute();
 
-  const languages = [
-    { code: "en", name: "English" },
-    { code: "fr", name: "Français" },
-  ];
-  const currentLanguage =
-    languages.find((lang) => lang.code === i18n.language) || languages[0];
-
-  const toggleLanguage = () => {
-    const nextLanguage =
-      languages.find((lang) => lang.code !== i18n.language) || languages[0];
-    i18n.changeLanguage(nextLanguage.code);
-
-    if (user) {
-      updateProfile.mutate(
-        { locale: nextLanguage.code },
-        {
-          onError: (error) => {
-            console.debug("Failed to update locale on server:", error);
-          },
-        },
-      );
-    }
-  };
+  const language = useLanguageToggle();
 
   const handleLogout = () => {
     setIsOpen(false);
@@ -94,71 +66,17 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
           sideOffset={8}
           collisionPadding={16}
         >
-          {/* Mobile nav items */}
-          <div
-            className={cn(
-              "py-2 px-2 border-b border-neutral-700/60",
-              "block lg:hidden",
-            )}
-          >
-            {sections.map((section, sectionIndex) => (
-              <div
-                key={section.labelKey ?? sectionIndex}
-                className="pb-2 last:pb-0"
-              >
-                {section.labelKey && (
-                  <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                    {t(section.labelKey)}
-                  </p>
-                )}
-                <div className="grid grid-cols-3 gap-1">
-                  {section.items.map((item) => {
-                    const isActive =
-                      currentPath === item.path ||
-                      (item.path !== "/" &&
-                        currentPath.startsWith(`${item.path}/`));
-                    return (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => setIsOpen(false)}
-                        onMouseEnter={() => prefetchRoute(item.path)}
-                        style={{ touchAction: "manipulation" }}
-                        className={`flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl transition-all duration-150 ${
-                          isActive
-                            ? "bg-primary-500/10 text-primary-300"
-                            : "text-neutral-400 hover:bg-white/[0.04] active:bg-white/[0.08]"
-                        }`}
-                      >
-                        <item.icon
-                          size={20}
-                          className={`transition-transform ${isActive ? "scale-110" : ""}`}
-                        />
-                        <span className="text-[10px] font-medium leading-none text-center w-full truncate">
-                          {t(item.translationKey)}
-                        </span>
-                        {isActive && (
-                          <span className="absolute bottom-1 w-1 h-1 rounded-full bg-primary-500 opacity-0" />
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-
           {/* Preferences */}
           <div className="py-2 px-3 border-b border-neutral-700/60">
             <button
-              onClick={toggleLanguage}
+              onClick={language.toggle}
               className="flex items-center justify-between w-full py-1.5 group"
             >
               <span className="text-xs font-medium text-neutral-500">
                 {t("common.language")}
               </span>
               <span className="text-xs font-medium text-neutral-300 group-hover:text-white transition-colors">
-                {currentLanguage.name}
+                {language.currentName}
               </span>
             </button>
           </div>

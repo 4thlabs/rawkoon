@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useAddToLibrary } from "@/features/medias/hooks/useAddToLibrary";
+import { useAddTitle } from "@/features/medias/hooks/useAddTitle";
+import { useSearchOnAddEnabled } from "@/features/medias/hooks/useSearchOnAddEnabled";
 import { useAddToWatchlist } from "@/features/medias/hooks/useAddToWatchlist";
 import { useMediaModalData } from "@/features/medias/hooks/useMediaModalData";
 import { useRemoveFromWatchlist } from "@/features/medias/hooks/useRemoveFromWatchlist";
 import { type TmdbMediaSearchItem } from "@rawkoon/shared/types";
 import { formatRuntimeMinutes } from "@rawkoon/shared/utils";
 import { Info, Sparkles } from "lucide-react";
-import { toast } from "sonner";
 import { Dialog } from "@/components/dialog";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { SimilarMediasPanel } from "@/pages/medias/_component/SimilarMediasPanel";
@@ -34,7 +34,8 @@ export function ExploreCardDetailDialog({
   const [activeTab, setActiveTab] = useState<TabKey>("info");
   const [imageError, setImageError] = useState(false);
 
-  const addMutation = useAddToLibrary();
+  const { addTitle, isAdding } = useAddTitle();
+  const searchOnAddEnabled = useSearchOnAddEnabled();
   const addToWatchlist = useAddToWatchlist();
   const removeFromWatchlist = useRemoveFromWatchlist();
 
@@ -89,18 +90,9 @@ export function ExploreCardDetailDialog({
     ? activeTab
     : "info";
 
-  const handleAdd = async () => {
-    if (addMutation.isPending || !item.can_add) return;
-    try {
-      await addMutation.mutateAsync({
-        tmdb_id: item.tmdb_id,
-        type: item.media_type === "tv" ? "show" : "movie",
-      });
-      toast.success(t("medias.addSuccess", { title: item.title }));
-      onAdded?.();
-    } catch {
-      toast.error(t("medias.addFailed"));
-    }
+  const handleAdd = async (searchOnAdd?: false) => {
+    const response = await addTitle(item, { searchOnAdd });
+    if (response) onAdded?.();
   };
 
   const handleWatchlistToggle = async () => {
@@ -195,13 +187,15 @@ export function ExploreCardDetailDialog({
               <ExploreCardActions
                 item={item}
                 isInWatchlist={isInWatchlist}
-                isAddPending={addMutation.isPending}
+                isAddPending={isAdding}
                 isWatchlistPending={
                   addToWatchlist.isPending || removeFromWatchlist.isPending
                 }
                 trailerData={trailerData}
                 tmdbUrl={tmdbUrl}
-                onAdd={handleAdd}
+                searchOnAdd={searchOnAddEnabled}
+                onAdd={() => void handleAdd()}
+                onAddOnly={() => void handleAdd(false)}
                 onWatchlistToggle={handleWatchlistToggle}
                 onClose={onClose}
               />

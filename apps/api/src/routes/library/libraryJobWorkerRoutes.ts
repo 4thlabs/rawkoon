@@ -26,6 +26,7 @@ import {
   libraryEventBus,
   type LibraryLandedEvent,
 } from "@rawkoon/api/services/libraryEvents";
+import type { SearchResultEvent } from "@rawkoon/shared/types";
 import { ensureAdmin, requireUser } from "@rawkoon/api/middleware/hono/auth";
 import { jsonV } from "@rawkoon/api/middleware/validate";
 
@@ -219,17 +220,26 @@ export const libraryJobWorkerRoutes = new Hono<Env>()
       send(`data: ${JSON.stringify({ kind: "landed", ...payload })}\n\n`);
     }
 
+    function onSearchResult(payload: Omit<SearchResultEvent, "kind">) {
+      send(
+        `data: ${JSON.stringify({ ...payload, kind: "search_result" })}\n\n`,
+      );
+    }
+
     function onSeedState(payload: { torrents: unknown[]; ts: number }) {
       send(`data: ${JSON.stringify({ kind: "seed-state", ...payload })}\n\n`);
     }
-    // Seeding data is admin-only; other users never receive it.
-    const receivesSeedState = c.get("user")?.is_admin === true;
+    // Seeding data and search results are admin-only; other users never receive them.
+    const receivesAdminEvents = c.get("user")?.is_admin === true;
 
     libraryEventBus.on("update", onUpdate);
     libraryEventBus.on("book-update", onBookUpdate);
     libraryEventBus.on("landed", onLanded);
     libraryEventBus.on("download-progress", onDownloadProgress);
-    if (receivesSeedState) libraryEventBus.on("seed-state", onSeedState);
+    // Searches are admin-only actions, so only admins follow their results.
+    if (receivesAdminEvents)
+      libraryEventBus.on("search-result", onSearchResult);
+    if (receivesAdminEvents) libraryEventBus.on("seed-state", onSeedState);
     const heartbeat = setInterval(() => send(": ping\n\n"), 15_000);
 
     c.req.raw.signal.addEventListener("abort", () => {
@@ -238,6 +248,7 @@ export const libraryJobWorkerRoutes = new Hono<Env>()
       libraryEventBus.off("book-update", onBookUpdate);
       libraryEventBus.off("landed", onLanded);
       libraryEventBus.off("download-progress", onDownloadProgress);
+      libraryEventBus.off("search-result", onSearchResult);
       libraryEventBus.off("seed-state", onSeedState);
       clearInterval(heartbeat);
       try {

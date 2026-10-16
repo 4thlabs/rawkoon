@@ -91,7 +91,12 @@ export function MergedEpisodeRow({
       .mutateAsync({ mediaId: libraryId, episodeId: ep.id })
       .then((r) => {
         if (r.grabbed) toast.success(t("library.management.grabbed"));
-        else toast.error(r.reason ?? t("library.management.grabFailed"));
+        else {
+          // A miss is a normal outcome; only a real failure is styled as an error.
+          const show =
+            r.search_result?.outcome === "error" ? toast.error : toast.info;
+          show(r.reason ?? t("library.management.grabFailed"));
+        }
       })
       .catch(() => toast.error(t("library.management.grabFailed")));
   };

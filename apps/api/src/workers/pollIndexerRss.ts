@@ -27,7 +27,10 @@ import {
 import type { AiPickMediaContext } from "@rawkoon/api/utils/medias/buildAiPickPrompt";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 import { pollIndexerRssBooks } from "@rawkoon/api/workers/pollIndexerRssBooks";
-import { parseReleaseStructure } from "@rawkoon/shared/utils/releaseStructure";
+import {
+  parseReleaseSeasonSpan,
+  parseReleaseStructure,
+} from "@rawkoon/shared/utils/releaseStructure";
 import {
   APP_DISPLAY_TIMEZONE,
   localDateYmd,
@@ -237,7 +240,7 @@ export async function pollIndexerRss(): Promise<RssRunStats | null> {
   >();
 
   for (const release of releases) {
-    const parsed = extractTitleFromRelease(release.title);
+    const parsed = matchableRssRelease(release.title);
     if (!parsed) continue;
 
     if (parsed.season !== null && parsed.episode === null) {
@@ -514,6 +517,13 @@ function logRssMatch(
   console.log(
     `[pollIndexerRss] Match: "${best.release.title}" → ${label} (${via})`,
   );
+}
+
+/** A multi-season pack has no single season slot; the add-time search finds it, the feed doesn't match it as season N. */
+export function matchableRssRelease(
+  title: string,
+): ReturnType<typeof extractTitleFromRelease> {
+  return parseReleaseSeasonSpan(title) ? null : extractTitleFromRelease(title);
 }
 
 export function extractTitleFromRelease(title: string): {

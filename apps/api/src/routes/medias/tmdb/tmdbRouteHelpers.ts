@@ -54,15 +54,24 @@ export async function fetchTmdbResults(
   return Array.isArray(data.results) ? data.results : [];
 }
 
-export async function libraryIdMapForTmdbIds(
+export async function libraryEntriesForTmdbIds(
   tmdbIds: number[],
-): Promise<Map<number, number>> {
+): Promise<Map<number, { id: number; status: string }>> {
   if (tmdbIds.length === 0) return new Map();
   const entries = await prisma.libraryMedia.findMany({
     where: { tmdbId: { in: tmdbIds } },
-    select: { tmdbId: true, id: true },
+    select: { tmdbId: true, id: true, status: true },
   });
-  return new Map(entries.map((e) => [e.tmdbId, e.id]));
+  return new Map(
+    entries.map((e) => [e.tmdbId, { id: e.id, status: e.status }]),
+  );
+}
+
+export async function libraryIdMapForTmdbIds(
+  tmdbIds: number[],
+): Promise<Map<number, number>> {
+  const entries = await libraryEntriesForTmdbIds(tmdbIds);
+  return new Map([...entries].map(([tmdbId, e]) => [tmdbId, e.id]));
 }
 
 export function enrichSearchItems(

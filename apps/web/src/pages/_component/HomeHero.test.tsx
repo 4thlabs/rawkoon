@@ -31,6 +31,10 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 // happy-dom cancels WAAPI animations noisily; the carousel logic is what's under test.
+vi.mock("@/features/medias/hooks/useLiveSearchToast", () => {
+  const live = { announceAdd: vi.fn(), announceSearch: vi.fn() };
+  return { useLiveSearchToast: () => live };
+});
 vi.mock("motion/react", async () => {
   const React = await import("react");
   const strip = (tag: string) =>
@@ -84,7 +88,11 @@ const render = (payload: DashboardHeroResponse | Error) => {
     payload instanceof Error
       ? Promise.reject(payload)
       : Promise.resolve(
-          url.startsWith("/api/dashboard/hero") ? payload : { item: {} },
+          url.startsWith("/api/dashboard/hero")
+            ? payload
+            : url.endsWith("/post-processing/settings")
+              ? { settings: { search_on_add: true } }
+              : { item: {} },
         ),
   );
   return renderWithProviders(<HomeHero userName="Sam" />, { fetcher });
@@ -178,6 +186,34 @@ describe("HomeHero", () => {
         isAdmin ? "dashboard.hero.added" : "requests.requested",
       ),
     ).toBeInTheDocument();
+    auth.isAdmin = false;
+  });
+
+  it("tells an admin Add also searches, and Add only skips the search", async () => {
+    auth.isAdmin = true;
+    const { fetcher } = render({
+      items: [
+        item(2, { source: "for_you", library_id: null, arrived_at: null }),
+      ],
+    });
+    expect(
+      await screen.findByText("medias.addSearch.caption"),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "medias.addSearch.moreOptions" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "medias.addSearch.addOnly" }),
+    );
+    await waitFor(() =>
+      expect(fetcher).toHaveBeenCalledWith(
+        "/api/library",
+        expect.objectContaining({
+          method: "POST",
+          body: { tmdb_id: 20, type: "movie", search_on_add: false },
+        }),
+      ),
+    );
     auth.isAdmin = false;
   });
 

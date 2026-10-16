@@ -1,8 +1,21 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { RefreshCw, TriangleAlert } from "lucide-react";
-import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
+import {
+  ChevronDown,
+  ChevronUp,
+  Languages,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react";
+import type {
+  InteractiveReleaseItem,
+  LanguageFallbackSummary,
+} from "@rawkoon/shared/types";
 import { ReleaseCard } from "./ReleaseCard";
 import { Button } from "@/components/ui/button";
+import { splitLanguageFallback } from "@/lib/utils/interactive-search";
+import { joinLanguages } from "@/features/medias/lib/languageFallback";
+import { pickBestMatch } from "@/features/medias/lib/bestMatch";
 
 interface InteractiveSearchResultsListProps {
   releases: InteractiveReleaseItem[];
@@ -21,6 +34,14 @@ interface InteractiveSearchResultsListProps {
   isError: boolean;
   onResetView: () => void;
   aiPickKey?: string | null;
+  languageFallbackSummary?: LanguageFallbackSummary | null;
+  /** Quality profile the scores come from; names the pinned best match. */
+  profileName?: string | null;
+  /** Releases in the server's order, so best-match ties keep it. */
+  serverOrder?: InteractiveReleaseItem[];
+  isUpgradeMode?: boolean;
+  /** Resolution of the file on disk, for upgrade mode. */
+  currentResolution?: number | null;
 }
 
 export function InteractiveSearchResultsList({
@@ -40,8 +61,99 @@ export function InteractiveSearchResultsList({
   isError,
   onResetView,
   aiPickKey,
+  languageFallbackSummary = null,
+  profileName = null,
+  serverOrder,
+  isUpgradeMode = false,
+  currentResolution = null,
 }: InteractiveSearchResultsListProps) {
   const { t } = useTranslation("common");
+  const [fallbackOpen, setFallbackOpen] = useState(false);
+  const groups = splitLanguageFallback(releases);
+  // Pinned first, so the main list below skips it.
+  const visible = new Set(groups.primary);
+  const bestMatch = pickBestMatch(
+    serverOrder ? serverOrder.filter((r) => visible.has(r)) : groups.primary,
+    {
+      blockedTitles,
+      aiPickKey,
+      upgradeMode: isUpgradeMode,
+      upgradeOverResolution: currentResolution,
+    },
+  );
+  const mainRows = groups.primary.filter((r) => r !== bestMatch);
+  // With no preferred-language release the other versions lead, expanded.
+  const leadWithFallback =
+    languageFallbackSummary != null && groups.fallback.length > 0;
+  const showFallbackGroup = leadWithFallback || fallbackOpen;
+
+  const renderCard = (
+    release: InteractiveReleaseItem,
+    variant: "row" | "best" = "row",
+  ) => {
+    const releaseKey = `${release.guid}-${release.indexer_id ?? "x"}`;
+    return (
+      <ReleaseCard
+        key={releaseKey}
+        release={release}
+        onDownload={() => void onDownload(release)}
+        onBlock={onBlock ? () => void onBlock(release) : undefined}
+        isDownloading={pendingReleaseKey === releaseKey}
+        isBusy={grabBusy}
+        isBlocking={blockingReleaseKey === releaseKey}
+        blocked={
+          blockedTitles?.has(release.title.trim().toLowerCase()) ?? false
+        }
+        alreadyGrabbed={grabbedTitles.has(release.title.trim().toLowerCase())}
+        isAiPick={aiPickKey != null && release.guid === aiPickKey}
+        variant={variant}
+        profileName={profileName}
+        t={t}
+      />
+    );
+  };
+
+  const familyKey = groups.kind === "french" ? "French" : "Other";
+  const breakdown = groups.counts.map(([tag, n]) => `${tag} (${n})`).join(", ");
+  const fallbackGroup =
+    groups.fallback.length === 0 ? null : (
+      <section
+        aria-label={t(`medias.interactive.languageFallback.group${familyKey}`)}
+        className={leadWithFallback ? "mb-4" : "mt-4"}
+      >
+        {leadWithFallback ? (
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+            {t(`medias.interactive.languageFallback.group${familyKey}`)}
+          </h3>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setFallbackOpen((v) => !v)}
+            aria-expanded={fallbackOpen}
+            className="mb-2 flex w-full items-center justify-between gap-2 rounded-2xl border border-neutral-700/80 bg-neutral-900/40 px-3 py-2.5 text-left text-sm font-medium text-neutral-200 transition-colors hover:bg-neutral-900"
+          >
+            <span>
+              {t(`medias.interactive.languageFallback.collapsed${familyKey}`, {
+                count: groups.fallback.length,
+              })}
+              <span className="ml-2 text-xs font-normal text-neutral-400">
+                {breakdown}
+              </span>
+            </span>
+            {fallbackOpen ? (
+              <ChevronUp className="h-4 w-4 shrink-0" />
+            ) : (
+              <ChevronDown className="h-4 w-4 shrink-0" />
+            )}
+          </button>
+        )}
+        {showFallbackGroup && (
+          <div className="space-y-2">
+            {groups.fallback.map((r) => renderCard(r))}
+          </div>
+        )}
+      </section>
+    );
 
   return (
     <div className="pt-4">
@@ -96,31 +208,43 @@ export function InteractiveSearchResultsList({
         </div>
       ) : (
         <div>
-          <div className="space-y-2">
-            {releases.map((release) => {
-              const releaseKey = `${release.guid}-${release.indexer_id ?? "x"}`;
-              return (
-                <ReleaseCard
-                  key={releaseKey}
-                  release={release}
-                  onDownload={() => void onDownload(release)}
-                  onBlock={onBlock ? () => void onBlock(release) : undefined}
-                  isDownloading={pendingReleaseKey === releaseKey}
-                  isBusy={grabBusy}
-                  isBlocking={blockingReleaseKey === releaseKey}
-                  blocked={
-                    blockedTitles?.has(release.title.trim().toLowerCase()) ??
-                    false
-                  }
-                  alreadyGrabbed={grabbedTitles.has(
-                    release.title.trim().toLowerCase(),
+          {leadWithFallback && languageFallbackSummary && (
+            <div
+              role="status"
+              className="mb-4 flex gap-3 rounded-2xl border border-violet-700/40 bg-violet-950/20 p-3"
+            >
+              <Languages className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+              <div className="min-w-0 text-sm">
+                <p className="font-semibold text-neutral-100">
+                  {t("medias.interactive.languageFallback.bannerTitle", {
+                    languages: joinLanguages(
+                      t,
+                      languageFallbackSummary.missing,
+                    ),
+                  })}
+                </p>
+                <p className="mt-1 text-neutral-400">
+                  {t(
+                    `medias.interactive.languageFallback.bannerBody${familyKey}`,
+                    {
+                      count: groups.fallback.length,
+                      breakdown,
+                      languages: joinLanguages(
+                        t,
+                        languageFallbackSummary.missing,
+                      ),
+                    },
                   )}
-                  isAiPick={aiPickKey != null && release.guid === aiPickKey}
-                  t={t}
-                />
-              );
-            })}
-          </div>
+                </p>
+              </div>
+            </div>
+          )}
+          {leadWithFallback && fallbackGroup}
+          {bestMatch && (
+            <div className="mb-3">{renderCard(bestMatch, "best")}</div>
+          )}
+          <div className="space-y-2">{mainRows.map((r) => renderCard(r))}</div>
+          {!leadWithFallback && fallbackGroup}
         </div>
       )}
     </div>

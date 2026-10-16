@@ -6,11 +6,11 @@ import {
 } from "@rawkoon/api/services/grabAttempts";
 import { blocklistedTitles } from "@rawkoon/api/utils/medias/pickReleaseForGrab";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
-import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import {
   profileToScoreInput,
   qualityProfileFormatsInclude,
 } from "@rawkoon/api/services/mediaGrabberHelpers";
+import type { GrabPendingReason } from "@rawkoon/shared/types";
 import type { NormalizedRelease } from "@rawkoon/api/services/indexerManager/types";
 import { scoreReleasesForProfile } from "@rawkoon/api/utils/medias/pickBestRelease";
 
@@ -109,22 +109,33 @@ async function recordMiss(row: PendingRow, reason: string): Promise<void> {
 /**
  * Grab the best held release for every target whose delay window has ended.
  * Targets that were satisfied or unmonitored meanwhile are dropped without a grab.
+ * `onlyTargetKey` limits the pass to one target, for a manual "grab now".
  */
 export async function processPendingReleases(
   now = new Date(),
-): Promise<{ grabbed: number; dropped: number }> {
+  onlyTargetKey?: string,
+): Promise<{
+  grabbed: number;
+  dropped: number;
+  /** Why the last target that was not grabbed was not; null when nothing missed. */
+  reason: GrabPendingReason | null;
+}> {
   await prisma.pendingRelease.deleteMany({
     where: { createdAt: { lt: new Date(now.getTime() - PENDING_TTL_MS) } },
   });
 
   const due = await prisma.pendingRelease.findMany({
-    where: { grabAfter: { lte: now } },
+    where: {
+      grabAfter: { lte: now },
+      ...(onlyTargetKey ? { targetKey: onlyTargetKey } : {}),
+    },
     select: { targetKey: true },
     distinct: ["targetKey"],
   });
 
   let grabbed = 0;
   let dropped = 0;
+  let reason: GrabPendingReason | null = null;
   for (const { targetKey } of due) {
     try {
       const rows = await prisma.pendingRelease.findMany({
@@ -146,6 +157,7 @@ export async function processPendingReleases(
       if (!(await isStillWanted(first))) {
         await prisma.pendingRelease.deleteMany({ where: { targetKey } });
         dropped++;
+        reason = "not_wanted";
         continue;
       }
 
@@ -212,20 +224,26 @@ export async function processPendingReleases(
           break;
         }
         lastReason = result.reason;
-        if (result.reason.startsWith(SPACE_REFUSAL_PREFIX)) spaceRefused = true;
+        if (result.refusal === "no_space") spaceRefused = true;
         // Another grab already owns the target; later candidates would hit the same wall.
-        if (result.reason.startsWith("A download is already active")) {
+        if (
+          result.refusal === "already_active" ||
+          result.refusal === "show_grab_active"
+        ) {
           alreadyActive = true;
           break;
         }
       }
 
       if (success || alreadyActive) {
+        if (!success) reason = "already_active";
         await prisma.pendingRelease.deleteMany({ where: { targetKey } });
       } else if (spaceRefused) {
+        reason = "no_space";
         // A full disk isn't a miss; keep the held set and retry once space frees up.
         continue;
       } else {
+        reason = "all_failed";
         await recordMiss(first, lastReason);
         // Only the rows this pass read: a poll may have added fresh candidates meanwhile.
         await prisma.pendingRelease.deleteMany({
@@ -242,5 +260,5 @@ export async function processPendingReleases(
       `[processPendingReleases] grabbed ${grabbed}, dropped ${dropped} target(s)`,
     );
   }
-  return { grabbed, dropped };
+  return { grabbed, dropped, reason };
 }

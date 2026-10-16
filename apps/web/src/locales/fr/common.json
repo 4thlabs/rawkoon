@@ -12,7 +12,10 @@
     "collections": "Collections",
     "calendar": "Calendrier",
     "logout": "Déconnexion",
-    "positionTitle": "Position de la navigation"
+    "positionTitle": "Position de la navigation",
+    "search": "Recherche",
+    "more": "Plus",
+    "mobileTabs": "Navigation principale"
   },
   "requests": {
     "title": "Demandes",
@@ -215,8 +218,25 @@
       "downloadsTitle": "Téléchargements",
       "transfer": "Transfert",
       "downloadClientNotConfigured": "Client de téléchargement non configuré",
-      "pendingDelay": "En attente (délai)",
-      "pendingGrabAt": "récupération à {{time}}",
+      "pendingDelay": "En attente de récupération",
+      "pendingGrabIn": "Récupération dans {{time}}",
+      "pendingGrabDue": "Récupération imminente",
+      "grabNow": "Récupérer maintenant",
+      "nothingDownloading": "Aucun téléchargement en cours",
+      "downloadClientUnreachable": "Client de téléchargement injoignable",
+      "etaLeft": "{{time}} restant",
+      "nothingGrabbed": "Rien n'a été récupéré",
+      "grabMiss": {
+        "not_wanted": "Le titre n'a plus besoin de cette version.",
+        "already_active": "Un téléchargement est déjà en cours.",
+        "no_space": "Il n'y a pas assez d'espace disque libre.",
+        "all_failed": "Toutes les versions en attente ont été bloquées ou ont échoué."
+      },
+      "downloadState": {
+        "stalled": "Bloqué",
+        "paused": "En pause",
+        "error": "Erreur"
+      },
       "pendingMore": "+{{count}} de plus",
       "upcomingEmpty": "Rien à venir"
     },
@@ -448,14 +468,19 @@
     "expand": "Développer",
     "refetch": "Actualiser",
     "quickActions": "Actions rapides",
-    "quickActionsPlaceholder": "Rechercher une page ou une action...",
-    "quickActionsHint": "Utilisez les flèches pour naviguer et Entrée pour lancer",
+    "quickActionsPlaceholder": "Rechercher un film, une série ou une page...",
+    "quickActionsHint": "Tapez un titre pour chercher des films et des séries",
+    "quickActionsTitlesHint": "Entrée ajoute ou ouvre, Maj+Entrée affiche les détails",
+    "quickActionsTitlesHintTouch": "Touchez un titre pour l'ajouter, ou le bouton d'info pour les détails",
+    "quickActionsTitlesFailed": "La recherche de films et de séries est indisponible pour le moment.",
+    "quickActionsSearchingTitles": "Recherche de films et de séries...",
+    "quickActionsSectionTitles": "Films et séries",
+    "quickActionsAdd": "Ajouter",
+    "quickActionsDetails": "Détails",
     "quickActionsNoResults": "Aucune action rapide trouvée",
     "quickActionsNoResultsDescription": "Essayez un autre mot-clé ou ouvrez une section depuis la barre latérale.",
     "quickActionsOpenPage": "Ouvrir {{page}}",
     "quickActionsRefreshCurrentPage": "Recharger la page actuelle",
-    "quickActionsSearchCollections": "Rechercher dans les médias, tâches et chores",
-    "quickActionsLoadingResults": "Recherche dans votre contenu...",
     "quickActionsSectionActions": "Pages et actions",
     "quickActionsSectionBooks": "Livres",
     "quickActionsSectionMedias": "Médias",
@@ -860,7 +885,89 @@
       "scanRunning": "Scan…",
       "scanResult": "{{count}} titre(s) ajouté(s).",
       "scanUnmatched": "Non reconnus",
-      "scanError": "Échec du scan"
+      "scanError": "Échec du scan",
+      "searchOnAdd": {
+        "title": "Quand vous ajoutez un film ou une série",
+        "on": "Lancer la recherche et le téléchargement tout de suite",
+        "off": "Ajouter à la bibliothèque seulement (attend la vérification planifiée ou « Rechercher maintenant »)"
+      },
+      "grabReadiness": {
+        "title": "Prêt à télécharger",
+        "checking": "Vérification…",
+        "allClear": "Tout ce qu'il faut aux téléchargements automatiques est en place.",
+        "summary_one": "{{count}} point à corriger",
+        "summary_other": "{{count}} points à corriger",
+        "recheck": "Revérifier",
+        "loadError": "Impossible de lancer les vérifications.",
+        "status": {
+          "ok": "OK",
+          "warn": "À vérifier",
+          "error": "Ne fonctionne pas"
+        },
+        "fix": {
+          "watchAll_one": "Surveiller l’indexeur",
+          "watchAll_other": "Surveiller les {{count}}",
+          "pickDefault": "Choisir un défaut",
+          "setMaximum": "Fixer un maximum pour {{name}}",
+          "openIntegrations": "Ouvrir les intégrations"
+        },
+        "checks": {
+          "indexer_manager": {
+            "ok_one": "{{manager}} est connecté avec {{count}} indexeur activé.",
+            "ok_other": "{{manager}} est connecté avec {{count}} indexeurs activés.",
+            "warn": "{{manager}} est connecté mais n'a aucun indexeur activé, donc les recherches ne trouvent rien.",
+            "not_configured": "Aucun gestionnaire d'indexeurs n'est configuré, donc rien ne peut être recherché.",
+            "unreachable": "Impossible de joindre {{manager}}, donc les recherches et les vérifications RSS échouent."
+          },
+          "download_client": {
+            "ok": "{{client}} est connecté.",
+            "not_configured": "Aucun client de téléchargement n'est configuré, donc les versions n'ont nulle part où aller.",
+            "unreachable": "Impossible de joindre {{client}}, donc les téléchargements échouent."
+          },
+          "default_movie_profile": {
+            "ok": "Les nouveaux films utilisent le profil de qualité {{name}}.",
+            "warn": "Aucun profil de qualité par défaut pour les films : les nouveaux films acceptent n'importe quelle version."
+          },
+          "default_show_profile": {
+            "ok": "Les nouvelles séries utilisent le profil de qualité {{name}}.",
+            "warn": "Aucun profil de qualité par défaut pour les séries : les nouvelles séries acceptent n'importe quelle version."
+          },
+          "rss_indexers": {
+            "ok": "Les vérifications RSS surveillent {{watched}} indexeur(s) sur {{total}}.",
+            "warn": "Les vérifications RSS ne surveillent aucun indexeur, donc les nouvelles versions ne sont jamais récupérées d'elles-mêmes."
+          },
+          "profiles_without_maximum": {
+            "ok": "Chaque profil de qualité a une résolution maximale.",
+            "warn_one": "{{count}} profil de qualité n'a pas de résolution maximale, donc un profil 1080p peut quand même récupérer du 4K.",
+            "warn_other": "{{count}} profils de qualité n'ont pas de résolution maximale, donc un profil 1080p peut quand même récupérer du 4K."
+          },
+          "search_on_add": {
+            "on": "La recherche démarre dès qu'un film ou une série est ajouté.",
+            "off": "La recherche attend la vérification planifiée après l'ajout d'un film ou d'une série."
+          }
+        }
+      },
+      "releaseCheck": {
+        "title": "Vérifier les nouvelles sorties",
+        "description": "Fréquence à laquelle les films et épisodes recherchés sont cherchés à nouveau.",
+        "presets": {
+          "hourly": "Chaque heure",
+          "every3h": "Toutes les 3 heures",
+          "every6h": "Toutes les 6 heures",
+          "every12h": "Toutes les 12 heures",
+          "daily": "Chaque jour à",
+          "custom": "Personnalisé"
+        },
+        "defaultTag": "Par défaut",
+        "timeLabel": "Heure du jour",
+        "customLabel": "Expression cron",
+        "customHint": "Cinq champs : minute, heure, jour du mois, mois, jour de la semaine.",
+        "invalidCron": "Expression cron invalide. Utilisez cinq champs, par exemple 0 */4 * * *.",
+        "tooFrequent": "Cette fréquence est trop élevée. Les vérifications doivent être espacées d'au moins {{minutes}} minutes.",
+        "invalidTime": "Choisissez une heure.",
+        "summary": "S'exécute {{schedule}}.",
+        "timezoneHint": "Les heures suivent le fuseau horaire du serveur."
+      }
     },
     "arrImport": {
       "title": "Importer la bibliothèque depuis Radarr / Sonarr",
@@ -1671,6 +1778,10 @@
       "pageSubtitle": "Films, séries et suivi des téléchargements",
       "searchPlaceholder": "Rechercher dans la bibliothèque…",
       "typeAll": "Tout",
+      "grabReadinessBanner_one": "Les téléchargements automatiques sont limités : {{count}} point à corriger",
+      "grabReadinessBanner_other": "Les téléchargements automatiques sont limités : {{count}} points à corriger",
+      "grabReadinessReview": "Voir",
+      "grabReadinessDismiss": "Fermer",
       "moviesWithCount": "Films ({{count}})",
       "showsWithCount": "Séries ({{count}})",
       "statusAll": "Tout",
@@ -1702,6 +1813,9 @@
         "digital_release_date": "Sortie numérique",
         "file_size": "Taille"
       },
+      "itemStatusPercent": "{{label}} {{percent}} %",
+      "itemStatusEpisodes_one": "{{label}} {{count}} épisode",
+      "itemStatusEpisodes_other": "{{label}} {{count}} épisodes",
       "itemStatus": {
         "wanted": "Manquant",
         "downloading": "Téléchargement",
@@ -1811,7 +1925,6 @@
       "watchTrailer": "Voir la bande-annonce",
       "tabInfo": "Infos",
       "tabSimilar": "Similaires",
-      "tabSearch": "Recherche",
       "tabManagement": "Gestion",
       "releaseDate": "Sortie :",
       "firstAir": "Première diffusion :",
@@ -1844,7 +1957,8 @@
       "cast": "Casting",
       "searchingEpisode": "Recherche de",
       "searchingSeasonPack": "Recherche du pack saison",
-      "upgradeMode": "Mode mise à niveau — le fichier existant sera remplacé"
+      "upgradeMode": "Mode mise à niveau — le fichier existant sera remplacé",
+      "tabReleases": "Releases"
     },
     "addSuccess": "{{title}} ajouté à la bibliothèque.",
     "addFailed": "Échec de l'ajout du média à la bibliothèque.",
@@ -1859,6 +1973,20 @@
       "loading": "Chargement des releases...",
       "empty": "Aucune release trouvée.",
       "noMatches": "Aucune release ne correspond à la vue actuelle.",
+      "languageFallback": {
+        "or": " ou ",
+        "bannerTitle": "Pas encore de release {{languages}}",
+        "bannerBodyFrench_one": "{{count}} release dans d'autres versions françaises : {{breakdown}}. Rawkoon continue de chercher du {{languages}}.",
+        "bannerBodyFrench_other": "{{count}} releases dans d'autres versions françaises : {{breakdown}}. Rawkoon continue de chercher du {{languages}}.",
+        "bannerBodyOther_one": "{{count}} release dans d'autres langues : {{breakdown}}. Rawkoon continue de chercher du {{languages}}.",
+        "bannerBodyOther_other": "{{count}} releases dans d'autres langues : {{breakdown}}. Rawkoon continue de chercher du {{languages}}.",
+        "groupFrench": "Autres versions françaises",
+        "groupOther": "Autres langues",
+        "collapsedFrench_one": "{{count}} autre version française",
+        "collapsedFrench_other": "{{count}} autres versions françaises",
+        "collapsedOther_one": "{{count}} release dans une autre langue",
+        "collapsedOther_other": "{{count}} releases dans d'autres langues"
+      },
       "filtersTitle": "Filtres",
       "filtersButton": "Filtres avancés",
       "clearFilters": "Effacer",
@@ -1894,8 +2022,8 @@
       "retry": "Réessayer",
       "errorTitle": "Impossible de charger les releases.",
       "errorDescription": "Veuillez réessayer dans un instant.",
-      "download": "Télécharger cette release",
-      "redownload": "Re-télécharger cette release",
+      "download": "Récupérer",
+      "redownload": "Récupérer à nouveau",
       "downloading": "Démarrage...",
       "downloadStarted": "Téléchargement de la release lancé.",
       "downloadFailed": "Impossible de lancer le téléchargement de la release.",
@@ -1921,7 +2049,22 @@
       "blocked": "Bloquée",
       "blockTitle": "Bloquer cette release pour qu'elle ne soit plus jamais récupérée",
       "blockSuccess": "Release bloquée. Elle ne sera plus récupérée.",
-      "blockFailed": "Impossible de bloquer cette release."
+      "blockFailed": "Impossible de bloquer cette release.",
+      "moreActions": "Plus d'actions",
+      "profileFallback": "profil",
+      "bestMatch": {
+        "title": "Meilleur choix pour {{profile}}",
+        "titleNoProfile": "Meilleur choix",
+        "reasonQuality": "{{quality}}",
+        "reasonLanguage": "Langue préférée ({{languages}})",
+        "reasonLanguageAny": "Langue préférée",
+        "reasonTracker": "Tracker préféré ({{indexer}})",
+        "reasonSeeders_one": "{{count}} seeder",
+        "reasonSeeders_other": "{{count}} seeders",
+        "reasonSize": "{{size}}",
+        "titleAi": "Choix de l'IA pour {{profile}}",
+        "titleAiNoProfile": "Choix de l'IA"
+      }
     },
     "tmdb": {
       "title": "Rechercher et ajouter depuis TMDB",
@@ -1934,7 +2077,10 @@
       "noResults": "Aucun résultat trouvé.",
       "inLibrary": "Déjà dans la bibliothèque",
       "notConfigured": "Service non configuré",
-      "add": "Cliquer pour ajouter"
+      "searchFailed": "La recherche a échoué. Réessayez.",
+      "addAction": "Ajouter",
+      "chooseRelease": "Choisir une version",
+      "openInLibrary": "Ouvrir"
     },
     "history": {
       "tabLibrary": "Bibliothèque",
@@ -1961,6 +2107,36 @@
       "daysAll": "Tout le temps",
       "empty": "Aucun historique de téléchargement.",
       "paginationRange": "{{start}}–{{end}} sur {{total}}"
+    },
+    "addToast": {
+      "searching": "{{title}} ajouté — recherche d'une version en cours",
+      "notReleased": "{{title}} ajouté — en attente de sa sortie numérique ({{date}})",
+      "notReleasedNoDate": "{{title}} ajouté — en attente d'une date de sortie numérique"
+    },
+    "addSearch": {
+      "caption": "Lance tout de suite la recherche d'une version",
+      "addOnly": "Ajouter seulement (sans rechercher)",
+      "moreOptions": "Plus d'options d'ajout"
+    },
+    "searchToast": {
+      "searching": "Recherche de {{title}}…",
+      "grabbing": "Téléchargement de {{release}}, {{quality}}",
+      "grabbingPlain": "Téléchargement de {{release}}",
+      "grabbingHeld": "Téléchargement de la version retenue",
+      "view": "Voir",
+      "changeRelease": "Changer de version",
+      "held": "Retenu par le délai de téléchargement — démarre à {{time}} sauf si une meilleure version apparaît",
+      "grabNow": "Télécharger maintenant",
+      "noFit": "Aucune version ne convient à {{profile}} pour l’instant",
+      "noRelease": "Aucune version trouvée pour l’instant",
+      "chooseRelease": "Choisir une version",
+      "notReleased": "En attente de sa sortie numérique ({{date}})",
+      "notReleasedNoDate": "En attente d’une date de sortie numérique",
+      "notAiredYet": "Rien n’a encore été diffusé — prochain épisode {{date}}",
+      "notAiredYetNoDate": "Rien n’a encore été diffusé",
+      "stillSearching": "Recherche toujours en cours — vous recevrez une notification",
+      "failed": "La recherche a échoué",
+      "failedWithReason": "La recherche a échoué : {{reason}}"
     }
   },
   "library": {
@@ -2061,6 +2237,9 @@
       "episodeSearch": "Télécharger l’épisode",
       "grabbed": "Ajouté au client de téléchargement",
       "grabFailed": "Aucune release adaptée",
+      "languageFallbackMissFrench": "Pas encore de release {{languages}} ; {{count}} dans d'autres versions françaises ({{breakdown}})",
+      "languageFallbackMissOther": "Pas encore de release {{languages}} ; {{count}} dans d'autres langues ({{breakdown}})",
+      "seeReleases": "Les voir",
       "delete": "Supprimer le média",
       "deleteConfirmTitle": "Supprimer ce média ?",
       "deleteFilesLabel": "Supprimer également les fichiers du disque",
@@ -2123,7 +2302,31 @@
       "storageByResolution": "Stockage par résolution",
       "error": "Impossible de charger les statistiques de la bibliothèque."
     },
-    "notFound": "Élément introuvable dans la bibliothèque."
+    "notFound": "Élément introuvable dans la bibliothèque.",
+    "lastSearch": {
+      "noMatch": "Aucune version · {{relative}}",
+      "noMatchNoTime": "Aucune version"
+    },
+    "itemActions": {
+      "chooseRelease": "Choisir une release",
+      "searchUpgrade": "Chercher une amélioration",
+      "downloadingPercent": "Téléchargement {{percent}} %",
+      "downloadingEpisodes_one": "Téléchargement de {{count}} épisode",
+      "downloadingEpisodes_other": "Téléchargement de {{count}} épisodes",
+      "eta": "Reste {{eta}}",
+      "paused": "En pause"
+    },
+    "statusLine": {
+      "profile": "Profil {{name}}",
+      "lastSearched": "Dernière recherche {{relative}}",
+      "outcome": {
+        "grabbed": "release récupérée",
+        "delayed": "release en attente",
+        "no_match": "aucun résultat",
+        "not_released": "pas encore sorti",
+        "error": "recherche échouée"
+      }
+    }
   },
   "downloadsImport": {
     "title": "Importer depuis Downloads",
@@ -2199,14 +2402,14 @@
   "scoring": {
     "reject": {
       "resolutionBelowMin": "Sous la résolution minimale",
-      "resolutionAboveCutoff": "Dépasse la résolution de coupure",
-      "hdrRequiredAbsent": "HDR requis mais absent",
-      "languageNoMatch": "La langue ne correspond pas au profil",
-      "sizeOverCap": "Taille du fichier dépasse la limite",
-      "isSample": "Fichier sample rejeté",
-      "seedersBelowMin": "Pas assez de sources",
-      "customFormatRequiredAbsent": "Format personnalisé requis absent",
-      "customFormatForbiddenPresent": "Format personnalisé interdit présent"
+      "resolutionAboveCutoff": "Au-dessus de la limite de {{profile}}",
+      "hdrRequiredAbsent": "Pas de HDR, que le profil exige",
+      "languageNoMatch": "Pas dans une langue préférée",
+      "sizeOverCap": "Plus gros que la limite de taille",
+      "isSample": "Un fichier d'échantillon",
+      "seedersBelowMin": "Trop peu de seeders",
+      "customFormatRequiredAbsent": "Format personnalisé requis manquant",
+      "customFormatForbiddenPresent": "Contient un format personnalisé interdit"
     },
     "component": {
       "resolutionTier": "Niveau de résolution",

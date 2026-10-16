@@ -1,4 +1,4 @@
-import type { IndexerManagerType } from "./media";
+import type { IndexerManagerType, LanguageFallbackSummary } from "./media";
 import type { DownloadSeedState } from "./seeding";
 
 export type LibraryMediaStatus =
@@ -90,6 +90,10 @@ export interface LibraryMedia {
   digital_release_date: string | null;
   quality_profile_id: number | null;
   search_attempts: number;
+  /** Last automatic or manual search; null until one has run. */
+  last_search_at: string | null;
+  last_search_outcome: SearchOutcome | null;
+  last_search_reason: string | null;
   quality_profile: LibraryQualityProfileRef | null;
   needs_upgrade?: boolean;
   affected_episodes?: number;
@@ -118,8 +122,27 @@ export interface LibraryListResponse {
   has_more: boolean;
 }
 
+export interface AddToLibraryRequest {
+  tmdb_id: number;
+  type: "movie" | "show";
+  /** Absent = follow the server-wide search-on-add setting. */
+  search_on_add?: boolean;
+}
+
+export type SearchSkippedReason =
+  | "setting_off"
+  | "override_off"
+  | "not_released"
+  | "not_monitored";
+
 export interface AddToLibraryResponse {
   item: LibraryMedia;
+  /** True when a background search for a release was queued by this add. */
+  search_queued: boolean;
+  /** Why no search was queued; null when queued or when there was nothing to search. */
+  search_skipped_reason: SearchSkippedReason | null;
+  /** Set when the skip reason is not_released (null = no known date). */
+  digital_release_date?: string | null;
 }
 
 export interface LibraryItemResponse {
@@ -244,6 +267,10 @@ export interface MediaPostProcessingSettings {
   post_processing_enabled: boolean;
   default_movie_quality_profile_id: number | null;
   default_show_quality_profile_id: number | null;
+  /** Search for a release right after a movie or show is added. */
+  search_on_add: boolean;
+  /** 5-field cron for the scheduled movie and episode release checks. */
+  release_check_cron: string;
   active_indexer_manager: IndexerManagerType | null;
   /** Book fields share this row: post-processing is per instance, not per kind. */
   books_library_path: string | null;
@@ -278,6 +305,8 @@ export interface UpdateMediaPostProcessingSettingsRequest {
   post_processing_enabled?: boolean;
   default_movie_quality_profile_id?: number | null;
   default_show_quality_profile_id?: number | null;
+  search_on_add?: boolean;
+  release_check_cron?: string;
   active_indexer_manager?: IndexerManagerType | null;
   books_library_path?: string | null;
   audiobooks_library_path?: string | null;
@@ -338,12 +367,51 @@ export interface DownloadProgressEvent {
   downloads: DownloadProgressItem[];
 }
 
+export type SearchOutcome =
+  | "grabbed"
+  | "delayed"
+  | "no_match"
+  | "not_released"
+  | "error";
+
+/** How a finished search (automatic or "Search now") ended. */
+export interface SearchResultPayload {
+  media_id: number;
+  /** Set when the search covered one season of a show. */
+  season?: number;
+  outcome: SearchOutcome;
+  release?: {
+    title: string;
+    resolution: number | null;
+    source: string | null;
+    size_bytes: number | null;
+  };
+  /** ISO time: when a held grab is released, or the digital release for not_released. */
+  delay_until?: string;
+  /** For a held grab: the pending-release target, used to grab it early. */
+  target_key?: string;
+  /** Every held target of this search (a show can hold several seasons or episodes). */
+  target_keys?: string[];
+  reason?: string;
+  language_fallback_summary?: LanguageFallbackSummary;
+}
+
+/** Pushed on the library SSE stream when a search finishes. `ts` is epoch milliseconds. */
+export interface SearchResultEvent extends SearchResultPayload {
+  kind: "search_result";
+  ts: number;
+}
+
 export interface LibrarySearchResponse {
   grabbed: boolean;
   release_title?: string;
   /** True when the AI judge's pick was the release grabbed. */
   ai_picked?: boolean;
   reason?: string;
+  /** Set when the miss is because only other versions of the preferred language exist. */
+  language_fallback_summary?: LanguageFallbackSummary | null;
+  /** The same outcome the library stream pushes, so a client need not wait for it. */
+  search_result?: SearchResultPayload;
 }
 
 interface GlobalDownloadHistoryItem extends LibraryDownloadHistoryItem {
@@ -481,4 +549,26 @@ export interface LibraryGrowth {
 
 export interface LibraryGrowthResponse {
   growth: LibraryGrowth;
+}
+
+export type GrabReadinessStatus = "ok" | "warn" | "error";
+
+export type GrabReadinessCheckId =
+  | "indexer_manager"
+  | "download_client"
+  | "default_movie_profile"
+  | "default_show_profile"
+  | "rss_indexers"
+  | "profiles_without_maximum"
+  | "search_on_add";
+
+export interface GrabReadinessCheck {
+  id: GrabReadinessCheckId;
+  status: GrabReadinessStatus;
+  /** Check-specific values the client interpolates into its message and fix. */
+  params: Record<string, unknown>;
+}
+
+export interface GrabReadinessResponse {
+  checks: GrabReadinessCheck[];
 }

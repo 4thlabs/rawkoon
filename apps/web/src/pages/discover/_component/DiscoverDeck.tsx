@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDiscoverDeck } from "../_hooks/useDiscoverDeck";
+import { useSearchOnAddEnabled } from "@/features/medias/hooks/useSearchOnAddEnabled";
 import { useMediaGenres } from "@/features/medias/hooks/useMediaGenres";
 import { DiscoverCard, type SwipeDir } from "./DiscoverCard";
 import { DiscoverActionBar } from "./DiscoverActionBar";
@@ -21,6 +22,7 @@ function useGenreMap() {
 export function DiscoverDeck() {
   const deck = useDiscoverDeck();
   const genreMap = useGenreMap();
+  const searchOnAddEnabled = useSearchOnAddEnabled();
 
   const [inFlight, setInFlight] = useState(false);
 
@@ -137,10 +139,16 @@ export function DiscoverDeck() {
           setInFlight(true);
           void deck.watchlistCurrent();
         }}
+        searchOnAdd={searchOnAddEnabled}
         onAdd={() => {
           if (inFlight || !deck.current) return;
           setInFlight(true);
           void deck.addCurrent();
+        }}
+        onAddOnly={() => {
+          if (inFlight || !deck.current) return;
+          setInFlight(true);
+          void deck.addCurrent(false);
         }}
         onUndo={() => void deck.undo()}
       />

@@ -1,8 +1,11 @@
 import { describe, expect, it } from "bun:test";
+import { extname } from "node:path";
+import { parseSeasonEpisode } from "@rawkoon/api/services/postProcessorHelpers";
 import {
   mapSeasonPack,
   parsePartMarker,
   resolveSeasonPackMapping,
+  splitUnknownSeasons,
   type ParsedSourceFile,
   type ProviderEpisode,
   type RawSourceFile,
@@ -371,5 +374,86 @@ describe("mapSeasonPack season boundaries", () => {
       [2, 2],
       [2, 3],
     ]);
+  });
+});
+
+describe("complete-series pack import", () => {
+  const provider: ProviderEpisode[] = [
+    [1, 3],
+    [2, 2],
+    [3, 2],
+  ].flatMap(([season, count]) =>
+    Array.from({ length: count }, (_, i) => ({
+      id: season * 100 + i + 1,
+      season,
+      episode: i + 1,
+      title: null,
+    })),
+  );
+  const files = [
+    "Show.S01E01.1080p.mkv",
+    "Show.S01E02.1080p.mkv",
+    "Show.S01E03.1080p.mkv",
+    "Show.S02E01.1080p.mkv",
+    "Show.S02E02.1080p.mkv",
+    "Show.S03E01.1080p.mkv",
+    "Show.S03E02.1080p.mkv",
+  ];
+
+  // The same file-name parsing the importer runs before mapping.
+  const toSources = (names: string[]): RawSourceFile[] =>
+    names.flatMap((fileName) => {
+      const se = parseSeasonEpisode(fileName);
+      return se
+        ? [
+            {
+              path: `/dl/${fileName}`,
+              fileName,
+              season: se.season,
+              episode: se.episode,
+              part: parsePartMarker(fileName),
+              ext: extname(fileName),
+            },
+          ]
+        : [];
+    });
+
+  it("maps every file of a multi-season pack onto its own season's episode", () => {
+    const sources = toSources(files);
+    const { placeable, skipped } = splitUnknownSeasons(sources, provider);
+    const result = mapSeasonPack(placeable, provider, null);
+    expect(skipped).toEqual([]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.placements.map((p) => p.episode.id).sort()).toEqual([
+      101, 102, 103, 201, 202, 301, 302,
+    ]);
+    for (const p of result.placements) {
+      expect(p.kind).toBe("direct");
+      expect(p.sources[0].season).toBe(p.episode.season);
+      expect(p.sources[0].episode).toBe(p.episode.episode);
+    }
+  });
+
+  it("sets aside seasons the provider lacks instead of refusing the pack", () => {
+    const sources = toSources([...files, "Show.S00E01.Special.1080p.mkv"]);
+    const refused = mapSeasonPack(sources, provider, null);
+    expect(refused.ok).toBe(false);
+
+    const { placeable, skipped } = splitUnknownSeasons(sources, provider);
+    expect(skipped).toEqual(["Show.S00E01.Special.1080p.mkv"]);
+    const result = mapSeasonPack(placeable, provider, null);
+    expect(result.ok && result.placements).toHaveLength(7);
+  });
+
+  it("imports the seasons it has when the pack is missing some", () => {
+    const { placeable } = splitUnknownSeasons(
+      toSources(files.filter((f) => !f.includes("S02"))),
+      provider,
+    );
+    const result = mapSeasonPack(placeable, provider, null);
+    expect(
+      result.ok && result.placements.map((p) => p.episode.id).sort(),
+    ).toEqual([101, 102, 103, 301, 302]);
   });
 });

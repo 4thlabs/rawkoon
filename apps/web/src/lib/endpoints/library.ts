@@ -5,6 +5,7 @@ export const LIBRARY_ENDPOINTS = {
   GROWTH: "/api/library/growth",
   ADD: "/api/library",
   POST_PROCESSING_SETTINGS: "/api/library/post-processing/settings",
+  GRAB_READINESS: "/api/library/post-processing/grab-readiness",
   SCAN: "/api/library/scan",
   REMOVE: (id: number) => `/api/library/${id}`,
   UPDATE_STATUS: (id: number) => `/api/library/${id}/status`,
