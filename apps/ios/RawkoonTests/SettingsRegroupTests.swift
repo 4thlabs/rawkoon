@@ -35,7 +35,7 @@ struct SettingsRegroupTests {
     @Test func searchStillFindsTheRegroupedScreens() {
         #expect(SettingsDestination.indexers.matches("jackett"))
         #expect(SettingsDestination.indexers.matches("rss"))
-        #expect(SettingsDestination.libraryDefaults.matches("default book"))
+        #expect(SettingsDestination.libraryDefaults.matches("book"))
         #expect(SettingsDestination.autoGrab.matches("cron"))
         #expect(SettingsDestination.seeding.matches("extensions"))
         #expect(SettingsDestination.aiUsage.matches("spend"))
