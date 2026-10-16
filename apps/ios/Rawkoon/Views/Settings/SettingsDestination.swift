@@ -121,7 +121,7 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
         case .bookProviders: "Book providers"
         case .mediaLibrary: "Library"
         case .autoGrab: "Automatic grabbing"
-        case .seeding: "Sharing"
+        case .seeding: "Seeding"
         case .arrImport: "Import from Radarr/Sonarr"
         case .qualityProfiles: "Quality profiles"
         case .customFormats: "Custom formats"

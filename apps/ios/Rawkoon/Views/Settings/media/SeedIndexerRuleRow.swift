@@ -1,7 +1,7 @@
 import RawkoonKit
 import SwiftUI
 
-/// One indexer in the sharing rules list: shows the rule that applies (its own
+/// One indexer in the seeding rules list: shows the rule that applies (its own
 /// override or the inherited default) and lets an admin customize or reset it.
 struct SeedIndexerRuleRow: View {
     @Environment(AppModel.self) private var model
@@ -28,7 +28,7 @@ struct SeedIndexerRuleRow: View {
                     Text(row.indexer).fontWeight(.medium)
                 }
                 Spacer()
-                Text("\(row.heldCount) being shared")
+                Text("\(row.heldCount) seeding")
                     .font(.caption).foregroundStyle(Theme.muted)
             }
             if editing {

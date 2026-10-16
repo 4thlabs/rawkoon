@@ -19,31 +19,31 @@ struct NotificationsSettingsView: View {
     }
 
     private let libraryRows: [Row] = [
-        Row(key: "library_downloaded", label: "Download complete"),
+        Row(key: "library_downloaded", label: "Download finished"),
         Row(key: "library_grabbed", label: "Release grabbed"),
         Row(key: "library_failed", label: "Download failed"),
-        Row(key: "library_grab_skipped", label: "Grab skipped"),
+        Row(key: "library_grab_skipped", label: "Search gave up"),
         Row(key: "library_attention", label: "Needs attention"),
     ]
 
     private let bookRows: [Row] = [
-        Row(key: "book_downloaded", label: "Download complete"),
+        Row(key: "book_downloaded", label: "Download finished"),
         Row(key: "book_grabbed", label: "Release grabbed"),
-        Row(key: "book_failed", label: "Download failed"),
-        Row(key: "book_search_skipped", label: "Search skipped"),
-        Row(key: "book_author_releases", label: "New author releases"),
+        Row(key: "book_failed", label: "Import failed"),
+        Row(key: "book_search_skipped", label: "Search gave up"),
+        Row(key: "book_author_releases", label: "New book from a followed author"),
     ]
 
     private let requestRows: [Row] = [
-        Row(key: "request_pending", label: "New request pending"),
+        Row(key: "request_pending", label: "New request"),
         Row(key: "request_decided", label: "Request approved or denied"),
-        Row(key: "request_available", label: "Requested title available"),
+        Row(key: "request_available", label: "Request ready"),
     ]
 
     private let otherRows: [Row] = [
-        Row(key: "movie_release_reminder", label: "Upcoming release reminders"),
+        Row(key: "movie_release_reminder", label: "Watchlist reminders"),
         Row(key: "app_update", label: "App updated"),
-        Row(key: "github_release", label: "New Rawkoon release"),
+        Row(key: "github_release", label: "New Rawkoon version"),
     ]
 
     @State private var prefs: [String: Bool] = Dictionary(uniqueKeysWithValues: NotificationsSettingsView.allKeys.map { ($0, true) })

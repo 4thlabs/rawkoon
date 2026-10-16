@@ -1,9 +1,9 @@
 import RawkoonKit
 import SwiftUI
 
-/// Sharing rules (admin): whether Rawkoon releases torrents on its own, the
+/// Seeding rules (admin): whether Rawkoon stops seeding torrents on its own, the
 /// public/private ratio targets and per-indexer overrides. `GET/PATCH
-/// /api/library/post-processing/settings` (sharing key subset), `GET
+/// /api/library/post-processing/settings` (seeding key subset), `GET
 /// /api/downloads/seeding?preview=1` and `/api/downloads/seed-rules`.
 struct SeedingSettingsView: View {
     @Environment(AppModel.self) private var model
@@ -57,7 +57,7 @@ struct SeedingSettingsView: View {
                 form
             }
         }
-        .navigationTitle("Sharing")
+        .navigationTitle("Seeding")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -66,27 +66,27 @@ struct SeedingSettingsView: View {
             SettingsStateView(isLoading: loading, error: loadError, retry: { Task { await load() } }) {
                 Section {
                     ToggleRow(
-                        "Release torrents automatically",
+                        "Stop seeding when the target is met",
                         isOn: $enabled,
                         subtitle: "When off, a torrent is only removed on import if it already reached the public ratio."
                     )
                     if let held = preview?.torrents.count {
-                        Text("\(held) being shared")
+                        Text("\(held) seeding")
                             .font(.footnote).foregroundStyle(Theme.muted)
                             .listRowBackground(Theme.raised)
                     }
                     if !enabled, let release = preview?.wouldReleaseNow, release.count > 0 {
-                        Text("\(release.count) would be released now, \(formattedBytes(release.bytes)).")
+                        Text("\(release.count) would stop seeding now, \(formattedBytes(release.bytes)).")
                             .font(.footnote).foregroundStyle(Theme.apricot)
                             .listRowBackground(Theme.raised)
                     }
                     if fileOperation == "move" {
-                        Text("Imports move files out of the client, so torrents are released on import. Switch to hardlinks to share.")
+                        Text("Imports move files out of the client, so torrents stop seeding on import. Switch to hardlinks to keep seeding.")
                             .font(.footnote).foregroundStyle(Theme.muted)
                             .listRowBackground(Theme.raised)
                     }
                 } footer: {
-                    Text("After import, Rawkoon keeps each torrent sharing until it reaches its ratio, then removes it from the client. Your library copy is a hardlink, so it stays in place.")
+                    Text("After import, Rawkoon keeps each torrent seeding until it reaches its ratio, then removes it from the client. Your library copy is a hardlink, so it stays in place.")
                 }
 
                 ratioSection(title: "Public trackers", text: $publicRatio, rule: publicRule)
@@ -219,13 +219,13 @@ struct SeedingSettingsView: View {
 func seedRuleSentence(_ rule: SeedRule) -> Text {
     switch SeedRuleLogic.summary(rule) {
     case .releaseOnImport:
-        Text("Released on import. Nothing is shared.")
+        Text("Stops seeding on import. Nothing is seeded.")
     case let .ratio(ratio):
-        Text("Released once ratio \(SeedRuleLogic.formatRatio(ratio)) is reached.")
+        Text("Stops seeding once ratio \(SeedRuleLogic.formatRatio(ratio)) is reached.")
     case let .time(minutes):
-        Text("Released after \(seedDurationText(minutes)) of sharing.")
+        Text("Stops seeding after \(seedDurationText(minutes)).")
     case let .ratioOrTime(ratio, minutes):
-        Text("Released at ratio \(SeedRuleLogic.formatRatio(ratio)) or after \(seedDurationText(minutes)) of sharing, whichever comes first.")
+        Text("Stops seeding at ratio \(SeedRuleLogic.formatRatio(ratio)) or after \(seedDurationText(minutes)), whichever comes first.")
     }
 }
 
