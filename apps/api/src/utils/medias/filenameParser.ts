@@ -137,8 +137,10 @@ export function parseAudioFlags(filename: string): string[] {
   }
 
   // Specific French variants — only match themselves, not the generic "fr"
-  if (/\bTRUEFRENCH\b/.test(n)) flags.push("TRUEFRENCH");
-  if (/\bVFF\b/.test(n)) flags.push("VFF");
+  const hasTrueFrench = /\bTRUEFRENCH\b/.test(n);
+  if (hasTrueFrench) flags.push("TRUEFRENCH");
+  // TRUEFRENCH is the Parisian dub, so a VFF preference must accept it.
+  if (hasTrueFrench || /\bVFF\b/.test(n)) flags.push("VFF");
   if (/\bVFQ\b|\bVQC\b/.test(n)) flags.push("VFQ");
   if (/\bVFI\b/.test(n)) flags.push("VFI");
   // Generic VF / FRENCH — these emit "fr" so the generic "Français" preference catches them
@@ -149,10 +151,13 @@ export function parseAudioFlags(filename: string): string[] {
     flags.push("VF");
     flags.push("fr");
   }
-  if (/\bFRENCH\b/.test(n) && !flags.length) {
+  if (/\bFRENCH\b/.test(n) && !flags.some((f) => f !== "MULTI")) {
     flags.push("FRENCH");
     flags.push("fr");
   }
+  // A bare MULTi names no French variant, but its audio set includes French.
+  if (hasMulti && !/\b(?:VF2|VFQ|VQC|VFF|VFI|TRUEFRENCH|VF|FRENCH)\b/.test(n))
+    flags.push("fr");
   if (/\bVOSTFR\b/.test(n)) flags.push("VOSTFR");
   if (/\bVFSTFR\b/.test(n)) flags.push("VFSTFR");
 

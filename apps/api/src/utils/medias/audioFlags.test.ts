@@ -1,0 +1,45 @@
+import { describe, expect, it } from "bun:test";
+import { parseAudioFlags } from "@rawkoon/api/utils/medias/filenameParser";
+
+describe("parseAudioFlags French variants", () => {
+  it("TRUEFRENCH also emits VFF", () => {
+    expect(
+      parseAudioFlags("Some.Film.2020.TRUEFRENCH.1080p.BluRay-GRP"),
+    ).toEqual(["TRUEFRENCH", "VFF"]);
+    expect(
+      parseAudioFlags("Some.Film.2020.MULTi.TRUEFRENCH.1080p.BluRay-GRP"),
+    ).toEqual(["MULTI", "TRUEFRENCH", "VFF"]);
+  });
+
+  it("a bare MULTi also emits generic fr", () => {
+    expect(parseAudioFlags("Some.Film.2020.MULTi.1080p.WEB-GRP")).toEqual([
+      "MULTI",
+      "fr",
+    ]);
+  });
+
+  it("MULTi with a French variant keeps its flags unchanged", () => {
+    expect(parseAudioFlags("Some.Film.2020.MULTi.VFF.1080p.WEB-GRP")).toEqual([
+      "MULTI",
+      "VFF",
+    ]);
+    expect(parseAudioFlags("Some.Film.2020.MULTi.VFQ.1080p.WEB-GRP")).toEqual([
+      "MULTI",
+      "VFQ",
+    ]);
+    expect(parseAudioFlags("Some.Film.2020.MULTi.VF2.1080p.WEB-GRP")).toEqual([
+      "MULTI",
+      "VF2",
+    ]);
+  });
+
+  it("MULTi.FRENCH is French, not a bare MULTi", () => {
+    expect(
+      parseAudioFlags("Some.Film.2020.MULTi.FRENCH.1080p.WEB-GRP"),
+    ).toEqual(["MULTI", "FRENCH", "fr"]);
+  });
+
+  it("a release with no French or multi tag has no French flag", () => {
+    expect(parseAudioFlags("Some.Film.2020.1080p.WEB-GRP")).toEqual([]);
+  });
+});
