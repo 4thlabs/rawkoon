@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { useLogin, useSSOProviders } from "@/lib/auth/useAuth";
@@ -112,6 +112,15 @@ export function LoginForm() {
             </p>
           )}
         </div>
+      </div>
+
+      <div className="flex justify-end">
+        <Link
+          to="/forgot-password"
+          className="focus-ring rounded text-sm text-primary-400 hover:text-primary-300"
+        >
+          {t("login.forgotPassword")}
+        </Link>
       </div>
 
       <div className="space-y-3">

@@ -8,6 +8,8 @@ import type {
 } from "@rawkoon/shared/types";
 import { useFetcher } from "@/lib/api/context";
 import { MEDIAS_ENDPOINTS } from "@/lib/endpoints";
+import { useCurrentUser } from "@/lib/auth/useAuth";
+import { useCreateRequest } from "@/pages/requests/_hooks/useRequests";
 import { useAddToLibrary } from "@/features/medias/hooks/useAddToLibrary";
 import { useAddToWatchlist } from "@/features/medias/hooks/useAddToWatchlist";
 import { useRemoveFromLibrary } from "@/features/medias/hooks/useRemoveFromLibrary";
@@ -46,6 +48,9 @@ export function useDiscoverDeck() {
   const served = useRef<Set<number>>(new Set());
   const fetching = useRef(false);
 
+  const { data: user } = useCurrentUser();
+  const isAdmin = user?.is_admin === true;
+  const createRequest = useCreateRequest();
   const addToLibrary = useAddToLibrary();
   const liveSearchToast = useLiveSearchToast();
   const addToWatchlist = useAddToWatchlist();
@@ -141,6 +146,34 @@ export function useDiscoverDeck() {
     (searchOnAdd?: boolean) => {
       if (!current) return;
       const item = current;
+      // Adding to the library is admin-only; everyone else files a request.
+      if (!isAdmin) {
+        void createRequest
+          .mutateAsync({
+            tmdb_id: item.tmdb_id,
+            type: libraryType(item.media_type),
+            title: item.title,
+            poster_url: item.poster_url,
+            year: item.release_year,
+          })
+          .then(() =>
+            toast.success(t("requests.requestedToast", { title: item.title })),
+          )
+          .catch((e) => {
+            // A pending request already exists, which is what the user wanted.
+            if ((e as { status?: number })?.status === 409) {
+              toast.success(
+                t("requests.requestedToast", { title: item.title }),
+              );
+              return;
+            }
+            rollback(item, t("requests.requestFailed", { title: item.title }));
+          });
+        // A request can't be withdrawn from the deck, so it advances without undo.
+        setLast(null);
+        setQueue((q) => q.slice(1));
+        return;
+      }
       // Add in the background and advance the deck now; the server queues the search.
       const libraryId = addToLibrary
         .mutateAsync({
@@ -160,7 +193,16 @@ export function useDiscoverDeck() {
       libraryId.catch(() => {});
       advance({ kind: "add", item, libraryId });
     },
-    [current, addToLibrary, advance, rollback, liveSearchToast],
+    [
+      current,
+      isAdmin,
+      t,
+      createRequest,
+      addToLibrary,
+      advance,
+      rollback,
+      liveSearchToast,
+    ],
   );
 
   const watchlistCurrent = useCallback(() => {
@@ -227,5 +269,6 @@ export function useDiscoverDeck() {
     undo,
     reload,
     canUndo: last !== null,
+    isAdmin,
   };
 }

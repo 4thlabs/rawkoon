@@ -24,6 +24,8 @@
     "requestedBy": "by {{name}}",
     "request": "Request",
     "requested": "Requested",
+    "requestedToast": "Requested \"{{title}}\"",
+    "requestFailed": "Couldn't request \"{{title}}\"",
     "book": "Book",
     "viewBook": "View book",
     "qualityPlaceholder": "Quality profile",
