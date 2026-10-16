@@ -13479,6 +13479,66 @@
           }
         }
       }
+    },
+    "You have an unsaved schedule.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous avez une planification non enregistrée."
+          }
+        }
+      }
+    },
+    "Discard changes": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abandonner les modifications"
+          }
+        }
+      }
+    },
+    "Keep editing": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer à modifier"
+          }
+        }
+      }
+    },
+    "Back": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retour"
+          }
+        }
+      }
+    },
+    "This schedule never runs (for example 31 February).": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette planification ne s'exécute jamais (par exemple le 31 février)."
+          }
+        }
+      }
+    },
+    "Grabs shortly unless a better release appears.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement sous peu, sauf si une meilleure version apparaît."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

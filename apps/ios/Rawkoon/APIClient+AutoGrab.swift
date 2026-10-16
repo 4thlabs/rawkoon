@@ -3,8 +3,9 @@ import RawkoonKit
 
 /// Body for the auto-grab keys of `PATCH /api/library/post-processing/settings`.
 nonisolated struct UpdateAutoGrabBody: Encodable, Sendable {
-    var searchOnAdd: Bool
-    var releaseCheckCron: String
+    // Nil keys are omitted, so each control saves only its own field.
+    var searchOnAdd: Bool?
+    var releaseCheckCron: String?
 }
 
 private nonisolated struct GrabPendingBody: Encodable, Sendable {

@@ -7,6 +7,7 @@ import SwiftUI
 /// `/api/downloads/pending-releases`.
 struct AutoGrabSettingsView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
 
     private enum Schedule: Hashable {
         case preset(ReleaseCheckCron.Preset)
@@ -28,6 +29,7 @@ struct AutoGrabSettingsView: View {
     @State private var held: [PendingRelease]?
     @State private var heldFailed = false
     @State private var grabbingKey: String?
+    @State private var confirmingDiscard = false
 
     private struct Saved: Equatable {
         var searchOnAdd: Bool
@@ -53,13 +55,15 @@ struct AutoGrabSettingsView: View {
         }
     }
 
-    private var isDirty: Bool {
-        guard let loaded, let effectiveCron else { return loaded != nil }
-        return loaded != Saved(searchOnAdd: searchOnAdd, cron: effectiveCron)
+    /// Only the schedule waits for Save; the toggle saves itself.
+    private var cronDirty: Bool {
+        guard let loaded else { return false }
+        let draft = effectiveCron ?? cronText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return draft != loaded.cron
     }
 
     private var canSave: Bool {
-        isDirty && effectiveCron != nil
+        cronDirty && effectiveCron != nil
     }
 
     private var cronLocale: CronLocale {
@@ -82,6 +86,9 @@ struct AutoGrabSettingsView: View {
     private var form: some View {
         Form {
             SettingsStateView(isLoading: loading, error: loadError, retry: { Task { await load() } }) {
+                if confirmingDiscard {
+                    discardSection
+                }
                 Section {
                     ToggleRow(
                         "Search when a title is added",
@@ -106,7 +113,23 @@ struct AutoGrabSettingsView: View {
         }
         .settingsScreenStyle()
         .refreshable { await refreshLive() }
+        .onChange(of: searchOnAdd) { _, value in
+            if let loaded, value != loaded.searchOnAdd {
+                Task { await saveToggle(value) }
+            }
+        }
+        // Hiding the system back button also disables the swipe, so an unsaved schedule can't vanish silently.
+        .navigationBarBackButtonHidden(cronDirty)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if cronDirty {
+                    Button {
+                        confirmingDiscard = true
+                    } label: {
+                        Label("Back", systemImage: "chevron.backward")
+                    }
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 if saving {
                     ProgressView().tint(Theme.apricot)
@@ -117,7 +140,23 @@ struct AutoGrabSettingsView: View {
                 }
             }
         }
-        .task { await load() }
+        .task {
+            // Popping back from a fix link re-fires this; only the live data should refresh then.
+            if loaded == nil {
+                await load()
+            } else {
+                await refreshLive()
+            }
+        }
+    }
+
+    private var discardSection: some View {
+        Section {
+            Text("You have an unsaved schedule.").foregroundStyle(Theme.text)
+            Button("Discard changes", role: .destructive) { dismiss() }
+            Button("Keep editing") { confirmingDiscard = false }
+        }
+        .listRowBackground(Theme.raised)
     }
 
     // MARK: Schedule
@@ -177,6 +216,9 @@ struct AutoGrabSettingsView: View {
                     .foregroundStyle(Theme.muted)
             case .tooFrequent:
                 Text("This runs too often. Release checks must be at least \(ReleaseCheckCron.minIntervalMinutes) minutes apart.")
+                    .foregroundStyle(Theme.terracotta)
+            case .neverRuns:
+                Text("This schedule never runs (for example 31 February).")
                     .foregroundStyle(Theme.terracotta)
             case .invalid:
                 Text("This is not a valid cron expression. Use five fields, for example 0 */4 * * *.")
@@ -326,8 +368,14 @@ struct AutoGrabSettingsView: View {
             Text(verbatim: item.releaseTitle)
                 .font(.footnote).foregroundStyle(Theme.muted).lineLimit(2)
             if let date = item.grabAfterDate {
-                Text("Grabs \(date.formatted(.relative(presentation: .named))) unless a better release appears.")
-                    .font(.footnote).foregroundStyle(Theme.muted)
+                Group {
+                    if date > Date() {
+                        Text("Grabs \(date.formatted(.relative(presentation: .named))) unless a better release appears.")
+                    } else {
+                        Text("Grabs shortly unless a better release appears.")
+                    }
+                }
+                .font(.footnote).foregroundStyle(Theme.muted)
             }
             Button {
                 Task { await grabNow(item) }
@@ -371,6 +419,7 @@ struct AutoGrabSettingsView: View {
             }
             loaded = Saved(searchOnAdd: searchOnAdd, cron: ReleaseCheckCron.normalize(cron) ?? cron)
         } catch {
+            if Task.isCancelled || error is CancellationError { return }
             loadError = settingsErrorMessage(error)
         }
         loading = false
@@ -408,8 +457,9 @@ struct AutoGrabSettingsView: View {
         saving = true
         saveError = nil
         do {
-            try await client.updateAutoGrab(UpdateAutoGrabBody(searchOnAdd: searchOnAdd, releaseCheckCron: cron))
-            loaded = Saved(searchOnAdd: searchOnAdd, cron: cron)
+            try await client.updateAutoGrab(UpdateAutoGrabBody(searchOnAdd: nil, releaseCheckCron: cron))
+            loaded?.cron = cron
+            confirmingDiscard = false
             if case .custom = schedule, let preset = ReleaseCheckCron.preset(for: cron) {
                 schedule = .preset(preset)
             }
@@ -418,6 +468,19 @@ struct AutoGrabSettingsView: View {
             saveError = settingsErrorMessage(error)
         }
         saving = false
+    }
+
+    private func saveToggle(_ value: Bool) async {
+        guard let client = model.api() else { return }
+        saveError = nil
+        do {
+            try await client.updateAutoGrab(UpdateAutoGrabBody(searchOnAdd: value, releaseCheckCron: nil))
+            loaded?.searchOnAdd = value
+            await refreshChecks()
+        } catch {
+            searchOnAdd = loaded?.searchOnAdd ?? !value
+            saveError = settingsErrorMessage(error)
+        }
     }
 
     private func grabNow(_ item: PendingRelease) async {

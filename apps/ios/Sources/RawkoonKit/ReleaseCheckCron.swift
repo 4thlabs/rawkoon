@@ -14,6 +14,8 @@ public enum ReleaseCheckCron {
     public enum Validation: Equatable, Sendable {
         case ok(String)
         case invalid
+        /// Five well-formed fields that name no real date, e.g. 31 February.
+        case neverRuns
         case tooFrequent
     }
 
@@ -42,7 +44,9 @@ public enum ReleaseCheckCron {
     }
 
     public static func validate(_ expr: String) -> Validation {
-        guard let cron = normalize(expr), let interval = minInterval(cron) else { return .invalid }
+        guard let cron = normalize(expr), let interval = minInterval(cron) else {
+            return fieldsAreWellFormed(squash(expr)) ? .neverRuns : .invalid
+        }
         return interval < minIntervalMinutes ? .tooFrequent : .ok(cron)
     }
 
@@ -114,8 +118,11 @@ public enum ReleaseCheckCron {
             }
             var stepN = 1
             if let step {
-                guard isDigits(step), let n = Int(step), n >= 1 else { return nil }
-                stepN = n
+                guard isDigits(step) else { return nil }
+                let n = Int(step) ?? .max
+                guard n >= 1 else { return nil }
+                // A step past any field's range behaves like the largest one.
+                stepN = min(n, 1000)
             }
             for v in stride(from: lo, through: hi, by: stepN) {
                 values.insert(v)
@@ -139,11 +146,16 @@ public enum ReleaseCheckCron {
         return mons.contains { m in days.contains { $0 <= monthDays[m - 1] } }
     }
 
-    public static func isValid(_ expr: String) -> Bool {
+    private static func fieldsAreWellFormed(_ expr: String) -> Bool {
         guard let parts = split(expr) else { return false }
         for (i, p) in parts.enumerated() {
             guard let values = expand(p, fields[i]), !values.isEmpty else { return false }
         }
+        return true
+    }
+
+    public static func isValid(_ expr: String) -> Bool {
+        guard fieldsAreWellFormed(expr), let parts = split(expr) else { return false }
         return hasReachableDate(parts)
     }
 

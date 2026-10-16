@@ -15,9 +15,14 @@ struct ReleaseCheckCronTests {
         #expect(ReleaseCheckCron.validate("61 * * * *") == .invalid)
         #expect(ReleaseCheckCron.validate("0 24 * * *") == .invalid)
         #expect(ReleaseCheckCron.validate("a b c d e") == .invalid)
-        #expect(ReleaseCheckCron.validate("0 0 31 2 *") == .invalid)
-        #expect(ReleaseCheckCron.validate("0 0 30 FEB *") == .invalid)
+        #expect(ReleaseCheckCron.validate("0 0 31 2 *") == .neverRuns)
+        #expect(ReleaseCheckCron.validate("0 0 30 FEB *") == .neverRuns)
+        #expect(ReleaseCheckCron.validate("0 0 1 13 *") == .invalid)
         #expect(ReleaseCheckCron.validate("0 0 29 2 *") == .ok("0 0 29 2 *"))
+    }
+
+    @Test func absurdStepsAreClampedNotRejected() {
+        #expect(ReleaseCheckCron.validate("0 0 */99999999999999999999 * *") == .ok("0 0 */99999999999999999999 * *"))
     }
 
     @Test func enforcesTheMinimumInterval() {
