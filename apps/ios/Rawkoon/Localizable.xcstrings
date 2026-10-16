@@ -1,6 +1,16 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@, in library": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, dans la bibliothèque"
+          }
+        }
+      }
+    },
     "Search your library, movies, shows & books": {
       "localizations": {
         "fr": {

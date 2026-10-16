@@ -90,8 +90,6 @@ struct DiscoverView: View {
         .rawkoonMotion(RawkoonMotion.spring, value: deckPhase)
     }
 
-    // MARK: Search field
-
     // MARK: Discover deck
 
     @ViewBuilder

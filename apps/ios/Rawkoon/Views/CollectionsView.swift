@@ -182,6 +182,6 @@ private struct CollectionCard: View {
             }
         }
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.white.opacity(0.06), lineWidth: 1))
-        .accessibilityLabel(Text(verbatim: movie.title))
+        .accessibilityLabel(movie.alreadyExists ? Text("\(movie.title), in library") : Text(verbatim: movie.title))
     }
 }

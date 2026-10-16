@@ -13,6 +13,9 @@ struct FindView: View {
     /// Held here so Browse keeps its filters while the switch or a search swaps it out.
     @State private var filters = ExploreFilters()
     @State private var openShelf: FindShelf?
+    /// A mode mounts on first use and then stays, keeping its loaded pages and deck.
+    @State private var browseMounted = false
+    @State private var swipeMounted = false
 
     private var searching: Bool {
         FindSearch.isActive(query)
@@ -26,22 +29,22 @@ struct FindView: View {
         VStack(spacing: 0) {
             MediaSearchField(query: $query, focus: $searchFocused)
                 .padding(.vertical, 8)
-            if searching {
-                ScrollView {
-                    FindSearchResults(query: query)
-                        .padding(.top, 4)
-                        .padding(.bottom, 32)
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .reportsTabBarScroll()
-            } else {
-                shelvesRow
-                modePicker
-                Group {
-                    switch model.findMode {
-                    case .browse: ExploreView(embedded: true, filters: $filters)
-                    case .swipe: DiscoverView()
+            // Both modes stay mounted, hidden while searching, so clearing the field or flipping the
+            // switch returns to the same grid position and the same deck.
+            ZStack {
+                catalogue
+                    .opacity(searching ? 0 : 1)
+                    .allowsHitTesting(!searching)
+                    .accessibilityHidden(searching)
+                if searching {
+                    ScrollView {
+                        FindSearchResults(query: query)
+                            .padding(.top, 4)
+                            .padding(.bottom, 32)
                     }
+                    .scrollDismissesKeyboard(.interactively)
+                    .reportsTabBarScroll()
+                    .background(Theme.base)
                 }
             }
         }
@@ -50,6 +53,12 @@ struct FindView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $openShelf) { shelf in
             shelf.destination
+        }
+        .onChange(of: model.findMode, initial: true) { _, mode in
+            switch mode {
+            case .browse: browseMounted = true
+            case .swipe: swipeMounted = true
+            }
         }
         // A re-tap of the Find tab and a deep link both ask for the field or a shelf.
         .onChange(of: model.exploreSearchFocusRequest, initial: true) { _, requested in
@@ -66,6 +75,27 @@ struct FindView: View {
             openShelf = shelf
         }
         .rawkoonMotion(RawkoonMotion.snappy, value: searching)
+    }
+
+    private var catalogue: some View {
+        VStack(spacing: 0) {
+            shelvesRow
+            modePicker
+            ZStack {
+                if browseMounted {
+                    ExploreView(filters: $filters, isActive: model.findMode == .browse && !searching)
+                        .opacity(model.findMode == .browse ? 1 : 0)
+                        .allowsHitTesting(model.findMode == .browse)
+                        .accessibilityHidden(model.findMode != .browse)
+                }
+                if swipeMounted {
+                    DiscoverView()
+                        .opacity(model.findMode == .swipe ? 1 : 0)
+                        .allowsHitTesting(model.findMode == .swipe)
+                        .accessibilityHidden(model.findMode != .swipe)
+                }
+            }
+        }
     }
 
     private var shelvesRow: some View {

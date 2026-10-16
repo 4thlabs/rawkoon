@@ -5,14 +5,12 @@ import SwiftUI
 /// counterpart to the swipe deck. Find owns the search field and the filter state.
 struct ExploreView: View {
     @Environment(AppModel.self) var model
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var hSizeClass
 
-    /// True when hosted inline (Mac split view) rather than in a sheet: hides the
-    /// Done button, since there's nothing to dismiss.
-    var embedded = false
-
     @Binding var filters: ExploreFilters
+    /// False while Find shows Swipe or search results with this view kept mounted underneath,
+    /// so its toolbar button doesn't leak into the other screens.
+    var isActive = true
     @State var items: [TmdbSearchItem] = []
     @State var page = 1
     @State var totalPages = 1
@@ -30,9 +28,12 @@ struct ExploreView: View {
     /// Ties each active chip to its glass shape, so adding or clearing one morphs inside the container.
     @Namespace private var chipNamespace
 
-    init(embedded: Bool = false, filters: Binding<ExploreFilters>) {
-        self.embedded = embedded
+    /// Consecutive pages fetched for "Hide what I own" that added nothing visible.
+    @State var hiddenStreak = 0
+
+    init(filters: Binding<ExploreFilters>, isActive: Bool = true) {
         _filters = filters
+        self.isActive = isActive
     }
 
     private var gridColumns: [GridItem] {
@@ -52,13 +53,8 @@ struct ExploreView: View {
         }
         .background(Theme.base)
         .toolbar {
-            if !embedded {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
             // The inline filter panel on regular width replaces the Filters sheet.
-            if hSizeClass != .regular {
+            if hSizeClass != .regular, isActive {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         showFilters = true
@@ -76,7 +72,11 @@ struct ExploreView: View {
                 await loadFirstPage()
             }
         }
+        .onChange(of: filters.hideOwned) { _, _ in
+            hiddenStreak = 0
+        }
         .onChange(of: filters.fetchSignature) { _, _ in
+            hiddenStreak = 0
             loadGeneration += 1
             items = []
             page = 1
@@ -90,11 +90,6 @@ struct ExploreView: View {
         .onChange(of: model.isOffline) { _, offline in
             guard !offline, items.isEmpty || error != nil else { return }
             Task { await loadFirstPage() }
-        }
-        // Hiding owned titles can leave a page with nothing to scroll to, which would never ask for more.
-        .onChange(of: [items.count, filters.hideOwned ? 1 : 0]) { _, _ in
-            guard filters.hideOwned, visibleItems.count < 12, page < totalPages else { return }
-            Task { await loadMore() }
         }
         #if DEBUG
         .onAppear {
@@ -283,9 +278,18 @@ struct ExploreView: View {
     @ViewBuilder
     private var allOwnedState: some View {
         if page < totalPages, loadMoreError == nil {
-            ProgressView().tint(Theme.muted)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 28)
+            if pausedForHiddenPages {
+                loadMoreButton
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 28)
+            } else {
+                ProgressView().tint(Theme.muted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 28)
+                    .task(id: PageKey(count: items.count, hideOwned: filters.hideOwned)) {
+                        await loadNextPageIfNeeded()
+                    }
+            }
         } else {
             ContentUnavailableView(
                 "You own everything here",
@@ -308,7 +312,7 @@ struct ExploreView: View {
     }
 
     private var grid: some View {
-        VStack(spacing: 0) {
+        LazyVStack(spacing: 0) {
             LazyVGrid(columns: gridColumns, spacing: 14) {
                 ForEach(visibleItems) { item in
                     let zoomID = RawkoonZoom.media(tmdbId: item.tmdbId, mediaType: item.mediaType)
@@ -326,10 +330,6 @@ struct ExploreView: View {
                             .rawkoonZoomSource(zoomID)
                     }
                     .buttonStyle(.rawkoonPressable)
-                    .onAppear {
-                        guard item.id == visibleItems.last?.id else { return }
-                        Task { await loadMore() }
-                    }
                     .rawkoonEntrance(id: item.id)
                 }
             }
@@ -338,6 +338,51 @@ struct ExploreView: View {
             .rawkoonEntranceScope()
 
             paginationFooter
+            pageSentinel
+        }
+    }
+
+    /// Asks for the next page while it is on screen. Its task re-runs on every new page, so a page
+    /// that is all hidden by "Hide what I own" does not leave the grid stuck short of the next one.
+    private var pageSentinel: some View {
+        Color.clear
+            .frame(height: 1)
+            .task(id: PageKey(count: items.count, hideOwned: filters.hideOwned)) {
+                await loadNextPageIfNeeded()
+            }
+    }
+
+    private struct PageKey: Hashable {
+        let count: Int
+        let hideOwned: Bool
+    }
+
+    /// After this many fully hidden pages in a row, loading waits for a tap.
+    private static let hiddenPageLimit = 3
+
+    private var pausedForHiddenPages: Bool {
+        filters.hideOwned && hiddenStreak >= Self.hiddenPageLimit
+    }
+
+    private func loadNextPageIfNeeded() async {
+        guard page < totalPages, !loading, !pausedForHiddenPages else { return }
+        let (beforePage, beforeVisible) = (page, visibleItems.count)
+        await loadMore()
+        guard !Task.isCancelled, filters.hideOwned, page != beforePage else { return }
+        hiddenStreak = visibleItems.count == beforeVisible ? hiddenStreak + 1 : 0
+    }
+
+    @ViewBuilder
+    private var loadMoreButton: some View {
+        if pausedForHiddenPages, page < totalPages {
+            Button("Load more") {
+                hiddenStreak = 0
+                Task { await loadNextPageIfNeeded() }
+            }
+            .buttonStyle(.bordered)
+            .tint(Theme.apricot)
+            .frame(minHeight: 44)
+            .padding(.vertical, 12)
         }
     }
 
@@ -346,6 +391,8 @@ struct ExploreView: View {
         if loadingMore {
             ProgressView().tint(Theme.muted)
                 .padding(.vertical, 16)
+        } else if pausedForHiddenPages {
+            loadMoreButton
         } else if let loadMoreError, page < totalPages, !model.isOffline {
             Button {
                 Task { await loadMore(force: true) }
