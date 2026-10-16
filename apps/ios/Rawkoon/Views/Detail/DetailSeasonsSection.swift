@@ -184,7 +184,9 @@ struct DetailSeasonsSection: View {
         if episodes.contains(where: { $0.status == "wanted" }) {
             return (String(localized: "Wanted"), Theme.apricotSoft)
         }
-        if downloaded > 0 { return (String(localized: "Partial"), Theme.muted) }
+        if downloaded > 0 {
+            return (String(localized: "Partial"), Theme.muted)
+        }
         return episodes.isEmpty ? nil : (String(localized: "Unmonitored"), Theme.muted)
     }
 
