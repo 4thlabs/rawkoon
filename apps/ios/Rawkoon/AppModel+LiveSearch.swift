@@ -19,33 +19,43 @@ final class LiveSearchCoordinator {
 
     /// After an add: a live toast when the server queued a search, otherwise one that says why not.
     func announceAdd(_ added: AddToLibraryResult, title: String) {
-        announce(
+        announce(Announcement(
             mediaId: added.item.id, title: title, isShow: added.item.type == "show",
             queued: added.searchQueued == true, skippedReason: added.searchSkippedReason,
             digitalReleaseDate: added.digitalReleaseDate, confirmsPlainAdd: true
-        )
+        ))
     }
 
     /// After approving a request: the same toasts, except an approval with nothing to say stays quiet.
     func announceApproved(_ approved: ApproveRequestResult, title: String, isShow: Bool) {
         guard let mediaId = approved.libraryMediaId else { return }
-        announce(
+        announce(Announcement(
             mediaId: mediaId, title: title, isShow: isShow, queued: approved.searchQueued == true,
             skippedReason: approved.searchSkippedReason, digitalReleaseDate: nil, confirmsPlainAdd: false
-        )
+        ))
     }
 
-    private func announce(
-        mediaId: Int, title: String, isShow: Bool, queued: Bool, skippedReason: String?,
-        digitalReleaseDate: String?, confirmsPlainAdd: Bool
-    ) {
+    private struct Announcement {
+        let mediaId: Int
+        let title: String
+        let isShow: Bool
+        let queued: Bool
+        let skippedReason: String?
+        let digitalReleaseDate: String?
+        let confirmsPlainAdd: Bool
+    }
+
+    private func announce(_ note: Announcement) {
+        let (mediaId, title, isShow) = (note.mediaId, note.title, note.isShow)
         chooseOverrides[mediaId] = nil
-        if queued {
+        if note.queued {
             track(mediaId: mediaId, title: title, isShow: isShow)
             return
         }
-        let phase = LiveSearchTracker.phase(skipped: skippedReason, digitalReleaseDate: digitalReleaseDate)
-        if phase == .added, !confirmsPlainAdd { return }
+        let phase = LiveSearchTracker.phase(
+            skipped: note.skippedReason, digitalReleaseDate: note.digitalReleaseDate
+        )
+        if phase == .added, !note.confirmsPlainAdd { return }
         let now = Date()
         // A result that beat this response wins over the "not searched" note.
         if let early = tracker.watch(mediaId: mediaId, title: title, isShow: isShow, now: now) {
@@ -254,10 +264,15 @@ enum LiveSearchCopy {
             Rendered(message: grabbedMessage(release: release, quality: quality), style: .success)
         case let .held(minutes, _):
             Rendered(message: heldMessage(minutes: minutes, title: title), style: .info)
-        case .grabNowPartial:
-            Rendered(message: String(localized: "Grabbed some releases; others could not be"), style: .info)
         case .noMatch:
             Rendered(message: String(localized: "No match for \(title)"), style: .info)
+        default:
+            renderRest(phase, title: title)
+        }
+    }
+
+    private static func renderRest(_ phase: LiveSearchPhase, title: String) -> Rendered {
+        switch phase {
         case let .notReleased(ymd):
             Rendered(message: notReleasedMessage(ymd: ymd), style: .info)
         case let .skipped(skip):
@@ -266,8 +281,12 @@ enum LiveSearchCopy {
             Rendered(message: String(localized: "Added \(title)"), style: .success)
         case .grabNowMiss:
             Rendered(message: String(localized: "Nothing to grab yet for \(title)"), style: .info)
+        case .grabNowPartial:
+            Rendered(message: String(localized: "Grabbed some releases; others could not be"), style: .info)
         case let .failed(reason):
             Rendered(message: failedMessage(reason: reason), style: .error)
+        default:
+            Rendered(message: title, style: .info)
         }
     }
 
