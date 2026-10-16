@@ -21,9 +21,9 @@ import { useFetcher } from "@/lib/api/context";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 
-const GROUPS: {
+export const NOTIFICATION_PREFERENCE_GROUPS: {
   id: "library" | "books" | "requests" | "other";
-  keys: Record<string, LucideIcon>;
+  keys: Partial<Record<NotificationPreferenceKey, LucideIcon>>;
 }[] = [
   {
     id: "library",
@@ -100,14 +100,14 @@ export function NotificationPreferencesSection() {
           {t("settings.notifications.preferencesDescription")}
         </p>
       </div>
-      {GROUPS.map((group) => (
+      {NOTIFICATION_PREFERENCE_GROUPS.map((group) => (
         <div key={group.id} className="space-y-1">
           <h4 className="px-2 pt-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
             {t(`settings.notifications.groups.${group.id}`)}
           </h4>
           {NOTIFICATION_PREFERENCE_KEYS.filter((key) => key in group.keys).map(
             (key) => {
-              const Icon = group.keys[key];
+              const Icon = group.keys[key] ?? Bell;
               const enabled = resolveNotificationPreference(prefs, key);
               return (
                 <label

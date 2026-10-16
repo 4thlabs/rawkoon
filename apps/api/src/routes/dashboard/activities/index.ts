@@ -10,11 +10,8 @@ import { queryV } from "@rawkoon/api/middleware/validate";
 type ActivityRecord = {
   id: number;
   user_id?: string;
-  task_type?: string;
-  task_id?: number;
   completed_at?: string;
   task_name?: string;
-  emotion?: string | null;
   username?: string;
   type?: string;
   service?: string;
