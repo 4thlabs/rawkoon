@@ -32,6 +32,7 @@ export type TmdbSearchItem = {
   can_add: boolean;
   source_id: number | null;
   library_id?: number | null;
+  library_status?: string | null;
 };
 
 export type { InteractiveReleaseItem };

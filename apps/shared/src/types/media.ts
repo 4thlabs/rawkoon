@@ -35,6 +35,8 @@ export interface TmdbMediaSearchItem {
   source_id: number | null;
   /** Native library ID — when set, Management tab shows LibraryManagementPanel */
   library_id?: number | null;
+  /** Status of the library row (wanted, downloading, downloaded, ...) when the title is already in the library. */
+  library_status?: string | null;
 }
 
 export interface TmdbMediaSearchResponse {
