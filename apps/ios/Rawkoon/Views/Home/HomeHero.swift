@@ -1,41 +1,6 @@
 import RawkoonKit
 import SwiftUI
 
-extension AppModel {
-    /// Adds a discover pick: admins put it straight in the library, everyone else files a request.
-    func addDiscoverPick(_ item: DiscoverDeckItem) async throws {
-        guard let client = api() else { throw URLError(.notConnectedToInternet) }
-        let type = item.mediaType == "tv" ? "show" : "movie"
-        if isAdmin {
-            try await addTitleToLibrary(
-                provisional: .provisional(
-                    tmdbId: item.tmdbId,
-                    type: type,
-                    title: item.title,
-                    year: item.releaseYear,
-                    posterUrl: item.posterUrl,
-                    overview: item.overview
-                ),
-                tmdbId: item.tmdbId,
-                type: type,
-                title: item.title
-            )
-            await loadLibrary()
-        } else {
-            _ = try await client.createRequest(CreateRequestBody(
-                tmdbId: item.tmdbId,
-                type: type,
-                title: item.title,
-                posterUrl: item.posterUrl,
-                year: item.releaseYear,
-                googleVolumeId: nil,
-                author: nil
-            ))
-        }
-        requestPushAuthorization()
-    }
-}
-
 /// Home's opening film: a rotating backdrop deck with the greeting overlaid.
 /// Home scrolls under the status bar while it shows, so the backdrop reaches
 /// the top edge and the text is pushed below the status bar by `topInset`. It
@@ -56,6 +21,11 @@ struct HomeHero<Greeting: View>: View {
     @State private var swipes = 0
     @State private var added: Set<Int> = []
     @State private var adding = false
+    @State private var gate = HeroInteractionGate()
+    /// Bumped on every touch change so the rotation timer restarts from the gate's new answer.
+    @State private var gateEpoch = 0
+    /// The slide under the finger when it went down; the Add button acts on it even if the slide changes.
+    @State private var pressedItemId: String?
 
     private let height: CGFloat = 460
 
@@ -77,6 +47,7 @@ struct HomeHero<Greeting: View>: View {
         var index: Int
         var count: Int
         var paused: Bool
+        var epoch: Int
     }
 
     var body: some View {
@@ -107,18 +78,22 @@ struct HomeHero<Greeting: View>: View {
                 }
                 // Simultaneous so a vertical drag still scrolls Home; only a clearly horizontal one changes slide.
                 .simultaneousGesture(
-                    DragGesture(minimumDistance: 20).onEnded { value in
-                        if let target = HeroRotation.swipe(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in touchBegan() }
+                        .onEnded { value in
+                            touchEnded()
+                            guard abs(value.translation.width) >= 20 || abs(value.translation.height) >= 20 else { return }
+                            if let target = HeroRotation.swipe(
                             from: index, count: items.count,
                             dx: value.translation.width, dy: value.translation.height
                         ) {
-                            select(target)
-                            swipes += 1
+                                select(target)
+                                swipes += 1
+                            }
                         }
-                    }
                 )
                 .sensoryFeedback(RawkoonHaptics.feedback(for: .tap), trigger: swipes)
-                .task(id: RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab)) {
+                .task(id: RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab, epoch: gateEpoch)) {
                     await rotate()
                 }
         }
@@ -127,16 +102,31 @@ struct HomeHero<Greeting: View>: View {
     // MARK: Rotation
 
     private func rotate() async {
-        guard !reduceMotion, isActiveRootTab, !adding, items.count > 1 else { return }
-        try? await Task.sleep(for: .seconds(HeroRotation.rotateSeconds))
-        guard !Task.isCancelled else { return }
+        guard !reduceMotion, isActiveRootTab, !adding, items.count > 1,
+              let delay = gate.rotationDelay(at: Date()) else { return }
+        try? await Task.sleep(for: .seconds(delay))
+        guard !Task.isCancelled, gate.rotationDelay(at: Date()) != nil else { return }
+        pressedItemId = nil
         withRawkoonMotion(.easeInOut(duration: 0.9)) {
             storedIndex = HeroRotation.next(after: index, count: items.count)
         }
     }
 
     private func select(_ newIndex: Int) {
+        pressedItemId = nil
         withRawkoonMotion(.easeInOut(duration: 0.9)) { storedIndex = newIndex }
+    }
+
+    private func touchBegan() {
+        guard !gate.touching else { return }
+        if items.indices.contains(index) { pressedItemId = items[index].id }
+        gate.touchBegan(at: Date())
+        gateEpoch += 1
+    }
+
+    private func touchEnded() {
+        gate.touchEnded(at: Date())
+        gateEpoch += 1
     }
 
     // MARK: Layers
@@ -235,11 +225,12 @@ struct HomeHero<Greeting: View>: View {
             pill(model.isAdmin ? "Added" : "Requested", primary: false).opacity(0.7)
         } else {
             Button {
-                add(item)
+                // The slide the finger landed on, even if the hero moved on before it lifted.
+                add(items.first { $0.id == pressedItemId } ?? item)
             } label: {
-                pill("Add", primary: true)
+                pill(model.isAdmin ? "Add" : "Request", primary: true)
             }
-            .buttonStyle(.rawkoonPressable)
+            .buttonStyle(HeroPressStyle(onDown: { touchBegan() }, onUp: { touchEnded() }))
             .disabled(adding)
         }
     }
@@ -314,5 +305,19 @@ private struct KenBurnsBackdrop: View {
         )
         // Follows Reduce Motion and tab visibility live, not just at first appearance.
         .onChange(of: animates, initial: true) { _, on in zoomed = on }
+    }
+}
+
+/// A pressable style that reports touch-down and release, so the hero can pin the slide under the finger.
+private struct HeroPressStyle: ButtonStyle {
+    let onDown: () -> Void
+    let onUp: () -> Void
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .onChange(of: configuration.isPressed) { _, pressed in
+                if pressed { onDown() } else { onUp() }
+            }
     }
 }

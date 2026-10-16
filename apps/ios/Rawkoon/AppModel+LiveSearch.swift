@@ -181,6 +181,11 @@ final class LiveSearchCoordinator {
         }
     }
 
+    /// Opens the release sheet for an item that was just added without searching.
+    func openReleaseSheet(mediaId: Int) {
+        chooseRelease(mediaId: mediaId)
+    }
+
     private func chooseRelease(mediaId: Int) {
         guard let model = appModel else { return }
         if let override = chooseOverrides[mediaId] {

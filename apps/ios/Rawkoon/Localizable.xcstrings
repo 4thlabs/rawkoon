@@ -13140,6 +13140,50 @@
           }
         }
       }
+    },
+    "Skip": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passer"
+          }
+        }
+      }
+    },
+    "Add & choose release": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter et choisir une version"
+          }
+        }
+      }
+    },
+    "Add without searching": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter sans rechercher"
+          }
+        }
+      }
+    },
+    "Requested %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ demandé"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

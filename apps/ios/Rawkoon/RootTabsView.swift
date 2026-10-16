@@ -123,6 +123,11 @@ struct RootTabsView: View {
                     .offlineStrip(isOffline: model.isOffline)
             }
         }
+        .onChange(of: model.requestedRootTab) { _, tab in
+            guard let tab else { return }
+            model.requestedRootTab = nil
+            selection = tab
+        }
         .focusedSceneValue(\.rootTabSelection, validSelection)
         .focusedSceneValue(\.showPlayer) { showFullPlayer = true }
         .onOpenURL { url in

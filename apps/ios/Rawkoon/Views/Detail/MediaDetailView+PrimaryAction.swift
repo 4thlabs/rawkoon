@@ -43,6 +43,11 @@ extension MediaDetailView {
                             Task { model.isAdmin ? await submitAdd() : await submitRequest() }
                         }
                         .requiresConnection(model.isOffline)
+                        .contextMenu {
+                            if model.isAdmin, !model.isOffline {
+                                AddModeMenuItems { mode in Task { await submitAdd(mode: mode) } }
+                            }
+                        }
                     }
                 } else if requested {
                     Text("We'll notify you when this is in the library. See Requests in Library.")

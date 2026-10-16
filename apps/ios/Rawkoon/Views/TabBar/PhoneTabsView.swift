@@ -99,7 +99,10 @@ struct PhoneTabsView<Root: View>: View {
                 unreadLabel: NotificationBadge.label(forUnread: model.unreadNotificationCount),
                 initials: model.userInitials,
                 onExpand: { chrome.expand() },
-                onReselect: { stackResets[$0, default: 0] += 1 },
+                onReselect: { tab in
+                    stackResets[tab, default: 0] += 1
+                    if tab == .explore { model.exploreSearchFocusRequest = true }
+                },
                 horizontalPadding: insets.padding
             )
             if hasActiveBook {
