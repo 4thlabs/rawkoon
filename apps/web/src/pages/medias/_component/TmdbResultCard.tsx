@@ -64,7 +64,7 @@ export function TmdbResultCard({
     <div className="flex flex-col gap-2.5 rounded-xl border border-neutral-700 bg-neutral-900 p-2.5">
       <button
         type="button"
-        onClick={inLibrary ? () => openLibraryItem() : onOpenDetails}
+        onClick={libraryId != null ? () => openLibraryItem() : onOpenDetails}
         className="focus-ring flex min-w-0 cursor-pointer gap-2.5 rounded-lg text-left"
       >
         <div className="h-16 w-12 shrink-0 overflow-hidden rounded-md bg-neutral-700">

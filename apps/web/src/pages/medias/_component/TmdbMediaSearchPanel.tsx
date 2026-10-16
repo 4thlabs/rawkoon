@@ -69,6 +69,10 @@ export function TmdbMediaSearchPanel({
           <div className="text-sm text-neutral-400">
             {t("medias.tmdb.searching")}
           </div>
+        ) : searchQuery.isError ? (
+          <div role="alert" className="text-sm text-amber-300">
+            {t("medias.tmdb.searchFailed")}
+          </div>
         ) : results.length === 0 ? (
           <div className="text-sm text-neutral-400">
             {t("medias.tmdb.noResults")}

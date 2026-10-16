@@ -156,6 +156,38 @@ describe("TmdbResultCard", () => {
     });
   });
 
+  it("navigates to the existing item when Choose release hits a title another user already added", async () => {
+    addTitle.mockResolvedValue({ item: { id: 42 } });
+    render(
+      <TmdbResultCard
+        item={item()}
+        onOpenDetails={vi.fn()}
+        onAdded={vi.fn()}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "medias.tmdb.chooseRelease" }),
+    );
+    await waitFor(() => expect(navigate).toHaveBeenCalled());
+    expect(navigate).toHaveBeenCalledWith(
+      expect.objectContaining({ params: { libraryId: "42" } }),
+    );
+  });
+
+  it("opens details when the title is in the library but has no library id", () => {
+    const onOpenDetails = vi.fn();
+    render(
+      <TmdbResultCard
+        item={item({ already_exists: true, library_id: null })}
+        onOpenDetails={onOpenDetails}
+        onAdded={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByText("Some Title"));
+    expect(onOpenDetails).toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it("offers no add actions to a non-admin", () => {
     isAdmin = false;
     render(

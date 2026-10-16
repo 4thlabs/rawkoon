@@ -48,6 +48,8 @@ const matchScore = (title: string, q: string): number => {
   return 0;
 };
 
+const LISTBOX_ID = "quick-actions-listbox";
+
 export function QuickActionPalette({
   isOpen,
   onClose,
@@ -81,14 +83,13 @@ export function QuickActionPalette({
   );
   const shouldSearch = isOpen && normalizedQuery.length >= 2 && isLoggedIn;
 
-  const { titleActions, titleItems, isSearchingTitles } = useTitleSearchActions(
-    {
+  const { titleActions, titleItems, isSearchingTitles, titleSearchFailed } =
+    useTitleSearchActions({
       isOpen: isOpen && isLoggedIn,
       query: trimmedQuery,
       onClose: handleClose,
       onOpenDetails: setDetailItem,
-    },
-  );
+    });
 
   const actions = useMemo<QuickAction[]>(() => {
     const navActions = navSectionsVisible.flatMap((section) =>
@@ -336,8 +337,20 @@ export function QuickActionPalette({
       setActiveIndex((idx - 1 + len) % len);
     }
 
+    if (event.key === "Home") {
+      event.preventDefault();
+      setActiveIndex(0);
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      setActiveIndex(len - 1);
+    }
+
     if (event.key === "Enter") {
       event.preventDefault();
+      // Enter confirms an IME composition rather than running a row.
+      if (event.nativeEvent.isComposing) return;
       const active = results[safeActiveIndex];
       if (event.shiftKey && active?.onDetails) active.onDetails();
       else active?.action();
@@ -360,6 +373,15 @@ export function QuickActionPalette({
             <Input
               ref={inputRef}
               autoFocus
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={results.length > 0}
+              aria-controls={LISTBOX_ID}
+              aria-activedescendant={
+                results.length > 0
+                  ? `${LISTBOX_ID}-${safeActiveIndex}`
+                  : undefined
+              }
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
@@ -398,11 +420,23 @@ export function QuickActionPalette({
               </div>
             )}
 
+          {titleSearchFailed && (
+            <p role="alert" className="px-3 pb-3 text-xs text-amber-300">
+              {t("common.quickActionsTitlesFailed")}
+            </p>
+          )}
+
           {results.length > 0 ? (
-            <div className="space-y-1">
+            <div
+              id={LISTBOX_ID}
+              role="listbox"
+              aria-label={t("common.quickActions")}
+              className="space-y-1"
+            >
               {results.map((action, index) => (
                 <QuickActionRow
                   key={action.id}
+                  id={`${LISTBOX_ID}-${index}`}
                   action={action}
                   heading={
                     showTitlesHeading && index === 0

@@ -438,6 +438,7 @@
     "quickActionsHint": "Type a title to search movies and series",
     "quickActionsTitlesHint": "Enter adds or opens, Shift+Enter shows details",
     "quickActionsTitlesHintTouch": "Tap a title to add it, or the info button for details",
+    "quickActionsTitlesFailed": "Movie and series search is unavailable right now.",
     "quickActionsSearchingTitles": "Searching movies and series...",
     "quickActionsSectionTitles": "Movies & series",
     "quickActionsAdd": "Add",
@@ -1957,6 +1958,7 @@
       "noResults": "No results found.",
       "inLibrary": "Already in library",
       "notConfigured": "Service not configured",
+      "searchFailed": "Title search failed. Try again.",
       "addAction": "Add",
       "chooseRelease": "Choose release",
       "openInLibrary": "Open"

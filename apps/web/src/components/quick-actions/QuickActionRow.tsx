@@ -16,6 +16,8 @@ export interface QuickAction {
   /** Set on TMDB title rows: the secondary path (Shift+Enter or the info button). */
   onDetails?: () => void;
   trailing?: ReactNode;
+  /** Row belongs to a previous query; shown dimmed and inert. */
+  stale?: boolean;
 }
 
 export function TitlePoster({ item }: { item: TmdbMediaSearchItem }) {
@@ -42,6 +44,7 @@ interface QuickActionRowProps {
   action: QuickAction;
   /** Group heading rendered above this row, when it starts a group. */
   heading: string | null;
+  id: string;
   isActive: boolean;
   /** Section tag shown at the right of non-title rows while searching. */
   sectionLabel: string | null;
@@ -51,6 +54,7 @@ interface QuickActionRowProps {
 export function QuickActionRow({
   action,
   heading,
+  id,
   isActive,
   sectionLabel,
   onHover,
@@ -59,17 +63,24 @@ export function QuickActionRow({
   const isTitle = action.section === "titles";
 
   return (
-    <div>
+    <div role="presentation">
       {heading && (
-        <p className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+        <p
+          role="presentation"
+          className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
+        >
           {heading}
         </p>
       )}
       <div
+        id={id}
+        role="option"
+        aria-selected={isActive}
         onMouseEnter={onHover}
         className={cn(
           "flex w-full items-center gap-1 rounded-2xl pr-2 transition-colors",
           isActive ? "bg-neutral-700/70" : "hover:bg-neutral-700/40",
+          action.stale && "opacity-60",
         )}
       >
         <button

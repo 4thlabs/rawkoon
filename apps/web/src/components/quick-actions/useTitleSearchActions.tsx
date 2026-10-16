@@ -58,8 +58,10 @@ export function useTitleSearchActions({
         : [],
     [searchEnabled, search.data?.items],
   );
-  const isSearchingTitles =
-    query.length >= 2 && (debouncedQuery !== query || search.isLoading);
+  // Rows still belong to the previous query until the debounce catches up.
+  const isStale = debouncedQuery !== query;
+  const isSearchingTitles = query.length >= 2 && (isStale || search.isLoading);
+  const titleSearchFailed = searchEnabled && !isStale && search.isError;
 
   const titleActions = useMemo<QuickAction[]>(() => {
     const openDetails = (item: TmdbMediaSearchItem) => () => {
@@ -112,6 +114,7 @@ export function useTitleSearchActions({
         );
       }
 
+      const noop = () => {};
       return {
         id: `tmdb-${key}`,
         title: item.title,
@@ -125,13 +128,15 @@ export function useTitleSearchActions({
           .join(" • "),
         icon: <TitlePoster item={item} />,
         section: "titles" as const,
-        action,
-        onDetails: openDetails(item),
+        action: isStale ? noop : action,
+        onDetails: isStale ? noop : openDetails(item),
         trailing,
+        stale: isStale,
       };
     });
   }, [
     titleItems,
+    isStale,
     isAdmin,
     addingKey,
     addTitle,
@@ -141,5 +146,5 @@ export function useTitleSearchActions({
     t,
   ]);
 
-  return { titleActions, titleItems, isSearchingTitles };
+  return { titleActions, titleItems, isSearchingTitles, titleSearchFailed };
 }

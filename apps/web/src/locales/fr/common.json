@@ -452,6 +452,7 @@
     "quickActionsHint": "Tapez un titre pour chercher des films et des séries",
     "quickActionsTitlesHint": "Entrée ajoute ou ouvre, Maj+Entrée affiche les détails",
     "quickActionsTitlesHintTouch": "Touchez un titre pour l'ajouter, ou le bouton d'info pour les détails",
+    "quickActionsTitlesFailed": "La recherche de films et de séries est indisponible pour le moment.",
     "quickActionsSearchingTitles": "Recherche de films et de séries...",
     "quickActionsSectionTitles": "Films et séries",
     "quickActionsAdd": "Ajouter",
@@ -1957,6 +1958,7 @@
       "noResults": "Aucun résultat trouvé.",
       "inLibrary": "Déjà dans la bibliothèque",
       "notConfigured": "Service non configuré",
+      "searchFailed": "La recherche a échoué. Réessayez.",
       "addAction": "Ajouter",
       "chooseRelease": "Choisir une version",
       "openInLibrary": "Ouvrir"

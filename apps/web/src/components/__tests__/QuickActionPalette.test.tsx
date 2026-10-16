@@ -152,4 +152,50 @@ describe("QuickActionPalette title search", () => {
       params: { libraryId: "9" },
     });
   });
+
+  it("ignores Enter on title rows left over from the previous query", async () => {
+    const { input, onClose } = setup();
+    await typeQuery(input, "alpha");
+    fireEvent.change(input, { target: { value: "alphab" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(addTitle).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("ignores Enter while an IME composition is active", async () => {
+    const { input } = setup();
+    await typeQuery(input, "alpha");
+    fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+    expect(addTitle).not.toHaveBeenCalled();
+  });
+
+  it("exposes a combobox over a listbox of options and moves with Home/End", async () => {
+    const { input } = setup();
+    await typeQuery(input, "nav");
+    expect(input).toHaveAttribute("role", "combobox");
+    expect(input).toHaveAttribute("aria-expanded", "true");
+    expect(input).toHaveAttribute(
+      "aria-controls",
+      screen.getByRole("listbox").id,
+    );
+    const options = screen.getAllByRole("option");
+    expect(options.length).toBeGreaterThan(1);
+    expect(input).toHaveAttribute("aria-activedescendant", options[0].id);
+    fireEvent.keyDown(input, { key: "End" });
+    expect(input).toHaveAttribute(
+      "aria-activedescendant",
+      options[options.length - 1].id,
+    );
+    fireEvent.keyDown(input, { key: "Home" });
+    expect(input).toHaveAttribute("aria-activedescendant", options[0].id);
+    expect(options[0]).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("keeps the details button labelled", async () => {
+    const { input } = setup();
+    await typeQuery(input, "alpha");
+    expect(
+      screen.getAllByRole("button", { name: "common.quickActionsDetails" }),
+    ).toHaveLength(2);
+  });
 });
