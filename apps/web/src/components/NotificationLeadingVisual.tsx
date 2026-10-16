@@ -12,7 +12,6 @@ import {
   Settings,
   Leaf,
   Inbox,
-  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { NotificationType } from "@rawkoon/shared/types";
@@ -92,88 +91,6 @@ function getTypeStyle(notification: {
   }
   return typeConfig[notification.type] ?? typeConfig.system;
 }
-
-export const notificationPreferenceLabels: Record<
-  string,
-  { en: string; fr: string; icon: LucideIcon }
-> = {
-  library_downloaded: {
-    en: "Library downloads",
-    fr: "Téléchargements bibliothèque",
-    icon: Download,
-  },
-  library_grabbed: {
-    en: "Library grabs",
-    fr: "Saisies bibliothèque",
-    icon: Upload,
-  },
-  library_failed: {
-    en: "Library failures",
-    fr: "Échecs bibliothèque",
-    icon: AlertTriangle,
-  },
-  library_grab_skipped: {
-    en: "Search gave up",
-    fr: "Recherches abandonnées",
-    icon: AlertTriangle,
-  },
-  library_attention: {
-    en: "Library issues",
-    fr: "Problèmes bibliothèque",
-    icon: AlertTriangle,
-  },
-  book_downloaded: {
-    en: "Book downloads",
-    fr: "Téléchargements livres",
-    icon: BookOpen,
-  },
-  book_grabbed: { en: "Book grabs", fr: "Saisies livres", icon: BookOpen },
-  book_failed: {
-    en: "Book import failures",
-    fr: "Échecs import livres",
-    icon: AlertTriangle,
-  },
-  book_search_skipped: {
-    en: "Book search gave up",
-    fr: "Recherches livres abandonnées",
-    icon: AlertTriangle,
-  },
-  book_author_releases: {
-    en: "New author releases",
-    fr: "Nouveautés auteurs",
-    icon: BookOpen,
-  },
-  request_pending: {
-    en: "Incoming requests",
-    fr: "Demandes entrantes",
-    icon: Inbox,
-  },
-  request_decided: {
-    en: "Request decisions",
-    fr: "Décisions de demandes",
-    icon: Inbox,
-  },
-  request_available: {
-    en: "Request ready",
-    fr: "Demandes prêtes",
-    icon: Inbox,
-  },
-  movie_release_reminder: {
-    en: "Watchlist reminders",
-    fr: "Rappels liste de suivi",
-    icon: Bell,
-  },
-  app_update: {
-    en: "App updates",
-    fr: "Mises à jour app",
-    icon: Sparkles,
-  },
-  github_release: {
-    en: "GitHub releases",
-    fr: "Versions GitHub",
-    icon: Sparkles,
-  },
-};
 
 const sizeClasses = {
   sm: { box: "h-8 w-8 rounded-lg", poster: "h-11 w-8 rounded-lg" },

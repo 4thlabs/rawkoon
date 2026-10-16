@@ -1,10 +1,8 @@
 {
   "nav": {
     "dashboard": "Accueil",
-    "chores": "Tâches",
     "explore": "Parcourir",
     "discover": "Pour vous",
-    "habits": "Habitudes",
     "library": "Bibliothèque",
     "books": "Livres",
     "requests": "Demandes",
@@ -91,7 +89,6 @@
     "customEventDeleted": "Événement supprimé",
     "customEventDeleteError": "Erreur lors de la suppression",
     "customEventDeleteConfirm": "Êtes-vous sûr de vouloir supprimer cet événement ?",
-    "chores": "Tâches",
     "publicHoliday": "Jours fériés",
     "mealPlans": "Repas",
     "event": "événement",
@@ -161,9 +158,7 @@
       "emptyDescription": "La nouvelle activité du foyer apparaîtra ici au fil du temps.",
       "emptyFilteredDescription": "Essayez un autre service ou un autre type d’activité.",
       "services": {
-        "chores": "Tâches",
         "calendar": "Calendrier",
-        "habits": "Habitudes",
         "system": "Système",
         "admin": "Admin",
         "tmdb": "TMDB",
@@ -174,8 +169,6 @@
       },
       "types": {
         "task_completed": "Tâche complétée",
-        "chore_completed": "Tâche complétée",
-        "habit_completed": "Habitude complétée",
         "cron_job_ended": "Cron terminé",
         "cron_job_skipped": "Cron ignoré",
         "app_updated": "Application mise à jour",
@@ -375,67 +368,6 @@
     "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
     "confirmPasswordRequired": "Veuillez confirmer votre mot de passe"
   },
-  "chores": {
-    "title": "Tâches",
-    "subtitle": "Suivez les tâches ménagères et les responsabilités.",
-    "addNewChore": "Ajouter une tâche",
-    "choreName": "Nom de la tâche *",
-    "choreNamePlaceholder": "ex. Aspirer le salon",
-    "assignTo": "Assigner à",
-    "anyoneCanDo": "N'importe qui peut le faire",
-    "description": "Description (optionnel)",
-    "descriptionPlaceholder": "Détails supplémentaires...",
-    "addChore": "Ajouter la tâche",
-    "currentChores": "Tâches actuelles",
-    "chore": "tâche",
-    "choresPlural": "tâches",
-    "noChores": "Aucune tâche assignée",
-    "addFirstChore": "Ajoutez votre première tâche en utilisant le formulaire ci-dessus.",
-    "addedBy": "Ajouté par",
-    "on": "le",
-    "assignedTo": "Assigné à",
-    "anyoneCanDoIt": "N'importe qui peut le faire",
-    "completedBy": "Complété par",
-    "markDone": "Marquer comme fait",
-    "undo": "Annuler",
-    "delete": "Supprimer",
-    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette tâche ?",
-    "recentlyCompleted": "Tâches récemment complétées",
-    "clearAll": "Tout supprimer",
-    "unknown": "Inconnu",
-    "enableReminder": "Activer le rappel",
-    "reminderDescription": "Recevez une notification quand il est temps de faire cette tâche",
-    "reminderDateTime": "Date et heure du rappel",
-    "noSubscriptionWarning": "Notifications non activées. Veuillez activer les notifications dans les paramètres de votre navigateur.",
-    "reminder": "Rappel:",
-    "overdue": "En retard",
-    "editChore": "Modifier la tâche",
-    "image": "Image",
-    "imageHelp": "Ajoutez une image pour illustrer cette tâche (optionnel)",
-    "removeImage": "Supprimer l'image",
-    "uploadingImage": "Téléchargement...",
-    "imageUploadError": "Erreur lors du téléchargement de l'image",
-    "enableRecurrence": "Activer la récurrence",
-    "recurrenceDescription": "Créez automatiquement une nouvelle tâche selon un planning",
-    "recurrenceType": "Type de récurrence",
-    "dailyInterval": "Tous les X jours",
-    "weekly": "Hebdomadaire",
-    "intervalDays": "Nombre de jours",
-    "weekday": "Jour de la semaine",
-    "monday": "Lundi",
-    "tuesday": "Mardi",
-    "wednesday": "Mercredi",
-    "thursday": "Jeudi",
-    "friday": "Vendredi",
-    "saturday": "Samedi",
-    "sunday": "Dimanche",
-    "removeRecurrence": "Retirer la récurrence",
-    "removeRecurrenceConfirm": "Voulez-vous retirer la récurrence de cette tâche ?",
-    "choreNameRequired": "Le nom de la tâche est requis",
-    "everyDay": "Tous les jours",
-    "everyXDays": "Tous les {{count}} jour",
-    "everyWeekday": "Chaque {{weekday}}"
-  },
   "common": {
     "language": "Langue",
     "theme": "Thème",
@@ -504,7 +436,7 @@
   "notifications": {
     "modal": {
       "title": "Activer les notifications ?",
-      "description": "Recevez des notifications pour les rappels de tâches et autres mises à jour importantes.",
+      "description": "Recevez des notifications pour les nouveaux téléchargements, les demandes et autres mises à jour importantes.",
       "allow": "Autoriser",
       "dismiss": "Plus tard"
     },
@@ -518,37 +450,6 @@
     "delete": "Supprimer",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette notification ?",
     "loadMore": "Charger plus"
-  },
-  "habits": {
-    "title": "Habitudes",
-    "subtitle": "Suivez vos habitudes quotidiennes",
-    "addHabit": "Ajouter une habitude",
-    "editHabit": "Modifier l'habitude",
-    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette habitude ?",
-    "name": "Nom",
-    "namePlaceholder": "ex. Boire de l'eau",
-    "emoji": "Emoji",
-    "description": "Description",
-    "descriptionPlaceholder": "Détails optionnels...",
-    "timesPerDay": "Fois par jour",
-    "timesPerDayDerived": "Calculé automatiquement à {{count}} selon vos heures de rappel.",
-    "scheduleTimes": "Heures de notification",
-    "addTime": "Ajouter une heure",
-    "streak": "Série de {{count}} jours",
-    "done": "Fait",
-    "notDone": "Pas fait",
-    "undoNotDone": "Annuler pas fait",
-    "doneCount": "Fait : {{count}}",
-    "notDoneCount": "Pas fait : {{count}}",
-    "remainingCount": "Restant : {{count}}",
-    "noHabits": "Aucune habitude",
-    "addFirstHabit": "Créez votre première habitude pour commencer",
-    "habitCreated": "Habitude créée",
-    "habitUpdated": "Habitude modifiée",
-    "habitDeleted": "Habitude supprimée",
-    "nameRequired": "Le nom est requis",
-    "active": "Active",
-    "inactive": "En pause"
   },
   "emotion": {
     "howDidYouFeel": "Comment vous êtes-vous senti ?",
@@ -578,8 +479,6 @@
       "loading": "Chargement des réglages...",
       "loadError": "Échec du chargement des réglages.",
       "countryCode": "Pays / région",
-      "subdivisionCode": "Province / État",
-      "subdivisionPlaceholder": "Jours fériés nationaux",
       "countryCodeHint": "Utilisé pour les disponibilités TMDB, les sorties à venir, les dates de sortie et les jours fériés.",
       "save": "Enregistrer les réglages",
       "saving": "Enregistrement...",
@@ -601,7 +500,7 @@
     },
     "notifications": {
       "title": "Notifications",
-      "description": "Gérez vos notifications push pour les rappels de tâches.",
+      "description": "Gérez vos notifications push.",
       "testNotificationTitle": "Notification test",
       "sendTestNotification": "Envoyer une notification test",
       "testNotificationDescription": "Cliquez pour envoyer une notification test et vérifier que tout fonctionne.",
@@ -673,6 +572,30 @@
         "type": "Type",
         "empty": "Aucun canal configuré.",
         "adding": "Ajout…"
+      },
+      "types": {
+        "library_downloaded": "Téléchargement terminé",
+        "library_grabbed": "Version récupérée",
+        "library_failed": "Échec du téléchargement",
+        "library_grab_skipped": "Recherche abandonnée",
+        "library_attention": "À vérifier",
+        "book_downloaded": "Téléchargement terminé",
+        "book_grabbed": "Version récupérée",
+        "book_failed": "Échec de l'import",
+        "book_search_skipped": "Recherche abandonnée",
+        "book_author_releases": "Nouveau livre d'un auteur suivi",
+        "request_pending": "Nouvelle demande",
+        "request_decided": "Demande acceptée ou refusée",
+        "request_available": "Demande disponible",
+        "movie_release_reminder": "Rappels de la liste de suivi",
+        "app_update": "Application mise à jour",
+        "github_release": "Nouvelle version de Rawkoon"
+      },
+      "groups": {
+        "library": "Bibliothèque",
+        "books": "Livres",
+        "requests": "Demandes",
+        "other": "Autres"
       }
     },
     "calendar": {
@@ -695,8 +618,6 @@
         "regenerateError": "Impossible de regénérer l'URL.",
         "loadError": "Impossible de charger l'URL de votre calendrier."
       },
-      "comingSoon": "Plus de fonctionnalités à venir",
-      "comingSoonDescription": "Nous travaillons sur d'autres fonctionnalités de calendrier pour aider votre foyer à rester synchronisé.",
       "features": {
         "reminders": "Préférences de rappels personnalisées",
         "availability": "Disponibilité et heures de travail"
@@ -1085,29 +1006,13 @@
         "ago": "il y a"
       },
       "actions": {
-        "checkReminders": {
-          "label": "Vérifier les rappels",
-          "description": "Vérifier les rappels à envoyer et envoyer les notifications."
-        },
-        "checkAllDayEvents": {
-          "label": "Vérifier les événements toute la journée",
-          "description": "Vérifier les événements personnalisés toute la journée et envoyer les notifications."
-        },
         "cleanupNotifications": {
           "label": "Nettoyer les anciennes notifications",
           "description": "Supprimer les anciennes notifications de la base de données."
         },
-        "checkHabitReminders": {
-          "label": "Vérifier les rappels d'habitudes",
-          "description": "Vérifier les habitudes nécessitant un rappel et envoyer des notifications."
-        },
         "refreshUpcoming": {
           "label": "Actualiser les prochaines sorties",
           "description": "Interroger TMDB pour les prochains films et séries."
-        },
-        "refreshHabitsStreaks": {
-          "label": "Actualiser les séries d'habitudes",
-          "description": "Recalculer les séries quotidiennes pour toutes les habitudes utilisateur."
         },
         "checkMovieReleaseReminders": {
           "label": "Vérifier les rappels de sortie de films",
@@ -1142,7 +1047,7 @@
           "description": "Récupérer les releases GitHub publiques, mettre à jour le cache Redis et notifier les admins pour les nouvelles versions."
         },
         "sweepSeedingTorrents": {
-          "label": "Libérer les torrents partagés",
+          "label": "Arrêter les torrents terminés",
           "description": "Retirer les torrents du client de téléchargement une fois leur objectif de partage atteint."
         }
       }
@@ -1703,15 +1608,15 @@
     "seeding": {
       "title": "Partage",
       "viewTorrents": "Voir les torrents en partage",
-      "statusOn": "La libération automatique est activée",
-      "statusOff": "La libération automatique est désactivée",
+      "statusOn": "L'arrêt automatique du partage est activé",
+      "statusOff": "L'arrêt automatique du partage est désactivé",
       "shared_one": "{{count}} torrent en partage",
       "shared_other": "{{count}} torrents en partage",
       "description": "Après l'import, Rawkoon garde chaque torrent en partage jusqu'à ce qu'il atteigne son ratio, puis le retire du client. La copie de votre bibliothèque est un lien physique, elle reste donc en place.",
-      "enable": "Libérer les torrents automatiquement",
+      "enable": "Arrêter le partage une fois l'objectif atteint",
       "enableHint": "Désactivé, un torrent n'est retiré à l'import que s'il atteint déjà le ratio public.",
-      "preview_one": "{{count}} torrent serait libéré maintenant, {{size}}.",
-      "preview_other": "{{count}} torrents seraient libérés maintenant, {{size}}.",
+      "preview_one": "{{count}} torrent arrêterait le partage maintenant, {{size}}.",
+      "preview_other": "{{count}} torrents arrêteraient le partage maintenant, {{size}}.",
       "publicTitle": "Trackers publics",
       "privateTitle": "Trackers privés",
       "ratio": "Ratio",
@@ -1721,13 +1626,13 @@
       "days_one": "{{count}} jour",
       "days_other": "{{count}} jours",
       "sentence": {
-        "both": "Libérer au ratio {{ratio}} ou après {{time}} de partage, selon ce qui arrive en premier.",
-        "ratio": "Libérer une fois le ratio {{ratio}} atteint.",
-        "time": "Libérer après {{time}} de partage.",
-        "none": "Libérer dès l'import. Rien n'est partagé."
+        "both": "Arrêter le partage au ratio {{ratio}} ou après {{time}} de partage, selon ce qui arrive en premier.",
+        "ratio": "Arrêter le partage une fois le ratio {{ratio}} atteint.",
+        "time": "Arrêter le partage après {{time}}.",
+        "none": "Arrêter le partage dès l'import. Rien n'est partagé."
       },
       "unknownPrivate": "Un indexeur que Rawkoon ne peut pas joindre est considéré comme privé, pour qu'aucun torrent ne soit retiré trop tôt par erreur.",
-      "moveMode": "Les imports déplacent les fichiers hors du client, donc les torrents sont libérés dès l'import. Passez aux liens physiques pour partager.",
+      "moveMode": "Les imports déplacent les fichiers hors du client, donc les torrents arrêtent le partage dès l'import. Passez aux liens physiques pour partager.",
       "invalid": "Entrez un nombre positif ou nul, ou laissez le champ vide.",
       "indexers": {
         "indexer": "Indexeur",
@@ -2787,7 +2692,7 @@
   "seeding": {
     "rulesLink": "Règles de partage",
     "summaryOwed": "{{count}} doivent encore partager sur des trackers privés.",
-    "summaryNext": "Le prochain sera libéré dans environ {{time}}.",
+    "summaryNext": "Le prochain arrêtera le partage dans environ {{time}}.",
     "live": "En direct",
     "filters": {
       "all": "Tous",
@@ -2806,7 +2711,7 @@
     "eta": {
       "met": "Objectif atteint. Retrait à la prochaine vérification.",
       "idle": "Aucun envoi, il ne peut donc pas atteindre son ratio.",
-      "ratio": "Libéré dans environ {{time}}, au ratio"
+      "ratio": "Arrêt du partage dans environ {{time}}, au ratio"
     },
     "idleHint": "Personne ne télécharge depuis ce torrent, il ne peut donc pas atteindre son ratio. Retirez-le si vous n'en avez plus besoin.",
     "removeNow": "Retirer maintenant",
@@ -2816,7 +2721,7 @@
     "confirmLabel": "Retirer maintenant",
     "removed": "{{title}} a été retiré du client de téléchargement.",
     "removeError": "Impossible de retirer le torrent.",
-    "releasedToday": "Libérés aujourd'hui : {{count}}",
+    "releasedToday": "Arrêtés aujourd'hui : {{count}}",
     "freed": "{{size}} retirés du client",
     "releasedReason": {
       "target_met": "Objectif atteint",
@@ -2828,7 +2733,7 @@
       "description": "Les torrents apparaissent ici après l'import, pendant qu'ils partagent vers leur objectif."
     },
     "disabled": {
-      "title": "La libération automatique est désactivée",
+      "title": "L'arrêt automatique du partage est désactivé",
       "action": "L'activer dans les réglages"
     },
     "unreachable": "Le client de téléchargement est injoignable, les données de partage ne peuvent pas être affichées.",

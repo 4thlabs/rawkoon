@@ -93,10 +93,7 @@ mock.module("../src/services/queueService", () => ({
   closeAllWorkers: async () => {},
   libraryPostProcessQueue: mockQueue,
   SCHEDULED_JOB_NAMES: {
-    CHECK_REMINDERS: "check-reminders",
-    CHECK_ALL_DAY_EVENTS: "check-all-day-events",
     CLEANUP_NOTIFICATIONS: "cleanup-notifications",
-    REFRESH_HABITS_STREAK_FOR_USER: "refresh-habits-streak-for-user",
   },
   NOTIFICATION_JOB_NAMES: {
     SEND_NOTIFICATION: "send-notification",

@@ -24,9 +24,7 @@ export interface ActivityPresentation {
 }
 
 const SERVICE_LABEL_KEYS: Record<string, string> = {
-  chores: "dashboard.activityPage.services.chores",
   calendar: "dashboard.activityPage.services.calendar",
-  habits: "dashboard.activityPage.services.habits",
   system: "dashboard.activityPage.services.system",
   admin: "dashboard.activityPage.services.admin",
   tmdb: "dashboard.activityPage.services.tmdb",
@@ -38,8 +36,6 @@ const SERVICE_LABEL_KEYS: Record<string, string> = {
 
 const TYPE_LABEL_KEYS: Record<string, string> = {
   task_completed: "dashboard.activityPage.types.task_completed",
-  chore_completed: "dashboard.activityPage.types.chore_completed",
-  habit_completed: "dashboard.activityPage.types.habit_completed",
   integration_updated: "dashboard.activityPage.types.integration_updated",
   cron_job_ended: "dashboard.activityPage.types.cron_job_ended",
   cron_job_skipped: "dashboard.activityPage.types.cron_job_skipped",
@@ -60,25 +56,13 @@ function titleize(value: string): string {
 }
 
 function getActivityType(activity: Activity): string {
-  if (activity.type) return activity.type;
-
-  switch (activity.task_type) {
-    case "chore":
-      return "chore_completed";
-    default:
-      return "task_completed";
-  }
+  return activity.type || "task_completed";
 }
 
 function getActivityService(activity: Activity): string {
   if (activity.service?.trim()) return activity.service.trim().toLowerCase();
 
-  switch (activity.task_type) {
-    case "chore":
-      return "chores";
-    default:
-      return "system";
-  }
+  return "system";
 }
 
 export function getActivityTypeLabel(
