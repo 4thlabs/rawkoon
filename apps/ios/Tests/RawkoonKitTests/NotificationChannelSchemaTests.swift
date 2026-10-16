@@ -10,7 +10,7 @@ final class NotificationChannelSchemaTests: XCTestCase {
         "gotify": ["url", "token", "priority"],
         "pushover": ["token", "user"],
         "slack": ["webhook_url"],
-        "webhook": ["url", "method", "body_template"]
+        "webhook": ["url", "method", "body_template"],
     ]
 
     func testEveryTypeWritesExactlyTheKeysTheServerReads() {
@@ -22,19 +22,23 @@ final class NotificationChannelSchemaTests: XCTestCase {
 
     func testLegacyKeysMoveOntoTheCurrentOnes() {
         let ntfy = NotificationChannelSchema.upgradingLegacyKeys(
-            ["server_url": "https://n", "topic": "t", "access_token": "x"], type: "ntfy")
+            ["server_url": "https://n", "topic": "t", "access_token": "x"], type: "ntfy"
+        )
         XCTAssertEqual(ntfy, ["url": "https://n", "topic": "t", "token": "x"])
         let pushover = NotificationChannelSchema.upgradingLegacyKeys(
-            ["api_token": "a", "user_key": "u"], type: "pushover")
+            ["api_token": "a", "user_key": "u"], type: "pushover"
+        )
         XCTAssertEqual(pushover, ["token": "a", "user": "u"])
         let gotify = NotificationChannelSchema.upgradingLegacyKeys(
-            ["server_url": "g", "app_token": "k"], type: "gotify")
+            ["server_url": "g", "app_token": "k"], type: "gotify"
+        )
         XCTAssertEqual(gotify, ["url": "g", "token": "k"])
     }
 
     func testCurrentKeysWinOverLegacyOnes() {
         let result = NotificationChannelSchema.upgradingLegacyKeys(
-            ["url": "new", "server_url": "old"], type: "gotify")
+            ["url": "new", "server_url": "old"], type: "gotify"
+        )
         XCTAssertEqual(result["url"], "new")
         XCTAssertNil(result["server_url"])
     }
