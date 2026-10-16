@@ -197,6 +197,13 @@ nonisolated struct LibraryEventDTO: Decodable, Sendable {
     let season: Int?
     let episode: Int?
     let episodeCount: Int?
+    // `search_result` payload.
+    let outcome: String?
+    let release: SearchReleaseDTO?
+    let delayUntil: String?
+    let targetKey: String?
+    let targetKeys: [String]?
+    let reason: String?
     let ts: Int? // swiftlint:disable:this identifier_name
 }
 
@@ -224,6 +231,7 @@ enum LibraryEvent: Sendable {
     case book(id: Int)
     case downloadProgress(mediaId: Int, items: [DownloadProgressEntry])
     case landed(LandedArrival)
+    case searchResult(LiveSearchResult)
     case handshake
 
     /// Map a decoded stream DTO to an event, applying the precedence the SSE
@@ -255,6 +263,14 @@ enum LibraryEvent: Sendable {
                 mediaId: mediaId, mediaType: dto.mediaType ?? "movie", title: title, posterUrl: dto.posterUrl,
                 season: dto.season, episode: dto.episode, episodeCount: dto.episodeCount, ts: sentAt
             ))
+        }
+        if dto.kind == "search_result" {
+            // An unknown outcome carries nothing to show; never fall through to a media refresh.
+            guard let mediaId = dto.mediaId, let outcome = dto.outcome else { return nil }
+            return LiveSearchResult.make(
+                mediaId: mediaId, season: dto.season, outcome: outcome, release: dto.release,
+                delayUntil: dto.delayUntil, targetKey: dto.targetKey, targetKeys: dto.targetKeys, reason: dto.reason
+            ).map(LibraryEvent.searchResult)
         }
         if let bookId = dto.bookId, dto.kind == "book" {
             return .book(id: bookId)

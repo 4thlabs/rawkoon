@@ -308,6 +308,8 @@ nonisolated struct LibrarySearchResponse: Decodable, Sendable {
     let reason: String?
     /// True when the AI judge's pick was the release grabbed (absent on older servers).
     let aiPicked: Bool?
+    /// The same outcome the library stream pushes, so a caller need not wait for it.
+    let searchResult: SearchResultDTO?
 }
 
 /// `POST /api/library/:id/upgrade` — `mode` is "auto" (queue the search) or "manual".

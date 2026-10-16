@@ -197,8 +197,7 @@ final class LibraryMediaModel {
         guard !busyMediaIds.contains(media.id) else { return }
         busyMediaIds.insert(media.id)
         defer { busyMediaIds.remove(media.id) }
-        model.toast(String(localized: "Searching for a release…"), style: .info)
-        let grabbed = await model.autoSearchMovie(libraryId: media.id) {
+        let grabbed = await model.autoSearchMovie(libraryId: media.id, title: media.title) {
             self.releaseSearch = self.presentation(for: media)
         }
         if grabbed {

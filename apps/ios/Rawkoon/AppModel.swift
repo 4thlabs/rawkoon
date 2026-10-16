@@ -76,6 +76,11 @@ final class AppModel {
     /// call site changes. Wired to `self` in `init`.
     let liveUpdates = LiveUpdatesCoordinator()
 
+    /// The one live toast per added or searched title; see `AppModel+LiveSearch`.
+    let liveSearch = LiveSearchCoordinator()
+    /// Library id whose release sheet a toast action asked to open; the detail screen consumes it.
+    var releaseSheetRequest: Int?
+
     /// Set from a banner tap or a notification-list row tap (via
     /// `navigate(toNotificationUrl:)`); `RawkoonApp` presents it as a sheet
     /// from the app root, so it works regardless of which tab is active.
@@ -139,6 +144,7 @@ final class AppModel {
         journalURL = Self.positionLogURL()
         deviceID = Self.resolveDeviceID()
         liveUpdates.appModel = self
+        liveSearch.appModel = self
 
         if
             let token = Keychain.get(Self.authTokenKey),
@@ -246,8 +252,20 @@ final class AppModel {
     /// the app-wide fix for actions that used to fail (or succeed) silently:
     /// call this from anywhere instead of stashing an error string a screen
     /// might not be showing.
-    func toast(_ message: String, style: Toast.Style = .info, action: ToastAction? = nil) {
-        currentToast = Toast(message: message, style: style, action: action)
+    /// `duration` overrides the default lifetime (`.infinity` stays until replaced);
+    /// `replacing` reuses a visible toast's identity so its content updates in place.
+    @discardableResult
+    func toast(
+        _ message: String,
+        style: Toast.Style = .info,
+        action: ToastAction? = nil,
+        duration: TimeInterval? = nil,
+        showsProgress: Bool = false,
+        replacing id: UUID? = nil
+    ) -> UUID {
+        var next = Toast(message: message, style: style, action: action, showsProgress: showsProgress)
+        if let id, currentToast?.id == id { next.id = id }
+        currentToast = next
 
         switch style {
         case .success: RawkoonHaptics.play(.success)
@@ -257,14 +275,26 @@ final class AppModel {
 
         // An actionable toast (e.g. discover's "Undo") gets a longer window —
         // the user needs time to read it and decide, not just glance at it.
-        let dismissDelay: Double = action == nil ? 3 : 5
+        let dismissDelay = duration ?? (action == nil ? 3 : 5)
 
         toastDismissTask?.cancel()
-        toastDismissTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(dismissDelay))
-            guard !Task.isCancelled else { return }
-            self?.currentToast = nil
+        toastDismissTask = nil
+        if dismissDelay.isFinite {
+            let shown = next.id
+            toastDismissTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(dismissDelay))
+                guard !Task.isCancelled, self?.currentToast?.id == shown else { return }
+                self?.currentToast = nil
+            }
         }
+        return next.id
+    }
+
+    /// Clears the toast with this identity, if it is still the one showing.
+    func dismissToast(_ id: UUID) {
+        guard currentToast?.id == id else { return }
+        toastDismissTask?.cancel()
+        currentToast = nil
     }
 
     /// The configured API client, or nil when logged out. Manage-lane screens

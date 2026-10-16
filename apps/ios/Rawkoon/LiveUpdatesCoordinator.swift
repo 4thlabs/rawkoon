@@ -182,6 +182,9 @@ final class LiveUpdatesCoordinator {
             libraryChangeToken += 1
             let now = Int(Date().timeIntervalSince1970 * 1000)
             recentArrivals = LandedArrivals.insert(recentArrivals, arrival.received(at: now), now: now)
+        case let .searchResult(result):
+            logSSE("library", "search-result media=\(result.mediaId) outcome=\(result.outcome.rawValue)")
+            appModel?.liveSearch.apply(result)
         case let .book(id):
             logSSE("library", "book id=\(id)")
             SSEEventRegistry.apply(.book(id: id), to: store)
@@ -220,7 +223,7 @@ final class LiveUpdatesCoordinator {
                     unreadNotificationCount += 1
                     syncAppIconBadge()
                     notificationChangeToken += 1
-                    if !LibraryNotification.isSilent(notification) {
+                    if !LibraryNotification.isSilent(notification), !isCoveredByLiveSearch(notification) {
                         showBanner(notification)
                     }
                 }
@@ -242,6 +245,14 @@ final class LiveUpdatesCoordinator {
             try? await Task.sleep(for: .seconds(backoff))
             backoff = min(backoff * 2, 30)
         }
+    }
+
+    /// The item's live search toast already reports its grab; the notification still lands in the list.
+    private func isCoveredByLiveSearch(_ notification: StreamNotificationDTO) -> Bool {
+        guard notification.type == "library_media_grabbed",
+              let mediaId = LibraryNotification.mediaID(in: notification)
+        else { return false }
+        return appModel?.liveSearch.suppressesGrabNotice(mediaId: mediaId) ?? false
     }
 
     /// Shows the transient in-app banner for a live notification, replacing

@@ -23,6 +23,8 @@ nonisolated struct MediaRequest: Decodable, Identifiable, Sendable {
     let bookQualityProfileId: Int?
     /// Book requests only: set once the request is approved and the book exists.
     let libraryBookId: Int?
+    /// Movie and show requests: the library item created at approval.
+    let libraryMediaId: Int?
     let denyReason: String?
     let createdAt: String
 }

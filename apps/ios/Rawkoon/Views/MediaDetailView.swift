@@ -208,9 +208,19 @@ struct MediaDetailView: View {
         }
         .onAppear {
             isOnScreen = true
+            if let libraryId { model.liveSearch.detailAppeared(libraryId) }
             hydrateFromCache()
         }
-        .onDisappear { isOnScreen = false }
+        .onDisappear {
+            isOnScreen = false
+            if let libraryId { model.liveSearch.detailDisappeared(libraryId) }
+        }
+        .onChange(of: libraryId) { old, new in
+            guard isOnScreen else { return }
+            if let old { model.liveSearch.detailDisappeared(old) }
+            if let new { model.liveSearch.detailAppeared(new) }
+        }
+        .onChange(of: model.releaseSheetRequest) { openRequestedReleaseSheet() }
         .task {
             // Saved copies painted on appear, so the first open always refetches;
             // a revisit only retries what is still missing.
@@ -229,6 +239,7 @@ struct MediaDetailView: View {
             if focusManagement, showManagement {
                 detailTab = .manage
             }
+            openRequestedReleaseSheet()
         }
     }
 
