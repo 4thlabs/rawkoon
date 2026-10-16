@@ -393,7 +393,10 @@ struct RequestsView: View {
         busyRequestId = request.id
         defer { busyRequestId = nil }
         do {
-            try await client.approveRequest(id: request.id, qualityProfileId: profileId)
+            let approved = try await client.approveRequest(id: request.id, qualityProfileId: profileId)
+            if request.type != "book" {
+                model.liveSearch.announceApproved(approved, title: request.title, isShow: request.type == "show")
+            }
             await load()
         } catch APIError.unauthorized {
             adminNote = String(localized: "Admin only.")

@@ -13749,6 +13749,226 @@
           }
         }
       }
+    },
+    "Searching for %@…": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche de %@…"
+          }
+        }
+      }
+    },
+    "Still searching. You'll get a notification when it lands.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche toujours en cours. Vous recevrez une notification."
+          }
+        }
+      }
+    },
+    "Grabbed a release": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version récupérée"
+          }
+        }
+      }
+    },
+    "Grabbed %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ récupéré"
+          }
+        }
+      }
+    },
+    "Grabbed %@ · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ récupéré · %@"
+          }
+        }
+      }
+    },
+    "No match for %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune version trouvée pour %@"
+          }
+        }
+      }
+    },
+    "Waiting for a digital release date": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente d'une date de sortie numérique"
+          }
+        }
+      }
+    },
+    "Waiting for its digital release (%@)": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente de sa sortie numérique (%@)"
+          }
+        }
+      }
+    },
+    "Added %@. Auto-grab is off.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté. Le téléchargement automatique est désactivé."
+          }
+        }
+      }
+    },
+    "Added %@ without searching.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté sans recherche."
+          }
+        }
+      }
+    },
+    "Added %@, not monitored.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté, non suivi."
+          }
+        }
+      }
+    },
+    "Added %@. Digital release %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté. Sortie numérique le %@."
+          }
+        }
+      }
+    },
+    "Added %@. No digital release date yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté. Pas encore de date de sortie numérique."
+          }
+        }
+      }
+    },
+    "Added %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté"
+          }
+        }
+      }
+    },
+    "Nothing to grab yet for %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien à télécharger pour l'instant pour %@"
+          }
+        }
+      }
+    },
+    "Search failed: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recherche a échoué : %@"
+          }
+        }
+      }
+    },
+    "Search now": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher maintenant"
+          }
+        }
+      }
+    },
+    "%@ held for %lld min": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ retenu pendant %lld min"
+          }
+        }
+      }
+    },
+    "%@ is held by the grab delay": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ est retenu par le délai de téléchargement"
+          }
+        }
+      }
+    },
+    "Grabbed some releases; others could not be": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certaines versions ont été récupérées, pas les autres"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

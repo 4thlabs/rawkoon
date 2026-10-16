@@ -7,7 +7,7 @@ extension AppModel {
         guard let client = api() else { throw URLError(.notConnectedToInternet) }
         let type = item.mediaType == "tv" ? "show" : "movie"
         if isAdmin {
-            _ = try await serverStateStore.addToLibrary(
+            try await addTitleToLibrary(
                 provisional: .provisional(
                     tmdbId: item.tmdbId,
                     type: type,
@@ -16,7 +16,9 @@ extension AppModel {
                     posterUrl: item.posterUrl,
                     overview: item.overview
                 ),
-                request: { try await client.addToLibrary(tmdbId: item.tmdbId, type: type) }
+                tmdbId: item.tmdbId,
+                type: type,
+                title: item.title
             )
             await loadLibrary()
         } else {

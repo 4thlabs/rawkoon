@@ -187,7 +187,7 @@ export const requestRoutes = new Hono<Env>()
           return badRequest("Quality profile not found");
         return badRequest("Request is not pending");
       }
-      return ok({ ok: true });
+      return ok(result);
     },
   )
   .post(

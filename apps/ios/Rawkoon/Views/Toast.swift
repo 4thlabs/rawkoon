@@ -17,13 +17,17 @@ struct Toast: Equatable, Identifiable {
         case success, error, info
     }
 
-    let id = UUID()
+    var id = UUID()
     let message: String
     var style: Style = .info
     var action: ToastAction?
+    /// A spinner instead of the style icon, for work still in flight.
+    var showsProgress = false
 
+    /// Content counts too, so a toast updated in place animates its change.
     static func == (lhs: Toast, rhs: Toast) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id && lhs.message == rhs.message && lhs.style == rhs.style
+            && lhs.showsProgress == rhs.showsProgress && lhs.action?.label == rhs.action?.label
     }
 }
 
@@ -51,8 +55,14 @@ struct ToastOverlay: View {
 
     private func content(for toast: Toast) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: icon(for: toast.style))
-                .foregroundStyle(tint(for: toast.style))
+            if toast.showsProgress {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(Theme.apricot)
+            } else {
+                Image(systemName: icon(for: toast.style))
+                    .foregroundStyle(tint(for: toast.style))
+            }
             Text(toast.message)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(Theme.textStrong)

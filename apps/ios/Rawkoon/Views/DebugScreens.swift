@@ -91,6 +91,8 @@
                 DebugAutoSearch(searching: true, dialog: false)
             case "upgradeDialog":
                 DebugAutoSearch(searching: false, dialog: true)
+            case "liveSearchToasts":
+                DebugLiveSearchToasts()
             case "growthAdmin":
                 DebugGrowth(admin: true, showBooks: true)
             case "growthMember":
@@ -108,7 +110,7 @@
                 "bookDiscoveryDetail", "tabBar", "tabContainer", "aiConfig", "aiPrices", "aiUsage", "aiStats", "aiCharts",
                 "aiGrabs", "aiHistory", "aiCallDetail", "aiBanner", "aiBannerBudget",
                 "autoSearchIdle", "autoSearchBusy", "upgradeDialog", "motionKit",
-                "growthAdmin", "growthMember", "growthNoBooks",
+                "growthAdmin", "growthMember", "growthNoBooks", "liveSearchToasts",
             ].contains(screen)
         }
     }

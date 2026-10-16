@@ -4,12 +4,16 @@ import RawkoonKit
 // Library item CRUD, artwork, rescans, and download-history actions.
 
 extension APIClient {
-    /// Admin: add a movie/show to the library directly from TMDB.
-    @discardableResult
-    func addToLibrary(tmdbId: Int, type: String) async throws -> LibraryMedia {
-        nonisolated struct Body: Encodable { let tmdbId: Int; let type: String }
-        let response: LibraryItemResponse = try await post("/api/library", body: Body(tmdbId: tmdbId, type: type))
-        return response.item
+    /// Admin: add a movie/show to the library directly from TMDB. `searchOnAdd` nil follows the
+    /// server's auto-grab setting; true or false overrides it for this add.
+    func addToLibrary(tmdbId: Int, type: String, searchOnAdd: Bool? = nil) async throws -> AddToLibraryResult {
+        nonisolated struct Body: Encodable { let tmdbId: Int; let type: String; let searchOnAdd: Bool? }
+        return try await post("/api/library", body: Body(tmdbId: tmdbId, type: type, searchOnAdd: searchOnAdd))
+    }
+
+    /// Releases a held grab early; one call per pending-release target.
+    func grabPendingNow(targetKey: String) async throws -> GrabPendingNowResponse {
+        try await post("/api/downloads/pending-releases/grab-now", body: GrabPendingNowBody(targetKey: targetKey))
     }
 
     /// Library (movies / shows)

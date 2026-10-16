@@ -310,6 +310,8 @@ nonisolated struct LibrarySearchResponse: Decodable, Sendable {
     let aiPicked: Bool?
     /// A failed replace-grab: the running download was already stopped.
     let replacedPrevious: Bool?
+    /// The same outcome the library stream pushes, so a caller need not wait for it.
+    let searchResult: SearchResultDTO?
 }
 
 /// `POST /api/library/:id/upgrade` — `mode` is "auto" (queue the search) or "manual".
