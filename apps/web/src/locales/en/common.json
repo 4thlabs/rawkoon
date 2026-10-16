@@ -671,6 +671,30 @@
         "type": "Type",
         "empty": "No channels configured.",
         "adding": "Adding…"
+      },
+      "types": {
+        "library_downloaded": "Download finished",
+        "library_grabbed": "Release grabbed",
+        "library_failed": "Download failed",
+        "library_grab_skipped": "Search gave up",
+        "library_attention": "Needs attention",
+        "book_downloaded": "Download finished",
+        "book_grabbed": "Release grabbed",
+        "book_failed": "Import failed",
+        "book_search_skipped": "Search gave up",
+        "book_author_releases": "New book from a followed author",
+        "request_pending": "New request",
+        "request_decided": "Request approved or denied",
+        "request_available": "Request ready",
+        "movie_release_reminder": "Watchlist reminders",
+        "app_update": "App updated",
+        "github_release": "New Rawkoon version"
+      },
+      "groups": {
+        "library": "Library",
+        "books": "Books",
+        "requests": "Requests",
+        "other": "Other"
       }
     },
     "calendar": {
