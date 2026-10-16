@@ -2,7 +2,8 @@ import RawkoonKit
 import SwiftUI
 
 /// Seeding rules (admin): whether Rawkoon stops seeding torrents on its own, the
-/// public/private ratio targets and per-indexer overrides. `GET/PATCH
+/// public/private "ratio X or Y days" targets, and behind Advanced the per-indexer
+/// overrides, blocked file extensions and the free-space floor. `GET/PATCH
 /// /api/library/post-processing/settings` (seeding key subset), `GET
 /// /api/downloads/seeding?preview=1` and `/api/downloads/seed-rules`.
 struct SeedingSettingsView: View {
@@ -15,7 +16,16 @@ struct SeedingSettingsView: View {
 
     @State private var enabled = false
     @State private var publicRatio = ""
+    @State private var publicDays = ""
+    /// What each days field was prefilled with and the minutes behind it, so an untouched field is
+    /// saved exactly as stored instead of being re-read from its rounded text.
+    @State private var storedPublicTime = StoredSeedTime(text: "", minutes: nil)
+    @State private var storedPrivateTime = StoredSeedTime(text: "", minutes: nil)
     @State private var privateRatio = ""
+    @State private var privateDays = ""
+    @State private var blockedText = ""
+    @State private var minFreeSpaceGb: Int? = 10
+    @State private var advancedOpen = false
     @State private var fileOperation = "hardlink"
     @State private var preview: SeedingPreviewDTO?
     @State private var indexers: [IndexerSeedRuleRowDTO] = []
@@ -23,21 +33,48 @@ struct SeedingSettingsView: View {
     private struct FormValues: Equatable {
         var enabled: Bool
         var publicRatio: String
+        var publicDays: String
         var privateRatio: String
+        var privateDays: String
+        var blockedExtensions: [String]
+        var minFreeSpaceGb: Int?
     }
 
-    @State private var loaded = FormValues(enabled: false, publicRatio: "", privateRatio: "")
+    @State private var loaded = FormValues(
+        enabled: false, publicRatio: "", publicDays: "", privateRatio: "", privateDays: "",
+        blockedExtensions: [], minFreeSpaceGb: 10
+    )
 
     private var current: FormValues {
-        FormValues(enabled: enabled, publicRatio: publicRatio, privateRatio: privateRatio)
+        FormValues(
+            enabled: enabled, publicRatio: publicRatio, publicDays: publicDays,
+            privateRatio: privateRatio, privateDays: privateDays,
+            blockedExtensions: BlockedExtensions.parse(blockedText), minFreeSpaceGb: minFreeSpaceGb
+        )
+    }
+
+    private struct StoredSeedTime: Equatable {
+        let text: String
+        let minutes: Int?
     }
 
     private var publicRule: SeedRule? {
-        SeedRuleLogic.rule(ratio: SeedRuleLogic.parseRatio(publicRatio))
+        rule(ratio: publicRatio, days: publicDays, stored: storedPublicTime)
     }
 
     private var privateRule: SeedRule? {
-        SeedRuleLogic.rule(ratio: SeedRuleLogic.parseRatio(privateRatio))
+        rule(ratio: privateRatio, days: privateDays, stored: storedPrivateTime)
+    }
+
+    /// A ratio and a day count make one rule; either one being unreadable makes the rule invalid.
+    private func rule(ratio: String, days: String, stored: StoredSeedTime) -> SeedRule? {
+        let minutes: Int?
+        switch SeedTimeDays.resolve(text: days, loadedText: stored.text, loadedMinutes: stored.minutes) {
+        case .invalid: return nil
+        case .none: minutes = nil
+        case let .minutes(value): minutes = value
+        }
+        return SeedRuleLogic.rule(ratio: SeedRuleLogic.parseRatio(ratio), seedTimeMins: minutes)
     }
 
     private var isDirty: Bool {
@@ -89,22 +126,18 @@ struct SeedingSettingsView: View {
                     Text("After import, Rawkoon keeps each torrent seeding until it reaches its ratio, then removes it from the client. Your library copy is a hardlink, so it stays in place.")
                 }
 
-                ratioSection(title: "Public trackers", text: $publicRatio, rule: publicRule)
-                ratioSection(title: "Private trackers", text: $privateRatio, rule: privateRule, isPrivate: true)
+                ratioSection(title: "Public trackers", ratio: $publicRatio, days: $publicDays, rule: publicRule)
+                ratioSection(
+                    title: "Private trackers", ratio: $privateRatio, days: $privateDays, rule: privateRule,
+                    isPrivate: true
+                )
 
                 Section {
-                    if indexers.isEmpty {
-                        Text("No indexers found. Connect Prowlarr or Jackett first.")
-                            .foregroundStyle(Theme.muted).listRowBackground(Theme.raised)
+                    DisclosureGroup("Advanced", isExpanded: $advancedOpen) {
+                        advancedRows
                     }
-                    ForEach(indexers) { row in
-                        SeedIndexerRuleRow(row: row) { await reloadRules() }
-                    }
-                } header: {
-                    Text("Indexers")
-                } footer: {
-                    Text("An indexer Rawkoon can't reach counts as private, so nothing is removed too early by mistake.")
                 }
+                .listRowBackground(Theme.raised)
 
                 if let saveError {
                     Section { Text(saveError).foregroundStyle(Theme.terracotta) }
@@ -130,19 +163,42 @@ struct SeedingSettingsView: View {
         .task { await load() }
     }
 
+    /// Per-indexer overrides, the files a download may not contain, and the free-space floor.
+    @ViewBuilder
+    private var advancedRows: some View {
+        Text("Indexers").font(.footnote).foregroundStyle(Theme.muted)
+        if indexers.isEmpty {
+            Text("No indexers found. Connect Prowlarr or Jackett first.")
+                .foregroundStyle(Theme.muted)
+        }
+        ForEach(indexers) { row in
+            SeedIndexerRuleRow(row: row) { await reloadRules() }
+        }
+        Text("An indexer Rawkoon can't reach counts as private, so nothing is removed too early by mistake.")
+            .font(.footnote).foregroundStyle(Theme.muted)
+        LabeledTextFieldRow(title: "Blocked file extensions", text: $blockedText, placeholder: "exe, scr, bat", mono: true)
+        Text("A download containing one of these is rejected and blocklisted.")
+            .font(.footnote).foregroundStyle(Theme.muted)
+        NumberFieldRow("Keep free (GB)", value: $minFreeSpaceGb, range: 0 ... 100_000)
+        Text("Automatic and manual grabs are refused if they would leave less than this free on the download disk. 0 turns the check off.")
+            .font(.footnote).foregroundStyle(Theme.muted)
+    }
+
     private func ratioSection(
         title: LocalizedStringKey,
-        text: Binding<String>,
+        ratio: Binding<String>,
+        days: Binding<String>,
         rule: SeedRule?,
         isPrivate: Bool = false
     ) -> some View {
         Section {
-            LabeledTextFieldRow(title: "Ratio", text: text, placeholder: "none", keyboard: .decimalPad)
+            LabeledTextFieldRow(title: "Ratio", text: ratio, placeholder: "none", keyboard: .decimalPad)
+            LabeledTextFieldRow(title: "Days", text: days, placeholder: "none", keyboard: .decimalPad)
             Group {
                 if let rule {
                     seedRuleSentence(rule)
                 } else {
-                    Text("Enter a positive number, or leave it empty.").foregroundStyle(Theme.terracotta)
+                    Text("Enter positive numbers, or leave a field empty.").foregroundStyle(Theme.terracotta)
                 }
             }
             .font(.footnote).foregroundStyle(Theme.muted)
@@ -173,7 +229,13 @@ struct SeedingSettingsView: View {
             enabled = settings.seedSweepEnabled ?? false
             let minRatio = settings.minSeedRatio ?? 0
             publicRatio = SeedRuleLogic.ratioText(minRatio > 0 ? minRatio : nil)
+            publicDays = SeedTimeDays.text(forMinutes: settings.publicSeedTimeMins)
+            storedPublicTime = StoredSeedTime(text: publicDays, minutes: settings.publicSeedTimeMins)
             privateRatio = SeedRuleLogic.ratioText(settings.privateSeedRatio)
+            privateDays = SeedTimeDays.text(forMinutes: settings.privateSeedTimeMins)
+            storedPrivateTime = StoredSeedTime(text: privateDays, minutes: settings.privateSeedTimeMins)
+            blockedText = BlockedExtensions.text(settings.blockedExtensions ?? [])
+            minFreeSpaceGb = settings.minFreeSpaceGb ?? 10
             fileOperation = settings.fileOperation ?? "hardlink"
             loaded = current
             async let previewCall = client.seedingPreview()
@@ -202,7 +264,11 @@ struct SeedingSettingsView: View {
                     seedSweepEnabled: enabled,
                     // 0 is the existing "no public ratio target".
                     minSeedRatio: pub.ratio ?? 0,
-                    privateSeedRatio: priv.ratio
+                    publicSeedTimeMins: pub.seedTimeMins,
+                    privateSeedRatio: priv.ratio,
+                    privateSeedTimeMins: priv.seedTimeMins,
+                    blockedExtensions: BlockedExtensions.parse(blockedText),
+                    minFreeSpaceGb: minFreeSpaceGb
                 )
             )
             loaded = current

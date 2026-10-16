@@ -1,28 +1,5 @@
 import SwiftUI
 
-/// One admin group's rows, pushed from its summary row on the phone.
-struct SettingsGroupView: View {
-    let group: SettingsGroup
-
-    var body: some View {
-        Form {
-            Section {
-                ForEach(group.destinations) { destination in
-                    NavigationLink {
-                        destination.destination
-                    } label: {
-                        Label(destination.title, systemImage: destination.systemImage)
-                    }
-                }
-            }
-            .listRowBackground(Theme.raised)
-        }
-        .settingsScreenStyle()
-        .navigationTitle(group.title)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
 /// Push alerts, the devices that receive them, and the outbound channels.
 struct SettingsAlertsView: View {
     var body: some View {
@@ -47,17 +24,36 @@ struct SettingsAlertsView: View {
             .listRowBackground(Theme.raised)
         }
         .settingsScreenStyle()
-        .navigationTitle("Notifications")
+        .navigationTitle("Alerts")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
 
-struct SettingsPlaybackView: View {
+/// App preferences on this device: language, playback, downloads over which network, and offline storage.
+struct SettingsAppView: View {
+    @Environment(AppModel.self) private var model
     @AppStorage("download_over") private var downloadOver = "any"
     @AppStorage("smart_rewind") private var smartRewind = false
+    @AppStorage(AppLanguage.storageKey) private var appLanguage = AppLanguage.system.rawValue
+
+    @State private var savedDataBytes = 0
+    @State private var confirmDeleteDownloads = false
+    @State private var confirmClearSavedData = false
 
     var body: some View {
         Form {
+            Section {
+                Picker(selection: $appLanguage) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.label).tag(language.rawValue)
+                    }
+                } label: {
+                    SettingsNavRow(title: "Language", systemImage: "globe")
+                }
+                .pickerStyle(.menu)
+            }
+            .listRowBackground(Theme.raised)
+
             Section {
                 Toggle("Smart rewind", isOn: $smartRewind)
             } header: {
@@ -78,54 +74,11 @@ struct SettingsPlaybackView: View {
                 }
                 .listRowBackground(Theme.raised)
             #endif
+
+            storageSections
         }
         .settingsScreenStyle()
-        .navigationTitle("Playback & downloads")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-/// What the app keeps on this device, with the two ways to free it.
-struct SettingsStorageView: View {
-    @Environment(AppModel.self) private var model
-    @State private var savedDataBytes = 0
-    @State private var confirmDeleteDownloads = false
-    @State private var confirmClearSavedData = false
-
-    var body: some View {
-        Form {
-            Section {
-                LabeledContent("Saved data") {
-                    Text(ByteCountFormatter.string(fromByteCount: Int64(savedDataBytes), countStyle: .file))
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(Theme.faint)
-                }
-                if let synced = model.libraryFetchedAt {
-                    LabeledContent("Last synced") {
-                        Text(synced, style: .relative)
-                            .font(.caption)
-                            .foregroundStyle(Theme.faint)
-                    }
-                }
-            } header: {
-                Text("Offline")
-            } footer: {
-                Text("Screens you've opened, and recent titles fetched ahead of time on Wi-Fi, stay viewable without a connection.")
-            }
-            .listRowBackground(Theme.raised)
-
-            Section {
-                Button("Clear Saved Data", role: .destructive) {
-                    confirmClearSavedData = true
-                }
-                Button("Delete Downloads", role: .destructive) {
-                    confirmDeleteDownloads = true
-                }
-            }
-            .listRowBackground(Theme.raised)
-        }
-        .settingsScreenStyle()
-        .navigationTitle("Storage")
+        .navigationTitle("App")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { savedDataBytes = model.savedDataBytes }
         .rawkoonConfirm(
@@ -151,6 +104,40 @@ struct SettingsStorageView: View {
         } message: {
             Text("Screens will need the network again until they reload. Downloads and your sign-in are kept.")
         }
+    }
+
+    /// What the app keeps on this device, with the two ways to free it.
+    @ViewBuilder
+    private var storageSections: some View {
+        Section {
+            LabeledContent("Saved data") {
+                Text(ByteCountFormatter.string(fromByteCount: Int64(savedDataBytes), countStyle: .file))
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(Theme.faint)
+            }
+            if let synced = model.libraryFetchedAt {
+                LabeledContent("Last synced") {
+                    Text(synced, style: .relative)
+                        .font(.caption)
+                        .foregroundStyle(Theme.faint)
+                }
+            }
+        } header: {
+            Text("Offline")
+        } footer: {
+            Text("Screens you've opened, and recent titles fetched ahead of time on Wi-Fi, stay viewable without a connection.")
+        }
+        .listRowBackground(Theme.raised)
+
+        Section {
+            Button("Clear Saved Data", role: .destructive) {
+                confirmClearSavedData = true
+            }
+            Button("Delete Downloads", role: .destructive) {
+                confirmDeleteDownloads = true
+            }
+        }
+        .listRowBackground(Theme.raised)
     }
 }
 

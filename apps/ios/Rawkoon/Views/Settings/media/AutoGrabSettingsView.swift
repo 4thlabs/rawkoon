@@ -1,10 +1,10 @@
 import RawkoonKit
 import SwiftUI
 
-/// Automatic grabbing (admin): search on add, how often wanted titles are
-/// re-checked, whether the pipeline is ready, and releases held by a grab delay.
-/// `GET/PATCH /api/library/post-processing/settings`, `.../grab-readiness`,
-/// `/api/downloads/pending-releases`.
+/// Adding & checking (admin): search on add, how often wanted titles are re-checked
+/// (presets, with a custom cron behind Advanced), and releases held by a grab delay.
+/// `GET/PATCH /api/library/post-processing/settings`, `/api/downloads/pending-releases`.
+/// Whether the pipeline is ready to grab is answered on System > Health.
 struct AutoGrabSettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -24,8 +24,7 @@ struct AutoGrabSettingsView: View {
     @State private var customCron = ""
     @State private var loaded: Saved?
 
-    @State private var checks: [GrabReadinessCheck]?
-    @State private var checksFailed = false
+    @State private var advancedOpen = false
     @State private var held: [PendingRelease]?
     @State private var heldFailed = false
     @State private var grabbingKey: String?
@@ -79,7 +78,7 @@ struct AutoGrabSettingsView: View {
                 form
             }
         }
-        .navigationTitle("Automatic grabbing")
+        .navigationTitle("Adding & checking")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -102,7 +101,6 @@ struct AutoGrabSettingsView: View {
                 }
 
                 scheduleSection
-                readinessSection
                 heldSection
 
                 if let saveError {
@@ -166,20 +164,22 @@ struct AutoGrabSettingsView: View {
             ForEach(ReleaseCheckCron.Preset.allCases, id: \.self) { preset in
                 scheduleRow(.preset(preset), title: presetTitle(preset))
             }
-            scheduleRow(
-                .custom,
-                title: "Custom\u{2026}",
-                subtitle: schedule == .custom ? customSubtitle : nil
-            )
-            if schedule == .custom {
-                LabeledTextFieldRow(
-                    title: "Cron expression",
-                    text: $customCron,
-                    placeholder: "0 */4 * * *",
-                    mono: true
+            DisclosureGroup("Advanced", isExpanded: $advancedOpen) {
+                scheduleRow(
+                    .custom,
+                    title: "Custom\u{2026}",
+                    subtitle: schedule == .custom ? customSubtitle : nil
                 )
-                .accessibilityIdentifier("autograb-cron-field")
-                customFeedback
+                if schedule == .custom {
+                    LabeledTextFieldRow(
+                        title: "Cron expression",
+                        text: $customCron,
+                        placeholder: "0 */4 * * *",
+                        mono: true
+                    )
+                    .accessibilityIdentifier("autograb-cron-field")
+                    customFeedback
+                }
             }
         } header: {
             Text("Check for new releases")
@@ -191,6 +191,7 @@ struct AutoGrabSettingsView: View {
                 }
             }
         }
+        .listRowBackground(Theme.raised)
     }
 
     private func presetTitle(_ preset: ReleaseCheckCron.Preset) -> LocalizedStringKey {
@@ -252,62 +253,6 @@ struct AutoGrabSettingsView: View {
         }
         .listRowBackground(Theme.raised)
         .accessibilityAddTraits(schedule == value ? .isSelected : [])
-    }
-
-    // MARK: Readiness
-
-    private var readinessSection: some View {
-        Section {
-            if let checks {
-                ForEach(GrabReadiness.visible(checks)) { check in
-                    readinessRow(check)
-                }
-            } else if checksFailed {
-                Text("Couldn't run the checks.").foregroundStyle(Theme.terracotta).listRowBackground(Theme.raised)
-            } else {
-                ProgressView().tint(Theme.apricot).listRowBackground(Theme.raised)
-            }
-            AsyncButton("Re-check") { await refreshChecks() }
-                .requiresConnection(model.isOffline)
-                .listRowBackground(Theme.raised)
-        } header: {
-            Text("Ready to grab")
-        } footer: {
-            if let checks {
-                let problems = GrabReadiness.problemCount(checks)
-                if problems == 0 {
-                    Text("Everything automatic grabbing needs is in place.")
-                } else if problems == 1 {
-                    Text("1 thing to fix")
-                } else {
-                    Text("\(problems) things to fix")
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func readinessRow(_ check: GrabReadinessCheck) -> some View {
-        if let target = fixDestination(check) {
-            NavigationLink {
-                target.destination
-            } label: {
-                GrabReadinessRowLabel(check: check)
-            }
-            .listRowBackground(Theme.raised)
-        } else {
-            GrabReadinessRowLabel(check: check).listRowBackground(Theme.raised)
-        }
-    }
-
-    private func fixDestination(_ check: GrabReadinessCheck) -> SettingsDestination? {
-        switch check.fix {
-        case .indexerManager: check.params.manager == "jackett" ? .jackett : .prowlarr
-        case .downloadClient: .downloadClient
-        case .defaultProfiles: .mediaLibrary
-        case .qualityProfiles: .qualityProfiles
-        case nil: nil
-        }
     }
 
     // MARK: Held releases
@@ -390,6 +335,7 @@ struct AutoGrabSettingsView: View {
             } else {
                 schedule = .custom
                 customCron = cron
+                advancedOpen = true
             }
             loaded = Saved(searchOnAdd: searchOnAdd, cron: ReleaseCheckCron.normalize(cron) ?? cron)
         } catch {
@@ -403,19 +349,7 @@ struct AutoGrabSettingsView: View {
     }
 
     private func refreshLive() async {
-        async let readiness: Void = refreshChecks()
-        async let pending: Void = refreshHeld()
-        _ = await (readiness, pending)
-    }
-
-    private func refreshChecks() async {
-        guard let client = model.api() else { return }
-        do {
-            checks = try await client.grabReadiness(refresh: true)
-            checksFailed = false
-        } catch {
-            checksFailed = checks == nil
-        }
+        await refreshHeld()
     }
 
     private func refreshHeld() async {
@@ -439,7 +373,6 @@ struct AutoGrabSettingsView: View {
             if case .custom = schedule, let preset = ReleaseCheckCron.preset(for: cron) {
                 schedule = .preset(preset)
             }
-            await refreshChecks()
         } catch {
             saveError = settingsErrorMessage(error)
         }
@@ -452,7 +385,6 @@ struct AutoGrabSettingsView: View {
         do {
             try await client.updateAutoGrab(UpdateAutoGrabBody(searchOnAdd: value, releaseCheckCron: nil))
             loaded?.searchOnAdd = value
-            await refreshChecks()
         } catch {
             searchOnAdd = loaded?.searchOnAdd ?? !value
             saveError = settingsErrorMessage(error)

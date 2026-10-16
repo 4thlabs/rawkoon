@@ -43,7 +43,7 @@ struct ArrLibraryImportView: View {
                 form
             }
         }
-        .navigationTitle("Import")
+        .navigationTitle("Import from Radarr/Sonarr")
         .navigationBarTitleDisplayMode(.inline)
         .task { await followStatus() }
         .onDisappear { streamTask?.cancel() }

@@ -10,13 +10,13 @@ struct SettingsView: View {
 
     @Environment(AppModel.self) private var model
     @Environment(\.isActiveRootTab) private var isActiveRootTab
-    @AppStorage("download_over") private var downloadOver = "any"
     @AppStorage("smart_rewind") private var smartRewind = false
-    @AppStorage(AppLanguage.storageKey) private var appLanguage = AppLanguage.system.rawValue
+    @AppStorage("download_over") private var downloadOver = "any"
 
     @State private var sessionUser: SessionUser?
     @State private var appVersion: String?
-    @State private var savedDataBytes = 0
+    /// Open problems System > Health would list, for the badge on the System row; admins only.
+    @State private var healthProblems = 0
     @State private var settingsSearch = ""
 
     private var isSearching: Bool {
@@ -32,8 +32,8 @@ struct SettingsView: View {
     }
 
     private var searchResults: [SettingsDestination] {
-        guard model.isAdmin, scope != .personal else { return [] }
-        return SettingsDestination.allCases.filter { $0.matches(settingsSearch) }
+        guard scope != .personal else { return [] }
+        return SettingsDestination.allCases.filter { (model.isAdmin || !$0.isAdminOnly) && $0.matches(settingsSearch) }
     }
 
     var body: some View {
@@ -57,17 +57,20 @@ struct SettingsView: View {
         .settingsScreenStyle()
         .navigationTitle(navigationTitleKey)
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { savedDataBytes = model.savedDataBytes }
         .task {
             hydrateFromCache()
             await model.refreshAdminIfNeeded()
             await loadAccount()
             await loadVersion()
+            await loadHealth()
         }
         // Kept-alive iPhone tabs never re-appear, so a revisit refreshes like the old TabView did.
         .onChange(of: isActiveRootTab) { _, active in
             if active {
-                Task { await loadAccount() }
+                Task {
+                    await loadAccount()
+                    await loadHealth()
+                }
             }
         }
         .onChange(of: model.reconnectToken) { _, _ in
@@ -97,7 +100,7 @@ struct SettingsView: View {
         .listRowBackground(Theme.raised)
     }
 
-    /// The phone gets one summary row per admin group; the sidebar's Server
+    /// The phone gets one row per server page and one for System; the sidebar's Server
     /// screen has the room to list every row inline.
     @ViewBuilder
     private var adminSections: some View {
@@ -109,7 +112,7 @@ struct SettingsView: View {
                             NavigationLink {
                                 destination.destination
                             } label: {
-                                Label(destination.title, systemImage: destination.systemImage)
+                                SettingsDestinationRow(destination: destination, badge: badge(for: destination))
                             }
                         }
                     } header: {
@@ -119,17 +122,47 @@ struct SettingsView: View {
                 }
             } else {
                 Section("Server") {
-                    ForEach(SettingsGroup.allCases) { group in
-                        NavigationLink {
-                            SettingsGroupView(group: group)
-                        } label: {
-                            SettingsNavRow(title: group.title, subtitle: group.summary, systemImage: group.systemImage)
-                        }
+                    ForEach(SettingsGroup.server) { group in
+                        groupLink(group)
                     }
+                }
+                .listRowBackground(Theme.raised)
+                Section {
+                    groupLink(.system, badge: healthProblems)
                 }
                 .listRowBackground(Theme.raised)
             }
         }
+    }
+
+    /// A page with several screens opens its list; a page with one opens that screen.
+    @ViewBuilder
+    private func groupLink(_ group: SettingsGroup, badge: Int = 0) -> some View {
+        if let only = group.destinations.first, group.destinations.count == 1 {
+            NavigationLink {
+                only.destination
+            } label: {
+                SettingsNavRow(title: group.title, subtitle: group.summary, systemImage: group.systemImage)
+            }
+        } else {
+            NavigationLink {
+                SettingsGroupView(group: group, badges: badges)
+            } label: {
+                HStack {
+                    SettingsNavRow(title: group.title, subtitle: group.summary, systemImage: group.systemImage)
+                    Spacer(minLength: 8)
+                    SettingsCountBadge(count: badge)
+                }
+            }
+        }
+    }
+
+    private var badges: [SettingsDestination: Int] {
+        [.health: healthProblems]
+    }
+
+    private func badge(for destination: SettingsDestination) -> Int {
+        badges[destination] ?? 0
     }
 
     @ViewBuilder
@@ -151,32 +184,32 @@ struct SettingsView: View {
 
         Section("You") {
             NavigationLink {
-                SettingsAlertsView()
+                SettingsSecurityView()
             } label: {
                 SettingsNavRow(
-                    title: "Notifications",
-                    subtitle: String(localized: "Push, devices, channels"),
-                    systemImage: "bell"
+                    title: "Security",
+                    subtitle: String(localized: "Password, passkeys, calendar link"),
+                    systemImage: SettingsDestination.security.systemImage
                 )
             }
             NavigationLink {
-                SettingsPlaybackView()
+                SettingsAlertsView()
             } label: {
-                SettingsNavRow(title: "Playback & downloads", subtitle: playbackSummary, systemImage: "play.circle")
+                SettingsNavRow(
+                    title: "Alerts",
+                    subtitle: String(localized: "Push, devices, channels"),
+                    systemImage: SettingsDestination.alerts.systemImage
+                )
             }
             NavigationLink {
-                SettingsStorageView()
+                SettingsAppView()
             } label: {
-                SettingsNavRow(title: "Storage", subtitle: storageSummary, systemImage: "internaldrive")
+                SettingsNavRow(
+                    title: "App",
+                    subtitle: appSummary,
+                    systemImage: SettingsDestination.appPreferences.systemImage
+                )
             }
-            Picker(selection: $appLanguage) {
-                ForEach(AppLanguage.allCases) { language in
-                    Text(language.label).tag(language.rawValue)
-                }
-            } label: {
-                SettingsNavRow(title: "Language", systemImage: "globe")
-            }
-            .pickerStyle(.menu)
         }
         .listRowBackground(Theme.raised)
     }
@@ -206,7 +239,8 @@ struct SettingsView: View {
         sessionUser.flatMap(displayName(for:))
     }
 
-    private var playbackSummary: String {
+    /// Playback and download preferences at a glance, for the App row.
+    private var appSummary: String {
         let rewind = smartRewind ? String(localized: "Smart rewind on") : String(localized: "Smart rewind off")
         #if targetEnvironment(macCatalyst)
             return rewind
@@ -214,11 +248,6 @@ struct SettingsView: View {
             let network = downloadOver == "wifi" ? String(localized: "Wi-Fi only") : String(localized: "Any network")
             return "\(rewind) \u{00B7} \(network)"
         #endif
-    }
-
-    private var storageSummary: String {
-        let size = ByteCountFormatter.string(fromByteCount: Int64(savedDataBytes), countStyle: .file)
-        return String(localized: "\(size) saved offline")
     }
 
     private func displayName(for user: SessionUser) -> String? {
@@ -252,6 +281,15 @@ struct SettingsView: View {
         } catch {
             // Best-effort only; do not fail the screen.
         }
+    }
+
+    private func loadHealth() async {
+        // No badge beats a stale one: offline or unanswered, the count is hidden.
+        guard model.isAdmin, !model.isOffline, let client = model.api() else {
+            healthProblems = 0
+            return
+        }
+        healthProblems = await SystemHealthProbe.problemCount(client: client) ?? 0
     }
 
     private func loadVersion() async {

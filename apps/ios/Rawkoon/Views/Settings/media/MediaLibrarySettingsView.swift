@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Media library settings (admin): post-processing paths/templates/options, plus
+/// Folders & import (admin): post-processing paths, with naming templates behind Advanced, plus
 /// a scan card and a language-reindex card. `GET/PATCH
 /// /api/library/post-processing/settings` (media key subset only).
 struct MediaLibrarySettingsView: View {
@@ -18,11 +18,6 @@ struct MediaLibrarySettingsView: View {
     @State private var fileOperation = "hardlink"
     @State private var movieTemplate = ""
     @State private var episodeTemplate = ""
-    @State private var activeManager: String? = nil
-    @State private var defaultMovieProfile: Int? = nil
-    @State private var defaultShowProfile: Int? = nil
-    @State private var minFreeSpaceGb: Int? = 10
-    @State private var profiles: [QualityProfile] = []
 
     @State private var scanPath = ""
     @State private var scanType = "movie"
@@ -41,42 +36,26 @@ struct MediaLibrarySettingsView: View {
         var fileOperation: String
         var movieTemplate: String
         var episodeTemplate: String
-        var activeManager: String?
-        var defaultMovieProfile: Int?
-        var defaultShowProfile: Int?
-        var minFreeSpaceGb: Int?
     }
 
     @State private var loaded = FormValues(
         ppEnabled: false, moviesPath: "", showsPath: "", downloadsPath: "",
-        fileOperation: "hardlink", movieTemplate: "", episodeTemplate: "",
-        activeManager: nil, defaultMovieProfile: nil, defaultShowProfile: nil,
-        minFreeSpaceGb: 10
+        fileOperation: "hardlink", movieTemplate: "", episodeTemplate: ""
     )
 
     private var current: FormValues {
         FormValues(ppEnabled: ppEnabled, moviesPath: moviesPath, showsPath: showsPath,
                    downloadsPath: downloadsPath, fileOperation: fileOperation, movieTemplate: movieTemplate,
-                   episodeTemplate: episodeTemplate,
-                   activeManager: activeManager, defaultMovieProfile: defaultMovieProfile,
-                   defaultShowProfile: defaultShowProfile, minFreeSpaceGb: minFreeSpaceGb)
+                   episodeTemplate: episodeTemplate)
     }
 
     private var isDirty: Bool {
         current != loaded
     }
 
-    private var profileOptions: [(value: Int?, label: String)] {
-        [(nil, "None")] + profiles.map { (Optional($0.id), $0.name) }
-    }
-
     private static let fileOpOptions: [(value: String, label: LocalizedStringKey)] = [
         ("hardlink", "Hardlink"), ("move", "Move"),
     ]
-    private var managerOptions: [(value: String?, label: LocalizedStringKey)] {
-        [(nil, "None"), ("prowlarr", "Prowlarr"), ("jackett", "Jackett")]
-    }
-
     private static let scanTypeOptions: [(value: String, label: LocalizedStringKey)] = [
         ("movie", "Movie"), ("show", "Show"),
     ]
@@ -90,7 +69,7 @@ struct MediaLibrarySettingsView: View {
                 form
             }
         }
-        .navigationTitle("Library")
+        .navigationTitle("Folders & import")
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear { reindexTask?.cancel() }
     }
@@ -109,18 +88,15 @@ struct MediaLibrarySettingsView: View {
                     LabeledTextFieldRow(title: "Downloads path", text: $downloadsPath, keyboard: .URL, mono: true)
                 } header: { Text("Paths") }
                 Section {
-                    NumberFieldRow("Keep free (GB)", value: $minFreeSpaceGb, range: 0 ... 100_000)
+                    DisclosureGroup("Advanced") {
+                        PickerRow(title: "File operation", selection: $fileOperation, options: Self.fileOpOptions)
+                        LabeledTextFieldRow(title: "Movie template", text: $movieTemplate, mono: true)
+                        LabeledTextFieldRow(title: "Episode template", text: $episodeTemplate, mono: true)
+                    }
                 } footer: {
-                    Text("Automatic and manual grabs are refused if they would leave less than this free on the download disk. 0 turns the check off.")
+                    Text("How imported files are placed and named.")
                 }
-                Section {
-                    PickerRow(title: "File operation", selection: $fileOperation, options: Self.fileOpOptions)
-                    LabeledTextFieldRow(title: "Movie template", text: $movieTemplate, mono: true)
-                    LabeledTextFieldRow(title: "Episode template", text: $episodeTemplate, mono: true)
-                    PickerRow(title: "Active indexer manager", selection: $activeManager, options: managerOptions)
-                    PickerRow(title: "Default movie profile", selection: $defaultMovieProfile, options: profileOptions)
-                    PickerRow(title: "Default show profile", selection: $defaultShowProfile, options: profileOptions)
-                } header: { Text("Import") }
+                .listRowBackground(Theme.raised)
 
                 Section {
                     LabeledTextFieldRow(title: "Scan path", text: $scanPath, keyboard: .URL, mono: true)
@@ -195,10 +171,7 @@ struct MediaLibrarySettingsView: View {
         guard let client = model.api() else { loading = false; return }
         loading = true; loadError = nil
         do {
-            async let settingsCall = client.postProcessingSettings()
-            async let profilesCall = client.qualityProfiles()
-            let settings = try await settingsCall.settings
-            profiles = await (try? profilesCall.profiles) ?? []
+            let settings = try await client.postProcessingSettings().settings
             ppEnabled = settings.postProcessingEnabled ?? false
             moviesPath = settings.moviesLibraryPath ?? ""
             showsPath = settings.showsLibraryPath ?? ""
@@ -206,10 +179,6 @@ struct MediaLibrarySettingsView: View {
             fileOperation = settings.fileOperation ?? "hardlink"
             movieTemplate = settings.movieTemplate ?? ""
             episodeTemplate = settings.episodeTemplate ?? ""
-            activeManager = settings.activeIndexerManager
-            defaultMovieProfile = settings.defaultMovieQualityProfileId
-            defaultShowProfile = settings.defaultShowQualityProfileId
-            minFreeSpaceGb = settings.minFreeSpaceGb ?? 10
             loaded = current
         } catch {
             loadError = settingsErrorMessage(error)
@@ -230,10 +199,10 @@ struct MediaLibrarySettingsView: View {
                     fileOperation: fileOperation,
                     movieTemplate: movieTemplate,
                     episodeTemplate: episodeTemplate,
-                    activeIndexerManager: activeManager,
-                    defaultMovieQualityProfileId: defaultMovieProfile,
-                    defaultShowQualityProfileId: defaultShowProfile,
-                    minFreeSpaceGb: minFreeSpaceGb
+                    activeIndexerManager: nil,
+                    defaultMovieQualityProfileId: nil,
+                    defaultShowQualityProfileId: nil,
+                    minFreeSpaceGb: nil
                 )
             )
             loaded = current

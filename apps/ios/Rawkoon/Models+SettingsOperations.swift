@@ -91,6 +91,9 @@ nonisolated struct PostProcessingSettingsDTO: Decodable, Sendable {
     let defaultBookQualityProfileId: Int?
     let seedSweepEnabled: Bool?
     let privateSeedRatio: Double?
+    let publicSeedTimeMins: Int?
+    let privateSeedTimeMins: Int?
+    let blockedExtensions: [String]?
     let minFreeSpaceGb: Int?
 }
 
@@ -99,9 +102,9 @@ nonisolated struct PostProcessingSettingsResponseDTO: Decodable, Sendable {
 }
 
 /// Media subset of the shared post-processing row. Custom `encode(to:)` emits
-/// explicit JSON null for cleared paths/ids (a synthesized encoder would omit
-/// nil and keep the old value). Sends only media keys; the seed ratio is
-/// owned by the Seeding screen, so it is never sent from here.
+/// explicit JSON null for cleared paths (a synthesized encoder would omit
+/// nil and keep the old value). Sends only the Folders & import keys; the seed
+/// rules, the active indexer manager and the default profiles belong to other screens.
 nonisolated struct UpdateMediaSettingsBody: Encodable, Sendable {
     var postProcessingEnabled: Bool
     var moviesLibraryPath: String?
@@ -132,9 +135,11 @@ nonisolated struct UpdateMediaSettingsBody: Encodable, Sendable {
         try c.encode(fileOperation, forKey: .fileOperation)
         try c.encode(movieTemplate, forKey: .movieTemplate)
         try c.encode(episodeTemplate, forKey: .episodeTemplate)
-        try c.encode(activeIndexerManager, forKey: .activeIndexerManager)
-        try c.encode(defaultMovieQualityProfileId, forKey: .defaultMovieQualityProfileId)
-        try c.encode(defaultShowQualityProfileId, forKey: .defaultShowQualityProfileId)
+        // The manager, the default profiles and the free-space floor are owned by other screens
+        // (Indexers, Defaults, After download), so this one leaves them alone.
+        try c.encodeIfPresent(activeIndexerManager, forKey: .activeIndexerManager)
+        try c.encodeIfPresent(defaultMovieQualityProfileId, forKey: .defaultMovieQualityProfileId)
+        try c.encodeIfPresent(defaultShowQualityProfileId, forKey: .defaultShowQualityProfileId)
         try c.encodeIfPresent(minFreeSpaceGb, forKey: .minFreeSpaceGb)
     }
 }
@@ -287,6 +292,25 @@ nonisolated struct UpdateBookFilesBody: Encodable, Sendable {
         try c.encode(audiobooksLibraryPath, forKey: .audiobooksLibraryPath)
         try c.encode(bookTemplate, forKey: .bookTemplate)
         try c.encode(audiobookTemplate, forKey: .audiobookTemplate)
+        // The default profile lives on the Defaults screen, which sends it.
+        try c.encodeIfPresent(defaultBookQualityProfileId, forKey: .defaultBookQualityProfileId)
+    }
+}
+
+/// The three default quality profiles (movie, show, book). Explicit JSON null so "None" persists.
+nonisolated struct UpdateDefaultProfilesBody: Encodable, Sendable {
+    var defaultMovieQualityProfileId: Int?
+    var defaultShowQualityProfileId: Int?
+    var defaultBookQualityProfileId: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case defaultMovieQualityProfileId, defaultShowQualityProfileId, defaultBookQualityProfileId
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(defaultMovieQualityProfileId, forKey: .defaultMovieQualityProfileId)
+        try c.encode(defaultShowQualityProfileId, forKey: .defaultShowQualityProfileId)
         try c.encode(defaultBookQualityProfileId, forKey: .defaultBookQualityProfileId)
     }
 }
