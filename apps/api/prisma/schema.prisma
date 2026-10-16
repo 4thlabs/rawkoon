@@ -772,6 +772,8 @@ model MediaSettings {
   postProcessingEnabled   Boolean  @default(false) @map("post_processing_enabled")
   defaultMovieQualityProfileId Int? @map("default_movie_quality_profile_id")
   defaultShowQualityProfileId  Int? @map("default_show_quality_profile_id")
+  /// Server-wide: a newly added movie or show is searched right away instead of waiting for the scheduled check.
+  searchOnAdd             Boolean  @default(true) @map("search_on_add")
   activeIndexerManager    String?  @map("active_indexer_manager")
   downloadPollActiveSecs   Int      @default(20) @map("download_poll_active_secs")
   downloadPollIdleSecs     Int      @default(1800) @map("download_poll_idle_secs")

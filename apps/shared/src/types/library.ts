@@ -118,8 +118,26 @@ export interface LibraryListResponse {
   has_more: boolean;
 }
 
+export interface AddToLibraryRequest {
+  tmdb_id: number;
+  type: "movie" | "show";
+  /** Absent = follow the server-wide search-on-add setting. */
+  search_on_add?: boolean;
+}
+
+export type SearchSkippedReason =
+  | "setting_off"
+  | "override_off"
+  | "not_released";
+
 export interface AddToLibraryResponse {
   item: LibraryMedia;
+  /** True when a background search for a release was queued by this add. */
+  search_queued: boolean;
+  /** Why no search was queued; null when queued or when there was nothing to search. */
+  search_skipped_reason: SearchSkippedReason | null;
+  /** Set when the skip reason is not_released (null = no known date). */
+  digital_release_date?: string | null;
 }
 
 export interface LibraryItemResponse {
@@ -244,6 +262,8 @@ export interface MediaPostProcessingSettings {
   post_processing_enabled: boolean;
   default_movie_quality_profile_id: number | null;
   default_show_quality_profile_id: number | null;
+  /** Search for a release right after a movie or show is added. */
+  search_on_add: boolean;
   active_indexer_manager: IndexerManagerType | null;
   /** Book fields share this row: post-processing is per instance, not per kind. */
   books_library_path: string | null;
@@ -278,6 +298,7 @@ export interface UpdateMediaPostProcessingSettingsRequest {
   post_processing_enabled?: boolean;
   default_movie_quality_profile_id?: number | null;
   default_show_quality_profile_id?: number | null;
+  search_on_add?: boolean;
   active_indexer_manager?: IndexerManagerType | null;
   books_library_path?: string | null;
   audiobooks_library_path?: string | null;
