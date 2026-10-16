@@ -10,7 +10,6 @@ import { GeneralSettingsTab } from "@/pages/settings/_component/GeneralSettingsT
 import { ReleasesTab } from "@/pages/settings/_component/ReleasesTab";
 import { SessionsTab } from "@/pages/settings/_component/SessionsTab";
 import { ApiKeysTab } from "@/pages/settings/_component/ApiKeysTab";
-import { RecentActivityTab } from "@/pages/settings/_component/RecentActivityTab";
 import { OidcProvidersTab } from "@/pages/settings/_component/OidcProvidersTab";
 import { BlocklistTab } from "@/pages/settings/_component/BlocklistTab";
 import { BooksSettingsTab } from "@/pages/settings/_component/BooksSettingsTab";
@@ -26,7 +25,6 @@ import {
   Clock,
   Gauge,
   ShieldCheck,
-  History,
   Clapperboard,
   Package,
   Settings as SettingsIcon,
@@ -39,7 +37,6 @@ import {
 import { usePrefetchRoute } from "@/lib/routing/usePrefetchRoute";
 
 export type Tab =
-  | "activity"
   | "notifications"
   | "profile"
   | "integrations"
@@ -76,7 +73,6 @@ export function Settings() {
 
   const userTabs: TabItem[] = [
     { id: "profile", label: t("settings.profile.title"), icon: User },
-    { id: "activity", label: t("settings.activity.title"), icon: History },
     {
       id: "notifications",
       label: t("settings.notifications.title"),
@@ -218,7 +214,6 @@ export function Settings() {
       <div className="flex-1 min-w-0 p-4 md:p-8 overflow-x-hidden">
         <div className="max-w-4xl mx-auto">
           {activeTab === "profile" && <ProfileTab />}
-          {activeTab === "activity" && <RecentActivityTab />}
           {activeTab === "notifications" && <NotificationsTab />}
           {activeTab === "integrations" && currentUser?.is_admin && (
             <IntegrationsTab />
