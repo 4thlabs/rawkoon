@@ -24,6 +24,9 @@ struct LibraryMediaRow: View {
             VStack(alignment: .leading, spacing: 6) {
                 titleLine
                 metaPills
+                if let note = media.lastSearchNote {
+                    LastSearchLine(note: note)
+                }
                 if let progress = episodeProgress {
                     episodeBar(progress)
                 }

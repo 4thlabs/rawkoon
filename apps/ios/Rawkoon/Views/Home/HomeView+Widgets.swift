@@ -16,7 +16,7 @@ extension HomeView {
             if model.isAdmin, let reencodeSummary, reencodeSummary.show {
                 ReencodeHomeCard(summary: reencodeSummary)
             }
-            if !attention.isEmpty {
+            if !attention.isEmpty || !wantedMisses.isEmpty {
                 attentionWidget
             }
             if model.isAdmin, let rss {
@@ -65,17 +65,98 @@ extension HomeView {
         }
     }
 
+    /// Active downloads with live progress; the whole card opens Activity's queue.
     private var downloadsWidget: some View {
-        widgetCard("Downloads", systemImage: "arrow.down.circle") {
-            if let speed, speed.connected {
-                HStack(spacing: 18) {
-                    speedLabel("down", speed.dlSpeed, Theme.muted)
-                    speedLabel("up", speed.ulSpeed, Theme.muted)
-                }
-            } else {
-                Text(LocalizedStringKey(speed?.enabled == true ? "Download client offline." : "No download client configured."))
-                    .font(.subheadline).foregroundStyle(Theme.muted)
+        NavigationLink {
+            ActivityView()
+        } label: {
+            widgetCard("Downloads", systemImage: "arrow.down.circle") {
+                downloadsContent
             }
+        }
+        .buttonStyle(.rawkoonPressable(scale: 0.98))
+        .accessibilityHint("Opens the download queue")
+    }
+
+    /// The queue rows with the freshest pushed progress laid over them.
+    private var downloadsSummary: HomeDownloadsSummary {
+        let lines = downloadRows.map { row in
+            let live = model.downloadProgress[row.mediaId]?[row.downloadId] ?? row.live
+            return HomeDownloadLine(
+                id: row.id, title: row.mediaTitle, progress: live.progress, speed: live.downloadSpeed,
+                etaSeconds: live.etaSeconds, state: live.state
+            )
+        }
+        return HomeDownloadsSummary.make(lines, limit: 3)
+    }
+
+    @ViewBuilder
+    private var downloadsContent: some View {
+        let summary = downloadsSummary
+        if !summary.isEmpty {
+            VStack(spacing: 12) {
+                ForEach(summary.shown) { line in
+                    downloadLine(line)
+                }
+            }
+            HStack(spacing: 12) {
+                if summary.hiddenCount > 0 {
+                    Text("+\(summary.hiddenCount) more")
+                        .font(.caption.weight(.medium)).foregroundStyle(Theme.muted)
+                }
+                Spacer(minLength: 8)
+                Text("See all").font(.caption.weight(.medium)).foregroundStyle(Theme.apricotSoft)
+                Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(Theme.faint)
+            }
+        } else if let speed, speed.connected {
+            Text("Nothing downloading").font(.subheadline).foregroundStyle(Theme.muted)
+            HStack(spacing: 18) {
+                speedLabel("down", speed.dlSpeed, Theme.muted)
+                speedLabel("up", speed.ulSpeed, Theme.muted)
+            }
+        } else {
+            Text(LocalizedStringKey(speed?.enabled == true ? "Download client offline." : "No download client configured."))
+                .font(.subheadline).foregroundStyle(Theme.muted)
+        }
+    }
+
+    private func downloadLine(_ line: HomeDownloadLine) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(line.title).font(.subheadline.weight(.medium)).foregroundStyle(Theme.text).lineLimit(1)
+                Spacer(minLength: 8)
+                Text("\(Int(line.progress.isFinite ? line.progress * 100 : 0))%")
+                    .font(.system(.caption, design: .monospaced)).foregroundStyle(Theme.muted)
+                    .rawkoonNumeric(line.progress.isFinite ? line.progress * 100 : 0)
+            }
+            DuskProgress(
+                value: line.progress.isFinite ? line.progress : 0,
+                isActive: DownloadMotion.isRunning(state: line.state, speed: line.speed)
+            )
+            HStack(spacing: 10) {
+                if DownloadPhase.classify(line.state) == .importing {
+                    Text("Importing").foregroundStyle(Theme.importing)
+                } else {
+                    Text("↓ \(Formatters.speed(line.speed, useAll: true))").foregroundStyle(Theme.apricotSoft)
+                    if let eta = Formatters.etaSeconds(line.etaSeconds) {
+                        Text("ETA \(eta)").foregroundStyle(Theme.faint)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .font(.system(.caption2, design: .monospaced))
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Reads the queue and the wanted list that feed the Downloads and Needs-attention cards.
+    func loadQueueAndMisses() async {
+        guard let client = model.api() else { return }
+        if model.isAdmin, let rows = try? await ActivityView.fetchQueueRows(client: client) {
+            downloadRows = rows
+        }
+        if let wanted = try? await client.libraryList(status: "wanted", limit: 100).items {
+            wantedMisses = LastSearchNote.recentMisses(wanted, limit: .max) { $0.lastSearchNote }
         }
     }
 
@@ -100,8 +181,52 @@ extension HomeView {
                 ForEach(attention.prefix(5)) { item in
                     attentionRow(item)
                 }
+                ForEach(wantedMisses.prefix(Self.missCap)) { item in
+                    missRow(item)
+                }
+                if !wantedMisses.isEmpty {
+                    NavigationLink {
+                        MissingLibraryView()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Spacer(minLength: 0)
+                            Text("See all missing").font(.caption.weight(.medium)).foregroundStyle(Theme.apricotSoft)
+                            Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(Theme.faint)
+                        }
+                        .frame(minHeight: 32)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
+    }
+
+    static let missCap = 3
+
+    /// A wanted title whose last search found nothing; tapping opens its page.
+    private func missRow(_ item: LibraryMedia) -> some View {
+        Button {
+            attentionTarget = AttentionRoute(
+                id: item.id, tmdbId: item.tmdbId, mediaType: item.type == "show" ? "tv" : "movie",
+                title: item.title, posterUrl: item.posterUrl
+            )
+        } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Circle().fill(Theme.terracotta).frame(width: 7, height: 7).padding(.top, 5)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.title).font(.subheadline.weight(.medium)).foregroundStyle(Theme.text).lineLimit(1)
+                    if let note = item.lastSearchNote {
+                        Text(verbatim: LastSearchCopy.headline(note))
+                            .font(.caption2).foregroundStyle(Theme.muted).lineLimit(1)
+                    }
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(Theme.faint)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.rawkoonPressable(scale: 0.98))
     }
 
     /// A row tappable through to detail when it carries a library id; otherwise

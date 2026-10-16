@@ -185,6 +185,9 @@ final class LiveUpdatesCoordinator {
         case let .searchResult(result):
             logSSE("library", "search-result media=\(result.mediaId) outcome=\(result.outcome.rawValue)")
             appModel?.liveSearch.apply(result)
+            // The stored outcome changed: refetch the item, its lists, and any open page.
+            SSEEventRegistry.apply(.media(id: result.mediaId), to: store)
+            libraryChangeToken += 1
         case let .book(id):
             logSSE("library", "book id=\(id)")
             SSEEventRegistry.apply(.book(id: id), to: store)

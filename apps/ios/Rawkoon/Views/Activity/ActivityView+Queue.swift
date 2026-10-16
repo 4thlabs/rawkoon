@@ -7,6 +7,8 @@ extension ActivityView {
 
     struct QueueRow: Identifiable {
         let id: String
+        let mediaId: Int
+        let downloadId: Int
         let mediaTitle: String
         let releaseTitle: String
         let live: LiveDownload
@@ -38,14 +40,11 @@ extension ActivityView {
     }
 
     func phase(of state: String) -> QueuePhase {
-        let lower = state.lowercased()
-        if lower.contains("seed") || lower.contains("complete") {
-            return .seeding
+        switch DownloadPhase.classify(state) {
+        case .downloading: .downloading
+        case .importing: .importing
+        case .seeding: .seeding
         }
-        if lower.contains("import") || lower.contains("process") {
-            return .importing
-        }
-        return .downloading
     }
 
     private var queuePhaseCounts: [QueuePhase: Int] {
@@ -241,6 +240,8 @@ extension ActivityView {
                 item.live.map { live in
                     QueueRow(
                         id: "\(media.id)-\(item.id)",
+                        mediaId: media.id,
+                        downloadId: item.id,
                         mediaTitle: media.title,
                         releaseTitle: item.releaseTitle,
                         live: live
@@ -274,27 +275,7 @@ extension ActivityView {
         }
 
         do {
-            let list = try await client.libraryList(status: "downloading")
-            // Fetch every media's downloads concurrently instead of one round-trip
-            // per media; a per-media failure falls back to that media's saved
-            // downloads rather than aborting the whole queue.
-            let byId = try await withThrowingTaskGroup(of: (Int, [DownloadHistoryItem]).self) { group in
-                for media in list.items {
-                    group.addTask {
-                        do {
-                            return try await (media.id, client.downloads(libraryId: media.id).items)
-                        } catch {
-                            return (media.id, Self.cachedDownloads(client: client, libraryId: media.id))
-                        }
-                    }
-                }
-                var map: [Int: [DownloadHistoryItem]] = [:]
-                for try await (id, items) in group {
-                    map[id] = items
-                }
-                return map
-            }
-            queueRows = Self.queueRows(media: list.items, downloads: byId)
+            queueRows = try await Self.fetchQueueRows(client: client)
         } catch let error as APIError {
             queueError = message(for: error)
         } catch is CancellationError {
@@ -305,5 +286,30 @@ extension ActivityView {
             }
             queueError = String(localized: "Can't reach the server. Try again in a moment.")
         }
+    }
+
+    /// Every live download of every downloading title; Home's Downloads card reads the same list.
+    static func fetchQueueRows(client: APIClient) async throws -> [QueueRow] {
+        let list = try await client.libraryList(status: "downloading")
+        // Fetch every media's downloads concurrently instead of one round-trip
+        // per media; a per-media failure falls back to that media's saved
+        // downloads rather than aborting the whole queue.
+        let byId = try await withThrowingTaskGroup(of: (Int, [DownloadHistoryItem]).self) { group in
+            for media in list.items {
+                group.addTask {
+                    do {
+                        return try await (media.id, client.downloads(libraryId: media.id).items)
+                    } catch {
+                        return (media.id, Self.cachedDownloads(client: client, libraryId: media.id))
+                    }
+                }
+            }
+            var map: [Int: [DownloadHistoryItem]] = [:]
+            for try await (id, items) in group {
+                map[id] = items
+            }
+            return map
+        }
+        return queueRows(media: list.items, downloads: byId)
     }
 }

@@ -185,6 +185,11 @@ nonisolated struct LibraryMedia: Decodable, Identifiable, Sendable {
     let lastGrabbedAt: String?
     let addedAt: String?
     let digitalReleaseDate: String?
+    /// Last automatic or manual search; absent on an older server or before one ran.
+    var lastSearchAt: String?
+    var lastSearchOutcome: String?
+    /// Admin-only on the server.
+    var lastSearchReason: String?
     /// Set only on a quality-profile update response: the existing file(s) fail
     /// the new profile. `affectedEpisodes` counts the failing episodes of a show.
     var needsUpgrade: Bool?
@@ -200,6 +205,12 @@ nonisolated struct LibraryMedia: Decodable, Identifiable, Sendable {
         case downloadedEpisodeCount, seasonCount, durationSecs, resolution
         case videoCodec, hdrFormat, audioFormat, languageTags, lastGrabbedAt
         case addedAt, digitalReleaseDate, needsUpgrade, affectedEpisodes
+        case lastSearchAt, lastSearchOutcome, lastSearchReason
+    }
+
+    /// The last search outcome worth showing for this item, if any.
+    var lastSearchNote: LastSearchNote? {
+        LastSearchNote(status: status, outcome: lastSearchOutcome, at: lastSearchAt, reason: lastSearchReason)
     }
 }
 
