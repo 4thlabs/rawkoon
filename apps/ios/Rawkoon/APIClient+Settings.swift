@@ -185,6 +185,10 @@ extension APIClient {
         try await patchExpectOK("/api/library/post-processing/settings", body: body)
     }
 
+    func updateDefaultProfiles(_ body: UpdateDefaultProfilesBody) async throws {
+        try await patchExpectOK("/api/library/post-processing/settings", body: body)
+    }
+
     func scanLibrary(path: String, type: String?) async throws -> ScanResultDTO {
         try await post("/api/library/scan", body: ScanBody(path: path, type: type))
     }
@@ -413,5 +417,19 @@ extension APIClient {
     /// Creates the feed token on first call, so the URL is stable after that.
     func calendarSubscription() async throws -> CalendarSubscription {
         try await get("/api/calendar/subscription")
+    }
+}
+
+private nonisolated struct ActiveIndexerManagerBody: Encodable {
+    let activeIndexerManager: String
+}
+
+extension APIClient {
+    /// Makes `kind` ("prowlarr" or "jackett") the indexer manager searches go through.
+    func setActiveIndexerManager(_ kind: String) async throws {
+        try await patchExpectOK(
+            "/api/library/post-processing/settings",
+            body: ActiveIndexerManagerBody(activeIndexerManager: kind)
+        )
     }
 }

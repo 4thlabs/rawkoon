@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Books settings (admin), non-CRUD: enable the feature, order metadata sources,
-/// and set book file paths / templates. Book quality-profile
-/// CRUD is Phase 4 (only the read is used here for the default picker).
+/// and set book file paths / templates. The default book profile lives on
+/// Library & import > Defaults.
 struct BooksSettingsView: View {
     @Environment(AppModel.self) private var model
 
@@ -20,11 +20,8 @@ struct BooksSettingsView: View {
     @State private var audiobooksPath = ""
     @State private var bookTemplate = ""
     @State private var audiobookTemplate = ""
-    @State private var defaultBookProfile: Int? = nil
     @State private var savingFiles = false
     @State private var filesError: String?
-
-    @State private var profiles: [BookQualityProfile] = []
 
     private static let allSources: [(id: String, label: String)] = [
         ("local", "On this server"), ("audnexus", "Audnexus"),
@@ -37,10 +34,6 @@ struct BooksSettingsView: View {
 
     private var disabledSources: [String] {
         Self.allSources.map(\.id).filter { !order.contains($0) }
-    }
-
-    private var profileOptions: [(value: Int?, label: String)] {
-        [(nil, "None")] + profiles.map { (Optional($0.id), $0.name) }
     }
 
     var body: some View {
@@ -128,7 +121,6 @@ struct BooksSettingsView: View {
             LabeledTextFieldRow(title: "Audiobooks path", text: $audiobooksPath, keyboard: .URL, mono: true)
             LabeledTextFieldRow(title: "Book template", text: $bookTemplate, mono: true)
             LabeledTextFieldRow(title: "Audiobook template", text: $audiobookTemplate, mono: true)
-            PickerRow(title: "Default book profile", selection: $defaultBookProfile, options: profileOptions)
             Button("Save files") { Task { await saveFiles() } }
                 .disabled(savingFiles)
                 .requiresConnection(model.isOffline)
@@ -170,19 +162,12 @@ struct BooksSettingsView: View {
             let settings = try await client.postProcessingSettings().settings
             let sources = try await client.bookMetadataSources().order
             let general = try await client.generalSettings().settings
-            do {
-                profiles = try await client.bookQualityProfiles().profiles
-            } catch {
-                // Keep the last list; a failed refetch is not an empty one.
-                model.toast(String(localized: "Couldn't load quality profiles."), style: .error)
-            }
             booksEnabled = general.booksEnabled ?? false
             order = sources
             booksPath = settings.booksLibraryPath ?? ""
             audiobooksPath = settings.audiobooksLibraryPath ?? ""
             bookTemplate = settings.bookTemplate ?? ""
             audiobookTemplate = settings.audiobookTemplate ?? ""
-            defaultBookProfile = settings.defaultBookQualityProfileId
         } catch {
             loadError = settingsErrorMessage(error)
         }
@@ -207,7 +192,7 @@ struct BooksSettingsView: View {
                     audiobooksLibraryPath: nilIfEmpty(audiobooksPath),
                     bookTemplate: bookTemplate,
                     audiobookTemplate: audiobookTemplate,
-                    defaultBookQualityProfileId: defaultBookProfile
+                    defaultBookQualityProfileId: nil
                 )
             )
         } catch {

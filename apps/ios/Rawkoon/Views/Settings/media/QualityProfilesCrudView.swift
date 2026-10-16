@@ -1,3 +1,4 @@
+import RawkoonKit
 import SwiftUI
 
 /// Media quality profiles CRUD (admin). List + editor. `GET/POST/PUT/DELETE
@@ -128,7 +129,9 @@ private struct QualityProfileEditorView: View {
     @State private var codecs: [String] = []
     @State private var languages: [String] = []
     @State private var searchLanguage: String? = nil
-    @State private var trackersText = ""
+    /// Ordered, like the sources: the server ranks trackers by position.
+    @State private var trackers: [String] = []
+    @State private var newTracker = ""
     @State private var preferTracker = false
     @State private var maxSizeText = ""
     @State private var minSeeders: Int? = 0
@@ -186,46 +189,15 @@ private struct QualityProfileEditorView: View {
                 LabeledTextFieldRow(title: "Name", text: $name, autocaps: true)
                 PickerRow(title: "Min resolution", selection: $minResolution, options: Self.resolutionOptions)
                 PickerRow(title: "Cutoff", selection: $cutoffResolution, options: cutoffOptions)
-            }
-            Section {
-                OrderedMultiSelectRow(title: "Preferred sources", selected: $sources, options: QualityProfileSources.options)
-                OrderedMultiSelectRow(title: "Preferred codecs", selected: $codecs, options: Self.codecOptions)
-                OrderedMultiSelectRow(title: "Preferred languages", selected: $languages, options: Self.languageOptions)
-                PickerRow(title: "Search title language", selection: $searchLanguage, options: searchLanguageOptions)
-            }
-            Section {
                 Toggle("Prefer HDR", isOn: $preferHdr).tint(Theme.apricot).listRowBackground(Theme.raised)
                 Toggle("Require HDR", isOn: $requireHdr).tint(Theme.apricot).listRowBackground(Theme.raised)
-                NumberFieldRow("Min seeders", value: $minSeeders, range: 0 ... 100_000)
-                LabeledTextFieldRow(title: "Max size (GB)", text: $maxSizeText, keyboard: .decimalPad)
             }
             Section {
-                NumberFieldRow("Grab delay (minutes)", value: $grabDelayMinutes, range: 0 ... 43200)
-                Toggle("Skip delay when cutoff is met", isOn: $bypassDelayIfCutoffMet)
-                    .tint(Theme.apricot).listRowBackground(Theme.raised)
-            } footer: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("The delay holds automatic grabs so a better release can show up. Manual grabs are never delayed.")
-                    Text("Held releases are listed under Automatic grabbing, where you can grab one early.")
+                DisclosureGroup("Advanced") {
+                    advancedRows
                 }
             }
-            Section {
-                LabeledTextFieldRow(title: "Prioritized trackers", text: $trackersText,
-                                    placeholder: "comma-separated")
-                Toggle("Prefer tracker over quality", isOn: $preferTracker)
-                    .tint(Theme.apricot).listRowBackground(Theme.raised)
-            } footer: {
-                Text("Tracker slugs, in priority order, comma-separated.")
-            }
-            if !formats.isEmpty {
-                Section {
-                    ForEach(formats) { format in
-                        customFormatRow(format)
-                    }
-                } header: {
-                    Text("Custom formats")
-                }
-            }
+            .listRowBackground(Theme.raised)
             if let saveError {
                 Section { Text(saveError).foregroundStyle(Theme.terracotta) }
                     .listRowBackground(Theme.raised)
@@ -247,6 +219,72 @@ private struct QualityProfileEditorView: View {
             }
         }
         .onAppear(perform: seed)
+    }
+
+    /// Everything past the five basics: preferences, limits, grab delay, trackers and custom formats.
+    @ViewBuilder
+    private var advancedRows: some View {
+        OrderedMultiSelectRow(title: "Preferred sources", selected: $sources, options: QualityProfileSources.options)
+        OrderedMultiSelectRow(title: "Preferred codecs", selected: $codecs, options: Self.codecOptions)
+        OrderedMultiSelectRow(title: "Preferred languages", selected: $languages, options: Self.languageOptions)
+        PickerRow(title: "Search title language", selection: $searchLanguage, options: searchLanguageOptions)
+        NumberFieldRow("Min seeders", value: $minSeeders, range: 0 ... 100_000)
+        LabeledTextFieldRow(title: "Max size (GB)", text: $maxSizeText, keyboard: .decimalPad)
+        NumberFieldRow("Grab delay (minutes)", value: $grabDelayMinutes, range: 0 ... 43200)
+        Toggle("Skip delay when cutoff is met", isOn: $bypassDelayIfCutoffMet)
+            .tint(Theme.apricot)
+        Text("The delay holds automatic grabs so a better release can show up. Manual grabs are never delayed. Held releases are listed under Queue in Activity, where you can grab one early.")
+            .font(.footnote).foregroundStyle(Theme.muted)
+        trackerRows
+        Toggle("Prefer tracker over quality", isOn: $preferTracker)
+            .tint(Theme.apricot)
+        if !formats.isEmpty {
+            Text("Custom formats").font(.footnote).foregroundStyle(Theme.muted)
+        }
+        ForEach(formats) { format in
+            customFormatRow(format)
+        }
+    }
+
+    /// The prioritized trackers as an ordered list: first is tried first.
+    @ViewBuilder
+    private var trackerRows: some View {
+        Text("Prioritized trackers").font(.footnote).foregroundStyle(Theme.muted)
+        ForEach(Array(trackers.enumerated()), id: \.offset) { index, tracker in
+            HStack(spacing: 8) {
+                Text(verbatim: tracker).foregroundStyle(Theme.text)
+                Spacer()
+                Button { trackers = OrderedListEdit.moved(trackers, index: index, by: -1) } label: {
+                    Image(systemName: "chevron.up")
+                }
+                .disabled(index == 0).buttonStyle(.borderless)
+                .accessibilityLabel(Text("Move up"))
+                Button { trackers = OrderedListEdit.moved(trackers, index: index, by: 1) } label: {
+                    Image(systemName: "chevron.down")
+                }
+                .disabled(index == trackers.count - 1).buttonStyle(.borderless)
+                .accessibilityLabel(Text("Move down"))
+                Button(role: .destructive) { trackers = OrderedListEdit.removed(trackers, at: index) } label: {
+                    Image(systemName: "minus.circle")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(Text("Remove"))
+            }
+        }
+        HStack {
+            TextField("Add a tracker", text: $newTracker)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .onSubmit(addTracker)
+            Button("Add", action: addTracker)
+                .disabled(newTracker.trimmingCharacters(in: .whitespaces).isEmpty)
+                .buttonStyle(.borderless)
+        }
+    }
+
+    private func addTracker() {
+        trackers = OrderedListEdit.appended(trackers, newTracker)
+        newTracker = ""
     }
 
     private func customFormatRow(_ format: CustomFormatDTO) -> some View {
@@ -300,7 +338,7 @@ private struct QualityProfileEditorView: View {
         codecs = profile.preferredCodecs ?? []
         languages = profile.preferredLanguages ?? []
         searchLanguage = profile.preferredSearchLanguage
-        trackersText = (profile.prioritizedTrackers ?? []).joined(separator: ", ")
+        trackers = profile.prioritizedTrackers ?? []
         preferTracker = profile.preferTrackerOverQuality ?? false
         maxSizeText = profile.maxSizeGb.map { String($0) } ?? ""
         minSeeders = profile.minSeeders ?? 0
@@ -323,9 +361,6 @@ private struct QualityProfileEditorView: View {
     }
 
     private func body_() -> SaveQualityProfileBody {
-        let trackers = trackersText.split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
         let assignments = scores.map { id, score -> CustomFormatAssignmentBody in
             let stance = stances[id] ?? .neither
             return CustomFormatAssignmentBody(

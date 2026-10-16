@@ -1,6 +1,366 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%lld more issues": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld autres problèmes"
+          }
+        }
+      }
+    },
+    "%lld open problems": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld problèmes ouverts"
+          }
+        }
+      }
+    },
+    "A download containing one of these is rejected and blocklisted.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un téléchargement contenant l'une d'elles est rejeté et ajouté à la liste de blocage."
+          }
+        }
+      }
+    },
+    "A new title uses its default profile unless you pick another when adding it. Without one, a new title accepts any release.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un nouveau titre utilise son profil par défaut, sauf si vous en choisissez un autre à l'ajout. Sans profil, il accepte n'importe quelle version."
+          }
+        }
+      }
+    },
+    "AI usage": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilisation de l'IA"
+          }
+        }
+      }
+    },
+    "Add a tracker": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un tracker"
+          }
+        }
+      }
+    },
+    "Adding & checking": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajout et vérification"
+          }
+        }
+      }
+    },
+    "After download": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Après le téléchargement"
+          }
+        }
+      }
+    },
+    "App": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Application"
+          }
+        }
+      }
+    },
+    "App updates": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mises à jour de l'app"
+          }
+        }
+      }
+    },
+    "Blocked file extensions": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extensions de fichier bloquées"
+          }
+        }
+      }
+    },
+    "Check schedule": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendrier de vérification"
+          }
+        }
+      }
+    },
+    "Connections": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexions"
+          }
+        }
+      }
+    },
+    "Couldn't load the RSS status.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de charger l'état du RSS."
+          }
+        }
+      }
+    },
+    "Couldn't load the alerts.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de charger les alertes."
+          }
+        }
+      }
+    },
+    "Couldn't load the library health run.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de charger l'analyse de la bibliothèque."
+          }
+        }
+      }
+    },
+    "Days": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jours"
+          }
+        }
+      }
+    },
+    "Defaults": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valeurs par défaut"
+          }
+        }
+      }
+    },
+    "Enter positive numbers, or leave a field empty.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrez des nombres positifs, ou laissez un champ vide."
+          }
+        }
+      }
+    },
+    "Folders & import": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dossiers et import"
+          }
+        }
+      }
+    },
+    "Health": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Santé"
+          }
+        }
+      }
+    },
+    "How imported files are placed and named.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comment les fichiers importés sont placés et nommés."
+          }
+        }
+      }
+    },
+    "Indexer manager": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestionnaire d'indexeurs"
+          }
+        }
+      }
+    },
+    "Last run": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière exécution"
+          }
+        }
+      }
+    },
+    "Library & import": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bibliothèque et import"
+          }
+        }
+      }
+    },
+    "Library health": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Santé de la bibliothèque"
+          }
+        }
+      }
+    },
+    "No issues found": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun problème trouvé"
+          }
+        }
+      }
+    },
+    "Nothing needs attention": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien ne demande votre attention"
+          }
+        }
+      }
+    },
+    "Password, passkeys, calendar link": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mot de passe, clés d'accès, lien de calendrier"
+          }
+        }
+      }
+    },
+    "People": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personnes"
+          }
+        }
+      }
+    },
+    "Prioritized trackers": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trackers prioritaires"
+          }
+        }
+      }
+    },
+    "Releases found": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versions trouvées"
+          }
+        }
+      }
+    },
+    "Security": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sécurité"
+          }
+        }
+      }
+    },
+    "The RSS check hasn't run yet.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La vérification RSS ne s'est pas encore exécutée."
+          }
+        }
+      }
+    },
+    "The delay holds automatic grabs so a better release can show up. Manual grabs are never delayed. Held releases are listed under Queue in Activity, where you can grab one early.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le délai retient les prises automatiques pour laisser apparaître une meilleure version. Les prises manuelles ne sont jamais retardées. Les versions retenues figurent dans la file d'attente de l'activité, où vous pouvez en prendre une plus tôt."
+          }
+        }
+      }
+    },
+    "The library health check hasn't run yet.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'analyse de la bibliothèque ne s'est pas encore exécutée."
+          }
+        }
+      }
+    },
     "Seeding (%lld)": {
       "localizations": {
         "fr": {

@@ -11,11 +11,17 @@ struct SeedIndexerRuleRow: View {
 
     @State private var editing = false
     @State private var ratioText = ""
+    @State private var daysText = ""
     @State private var busy = false
 
     private var parsed: SeedRule? {
-        // Customizing keeps the inherited seed-time target, like the ratio-only web editor drops none.
-        SeedRuleLogic.rule(ratio: SeedRuleLogic.parseRatio(ratioText), seedTimeMins: nil)
+        let minutes: Int?
+        switch SeedTimeDays.parse(daysText) {
+        case .invalid: return nil
+        case .none: minutes = nil
+        case let .minutes(value): minutes = value
+        }
+        return SeedRuleLogic.rule(ratio: SeedRuleLogic.parseRatio(ratioText), seedTimeMins: minutes)
     }
 
     var body: some View {
@@ -33,6 +39,7 @@ struct SeedIndexerRuleRow: View {
             }
             if editing {
                 LabeledTextFieldRow(title: "Ratio", text: $ratioText, placeholder: "none", keyboard: .decimalPad)
+                LabeledTextFieldRow(title: "Days", text: $daysText, placeholder: "none", keyboard: .decimalPad)
                 HStack {
                     Button("Save") { Task { await save() } }
                         .disabled(parsed == nil || busy)
@@ -49,6 +56,7 @@ struct SeedIndexerRuleRow: View {
                     } else {
                         Button("Customize") {
                             ratioText = SeedRuleLogic.ratioText(row.effective.ratio)
+                            daysText = SeedTimeDays.text(forMinutes: row.effective.seedTimeMins)
                             editing = true
                         }
                     }

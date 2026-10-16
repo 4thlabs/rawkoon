@@ -84,13 +84,15 @@ struct DownloadClientEditView: View {
                     TestConnectionButton { await testConnection() }
                 }
                 Section {
-                    NavigationLink {
-                        DownloadClientHookView()
-                    } label: {
-                        Label("Completion hook", systemImage: "link")
+                    DisclosureGroup("Advanced") {
+                        NavigationLink {
+                            DownloadClientHookView()
+                        } label: {
+                            Label("Completion hook", systemImage: "link")
+                        }
                     }
-                    .listRowBackground(Theme.raised)
                 }
+                .listRowBackground(Theme.raised)
                 if let saveError {
                     Section { Text(saveError).foregroundStyle(Theme.terracotta) }
                         .listRowBackground(Theme.raised)

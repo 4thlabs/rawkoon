@@ -57,7 +57,7 @@ struct RootTabsView: View {
             case "autoGrab": NavigationStack { AutoGrabSettingsView() }
             case "qualityProfileEditor": NavigationStack { DebugFirstQualityProfile() }
             case "notifications": NavigationStack { NotificationsSettingsView() }
-            case "indexers": NavigationStack { IndexersView() }
+            case "indexers": NavigationStack { IndexersSettingsView() }
             case "find", "explore": NavigationStack { FindView() }
             default: mainTabs
             }
