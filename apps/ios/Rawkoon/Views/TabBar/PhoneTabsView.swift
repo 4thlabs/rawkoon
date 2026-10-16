@@ -96,12 +96,12 @@ struct PhoneTabsView<Root: View>: View {
                 tabs: RootTab.phoneTabs(booksEnabled: model.booksEnabled),
                 selection: $selection,
                 isCollapsed: chrome.isCollapsed,
-                unreadLabel: NotificationBadge.label(forUnread: model.unreadNotificationCount),
+                unreadLabel: NotificationBadge.label(forUnread: model.activityBadgeCount),
                 initials: model.userInitials,
                 onExpand: { chrome.expand() },
                 onReselect: { tab in
                     stackResets[tab, default: 0] += 1
-                    if tab == .explore {
+                    if tab == .find {
                         model.exploreSearchFocusRequest = true
                     }
                 },

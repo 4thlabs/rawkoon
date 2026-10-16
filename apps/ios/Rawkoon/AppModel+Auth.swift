@@ -140,6 +140,7 @@ extension AppModel {
         apiClient = nil
         isLoggedIn = false
         isAdmin = false
+        pendingRequestCount = 0
         userFirstName = nil
         userInitials = nil
         library = []
