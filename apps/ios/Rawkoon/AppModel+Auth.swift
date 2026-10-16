@@ -118,6 +118,7 @@ extension AppModel {
             Task { try? await client.unregisterApns(deviceToken: token) }
         }
         registeredApnsToken = nil
+        booksEnabled = true
 
         stopLiveStreams()
         serverStateStore.clear()

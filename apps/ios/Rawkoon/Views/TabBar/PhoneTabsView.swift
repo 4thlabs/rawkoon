@@ -27,7 +27,7 @@ struct PhoneTabsView<Root: View>: View {
 
     var body: some View {
         ZStack {
-            ForEach(RootTab.phone, id: \.self) { tab in
+            ForEach(RootTab.phoneTabs(booksEnabled: model.booksEnabled), id: \.self) { tab in
                 if visited.contains(tab) || tab == selection {
                     let shown = tab == selection
                     root(tab)
@@ -80,7 +80,7 @@ struct PhoneTabsView<Root: View>: View {
     }
 
     private var insets: TabBarLayout.Insets {
-        TabBarLayout.insets(containerWidth: containerWidth, slots: RootTab.phone.count)
+        TabBarLayout.insets(containerWidth: containerWidth, slots: RootTab.phoneTabs(booksEnabled: model.booksEnabled).count)
     }
 
     private var hasActiveBook: Bool {
@@ -93,7 +93,7 @@ struct PhoneTabsView<Root: View>: View {
     private var bottomChrome: some View {
         TabChromeLayout(isCollapsed: chrome.isCollapsed) {
             RawkoonTabBar(
-                tabs: RootTab.phone,
+                tabs: RootTab.phoneTabs(booksEnabled: model.booksEnabled),
                 selection: $selection,
                 isCollapsed: chrome.isCollapsed,
                 unreadLabel: NotificationBadge.label(forUnread: model.unreadNotificationCount),

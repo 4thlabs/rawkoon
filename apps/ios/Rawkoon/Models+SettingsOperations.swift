@@ -100,7 +100,8 @@ nonisolated struct PostProcessingSettingsResponseDTO: Decodable, Sendable {
 
 /// Media subset of the shared post-processing row. Custom `encode(to:)` emits
 /// explicit JSON null for cleared paths/ids (a synthesized encoder would omit
-/// nil and keep the old value). Sends only media keys.
+/// nil and keep the old value). Sends only media keys; the seed ratio is
+/// owned by the Seeding screen, so it is never sent from here.
 nonisolated struct UpdateMediaSettingsBody: Encodable, Sendable {
     var postProcessingEnabled: Bool
     var moviesLibraryPath: String?
@@ -109,7 +110,6 @@ nonisolated struct UpdateMediaSettingsBody: Encodable, Sendable {
     var fileOperation: String
     var movieTemplate: String
     var episodeTemplate: String
-    var minSeedRatio: Double
     var activeIndexerManager: String?
     var defaultMovieQualityProfileId: Int?
     var defaultShowQualityProfileId: Int?
@@ -118,7 +118,7 @@ nonisolated struct UpdateMediaSettingsBody: Encodable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case postProcessingEnabled, moviesLibraryPath, showsLibraryPath, downloadsPath
-        case fileOperation, movieTemplate, episodeTemplate, minSeedRatio
+        case fileOperation, movieTemplate, episodeTemplate
         case activeIndexerManager, defaultMovieQualityProfileId, defaultShowQualityProfileId
         case minFreeSpaceGb
     }
@@ -132,7 +132,6 @@ nonisolated struct UpdateMediaSettingsBody: Encodable, Sendable {
         try c.encode(fileOperation, forKey: .fileOperation)
         try c.encode(movieTemplate, forKey: .movieTemplate)
         try c.encode(episodeTemplate, forKey: .episodeTemplate)
-        try c.encode(minSeedRatio, forKey: .minSeedRatio)
         try c.encode(activeIndexerManager, forKey: .activeIndexerManager)
         try c.encode(defaultMovieQualityProfileId, forKey: .defaultMovieQualityProfileId)
         try c.encode(defaultShowQualityProfileId, forKey: .defaultShowQualityProfileId)

@@ -137,6 +137,7 @@ struct AppRootView: View {
                 model.startLiveStreams()
                 model.resyncDownloads()
                 Task { await model.refreshUnreadNotificationCount() }
+                Task { await model.refreshBooksEnabled() }
             case .background:
                 model.persistPlaybackProgress(force: true)
                 model.stopLiveStreams()

@@ -14,15 +14,21 @@ public enum RootTab: String, CaseIterable, Sendable {
         .activity, .requests, .settings, .server,
     ]
 
+    /// The phone bar as it shows when the server's books feature is on or off.
+    public static func phoneTabs(booksEnabled: Bool) -> [RootTab] {
+        phone.filter { $0 != .books || booksEnabled }
+    }
+
     /// The sidebar entries this user can see.
-    public static func visibleSidebar(isAdmin: Bool) -> [RootTab] {
-        sidebar.filter { $0 != .server || isAdmin }
+    public static func visibleSidebar(isAdmin: Bool, booksEnabled: Bool = true) -> [RootTab] {
+        sidebar.filter { ($0 != .server || isAdmin) && ($0 != .books || booksEnabled) }
     }
 
     /// A stale pick must resolve to a tab that exists at this width; Home is the landing tab.
-    public static func validated(_ raw: String, compact: Bool, isAdmin: Bool = true) -> RootTab {
-        guard let tab = RootTab(rawValue: raw),
-              (compact ? phone : visibleSidebar(isAdmin: isAdmin)).contains(tab) else { return .home }
+    public static func validated(_ raw: String, compact: Bool, isAdmin: Bool = true, booksEnabled: Bool = true) -> RootTab {
+        let available = compact ? phoneTabs(booksEnabled: booksEnabled)
+            : visibleSidebar(isAdmin: isAdmin, booksEnabled: booksEnabled)
+        guard let tab = RootTab(rawValue: raw), available.contains(tab) else { return .home }
         return tab
     }
 
