@@ -3,7 +3,10 @@ import { useFetcher } from "@/lib/api/context";
 import { queryKeys } from "@/lib/queryKeys";
 import { LIBRARY_ENDPOINTS } from "@/lib/endpoints";
 import { useTitleLanguage } from "@/lib/useTitleLanguage";
-import type { AddToLibraryResponse } from "@rawkoon/shared/types";
+import type {
+  AddToLibraryRequest,
+  AddToLibraryResponse,
+} from "@rawkoon/shared/types";
 
 export function useAddToLibrary() {
   const fetcher = useFetcher();
@@ -11,7 +14,7 @@ export function useAddToLibrary() {
   const titleLanguage = useTitleLanguage();
 
   return useMutation({
-    mutationFn: (body: { tmdb_id: number; type: "movie" | "show" }) =>
+    mutationFn: (body: AddToLibraryRequest) =>
       fetcher<AddToLibraryResponse>(LIBRARY_ENDPOINTS.ADD, {
         method: "POST",
         body,

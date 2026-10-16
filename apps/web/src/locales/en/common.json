@@ -860,7 +860,12 @@
       "scanRunning": "Scanning…",
       "scanResult": "Matched {{count}} title(s).",
       "scanUnmatched": "Unmatched",
-      "scanError": "Scan failed"
+      "scanError": "Scan failed",
+      "searchOnAdd": {
+        "title": "When you add a movie or show",
+        "on": "Search and grab it right away",
+        "off": "Add it to the library only (waits for the scheduled check or Search now)"
+      }
     },
     "arrImport": {
       "title": "Import library from Radarr / Sonarr",
@@ -1975,6 +1980,16 @@
       "daysAll": "All time",
       "empty": "No download history found.",
       "paginationRange": "{{start}}–{{end}} of {{total}}"
+    },
+    "addToast": {
+      "searching": "Added {{title}} — searching for a release",
+      "notReleased": "Added {{title}} — waiting for its digital release ({{date}})",
+      "notReleasedNoDate": "Added {{title}} — waiting for a digital release date"
+    },
+    "addSearch": {
+      "caption": "Searches for a release right away",
+      "addOnly": "Add only (don't search)",
+      "moreOptions": "More add options"
     }
   },
   "library": {

@@ -9,6 +9,7 @@ import { ensureAdmin, requireUser } from "@rawkoon/api/middleware/hono/auth";
 import { jsonV, queryV } from "@rawkoon/api/middleware/validate";
 import { addOrUpdateLibraryFromTmdb } from "@rawkoon/api/services/libraryFromTmdb";
 import { deleteCache } from "@rawkoon/api/services/cache";
+import { queueSearchOnAdd } from "@rawkoon/api/services/searchOnAdd";
 import { pruneLibraryDirsAfterDelete } from "@rawkoon/api/services/library/pruneLibraryDirs";
 import { TMDB_UPCOMING_CACHE_KEY } from "@rawkoon/api/utils/dashboard/tmdbUpcoming";
 import { getGlobalTmdbRegion } from "@rawkoon/api/utils/medias/tmdbRegion";
@@ -253,13 +254,14 @@ export const libraryListRoutes = new Hono<Env>()
       z.object({
         tmdb_id: z.number(),
         type: z.union([z.literal("movie"), z.literal("show")]),
+        search_on_add: z.boolean().optional(),
       }),
     ),
     async (c) => {
       const denied = ensureAdmin(c.get("user"));
       if (denied) return denied;
       try {
-        const { tmdb_id, type } = c.req.valid("json");
+        const { tmdb_id, type, search_on_add } = c.req.valid("json");
         if (type !== "movie" && type !== "show") {
           return badRequest("type must be 'movie' or 'show'");
         }
@@ -271,7 +273,8 @@ export const libraryListRoutes = new Hono<Env>()
             region,
           });
           await deleteCache(`${TMDB_UPCOMING_CACHE_KEY}:${region}`);
-          return ok({ item: mapLibraryMedia(item) });
+          const search = await queueSearchOnAdd(item, search_on_add);
+          return ok({ item: mapLibraryMedia(item), ...search });
         } catch (e) {
           const msg = e instanceof Error ? e.message : "";
           if (msg === "TMDB is not configured") {

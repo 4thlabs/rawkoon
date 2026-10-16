@@ -112,6 +112,15 @@ export async function processScheduledJob(job: Job) {
         await upgradeMediaSearch({ mediaId, episodeId });
         break;
       }
+      case SCHEDULED_JOB_NAMES.SEARCH_ON_ADD: {
+        const { searchOnAdd } = await import("../../workers/searchOnAdd");
+        const { mediaId, season } = job.data as {
+          mediaId: number;
+          season?: number;
+        };
+        await searchOnAdd(mediaId, season);
+        break;
+      }
       case SCHEDULED_JOB_NAMES.REFRESH_GITHUB_RELEASES: {
         const { refreshGitHubReleases } = await import("../githubReleases");
         await refreshGitHubReleases({ notifyAdmins: true });
