@@ -244,7 +244,7 @@
             .background(Theme.base)
             .task {
                 guard let client = model.api() else { return }
-                let items = (try? await client.libraryList(type: "movie").items) ?? []
+                let items = await (try? client.libraryList(type: "movie").items) ?? []
                 let wanted = ProcessInfo.processInfo.environment["RAWKOON_RELEASE_MEDIA"].flatMap(Int.init)
                 media = items.first { $0.id == wanted } ?? items.first
                 if media == nil {

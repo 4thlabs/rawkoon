@@ -31,8 +31,8 @@ struct ScoreBreakdownPanel: View {
                     Text("Score breakdown")
                 }
             }
-                .font(.system(.caption2, design: .monospaced))
-                .foregroundStyle(Theme.muted)
+            .font(.system(.caption2, design: .monospaced))
+            .foregroundStyle(Theme.muted)
         }
         .tint(Theme.muted)
     }

@@ -314,7 +314,9 @@ struct ReleaseSearchResults: View {
         var reasons: [String] = []
         if let parsed = release.parsedQuality {
             let quality = [parsed.resolution.map { "\($0)p" }, parsed.source].compactMap(\.self).joined(separator: " ")
-            if !quality.isEmpty { reasons.append(quality) }
+            if !quality.isEmpty {
+                reasons.append(quality)
+            }
         }
         let matchedLanguage = release.scoreBreakdown?.components.contains { $0.code == "language_match" && $0.value > 0 } == true
         if matchedLanguage {
