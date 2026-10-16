@@ -52,6 +52,7 @@ mock.module("@rawkoon/api/middleware/hono/auth", () => ({
 }));
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
+    libraryEpisode: { findMany: async () => [{ season: 1 }, { season: 2 }] },
     mediaSettings: {
       findUnique: async () =>
         searchOnAddSetting === null
@@ -126,6 +127,7 @@ beforeEach(() => {
     id: 5,
     type: "movie",
     status: "wanted",
+    monitored: true,
     digitalReleaseDate: new Date("2020-01-01"),
   };
 });
@@ -182,8 +184,26 @@ describe("POST /api/library search on add", () => {
   });
 
   it("queues a show", async () => {
-    added = { id: 6, type: "show", status: "wanted", digitalReleaseDate: null };
+    added = {
+      id: 6,
+      type: "show",
+      status: "wanted",
+      monitored: true,
+      digitalReleaseDate: null,
+    };
     expect((await add({ tmdb_id: 2, type: "show" })).search_queued).toBe(true);
+    // One job per aired season, not one long job for the whole show.
+    expect(jobs.map((j) => j.data)).toEqual([
+      { mediaId: 6, season: 1 },
+      { mediaId: 6, season: 2 },
+    ]);
+  });
+
+  it("does not queue an unmonitored title", async () => {
+    added = { ...added, monitored: false };
+    const body = await add(movie);
+    expect(body.search_skipped_reason).toBe("not_monitored");
+    expect(jobs).toHaveLength(0);
   });
 });
 

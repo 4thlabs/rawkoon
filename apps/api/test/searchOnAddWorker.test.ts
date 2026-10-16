@@ -58,8 +58,12 @@ mock.module("@rawkoon/api/db", () => ({
       },
     },
     libraryEpisode: {
-      findMany: async (a: { where: { season: { gt: number } } }) =>
-        episodes.filter((e) => e.season > a.where.season.gt),
+      findMany: async (a: { where: { season: number | { gt: number } } }) =>
+        episodes.filter((e) =>
+          typeof a.where.season === "number"
+            ? e.season === a.where.season
+            : e.season > a.where.season.gt,
+        ),
       update: async (a: unknown) => {
         writes.push(a);
         return {};
@@ -77,6 +81,7 @@ afterAll(() => {
 
 const base = {
   id: 1,
+  monitored: true,
   title: "Some Title",
   searchTitle: null,
   originalTitle: null,
@@ -153,6 +158,19 @@ describe("searchOnAdd worker: movies", () => {
     expect(searches).toHaveLength(0);
   });
 
+  it("skips an unmonitored movie", async () => {
+    media = {
+      ...base,
+      monitored: false,
+      type: "movie",
+      status: "wanted",
+      digitalReleaseDate: past,
+      _count: { files: 0 },
+    };
+    await searchOnAdd(1);
+    expect(searches).toHaveLength(0);
+  });
+
   it("returns quietly when the title was removed", async () => {
     media = null;
     await searchOnAdd(1);
@@ -204,6 +222,22 @@ describe("searchOnAdd worker: shows", () => {
     episodes = [ep(1, 1), ep(1, 2)];
     await searchOnAdd(1);
     expect(searches.map((s) => s.suffix)).toEqual([" S01"]);
+  });
+
+  it("skips an unmonitored show", async () => {
+    media = { ...media, monitored: false };
+    episodes = [ep(1, 1)];
+    await searchOnAdd(1);
+    expect(searches).toHaveLength(0);
+  });
+
+  it("a season job searches only that season", async () => {
+    packResult = { grabbed: true, reason: "" };
+    episodes = [ep(1, 1), ep(1, 2), ep(2, 1), ep(2, 2)];
+    await searchOnAdd(1, 2);
+    expect(searches).toEqual([
+      { suffix: " S02", season: 2, episodeId: undefined },
+    ]);
   });
 
   it("ignores specials and episodes that already have files", async () => {

@@ -4,13 +4,14 @@ import {
   searchOnAddJobId,
 } from "@rawkoon/api/services/searchOnAdd";
 
-function harness(enabled: boolean, fail = false) {
-  const calls: number[] = [];
+function harness(enabled: boolean, fail = false, seasons: number[] = [1, 2]) {
+  const calls: Array<number | string> = [];
   const deps = {
     isEnabled: async () => enabled,
-    enqueue: async (mediaId: number) => {
+    airedSeasons: async () => seasons,
+    enqueue: async (mediaId: number, season?: number) => {
       if (fail) throw new Error("redis down");
-      calls.push(mediaId);
+      calls.push(season == null ? mediaId : `${mediaId}-s${season}`);
     },
   };
   return { calls, deps };
@@ -21,12 +22,14 @@ const movie = {
   id: 7,
   type: "movie",
   status: "wanted",
+  monitored: true,
   digitalReleaseDate: past,
 };
 const show = {
   id: 8,
   type: "show",
   status: "wanted",
+  monitored: true,
   digitalReleaseDate: null,
 };
 
@@ -37,7 +40,40 @@ describe("searchOnAddJobId", () => {
   });
 });
 
+describe("searchOnAddJobId per season", () => {
+  it("adds a season suffix without ':'", () => {
+    expect(searchOnAddJobId(8, 3)).toBe("search-on-add-8-s3");
+    expect(searchOnAddJobId(8, 3)).not.toContain(":");
+  });
+});
+
 describe("queueSearchOnAdd", () => {
+  it("queues one job per aired season for a show", async () => {
+    const h = harness(true, false, [1, 3]);
+    const r = await queueSearchOnAdd(show, undefined, h.deps);
+    expect(r.search_queued).toBe(true);
+    expect(h.calls).toEqual(["8-s1", "8-s3"]);
+  });
+
+  it("queues nothing for a show with no aired wanted episodes", async () => {
+    const h = harness(true, false, []);
+    const r = await queueSearchOnAdd(show, undefined, h.deps);
+    expect(r).toEqual({ search_queued: false, search_skipped_reason: null });
+  });
+
+  it("does not queue an unmonitored title", async () => {
+    const h = harness(true);
+    for (const m of [movie, show]) {
+      const r = await queueSearchOnAdd(
+        { ...m, monitored: false },
+        undefined,
+        h.deps,
+      );
+      expect(r.search_skipped_reason).toBe("not_monitored");
+    }
+    expect(h.calls).toHaveLength(0);
+  });
+
   it("queues a released movie when the setting is on", async () => {
     const h = harness(true);
     const r = await queueSearchOnAdd(movie, undefined, h.deps);

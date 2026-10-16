@@ -2,13 +2,11 @@ import { prisma } from "@rawkoon/api/db";
 import { searchAndGrabWithTitleFallback } from "@rawkoon/api/services/mediaGrabberSearch";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 import { refreshLibraryMovieDigitalDate } from "@rawkoon/api/services/libraryTmdbRefresh";
-import { isMovieReleased } from "@rawkoon/api/services/searchOnAdd";
-import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import {
-  APP_DISPLAY_TIMEZONE,
-  localDateYmd,
-  toUtcMidnightDate,
-} from "@rawkoon/shared/utils/date";
+  airedEpisodeCutoff,
+  isMovieReleased,
+} from "@rawkoon/api/services/searchOnAdd";
+import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 
 type SearchTarget = {
   id: number;
@@ -26,13 +24,18 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
  * the scheduled checks, but a miss is not recorded: the scheduled checks keep
  * their own attempt budget and pick the title up later.
  */
-export async function searchOnAdd(mediaId: number): Promise<void> {
+/** `season` set = one season of a show (the add queues one job per season). */
+export async function searchOnAdd(
+  mediaId: number,
+  season?: number,
+): Promise<void> {
   const media = await prisma.libraryMedia.findUnique({
     where: { id: mediaId },
     select: {
       id: true,
       type: true,
       status: true,
+      monitored: true,
       title: true,
       searchTitle: true,
       originalTitle: true,
@@ -42,13 +45,14 @@ export async function searchOnAdd(mediaId: number): Promise<void> {
       _count: { select: { files: true } },
     },
   });
-  if (!media) return;
+  // The scheduled checks skip unmonitored titles, so this does too.
+  if (!media || !media.monitored) return;
 
   if (media.type === "movie") {
     if (media.status !== "wanted" || media._count.files > 0) return;
     await searchMovie(media, media.digitalReleaseDate);
   } else {
-    await searchShow(media);
+    await searchShow(media, season);
   }
 }
 
@@ -79,13 +83,17 @@ async function searchMovie(
   });
 }
 
-async function searchShow(media: SearchTarget): Promise<void> {
-  // Same 60-minute indexer grace the scheduled episode check uses.
-  const cutoff = toUtcMidnightDate(
-    localDateYmd(APP_DISPLAY_TIMEZONE, new Date(Date.now() - 60 * 60 * 1000)),
-  );
+async function searchShow(
+  media: SearchTarget,
+  onlySeason?: number,
+): Promise<void> {
+  const cutoff = airedEpisodeCutoff();
   const episodes = await prisma.libraryEpisode.findMany({
-    where: { mediaId: media.id, monitored: true, season: { gt: 0 } },
+    where: {
+      mediaId: media.id,
+      monitored: true,
+      season: onlySeason ?? { gt: 0 },
+    },
     select: {
       id: true,
       season: true,

@@ -17,10 +17,38 @@ export function isMovieReleased(digital: Date | null): boolean {
   return digital <= toUtcMidnightDate(localDateYmd(APP_DISPLAY_TIMEZONE));
 }
 
-/** BullMQ job ids must not contain ":". */
-export const searchOnAddJobId = (mediaId: number) => `search-on-add-${mediaId}`;
+/** Same 60-minute indexer grace the scheduled episode check uses. */
+export function airedEpisodeCutoff(): Date {
+  return toUtcMidnightDate(
+    localDateYmd(APP_DISPLAY_TIMEZONE, new Date(Date.now() - 60 * 60 * 1000)),
+  );
+}
 
-async function enqueueSearch(mediaId: number): Promise<void> {
+/** BullMQ job ids must not contain ":". A show gets one job per season. */
+export const searchOnAddJobId = (mediaId: number, season?: number) =>
+  season == null
+    ? `search-on-add-${mediaId}`
+    : `search-on-add-${mediaId}-s${season}`;
+
+/** Seasons (specials excluded) with at least one aired, wanted episode that has no file. */
+async function airedWantedSeasons(mediaId: number): Promise<number[]> {
+  const rows = await prisma.libraryEpisode.findMany({
+    where: {
+      mediaId,
+      monitored: true,
+      status: "wanted",
+      season: { gt: 0 },
+      airDate: { lte: airedEpisodeCutoff() },
+      files: { none: {} },
+    },
+    select: { season: true },
+    distinct: ["season"],
+    orderBy: { season: "asc" },
+  });
+  return rows.map((r) => r.season);
+}
+
+async function enqueueSearch(mediaId: number, season?: number): Promise<void> {
   // Loaded lazily so importing this module doesn't open the queue connections.
   const { QUEUE_NAMES, SCHEDULED_JOB_NAMES, addJob } = await import(
     "@rawkoon/api/services/queueService"
@@ -28,10 +56,10 @@ async function enqueueSearch(mediaId: number): Promise<void> {
   await addJob(
     QUEUE_NAMES.SCHEDULED_TASKS,
     SCHEDULED_JOB_NAMES.SEARCH_ON_ADD,
-    { mediaId },
+    season == null ? { mediaId } : { mediaId, season },
     // One pending search per title; finished jobs go away so a later re-add can search again.
     {
-      jobId: searchOnAddJobId(mediaId),
+      jobId: searchOnAddJobId(mediaId, season),
       removeOnComplete: true,
       removeOnFail: true,
     },
@@ -56,13 +84,19 @@ export async function queueSearchOnAdd(
     id: number;
     type: string;
     status: string;
+    monitored: boolean;
     digitalReleaseDate: Date | null;
   },
   override?: boolean,
   deps: {
-    enqueue: (mediaId: number) => Promise<unknown>;
+    enqueue: (mediaId: number, season?: number) => Promise<unknown>;
     isEnabled: () => Promise<boolean>;
-  } = { enqueue: enqueueSearch, isEnabled: searchOnAddEnabled },
+    airedSeasons: (mediaId: number) => Promise<number[]>;
+  } = {
+    enqueue: enqueueSearch,
+    isEnabled: searchOnAddEnabled,
+    airedSeasons: airedWantedSeasons,
+  },
 ): Promise<SearchOnAddOutcome> {
   if (override === false) {
     return { search_queued: false, search_skipped_reason: "override_off" };
@@ -70,6 +104,11 @@ export async function queueSearchOnAdd(
   try {
     if (override === undefined && !(await deps.isEnabled())) {
       return { search_queued: false, search_skipped_reason: "setting_off" };
+    }
+
+    // The scheduled checks skip unmonitored titles, so an add must too.
+    if (!media.monitored) {
+      return { search_queued: false, search_skipped_reason: "not_monitored" };
     }
 
     if (media.type === "movie") {
@@ -87,8 +126,17 @@ export async function queueSearchOnAdd(
       }
     }
 
-    await deps.enqueue(media.id);
-    return { search_queued: true, search_skipped_reason: null };
+    if (media.type === "movie") {
+      await deps.enqueue(media.id);
+      return { search_queued: true, search_skipped_reason: null };
+    }
+
+    // One job per season keeps a long show from holding a worker slot for every season.
+    const seasons = await deps.airedSeasons(media.id);
+    for (const season of seasons) await deps.enqueue(media.id, season);
+    return seasons.length > 0
+      ? { search_queued: true, search_skipped_reason: null }
+      : { search_queued: false, search_skipped_reason: null };
   } catch (e) {
     console.warn(`[searchOnAdd] Could not queue media ${media.id}:`, e);
     return { search_queued: false, search_skipped_reason: null };

@@ -128,7 +128,8 @@ export interface AddToLibraryRequest {
 export type SearchSkippedReason =
   | "setting_off"
   | "override_off"
-  | "not_released";
+  | "not_released"
+  | "not_monitored";
 
 export interface AddToLibraryResponse {
   item: LibraryMedia;
