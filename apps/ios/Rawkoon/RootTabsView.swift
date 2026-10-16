@@ -58,7 +58,7 @@ struct RootTabsView: View {
             case "qualityProfileEditor": NavigationStack { DebugFirstQualityProfile() }
             case "notifications": NavigationStack { NotificationsSettingsView() }
             case "indexers": NavigationStack { IndexersView() }
-            case "explore": NavigationStack { ExploreView() }
+            case "find", "explore": NavigationStack { FindView() }
             default: mainTabs
             }
         }
@@ -70,7 +70,7 @@ struct RootTabsView: View {
         case .home: NavigationStack { HomeView() }
         case .library: NavigationStack { LibraryView(forcedSection: .media) }
         case .books: NavigationStack { LibraryView(forcedSection: .books) }
-        case .find: NavigationStack { ExploreView(embedded: true) }
+        case .find: NavigationStack { FindView() }
         case .settings: NavigationStack { SettingsView(scope: compact ? .all : .personal) }
         case .activity: NavigationStack { ActivityView() }
         case .server: NavigationStack { SettingsView(scope: .server) }

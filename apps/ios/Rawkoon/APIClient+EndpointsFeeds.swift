@@ -7,6 +7,10 @@ nonisolated extension Endpoints {
     static let systemFeatures = Endpoint<SystemFeatures>(path: "/api/system/features")
     static let bookDiscoverySources = Endpoint<BookDiscoverySourcesResponse>(path: "/api/books/discovery/sources")
 
+    static var missingCollections: Endpoint<MissingCollectionsResponse> {
+        Endpoint(path: "/api/medias/collections/missing", query: ["language": APIClient.tmdbLanguage])
+    }
+
     static func bookDiscovery(source: String, list: String) -> Endpoint<BookDiscoveryResponse> {
         Endpoint(path: "/api/books/discovery", query: ["source": source, "list": list])
     }

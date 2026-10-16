@@ -1,20 +1,16 @@
 import RawkoonKit
 import SwiftUI
 
-/// A filterable, paginated TMDB discover grid — the "browse everything"
-/// counterpart to the swipe deck — with the movies, shows and books search on top.
+/// A filterable, paginated TMDB discover grid — Browse on the Find tab, the
+/// counterpart to the swipe deck. Find owns the search field and the filter state.
 struct ExploreView: View {
     @Environment(AppModel.self) var model
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var hSizeClass
 
-    /// True when hosted inline (Mac split view) rather than in a sheet: hides the
-    /// Done button, since there's nothing to dismiss.
-    var embedded = false
-
-    @State var filters = ExploreFilters()
-    @State var query = ""
-    @FocusState private var searchFocused: Bool
+    @Binding var filters: ExploreFilters
+    /// False while Find shows Swipe or search results with this view kept mounted underneath,
+    /// so its toolbar button doesn't leak into the other screens.
+    var isActive = true
     @State var items: [TmdbSearchItem] = []
     @State var page = 1
     @State var totalPages = 1
@@ -32,6 +28,14 @@ struct ExploreView: View {
     /// Ties each active chip to its glass shape, so adding or clearing one morphs inside the container.
     @Namespace private var chipNamespace
 
+    /// Consecutive pages fetched for "Hide what I own" that added nothing visible.
+    @State var hiddenStreak = 0
+
+    init(filters: Binding<ExploreFilters>, isActive: Bool = true) {
+        _filters = filters
+        self.isActive = isActive
+    }
+
     private var gridColumns: [GridItem] {
         if hSizeClass == .regular {
             return [GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 12)]
@@ -48,16 +52,9 @@ struct ExploreView: View {
             }
         }
         .background(Theme.base)
-        .navigationTitle("Explore")
-        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if !embedded {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
             // The inline filter panel on regular width replaces the Filters sheet.
-            if hSizeClass != .regular {
+            if hSizeClass != .regular, isActive {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         showFilters = true
@@ -70,21 +67,16 @@ struct ExploreView: View {
         .sheet(isPresented: $showFilters) {
             ExploreFilterSheet(filters: $filters)
         }
-        // Home's search button and a re-tap of the Explore tab both ask for the field.
-        .onChange(of: model.exploreSearchFocusRequest, initial: true) { _, requested in
-            guard requested else { return }
-            model.exploreSearchFocusRequest = false
-            Task {
-                try? await Task.sleep(for: .milliseconds(350))
-                searchFocused = true
-            }
-        }
         .task {
             if items.isEmpty, !loading {
                 await loadFirstPage()
             }
         }
-        .onChange(of: filters) { _, _ in
+        .onChange(of: filters.hideOwned) { _, _ in
+            hiddenStreak = 0
+        }
+        .onChange(of: filters.fetchSignature) { _, _ in
+            hiddenStreak = 0
             loadGeneration += 1
             items = []
             page = 1
@@ -130,20 +122,14 @@ struct ExploreView: View {
     private var gridScroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                MediaSearchField(query: $query, focus: $searchFocused)
+                filterBar
 
-                if MediaSearchField.isActive(query) {
-                    MediaSearchResults(query: query)
-                } else {
-                    filterBar
-
-                    // Offline, the app-wide strip already says why nothing refreshed.
-                    if let error, !model.isOffline {
-                        refreshErrorBanner(error)
-                    }
-
-                    content
+                // Offline, the app-wide strip already says why nothing refreshed.
+                if let error, !model.isOffline {
+                    refreshErrorBanner(error)
                 }
+
+                content
             }
             .padding(.top, 12)
             .padding(.bottom, 32)
@@ -178,6 +164,9 @@ struct ExploreView: View {
                             activeChip(Text("Original language"), id: "language") {
                                 filters.originalLanguageOnly = false
                             }
+                        }
+                        if filters.hideOwned {
+                            activeChip(Text("Hiding what I own"), id: "owned") { filters.hideOwned = false }
                         }
                         // Stays mounted so the figure rolls; hidden while loading or failed.
                         Text("\(totalResults) results")
@@ -272,9 +261,43 @@ struct ExploreView: View {
             .rawkoonLivingSymbol(.empty)
             .padding(.top, 28)
             .transition(.rawkoonSwap)
+        } else if visibleItems.isEmpty {
+            allOwnedState
+                .transition(.rawkoonSwap)
         } else {
             grid
                 .transition(.rawkoonSwap)
+        }
+    }
+
+    /// The grid after "Hide what I own"; the library may already hold everything loaded so far.
+    private var visibleItems: [TmdbSearchItem] {
+        FindSearch.visible(items, hideOwned: filters.hideOwned) { $0.alreadyExists == true }
+    }
+
+    @ViewBuilder
+    private var allOwnedState: some View {
+        if page < totalPages, loadMoreError == nil {
+            if pausedForHiddenPages {
+                loadMoreButton
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 28)
+            } else {
+                ProgressView().tint(Theme.muted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 28)
+                    .task(id: PageKey(count: items.count, hideOwned: filters.hideOwned)) {
+                        await loadNextPageIfNeeded()
+                    }
+            }
+        } else {
+            ContentUnavailableView(
+                "You own everything here",
+                systemImage: "checkmark.circle",
+                description: Text("Turn off Hide what I own to see these titles again.")
+            )
+            .rawkoonLivingSymbol(.empty)
+            .padding(.top, 28)
         }
     }
 
@@ -289,9 +312,9 @@ struct ExploreView: View {
     }
 
     private var grid: some View {
-        VStack(spacing: 0) {
+        LazyVStack(spacing: 0) {
             LazyVGrid(columns: gridColumns, spacing: 14) {
-                ForEach(items) { item in
+                ForEach(visibleItems) { item in
                     let zoomID = RawkoonZoom.media(tmdbId: item.tmdbId, mediaType: item.mediaType)
                     NavigationLink {
                         MediaDetailView(
@@ -307,10 +330,6 @@ struct ExploreView: View {
                             .rawkoonZoomSource(zoomID)
                     }
                     .buttonStyle(.rawkoonPressable)
-                    .onAppear {
-                        guard item.id == items.last?.id else { return }
-                        Task { await loadMore() }
-                    }
                     .rawkoonEntrance(id: item.id)
                 }
             }
@@ -319,6 +338,51 @@ struct ExploreView: View {
             .rawkoonEntranceScope()
 
             paginationFooter
+            pageSentinel
+        }
+    }
+
+    /// Asks for the next page while it is on screen. Its task re-runs on every new page, so a page
+    /// that is all hidden by "Hide what I own" does not leave the grid stuck short of the next one.
+    private var pageSentinel: some View {
+        Color.clear
+            .frame(height: 1)
+            .task(id: PageKey(count: items.count, hideOwned: filters.hideOwned)) {
+                await loadNextPageIfNeeded()
+            }
+    }
+
+    private struct PageKey: Hashable {
+        let count: Int
+        let hideOwned: Bool
+    }
+
+    /// After this many fully hidden pages in a row, loading waits for a tap.
+    private static let hiddenPageLimit = 3
+
+    private var pausedForHiddenPages: Bool {
+        filters.hideOwned && hiddenStreak >= Self.hiddenPageLimit
+    }
+
+    private func loadNextPageIfNeeded() async {
+        guard page < totalPages, !loading, !pausedForHiddenPages else { return }
+        let (beforePage, beforeVisible) = (page, visibleItems.count)
+        await loadMore()
+        guard !Task.isCancelled, filters.hideOwned, page != beforePage else { return }
+        hiddenStreak = visibleItems.count == beforeVisible ? hiddenStreak + 1 : 0
+    }
+
+    @ViewBuilder
+    private var loadMoreButton: some View {
+        if pausedForHiddenPages, page < totalPages {
+            Button("Load more") {
+                hiddenStreak = 0
+                Task { await loadNextPageIfNeeded() }
+            }
+            .buttonStyle(.bordered)
+            .tint(Theme.apricot)
+            .frame(minHeight: 44)
+            .padding(.vertical, 12)
         }
     }
 
@@ -327,6 +391,8 @@ struct ExploreView: View {
         if loadingMore {
             ProgressView().tint(Theme.muted)
                 .padding(.vertical, 16)
+        } else if pausedForHiddenPages {
+            loadMoreButton
         } else if let loadMoreError, page < totalPages, !model.isOffline {
             Button {
                 Task { await loadMore(force: true) }

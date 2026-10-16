@@ -203,27 +203,11 @@ struct HomeView: View {
         HStack(alignment: .top, spacing: 12) {
             greetingText(onHero: onHero)
             Spacer(minLength: 0)
-            searchButton(onHero: onHero)
         }
         // On the hero, the hero's own content inset applies.
         .padding(.horizontal, onHero ? 0 : 16)
         // The name arrives after first render; the load-swap spring must not animate its reflow.
         .transaction { $0.animation = nil }
-    }
-
-    private func searchButton(onHero: Bool) -> some View {
-        Button {
-            model.openExploreSearch()
-        } label: {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Theme.textStrong)
-                .frame(width: 44, height: 44)
-                .background(Circle().fill(onHero ? Color.black.opacity(0.35) : Theme.raised))
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
-        }
-        .buttonStyle(.rawkoonPressable)
-        .accessibilityLabel("Search")
     }
 
     private func greetingText(onHero: Bool) -> some View {
