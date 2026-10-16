@@ -7487,16 +7487,6 @@
         }
       }
     },
-    "Returning": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En cours"
-          }
-        }
-      }
-    },
     "Revoked": {
       "localizations": {
         "fr": {
@@ -9842,7 +9832,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Téléchargement en échec"
+            "value": "Échec du téléchargement"
           }
         }
       }
@@ -9997,16 +9987,6 @@
         }
       }
     },
-    "Grab skipped": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Récupération ignorée"
-          }
-        }
-      }
-    },
     "Label": {
       "localizations": {
         "fr": {
@@ -10022,37 +10002,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "À traiter"
-          }
-        }
-      }
-    },
-    "New Rawkoon release": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nouvelle version de Rawkoon"
-          }
-        }
-      }
-    },
-    "New author releases": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nouvelles parutions d'auteurs"
-          }
-        }
-      }
-    },
-    "New request pending": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nouvelle demande en attente"
+            "value": "À vérifier"
           }
         }
       }
@@ -10232,7 +10182,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Release récupérée"
+            "value": "Version récupérée"
           }
         }
       }
@@ -10252,7 +10202,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Demande approuvée ou refusée"
+            "value": "Demande acceptée ou refusée"
           }
         }
       }
@@ -10263,16 +10213,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Demandé"
-          }
-        }
-      }
-    },
-    "Requested title available": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Titre demandé disponible"
           }
         }
       }
@@ -10293,16 +10233,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chemin d'enregistrement"
-          }
-        }
-      }
-    },
-    "Search skipped": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recherche ignorée"
           }
         }
       }
@@ -10373,16 +10303,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "À venir"
-          }
-        }
-      }
-    },
-    "Upcoming release reminders": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rappels de sorties à venir"
           }
         }
       }
@@ -12130,28 +12050,6 @@
         }
       }
     },
-    "Sharing": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partage"
-          }
-        }
-      }
-    },
-    "Release torrents automatically": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Libérer les torrents automatiquement"
-          }
-        }
-      }
-    },
     "When off, a torrent is only removed on import if it already reached the public ratio.": {
       "extractionState": "manual",
       "localizations": {
@@ -12159,50 +12057,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Désactivé, un torrent n’est retiré à l’import que s’il atteint déjà le ratio public."
-          }
-        }
-      }
-    },
-    "%lld being shared": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld en partage"
-          }
-        }
-      }
-    },
-    "%lld would be released now, %@.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld seraient libérés maintenant, %@."
-          }
-        }
-      }
-    },
-    "Imports move files out of the client, so torrents are released on import. Switch to hardlinks to share.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les imports déplacent les fichiers hors du client, donc les torrents sont libérés dès l’import. Passez aux liens physiques pour partager."
-          }
-        }
-      }
-    },
-    "After import, Rawkoon keeps each torrent sharing until it reaches its ratio, then removes it from the client. Your library copy is a hardlink, so it stays in place.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Après l’import, Rawkoon garde chaque torrent en partage jusqu’à ce qu’il atteigne son ratio, puis le retire du client. La copie de votre bibliothèque est un lien physique, elle reste donc en place."
           }
         }
       }
@@ -12291,50 +12145,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Personnaliser"
-          }
-        }
-      }
-    },
-    "Released on import. Nothing is shared.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Libéré dès l’import. Rien n’est partagé."
-          }
-        }
-      }
-    },
-    "Released once ratio %@ is reached.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Libéré une fois le ratio %@ atteint."
-          }
-        }
-      }
-    },
-    "Released after %@ of sharing.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Libéré après %@ de partage."
-          }
-        }
-      }
-    },
-    "Released at ratio %@ or after %@ of sharing, whichever comes first.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Libéré au ratio %@ ou après %@ de partage, selon ce qui arrive en premier."
           }
         }
       }
@@ -12467,17 +12277,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retirer le torrent et le fichier"
-          }
-        }
-      }
-    },
-    "This removes the torrent for %@ from the download client and deletes the old file, so it stops sharing. The re-encoded copy in your library is not touched.": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ceci retire le torrent de %@ du client de téléchargement et supprime l’ancien fichier, donc il cesse d’être partagé. La copie réencodée de votre bibliothèque n’est pas touchée."
           }
         }
       }
@@ -14186,6 +13985,207 @@
           "stringUnit": {
             "state": "translated",
             "value": "Demander %@"
+          }
+        }
+      }
+    },
+    "Import failed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Échec de l'import"
+          }
+        }
+      }
+    },
+    "Download finished": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement terminé"
+          }
+        }
+      }
+    },
+    "Search gave up": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche abandonnée"
+          }
+        }
+      }
+    },
+    "New book from a followed author": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau livre d'un auteur suivi"
+          }
+        }
+      }
+    },
+    "New request": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelle demande"
+          }
+        }
+      }
+    },
+    "Request ready": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande disponible"
+          }
+        }
+      }
+    },
+    "Watchlist reminders": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappels de la liste de suivi"
+          }
+        }
+      }
+    },
+    "New Rawkoon version": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelle version de Rawkoon"
+          }
+        }
+      }
+    },
+    "Seeding": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partage"
+          }
+        }
+      }
+    },
+    "Stop seeding when the target is met": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter le partage quand la cible est atteinte"
+          }
+        }
+      }
+    },
+    "%lld would stop seeding now, %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld cesseraient le partage maintenant, %@."
+          }
+        }
+      }
+    },
+    "Imports move files out of the client, so torrents stop seeding on import. Switch to hardlinks to keep seeding.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les imports déplacent les fichiers hors du client, donc les torrents cessent le partage dès l’import. Passez aux liens physiques pour continuer le partage."
+          }
+        }
+      }
+    },
+    "After import, Rawkoon keeps each torrent seeding until it reaches its ratio, then removes it from the client. Your library copy is a hardlink, so it stays in place.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Après l’import, Rawkoon garde chaque torrent en partage jusqu’à ce qu’il atteigne son ratio, puis le retire du client. La copie de votre bibliothèque est un lien physique, elle reste donc en place."
+          }
+        }
+      }
+    },
+    "Stops seeding on import. Nothing is seeded.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le partage cesse dès l’import. Rien n’est partagé."
+          }
+        }
+      }
+    },
+    "Stops seeding once ratio %@ is reached.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le partage cesse une fois le ratio %@ atteint."
+          }
+        }
+      }
+    },
+    "Stops seeding after %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le partage cesse après %@."
+          }
+        }
+      }
+    },
+    "Stops seeding at ratio %@ or after %@, whichever comes first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le partage cesse au ratio %@ ou après %@, selon ce qui arrive en premier."
+          }
+        }
+      }
+    },
+    "This removes the torrent for %@ from the download client and deletes the old file, so it stops seeding. The re-encoded copy in your library is not touched.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ceci retire le torrent de %@ du client de téléchargement et supprime l’ancien fichier, donc il cesse d’être partagé. La copie réencodée de votre bibliothèque n’est pas touchée."
+          }
+        }
+      }
+    },
+    "%lld seeding": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld en partage"
           }
         }
       }
