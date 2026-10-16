@@ -27,7 +27,7 @@ export function handlePush(event: PushEvent): void {
   const badge = data.badge || "/icon-32.png";
   const tag = data.tag || "notification";
   const url =
-    normalizeNotificationUrl(data.data?.url, globalThis.location.origin) ||
+    normalizeNotificationUrl(data.data?.url, self.location.origin) ||
     APP_PATHS.activity;
 
   // `image` is a valid Notifications API option (a large hero image, e.g. a

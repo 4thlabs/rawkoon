@@ -53,16 +53,14 @@ export function handleNotificationClick(event: NotificationEvent): void {
 
   // Default: navigate to URL (for "open" action or notification click)
   const url =
-    normalizeNotificationUrl(
-      notificationData.url,
-      globalThis.location.origin,
-    ) || APP_PATHS.activity;
+    normalizeNotificationUrl(notificationData.url, self.location.origin) ||
+    APP_PATHS.activity;
 
   event.waitUntil(
     sw.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then(async (clients) => {
-        const destination = new URL(url, globalThis.location.origin).toString();
+        const destination = new URL(url, self.location.origin).toString();
 
         for (const client of clients) {
           if (!("focus" in client) || !("navigate" in client)) {
