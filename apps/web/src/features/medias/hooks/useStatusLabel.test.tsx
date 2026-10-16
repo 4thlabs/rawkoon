@@ -14,11 +14,11 @@ function Label({
 }
 
 const active = {
-  enabled: true,
-  connected: true,
   items: [
-    { id: 1, media_id: 5, progress: 0.426 },
-    { id: 2, media_id: 6, progress: 0.9 },
+    { id: 1, media_id: 5, episode_id: null, progress: 0.426 },
+    { id: 2, media_id: 6, episode_id: 1, progress: 0.9 },
+    { id: 3, media_id: 7, episode_id: 2, progress: 0.1 },
+    { id: 4, media_id: 7, episode_id: 3, progress: 0.3 },
   ],
 };
 
@@ -31,6 +31,23 @@ describe("useStatusLabel", () => {
         screen.getByText(/medias\.library\.itemStatusPercent/),
       ).toBeInTheDocument(),
     );
+  });
+
+  it("counts episodes instead of averaging when several are in flight", async () => {
+    const fetcher = vi.fn().mockResolvedValue(active);
+    renderWithProviders(<Label id={7} status="downloading" />, { fetcher });
+    await waitFor(() =>
+      expect(
+        screen.getByText(/medias\.library\.itemStatusEpisodes/),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it("reads the user-visible progress endpoint, not the admin list", async () => {
+    const fetcher = vi.fn().mockResolvedValue(active);
+    renderWithProviders(<Label id={5} status="downloading" />, { fetcher });
+    await waitFor(() => expect(fetcher).toHaveBeenCalled());
+    expect(fetcher).toHaveBeenCalledWith("/api/dashboard/downloads/progress");
   });
 
   it("falls back to the plain label when the title has no active grab", async () => {

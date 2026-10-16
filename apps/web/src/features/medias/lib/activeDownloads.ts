@@ -1,6 +1,7 @@
 import type {
   ActiveDownloadsResponse,
   DownloadProgressItem,
+  DownloadProgressSummaryResponse,
 } from "@rawkoon/shared/types";
 
 /**
@@ -32,17 +33,42 @@ export function mergeActiveProgress(
   };
 }
 
+/** Same overlay for the user-visible progress summary behind the status chips. */
+export function mergeSummaryProgress(
+  current: DownloadProgressSummaryResponse | undefined,
+  progress: DownloadProgressItem[],
+): DownloadProgressSummaryResponse | undefined {
+  if (!current || progress.length === 0) return current;
+  const byId = new Map(progress.map((p) => [p.id, p]));
+  return {
+    items: current.items.map((row) => {
+      const live = byId.get(row.id);
+      return live ? { ...row, progress: live.progress } : row;
+    }),
+  };
+}
+
+export interface MediaDownloadProgress {
+  /** Whole percent of the in-flight grabs, floored so a nearly-done grab never claims 100. */
+  percent: number;
+  /** In-flight grabs for the title; more than one means a show with several episodes going. */
+  count: number;
+}
+
 /**
- * Whole-number percent for a title, averaged over its active grabs (a show can
- * have several episodes in flight). Null when nothing is downloading for it.
- * Floors so a nearly-done grab never claims 100%.
+ * Progress for a title. A show can have several episodes in flight, and only
+ * those are averaged (finished ones are gone from the list), so the chip uses
+ * `count` to say "3 episodes" instead of a percent that would mislead.
  */
-export function downloadPercentForMedia(
-  data: ActiveDownloadsResponse | undefined,
+export function downloadProgressForMedia(
+  data: DownloadProgressSummaryResponse | undefined,
   mediaId: number,
-): number | null {
+): MediaDownloadProgress | null {
   const mine = data?.items.filter((i) => i.media_id === mediaId) ?? [];
   if (mine.length === 0) return null;
   const mean = mine.reduce((sum, i) => sum + i.progress, 0) / mine.length;
-  return Math.min(99, Math.max(0, Math.floor(mean * 100)));
+  return {
+    percent: Math.min(99, Math.max(0, Math.floor(mean * 100))),
+    count: mine.length,
+  };
 }

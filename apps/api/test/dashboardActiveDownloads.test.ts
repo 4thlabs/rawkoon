@@ -2,6 +2,7 @@ import { describe, it, expect, mock, afterAll, beforeEach } from "bun:test";
 
 let clientEnabled = true;
 let clientReachable = true;
+let isAdmin = true;
 
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
@@ -11,7 +12,7 @@ mock.module("@rawkoon/api/db", () => ({
         email: "test@example.com",
         firstName: "Test",
         lastName: "User",
-        isAdmin: false,
+        isAdmin,
         locale: null,
         lastLogin: null,
         createdAt: null,
@@ -27,6 +28,7 @@ mock.module("@rawkoon/api/db", () => ({
           releaseTitle: "Some.Movie.2020.1080p",
           torrentHash: "AAA",
           season: null,
+          episodeId: null,
           media: { id: 9, title: "Some Movie", type: "movie", posterUrl: null },
           episode: null,
         },
@@ -76,17 +78,18 @@ afterAll(() => mock.restore());
 beforeEach(() => {
   clientEnabled = true;
   clientReachable = true;
+  isAdmin = true;
 });
 
-const get = async () => {
+const get = async (path = "/downloads/active") => {
   const res = await dashboardDownloadsRoutes.request(
-    new Request("http://localhost/downloads/active"),
+    new Request(`http://localhost${path}`),
   );
   return { status: res.status, body: (await res.json()) as unknown };
 };
 
 describe("GET /downloads/active", () => {
-  it("maps in-flight grabs to live progress for any signed-in user", async () => {
+  it("maps in-flight grabs to live progress for an admin", async () => {
     const { status, body } = await get();
     expect(status).toBe(200);
     expect(body).toMatchObject({
@@ -116,5 +119,22 @@ describe("GET /downloads/active", () => {
     clientEnabled = false;
     const { body } = await get();
     expect(body).toEqual({ enabled: false, connected: false, items: [] });
+  });
+
+  it("refuses a non-admin", async () => {
+    isAdmin = false;
+    const { status } = await get();
+    expect(status).toBe(403);
+  });
+});
+
+describe("GET /downloads/progress", () => {
+  it("gives a non-admin percent only, with no titles", async () => {
+    isAdmin = false;
+    const { status, body } = await get("/downloads/progress");
+    expect(status).toBe(200);
+    expect(body).toEqual({
+      items: [{ id: 4, media_id: 9, episode_id: null, progress: 0.25 }],
+    });
   });
 });

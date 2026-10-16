@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   buildActiveDownloads,
+  buildProgressSummary,
   type ActiveGrabRow,
 } from "@rawkoon/api/services/downloads/activeDownloads";
 import type { NormalizedTorrent } from "@rawkoon/api/services/downloadClient/types";
@@ -32,6 +33,7 @@ function row(over: Partial<ActiveGrabRow>): ActiveGrabRow {
     releaseTitle: "Some.Movie.2020.1080p",
     torrentHash: "ABC",
     season: null,
+    episodeId: null,
     media: { id: 7, title: "Some Movie", type: "movie", posterUrl: "/p.jpg" },
     episode: null,
     ...over,
@@ -84,5 +86,13 @@ describe("buildActiveDownloads", () => {
         [torrent({})],
       ),
     ).toEqual([]);
+  });
+});
+
+describe("buildProgressSummary", () => {
+  it("exposes only ids and progress", () => {
+    expect(
+      buildProgressSummary([row({ episodeId: 3 })], [torrent({})]),
+    ).toEqual([{ id: 1, media_id: 7, episode_id: 3, progress: 0.5 }]);
   });
 });

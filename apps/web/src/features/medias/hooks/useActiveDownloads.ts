@@ -2,13 +2,19 @@ import { useQuery } from "@tanstack/react-query";
 import { useFetcher } from "@/lib/api/context";
 import { queryKeys } from "@/lib/queryKeys";
 import { DOWNLOADS_ENDPOINTS } from "@/lib/endpoints/downloads";
-import type { ActiveDownloadsResponse } from "@rawkoon/shared/types";
-import { downloadPercentForMedia } from "../lib/activeDownloads";
+import type {
+  ActiveDownloadsResponse,
+  DownloadProgressSummaryResponse,
+} from "@rawkoon/shared/types";
+import {
+  downloadProgressForMedia,
+  type MediaDownloadProgress,
+} from "../lib/activeDownloads";
 
 /**
- * In-flight grabs with live progress. The numbers are pushed over the library
- * events stream (useLibraryEvents patches this cache); the slow poll only
- * catches drift when the stream is down.
+ * In-flight grabs with titles and release names (admin only). The numbers are
+ * pushed over the library events stream (useLibraryEvents patches this cache);
+ * the slow poll only catches drift when the stream is down.
  */
 export function useActiveDownloads(opts: { enabled?: boolean } = {}) {
   const fetcher = useFetcher();
@@ -20,18 +26,23 @@ export function useActiveDownloads(opts: { enabled?: boolean } = {}) {
   });
 }
 
-/** Percent for one title; only subscribes to the list while it is downloading. */
-export function useDownloadPercent(
+/** Progress for one title from the user-visible summary; only subscribes while it is downloading. */
+export function useDownloadProgress(
   mediaId: number,
   downloading: boolean,
-): number | null {
+): MediaDownloadProgress | null {
   const fetcher = useFetcher();
-  const { data } = useQuery<ActiveDownloadsResponse, Error, number | null>({
-    queryKey: queryKeys.downloads.active(),
-    queryFn: () => fetcher<ActiveDownloadsResponse>(DOWNLOADS_ENDPOINTS.ACTIVE),
+  const { data } = useQuery<
+    DownloadProgressSummaryResponse,
+    Error,
+    MediaDownloadProgress | null
+  >({
+    queryKey: queryKeys.downloads.progress(),
+    queryFn: () =>
+      fetcher<DownloadProgressSummaryResponse>(DOWNLOADS_ENDPOINTS.PROGRESS),
     enabled: downloading,
     refetchInterval: 30_000,
-    select: (response) => downloadPercentForMedia(response, mediaId),
+    select: (response) => downloadProgressForMedia(response, mediaId),
   });
   return downloading ? (data ?? null) : null;
 }

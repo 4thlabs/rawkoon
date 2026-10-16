@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { DownloadsPanel } from "@/pages/_component/DownloadsPanel";
@@ -18,6 +18,19 @@ vi.mock("@tanstack/react-router", () => ({
     </a>
   ),
 }));
+
+const auth = vi.hoisted(() => ({ isAdmin: true }));
+vi.mock("@/lib/auth/useAuth", () => ({
+  useCurrentUser: () => ({ data: { id: 1, is_admin: auth.isAdmin } }),
+}));
+
+const toastSpy = vi.hoisted(() => vi.fn());
+vi.mock("sonner", () => ({ toast: toastSpy }));
+
+beforeEach(() => {
+  auth.isAdmin = true;
+  toastSpy.mockClear();
+});
 
 const speed = {
   enabled: true,
@@ -120,6 +133,45 @@ describe("DownloadsPanel", () => {
     expect(
       await screen.findByText("dashboard.home.nothingDownloading"),
     ).toBeInTheDocument();
+  });
+
+  it("toasts the reason when grab-now grabs nothing", async () => {
+    const base = fetcherFor({ pending: [pendingItem] });
+    const fetcher = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        url.endsWith("/grab-now")
+          ? Promise.resolve({ grabbed: false, reason: "already_active" })
+          : base(url),
+      );
+    renderWithProviders(<DownloadsPanel />, { fetcher });
+    await screen.findByText("Held Movie");
+    fireEvent.click(
+      screen.getByRole("button", { name: "dashboard.home.grabNow" }),
+    );
+    await waitFor(() =>
+      expect(toastSpy).toHaveBeenCalledWith("dashboard.home.nothingGrabbed", {
+        description: "dashboard.home.grabMiss.already_active",
+      }),
+    );
+  });
+
+  it("shows a non-admin the speed total only, without polling the admin lists", async () => {
+    auth.isAdmin = false;
+    const fetcher = fetcherFor({
+      active: [activeItem],
+      pending: [pendingItem],
+    });
+    renderWithProviders(<DownloadsPanel />, { fetcher });
+    await screen.findByText(/MB\/s/);
+    expect(screen.queryByText("Some Show S02E05")).not.toBeInTheDocument();
+    expect(screen.queryByText("Held Movie")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("dashboard.home.nothingDownloading"),
+    ).not.toBeInTheDocument();
+    const urls = fetcher.mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.endsWith("/downloads/active"))).toBe(false);
+    expect(urls.some((u) => u.endsWith("/pending-releases"))).toBe(false);
   });
 
   it("explains a missing download client", async () => {

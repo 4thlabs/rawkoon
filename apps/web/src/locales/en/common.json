@@ -222,6 +222,13 @@
       "nothingDownloading": "Nothing downloading",
       "downloadClientUnreachable": "Download client unreachable",
       "etaLeft": "{{time}} left",
+      "nothingGrabbed": "Nothing was grabbed",
+      "grabMiss": {
+        "not_wanted": "The title no longer needs this release.",
+        "already_active": "A download for it is already in progress.",
+        "no_space": "There is not enough free disk space.",
+        "all_failed": "Every held release was blocked or failed."
+      },
       "downloadState": {
         "stalled": "Stalled",
         "paused": "Paused",
@@ -1718,6 +1725,8 @@
         "file_size": "File size"
       },
       "itemStatusPercent": "{{label}} {{percent}}%",
+      "itemStatusEpisodes_one": "{{label}} {{count}} episode",
+      "itemStatusEpisodes_other": "{{label}} {{count}} episodes",
       "itemStatus": {
         "wanted": "Missing",
         "downloading": "Downloading",

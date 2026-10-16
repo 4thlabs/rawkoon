@@ -60,6 +60,7 @@ export const queryKeys = {
     all: ["downloads"] as const,
     speed: () => [...queryKeys.downloads.all, "speed"] as const,
     active: () => [...queryKeys.downloads.all, "active"] as const,
+    progress: () => [...queryKeys.downloads.all, "progress"] as const,
     seeding: (preview?: boolean) =>
       [...queryKeys.downloads.all, "seeding", preview ?? false] as const,
     orphans: () => [...queryKeys.downloads.all, "orphans"] as const,

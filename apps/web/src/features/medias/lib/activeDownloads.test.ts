@@ -4,8 +4,9 @@ import type {
   ActiveDownloadsResponse,
 } from "@rawkoon/shared/types";
 import {
-  downloadPercentForMedia,
+  downloadProgressForMedia,
   mergeActiveProgress,
+  mergeSummaryProgress,
 } from "./activeDownloads";
 
 function item(over: Partial<ActiveDownloadItem>): ActiveDownloadItem {
@@ -62,24 +63,51 @@ describe("mergeActiveProgress", () => {
   });
 });
 
-describe("downloadPercentForMedia", () => {
-  it("averages a title's grabs and floors the result", () => {
-    const data = response([
-      item({ id: 1, progress: 0.25 }),
-      item({ id: 2, progress: 0.5 }),
-      item({ id: 3, media_id: 99, progress: 1 }),
+const summary = (...progress: number[]) => ({
+  items: progress.map((p, i) => ({
+    id: i + 1,
+    media_id: 10,
+    episode_id: null,
+    progress: p,
+  })),
+});
+
+describe("mergeSummaryProgress", () => {
+  it("patches progress by id and keeps the rest", () => {
+    const next = mergeSummaryProgress(summary(0.1, 0.2), [
+      {
+        id: 2,
+        progress: 0.7,
+        state: "downloading",
+        downloadSpeed: 1,
+        etaSeconds: 1,
+      },
     ]);
-    expect(downloadPercentForMedia(data, 10)).toBe(37);
+    expect(next?.items.map((i) => i.progress)).toEqual([0.1, 0.7]);
+    expect(mergeSummaryProgress(undefined, [])).toBeUndefined();
+  });
+});
+
+describe("downloadProgressForMedia", () => {
+  it("averages a title's grabs, floors, and counts how many are in flight", () => {
+    const data = {
+      items: [
+        ...summary(0.25, 0.5).items,
+        { id: 9, media_id: 99, episode_id: null, progress: 1 },
+      ],
+    };
+    expect(downloadProgressForMedia(data, 10)).toEqual({
+      percent: 37,
+      count: 2,
+    });
   });
 
   it("never reports 100 while a grab is still active", () => {
-    expect(
-      downloadPercentForMedia(response([item({ progress: 0.9996 })]), 10),
-    ).toBe(99);
+    expect(downloadProgressForMedia(summary(0.9996), 10)?.percent).toBe(99);
   });
 
   it("is null when the title has no active grab", () => {
-    expect(downloadPercentForMedia(response([item({})]), 5)).toBeNull();
-    expect(downloadPercentForMedia(undefined, 10)).toBeNull();
+    expect(downloadProgressForMedia(summary(0.5), 5)).toBeNull();
+    expect(downloadProgressForMedia(undefined, 10)).toBeNull();
   });
 });

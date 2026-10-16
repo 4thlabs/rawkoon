@@ -3,10 +3,11 @@ import { resolveActiveAdapter } from "@rawkoon/api/services/downloadClient/regis
 import { ok, serverError } from "@rawkoon/api/errors";
 import {
   buildActiveDownloads,
+  buildProgressSummary,
   loadActiveGrabRows,
 } from "@rawkoon/api/services/downloads/activeDownloads";
 import type { Env } from "@rawkoon/api/honoEnv";
-import { requireUser } from "@rawkoon/api/middleware/hono/auth";
+import { requireAdmin, requireUser } from "@rawkoon/api/middleware/hono/auth";
 
 export const dashboardDownloadsRoutes = new Hono<Env>()
   .use("*", requireUser)
@@ -31,8 +32,8 @@ export const dashboardDownloadsRoutes = new Hono<Env>()
       return ok({ enabled: true, connected: false, dl_speed: 0, ul_speed: 0 });
     }
   })
-  // Same audience as the speed total: every signed-in user.
-  .get("/downloads/active", async () => {
+  // Titles and release names are admin-only; a per-route guard because .use('*') leaks across .route() merges.
+  .get("/downloads/active", requireAdmin, async () => {
     const active = await resolveActiveAdapter();
     if (!active) return ok({ enabled: false, connected: false, items: [] });
 
@@ -49,5 +50,19 @@ export const dashboardDownloadsRoutes = new Hono<Env>()
       });
     } catch {
       return serverError("Failed to load active downloads");
+    }
+  })
+  // Percent only, for the status chips every signed-in user sees.
+  .get("/downloads/progress", requireUser, async () => {
+    const active = await resolveActiveAdapter();
+    if (!active) return ok({ items: [] });
+    try {
+      const [rows, torrents] = await Promise.all([
+        loadActiveGrabRows(),
+        active.adapter.listTorrents().catch(() => []),
+      ]);
+      return ok({ items: buildProgressSummary(rows, torrents) });
+    } catch {
+      return serverError("Failed to load download progress");
     }
   });

@@ -8,6 +8,7 @@ export const DOWNLOADS_ENDPOINTS = {
   SEED_RULE: (indexer: string) =>
     `/api/downloads/seed-rules/${encodeURIComponent(indexer)}`,
   ACTIVE: "/api/dashboard/downloads/active",
+  PROGRESS: "/api/dashboard/downloads/progress",
   PENDING_RELEASES: "/api/downloads/pending-releases",
   GRAB_PENDING_NOW: "/api/downloads/pending-releases/grab-now",
   JANITOR_STATS: "/api/downloads/janitor-stats",

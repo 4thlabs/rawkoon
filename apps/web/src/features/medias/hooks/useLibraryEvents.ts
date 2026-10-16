@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type {
   ActiveDownloadsResponse,
   DownloadProgressItem,
+  DownloadProgressSummaryResponse,
   LandedArrival,
   LibraryDownloadsResponse,
   SeedingResponse,
@@ -12,7 +13,10 @@ import type {
 import { mergeSeedState } from "@/features/seeding/lib/mergeSeedState";
 import { recordLanded } from "@/features/medias/hooks/useLandedArrivals";
 import { queryKeys } from "@/lib/queryKeys";
-import { mergeActiveProgress } from "../lib/activeDownloads";
+import {
+  mergeActiveProgress,
+  mergeSummaryProgress,
+} from "../lib/activeDownloads";
 import { mergeDownloadProgress } from "../lib/mergeDownloadProgress";
 
 /**
@@ -31,6 +35,9 @@ export function useLibraryEvents() {
     // A grab starting, finishing or failing changes who is on the Home queue.
     const invalidateQueue = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.downloads.active() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.downloads.progress(),
+      });
       queryClient.invalidateQueries({
         queryKey: queryKeys.downloads.pendingReleases(),
       });
@@ -76,6 +83,10 @@ export function useLibraryEvents() {
           queryClient.setQueryData<ActiveDownloadsResponse>(
             queryKeys.downloads.active(),
             (current) => mergeActiveProgress(current, downloads),
+          );
+          queryClient.setQueryData<DownloadProgressSummaryResponse>(
+            queryKeys.downloads.progress(),
+            (current) => mergeSummaryProgress(current, downloads),
           );
           return;
         }

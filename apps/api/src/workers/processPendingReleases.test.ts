@@ -142,7 +142,7 @@ describe("processPendingReleases", () => {
   it("leaves targets alone while their window is still open", async () => {
     rows = [row(1, "a", 1, 10)];
     const r = await processPendingReleases(NOW);
-    expect(r).toEqual({ grabbed: 0, dropped: 0 });
+    expect(r).toEqual({ grabbed: 0, dropped: 0, reason: null });
     expect(grabRelease).not.toHaveBeenCalled();
     expect(rows).toHaveLength(1);
   });
@@ -173,7 +173,7 @@ describe("processPendingReleases", () => {
     rows = [row(1, "a", 1, -5)];
     episode = { ...wantedEpisode, status: "downloaded" };
     const r = await processPendingReleases(NOW);
-    expect(r).toEqual({ grabbed: 0, dropped: 1 });
+    expect(r).toEqual({ grabbed: 0, dropped: 1, reason: "not_wanted" });
     expect(grabRelease).not.toHaveBeenCalled();
     expect(rows).toHaveLength(0);
   });

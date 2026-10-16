@@ -441,11 +441,14 @@ export const downloadsRoutes = new Hono<Env>()
         });
         if (moved.count === 0)
           return notFound("No held release for that target");
-        const { grabbed } = await processPendingReleases(
+        const { grabbed, reason } = await processPendingReleases(
           new Date(),
           target_key,
         );
-        return ok({ grabbed: grabbed > 0 });
+        return ok({
+          grabbed: grabbed > 0,
+          reason: grabbed > 0 ? null : reason,
+        });
       } catch (e) {
         console.error("[downloads] grab-now failed:", e);
         return serverError("Failed to grab the held release");

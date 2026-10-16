@@ -49,6 +49,28 @@ export interface ActiveDownloadsResponse {
   items: ActiveDownloadItem[];
 }
 
+export type GrabPendingReason =
+  | "not_wanted"
+  | "already_active"
+  | "no_space"
+  | "all_failed";
+
 export interface GrabPendingReleaseResponse {
   grabbed: boolean;
+  /** Set when nothing was grabbed. */
+  reason: GrabPendingReason | null;
+}
+
+/** Percent source every signed-in user may read; no titles or release names. */
+export interface DownloadProgressSummaryItem {
+  /** download_history id; matches `DownloadProgressItem.id` in the live SSE feed. */
+  id: number;
+  media_id: number;
+  episode_id: number | null;
+  /** 0..1 */
+  progress: number;
+}
+
+export interface DownloadProgressSummaryResponse {
+  items: DownloadProgressSummaryItem[];
 }

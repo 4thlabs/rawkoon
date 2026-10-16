@@ -1,13 +1,17 @@
 import { prisma } from "@rawkoon/api/db";
 import { estimateEtaSeconds } from "@rawkoon/api/services/downloadClient/eta";
 import type { NormalizedTorrent } from "@rawkoon/api/services/downloadClient/types";
-import type { ActiveDownloadItem } from "@rawkoon/shared/types";
+import type {
+  ActiveDownloadItem,
+  DownloadProgressSummaryItem,
+} from "@rawkoon/shared/types";
 
 export interface ActiveGrabRow {
   id: number;
   releaseTitle: string;
   torrentHash: string | null;
   season: number | null;
+  episodeId: number | null;
   media: {
     id: number;
     title: string;
@@ -49,6 +53,27 @@ export function buildActiveDownloads(
   return items;
 }
 
+/** The user-safe slice of the same join: progress per grab, no names. */
+export function buildProgressSummary(
+  rows: ActiveGrabRow[],
+  torrents: NormalizedTorrent[],
+): DownloadProgressSummaryItem[] {
+  const byHash = new Map(torrents.map((t) => [t.hash.toLowerCase(), t]));
+  const items: DownloadProgressSummaryItem[] = [];
+  for (const row of rows) {
+    if (!row.media || !row.torrentHash) continue;
+    const torrent = byHash.get(row.torrentHash.toLowerCase());
+    if (!torrent) continue;
+    items.push({
+      id: row.id,
+      media_id: row.media.id,
+      episode_id: row.episodeId,
+      progress: torrent.progress,
+    });
+  }
+  return items;
+}
+
 /** Grabs still in flight for movies and shows, oldest first. */
 export function loadActiveGrabRows(): Promise<ActiveGrabRow[]> {
   return prisma.downloadHistory.findMany({
@@ -64,6 +89,7 @@ export function loadActiveGrabRows(): Promise<ActiveGrabRow[]> {
       releaseTitle: true,
       torrentHash: true,
       season: true,
+      episodeId: true,
       media: {
         select: { id: true, title: true, type: true, posterUrl: true },
       },

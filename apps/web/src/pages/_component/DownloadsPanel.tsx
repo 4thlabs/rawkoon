@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowDown, Download } from "lucide-react";
 
+import { useCurrentUser } from "@/lib/auth/useAuth";
 import { useActiveDownloads } from "@/features/medias/hooks/useActiveDownloads";
 import { useDownloadsSpeed } from "@/pages/_component/useDownloadsSpeed";
 import {
@@ -36,16 +37,19 @@ function useNow(): number {
 export function DownloadsPanel() {
   const { t } = useTranslation("common");
   const speed = useDownloadsSpeed();
-  const active = useActiveDownloads();
-  const pending = usePendingReleases().data?.items ?? [];
+  // The queue names titles and releases, so only admins get it; others keep the speed total.
+  const isAdmin = useCurrentUser().data?.is_admin === true;
+  const active = useActiveDownloads({ enabled: isAdmin });
+  const pending = usePendingReleases(isAdmin).data?.items ?? [];
   const grabNow = useGrabPendingNow();
   const now = useNow();
 
   const items = active.data?.items ?? [];
-  const isLoading = speed.isLoading || active.isLoading;
+  const isLoading = speed.isLoading || (isAdmin && active.isLoading);
   const enabled = speed.data?.enabled ?? active.data?.enabled ?? false;
   const connected = speed.data?.connected ?? active.data?.connected ?? false;
   const empty = items.length === 0 && pending.length === 0;
+  const showBody = isAdmin || isLoading || !enabled || !connected;
 
   return (
     <WidgetShell>
@@ -65,7 +69,7 @@ export function DownloadsPanel() {
         }
       />
 
-      <div className="space-y-4 px-4 py-3">
+      <div className="space-y-4 px-4 py-3" hidden={!showBody}>
         {isLoading && (
           <div className="space-y-3">
             {[0, 1].map((i) => (
@@ -93,7 +97,7 @@ export function DownloadsPanel() {
           </p>
         )}
 
-        {!isLoading && enabled && connected && empty && (
+        {!isLoading && isAdmin && enabled && connected && empty && (
           <p className="py-2 text-center text-sm text-neutral-400">
             {t("dashboard.home.nothingDownloading")}
           </p>
