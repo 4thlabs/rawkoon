@@ -42,7 +42,7 @@ still wanted is searched automatically, by two jobs that hit the same indexer:
 
 | Job | Schedule | What it does |
 | --- | --- | --- |
-| Release search | every 6 hours | Searches each wanted movie and episode, and grabs the best match its quality profile allows. A season whose aired episodes are all wanted is searched as one season pack. |
+| Release search | every 6 hours by default; change it under Settings, Media, Library Settings, "Check for new releases" | Searches each wanted movie and episode, and grabs the best match its quality profile allows. A season whose aired episodes are all wanted is searched as one season pack. |
 | RSS | every 15 minutes | Matches new releases from the indexer feeds against the same wanted titles. |
 
 Neither job searches a title before it can exist:
@@ -64,7 +64,7 @@ once.
 Each scheduled release search that finds nothing usable counts one failed
 attempt against the movie or episode; RSS misses do not count. After 24 failed
 attempts the title is set to **Skipped**, it stops being searched, and
-administrators are notified. At the 6-hour cadence that is about six days of
+administrators are notified. At the default 6-hour cadence that is about six days of
 searching. From the twelfth attempt, the title also appears in the Library
 attention list.
 

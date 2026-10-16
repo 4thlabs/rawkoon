@@ -5,10 +5,15 @@ import { stat } from "node:fs/promises";
 import { Hono } from "hono";
 
 import { prisma } from "@rawkoon/api/db";
+import {
+  DEFAULT_RELEASE_CHECK_CRON,
+  normalizeCron,
+} from "@rawkoon/shared/utils";
 import { badRequest, ok, serverError } from "@rawkoon/api/errors";
 import type { Env } from "@rawkoon/api/honoEnv";
 import { requireAdmin } from "@rawkoon/api/middleware/hono/auth";
 import { jsonV } from "@rawkoon/api/middleware/validate";
+import { applyReleaseCheckSchedule } from "@rawkoon/api/services/releaseCheckSchedule";
 import { normalizeExtension } from "@rawkoon/api/services/seeding/seedPolicy";
 import { TMDB_LANGUAGE_LIBRARY_PERSISTENCE } from "@rawkoon/api/utils/medias/tmdbFetcherTypes";
 import { listVideoFilesUnder } from "@rawkoon/api/utils/medias/fileIdentifier";
@@ -41,6 +46,7 @@ export function mapSettings(row: {
   defaultMovieQualityProfileId?: number | null;
   defaultShowQualityProfileId?: number | null;
   searchOnAdd?: boolean;
+  releaseCheckCron?: string;
   activeIndexerManager?: string | null;
   booksLibraryPath?: string | null;
   audiobooksLibraryPath?: string | null;
@@ -67,6 +73,7 @@ export function mapSettings(row: {
     default_movie_quality_profile_id: row.defaultMovieQualityProfileId ?? null,
     default_show_quality_profile_id: row.defaultShowQualityProfileId ?? null,
     search_on_add: row.searchOnAdd ?? true,
+    release_check_cron: row.releaseCheckCron ?? DEFAULT_RELEASE_CHECK_CRON,
     active_indexer_manager: row.activeIndexerManager ?? null,
     // Book paths and templates live on the same row: post-processing settings
     // are per-instance, not per-media-kind, and splitting them would mean two
@@ -125,6 +132,7 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
           .union([z.number(), z.null()])
           .optional(),
         search_on_add: z.boolean().optional(),
+        release_check_cron: z.string().max(100).optional(),
         active_indexer_manager: z
           .union([z.literal("prowlarr"), z.literal("jackett"), z.null()])
           .optional(),
@@ -170,6 +178,7 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
           defaultMovieQualityProfileId?: number | null;
           defaultShowQualityProfileId?: number | null;
           searchOnAdd?: boolean;
+          releaseCheckCron?: string;
           activeIndexerManager?: string | null;
           booksLibraryPath?: string | null;
           audiobooksLibraryPath?: string | null;
@@ -214,6 +223,15 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
             body.default_show_quality_profile_id;
         if (body.search_on_add !== undefined)
           update.searchOnAdd = body.search_on_add;
+        if (body.release_check_cron !== undefined) {
+          const cron = normalizeCron(body.release_check_cron);
+          if (cron === null) {
+            return badRequest(
+              "release_check_cron must be a 5-field cron expression",
+            );
+          }
+          update.releaseCheckCron = cron;
+        }
         if (body.active_indexer_manager !== undefined) {
           if (
             body.active_indexer_manager !== null &&
@@ -258,6 +276,8 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
         }
 
         let row = await prisma.mediaSettings.findUnique({ where: { id: 1 } });
+        const previousCron =
+          row?.releaseCheckCron ?? DEFAULT_RELEASE_CHECK_CRON;
         if (!row) {
           row = await prisma.mediaSettings.create({
             data: { id: 1, ...update },
@@ -267,6 +287,12 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
             where: { id: 1 },
             data: update,
           });
+        }
+        if (
+          update.releaseCheckCron !== undefined &&
+          update.releaseCheckCron !== previousCron
+        ) {
+          await applyReleaseCheckSchedule(update.releaseCheckCron);
         }
         return ok({ settings: mapSettings(row) });
       } catch {

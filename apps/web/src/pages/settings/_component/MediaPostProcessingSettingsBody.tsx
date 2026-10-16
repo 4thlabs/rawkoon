@@ -10,6 +10,10 @@ import { useLibraryScan } from "@/features/medias/hooks/useLibraryScan";
 import { useReindexLanguages } from "@/features/medias/hooks/useReindexLanguages";
 import { useReindexLanguagesStatus } from "@/features/medias/hooks/useReindexLanguagesStatus";
 import { useUpdateMediaPostProcessingSettings } from "@/features/medias/hooks/useUpdateMediaPostProcessingSettings";
+import {
+  ReleaseCheckFieldset,
+  type ReleaseCheckValue,
+} from "@/pages/settings/_component/ReleaseCheckFieldset";
 import { useProwlarrIntegration } from "@/pages/settings/useProwlarrIntegration";
 import { useJackettIntegration } from "@/pages/settings/useJackettIntegration";
 import type {
@@ -105,6 +109,10 @@ export function MediaPostProcessingSettingsBody({
     },
   });
 
+  const [releaseCheck, setReleaseCheck] = useState<ReleaseCheckValue>({
+    cron: settings.release_check_cron,
+    valid: true,
+  });
   const [scanPath, setScanPath] = useState("");
   const [scanType, setScanType] = useState<"movie" | "show">("movie");
   const [lastScan, setLastScan] = useState<{
@@ -140,6 +148,7 @@ export function MediaPostProcessingSettingsBody({
             ? null
             : parseInt(data.defaultShowQualityProfileId, 10),
         search_on_add: data.searchOnAdd === "on",
+        release_check_cron: releaseCheck.cron,
         active_indexer_manager:
           data.activeIndexerManager === "prowlarr" ||
           data.activeIndexerManager === "jackett"
@@ -397,8 +406,16 @@ export function MediaPostProcessingSettingsBody({
             </div>
           </fieldset>
 
+          <ReleaseCheckFieldset
+            initialCron={settings.release_check_cron}
+            onChange={setReleaseCheck}
+          />
+
           <div className="pt-2 border-t border-neutral-700/60">
-            <Button type="submit" disabled={updateMut.isPending}>
+            <Button
+              type="submit"
+              disabled={updateMut.isPending || !releaseCheck.valid}
+            >
               {updateMut.isPending
                 ? t("settings.mediaLibrary.saving")
                 : t("settings.mediaLibrary.save")}
