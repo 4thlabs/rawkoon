@@ -12,7 +12,10 @@
     "collections": "Collections",
     "calendar": "Calendrier",
     "logout": "Déconnexion",
-    "positionTitle": "Position de la navigation"
+    "positionTitle": "Position de la navigation",
+    "search": "Recherche",
+    "more": "Plus",
+    "mobileTabs": "Navigation principale"
   },
   "requests": {
     "title": "Demandes",
