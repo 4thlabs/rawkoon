@@ -53,35 +53,59 @@ public struct QueueStatusLine: Equatable, Sendable {
     public let reason: QueueReason
 }
 
+/// Where a download belongs in the Queue lane.
+public enum QueueSection: Equatable, Sendable {
+    /// In flight, or failed: one status and reason.
+    case inFlight(QueueStatusLine)
+    /// Finished and only seeding, listed in the collapsed Seeding section.
+    case seeding
+}
+
 public enum QueueClassifier {
-    /// Maps a download's state and failure fields to one status and reason. Nil for a finished
-    /// download that is only seeding, which is not in flight.
-    public static func line(
-        state: String, failed: Bool, failReason: String?, postProcessError: String?
-    ) -> QueueStatusLine? {
-        let lower = state.lowercased()
+    /// Where a download goes and what it says. `state` is the download client's state, nil for a
+    /// download the client no longer reports; such a row shows only when it failed or its import
+    /// errored. Nil when there is nothing to show.
+    public static func section(
+        state: String?, failed: Bool, failReason: String?, postProcessError: String?
+    ) -> QueueSection? {
+        let lower = state?.lowercased() ?? ""
+        let detail = [postProcessError, failReason]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
         if failed || lower.contains("error") || lower.contains("missing") {
-            let detail = [postProcessError, failReason]
-                .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .first { !$0.isEmpty }
-            return QueueStatusLine(status: .failed, reason: detail.map(QueueReason.detail) ?? .clientError)
+            return .inFlight(QueueStatusLine(status: .failed, reason: detail.map(QueueReason.detail) ?? .clientError))
+        }
+        guard state != nil else {
+            // A finished download the client forgot, whose import errored.
+            let importError = postProcessError?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return importError.isEmpty ? nil : .inFlight(QueueStatusLine(status: .failed, reason: .detail(importError)))
         }
         if lower.contains("import") || lower.contains("process") {
-            return QueueStatusLine(status: .importing, reason: .importing)
+            return .inFlight(QueueStatusLine(status: .importing, reason: .importing))
         }
         if lower.contains("seed") || lower.contains("complete") {
-            return nil
+            return .seeding
+        }
+        if lower.contains("stalled") {
+            return .inFlight(QueueStatusLine(status: .stalled, reason: .noPeers))
         }
         let waiting: [(String, QueueReason)] = [
             ("paused", .paused), ("stopped", .paused), ("queued", .queued),
             ("checking", .checking), ("meta", .fetchingMetadata),
         ]
-        if lower.contains("stalled") {
-            return QueueStatusLine(status: .stalled, reason: .noPeers)
-        }
         if let match = waiting.first(where: { lower.contains($0.0) }) {
-            return QueueStatusLine(status: .waiting, reason: match.1)
+            return .inFlight(QueueStatusLine(status: .waiting, reason: match.1))
         }
-        return QueueStatusLine(status: .downloading, reason: .none)
+        return .inFlight(QueueStatusLine(status: .downloading, reason: .none))
+    }
+
+    /// The status line of an in-flight or failed download; nil for seeding or nothing to show.
+    public static func line(
+        state: String?, failed: Bool, failReason: String?, postProcessError: String?
+    ) -> QueueStatusLine? {
+        guard case let .inFlight(line)? = section(
+            state: state, failed: failed, failReason: failReason, postProcessError: postProcessError
+        ) else { return nil }
+        return line
     }
 }

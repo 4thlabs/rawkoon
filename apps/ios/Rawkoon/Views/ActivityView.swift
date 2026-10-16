@@ -29,6 +29,12 @@ struct ActivityView: View {
     /// The skeleton is for the cold load only; live reloads keep the current lane still.
     @State var didLoadQueue = false
     @State var queueError: String?
+    /// Releases held by a grab delay, shown as Waiting rows with Grab now.
+    @State var heldReleases: [PendingRelease] = []
+    @State var grabbingHeldKey: String?
+    /// Rows that finished while the lane was open, kept in place until their completion has played.
+    @State var settlingQueueIds: Set<String> = []
+    @State var seedingExpanded = false
     /// nil = show every card; otherwise only cards with the tapped status.
     @State var queueStatusFilter: QueueStatus?
 
@@ -287,7 +293,7 @@ struct ActivityView: View {
                 list.value.items.map { ($0.id, Self.cachedDownloads(client: client, libraryId: $0.id)) },
                 uniquingKeysWith: { first, _ in first }
             )
-            queueRows = Self.queueRows(media: list.value.items, downloads: downloads)
+            apply(queueRows: Self.queueRows(media: list.value.items, downloads: downloads))
         }
         if activities.isEmpty {
             paintHistoryFromCache(client: client)

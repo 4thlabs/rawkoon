@@ -165,6 +165,7 @@ struct RequestsView: View {
         }
         // An approved or denied request leaves the Pending list with an animation; so does a filter switch.
         .rawkoonMotion(RawkoonMotion.spring, value: visibleRequests.map(\.id))
+        .reportsTabBarScroll()
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .refreshable { await load() }

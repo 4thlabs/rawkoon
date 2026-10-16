@@ -80,8 +80,9 @@ extension HomeView {
 
     /// The queue rows with the freshest pushed progress laid over them.
     private var downloadsSummary: HomeDownloadsSummary {
-        let lines = downloadRows.map { row in
-            let live = model.downloadProgress[row.mediaId]?[row.downloadId] ?? row.live
+        let lines = downloadRows.compactMap { row -> HomeDownloadLine? in
+            guard let known = row.live else { return nil }
+            let live = model.downloadProgress[row.mediaId]?[row.downloadId] ?? known
             return HomeDownloadLine(
                 id: row.id, title: row.mediaTitle, progress: live.progress, speed: live.downloadSpeed,
                 etaSeconds: live.etaSeconds, state: live.state

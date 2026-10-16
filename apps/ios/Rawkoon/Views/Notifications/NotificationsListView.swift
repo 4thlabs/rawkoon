@@ -172,10 +172,15 @@ struct NotificationsListView: View {
     private func actionButton(_ action: InboxAction, for notification: NotificationDTO) -> some View {
         switch action {
         case .reviewRequests:
-            Button("Review") { model.requestedActivityLane = .requests }
-                .buttonStyle(.bordered)
-                .tint(Theme.apricot)
-                .frame(minHeight: 44)
+            Button("Review") {
+                Task {
+                    await markRead(notification)
+                    model.requestedActivityLane = .requests
+                }
+            }
+            .buttonStyle(.bordered)
+            .tint(Theme.apricot)
+            .frame(minHeight: 44)
         case let .searchAgain(libraryId, season, episode):
             Button {
                 Task { await searchAgain(notification, libraryId: libraryId, season: season, episode: episode) }
@@ -306,15 +311,18 @@ struct NotificationsListView: View {
     }
 
     private func open(_ notification: NotificationDTO) async {
-        // Offline the read flag can't reach the server, so the row stays unread.
-        if !notification.read, !model.isOffline {
-            markReadLocally(notification.id)
-            if let client = model.api() {
-                try? await client.markNotificationRead(id: notification.id)
-                await model.refreshUnreadNotificationCount()
-            }
-        }
+        await markRead(notification)
         model.navigate(toNotificationUrl: notification.url)
+    }
+
+    private func markRead(_ notification: NotificationDTO) async {
+        // Offline the read flag can't reach the server, so the row stays unread.
+        guard !notification.read, !model.isOffline else { return }
+        markReadLocally(notification.id)
+        if let client = model.api() {
+            try? await client.markNotificationRead(id: notification.id)
+            await model.refreshUnreadNotificationCount()
+        }
     }
 
     /// Optimistic local update — mirrors the web app's `useMarkAsReadOptimistic`.

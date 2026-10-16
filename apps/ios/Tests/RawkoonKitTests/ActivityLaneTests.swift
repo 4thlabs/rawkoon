@@ -44,7 +44,7 @@ final class ActivityLaneTests: XCTestCase {
         XCTAssertNil(InboxAction.resolve(type: "library_media_downloaded", url: "/library/1", isAdmin: true))
     }
 
-    private func line(_ state: String, failed: Bool = false, reason: String? = nil, post: String? = nil) -> QueueStatusLine? {
+    private func line(_ state: String?, failed: Bool = false, reason: String? = nil, post: String? = nil) -> QueueStatusLine? {
         QueueClassifier.line(state: state, failed: failed, failReason: reason, postProcessError: post)
     }
 
@@ -62,9 +62,37 @@ final class ActivityLaneTests: XCTestCase {
         XCTAssertEqual(line("processing")?.status, .importing)
     }
 
-    func testFinishedSeedingRowsAreNotInFlight() {
+    private func section(
+        _ state: String?, failed: Bool = false, reason: String? = nil, post: String? = nil
+    ) -> QueueSection? {
+        QueueClassifier.section(state: state, failed: failed, failReason: reason, postProcessError: post)
+    }
+
+    func testFinishedDownloadsMoveToSeeding() {
+        XCTAssertEqual(section("seeding"), .seeding)
+        XCTAssertEqual(section("completed"), .seeding)
         XCTAssertNil(line("seeding"))
         XCTAssertNil(line("completed"))
+    }
+
+    func testInFlightDownloadsStayInTheQueue() {
+        XCTAssertEqual(section("downloading"), .inFlight(QueueStatusLine(status: .downloading, reason: .none)))
+        XCTAssertEqual(section("importing"), .inFlight(QueueStatusLine(status: .importing, reason: .importing)))
+    }
+
+    func testMissingFilesCountAsFailed() {
+        XCTAssertEqual(line("missingFiles")?.status, .failed)
+    }
+
+    func testRowsTheClientForgotShowOnlyWhenTheyFailed() {
+        XCTAssertNil(section(nil))
+        XCTAssertNil(section(nil, post: "  "))
+        XCTAssertEqual(section(nil, failed: true, reason: "Rejected"), .inFlight(
+            QueueStatusLine(status: .failed, reason: .detail("Rejected"))
+        ))
+        XCTAssertEqual(section(nil, post: "Rename failed"), .inFlight(
+            QueueStatusLine(status: .failed, reason: .detail("Rename failed"))
+        ))
     }
 
     func testFailuresCarryTheServersReasonWhenThereIsOne() {

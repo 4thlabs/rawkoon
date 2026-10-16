@@ -1,6 +1,36 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Seeding (%lld)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En partage (%lld)"
+          }
+        }
+      }
+    },
+    "Held by a grab delay, grabbing shortly unless a better release appears": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retenu par un délai de téléchargement, sera pris sous peu sauf si une meilleure version apparaît"
+          }
+        }
+      }
+    },
+    "Held by a grab delay, grabs %@ unless a better release appears": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retenu par un délai de téléchargement, sera pris %@ sauf si une meilleure version apparaît"
+          }
+        }
+      }
+    },
     "Inbox": {
       "localizations": {
         "fr": {
