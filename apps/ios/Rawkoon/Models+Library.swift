@@ -1,4 +1,5 @@
 import Foundation
+import RawkoonKit
 
 // Library media, episodes, file metadata, and remux DTOs. Split out of Models.swift to stay under the file_length lint
 // threshold (spec §4.2). Pure data types, no behaviour.
@@ -185,6 +186,11 @@ nonisolated struct LibraryMedia: Decodable, Identifiable, Sendable {
     let lastGrabbedAt: String?
     let addedAt: String?
     let digitalReleaseDate: String?
+    /// Last automatic or manual search; absent on an older server or before one ran.
+    var lastSearchAt: String?
+    var lastSearchOutcome: String?
+    /// Admin-only on the server.
+    var lastSearchReason: String?
     /// Set only on a quality-profile update response: the existing file(s) fail
     /// the new profile. `affectedEpisodes` counts the failing episodes of a show.
     var needsUpgrade: Bool?
@@ -200,6 +206,12 @@ nonisolated struct LibraryMedia: Decodable, Identifiable, Sendable {
         case downloadedEpisodeCount, seasonCount, durationSecs, resolution
         case videoCodec, hdrFormat, audioFormat, languageTags, lastGrabbedAt
         case addedAt, digitalReleaseDate, needsUpgrade, affectedEpisodes
+        case lastSearchAt, lastSearchOutcome, lastSearchReason
+    }
+
+    /// The last search outcome worth showing for this item, if any.
+    var lastSearchNote: LastSearchNote? {
+        LastSearchNote(status: status, outcome: lastSearchOutcome, at: lastSearchAt, reason: lastSearchReason)
     }
 }
 
@@ -308,6 +320,10 @@ nonisolated struct LibrarySearchResponse: Decodable, Sendable {
     let reason: String?
     /// True when the AI judge's pick was the release grabbed (absent on older servers).
     let aiPicked: Bool?
+    /// A failed replace-grab: the running download was already stopped.
+    let replacedPrevious: Bool?
+    /// The same outcome the library stream pushes, so a caller need not wait for it.
+    let searchResult: SearchResultDTO?
 }
 
 /// `POST /api/library/:id/upgrade` — `mode` is "auto" (queue the search) or "manual".

@@ -3,6 +3,7 @@ import { useFetcher } from "@/lib/api/context";
 import { queryKeys } from "@/lib/queryKeys";
 import { REQUEST_ENDPOINTS } from "@/lib/endpoints";
 import type {
+  ApproveRequestResponse,
   CreateMediaRequestBody,
   MediaRequestsResponse,
 } from "@rawkoon/shared/types";
@@ -39,7 +40,7 @@ export function useApproveRequest() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (vars: { id: number; quality_profile_id: number }) =>
-      fetcher<{ ok: true }>(REQUEST_ENDPOINTS.APPROVE(vars.id), {
+      fetcher<ApproveRequestResponse>(REQUEST_ENDPOINTS.APPROVE(vars.id), {
         method: "POST",
         body: { quality_profile_id: vars.quality_profile_id },
       }),

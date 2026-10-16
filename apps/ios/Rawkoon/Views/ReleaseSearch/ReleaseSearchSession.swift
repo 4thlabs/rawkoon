@@ -66,6 +66,11 @@ final class ReleaseSearchSession {
     var grabbedTitles: Set<String> = []
     var blockingGuid: String?
     var blockedGuids: Set<String> = []
+    var languageFallbackSummary: LanguageFallbackSummary?
+    /// The movie's running download, when there is one; grabbing another release replaces it.
+    var activeDownload: DownloadHistoryItem?
+    /// The row waiting on its inline "stop the running download?" confirmation.
+    var replaceConfirmGuid: String?
 
     var aiEnabled = false
     var aiPickLoading = false
@@ -191,6 +196,7 @@ final class ReleaseSearchSession {
             releasesKey = searchKey
             service = response.service
             indexerWarnings = response.indexerWarnings ?? []
+            languageFallbackSummary = response.languageFallbackSummary
         } catch APIError.unauthorized {
             adminOnlyNote = String(localized: "Admin only")
             releases = []
@@ -295,6 +301,10 @@ final class ReleaseSearchSession {
         guard let client = model.api(), let libraryMediaId else { return }
         guard let response = try? await client.downloads(libraryId: libraryMediaId) else { return }
         grabbedTitles = Set(response.items.map { normalizedTitle($0.releaseTitle) })
+        // Replace only exists for movies; a show's grabs are per episode or season.
+        activeDownload = mediaType == "tv" ? nil : response.items.first {
+            $0.completedAt == nil && !$0.failed && $0.episodeId == nil
+        }
     }
 
     func block(_ release: ReleaseItem, model: AppModel) async {
@@ -315,9 +325,24 @@ final class ReleaseSearchSession {
         }
     }
 
-    func grab(_ release: ReleaseItem, model: AppModel, onGrabbed: (() -> Void)?) async {
+    /// The server's own reason when it gave one ("cannot be grabbed in its current state"), else the generic line.
+    private func grabFailureMessage(_ error: Error, title: String) -> String {
+        if let apiError = error as? APIError {
+            switch apiError {
+            case let .server(_, message) where !message.isEmpty: return message
+            case .transport, .offline: return apiError.userMessage()
+            default: break
+            }
+        }
+        return String(localized: "Grab failed for \"\(title)\".")
+    }
+
+    func grab(
+        _ release: ReleaseItem, model: AppModel, onGrabbed: (() -> Void)?, replace: Bool = false
+    ) async {
         guard let client = model.api() else { return }
         grabbingGuid = release.guid
+        replaceConfirmGuid = nil
         defer { grabbingGuid = nil }
         do {
             if let libraryMediaId, let downloadUrl = release.downloadUrl {
@@ -327,13 +352,24 @@ final class ReleaseSearchSession {
                         downloadUrl: downloadUrl, releaseTitle: release.title, episodeId: nil,
                         season: completeSeries ? nil : selectedSeason, indexer: release.indexer,
                         qualityParsed: release.parsedQuality, sizeBytes: release.sizeBytes,
-                        isUpgrade: isUpgrade ? true : nil
+                        isUpgrade: isUpgrade ? true : nil, replace: replace ? true : nil
                     )
                 )
                 if !result.grabbed {
-                    grabError = result.reason ?? String(localized: "Grab failed for \"\(release.title)\".")
+                    var message = result.reason ?? String(localized: "Grab failed for \"\(release.title)\".")
+                    if result.replacedPrevious == true {
+                        if let last = message.last, !".!?".contains(last) {
+                            message += "."
+                        }
+                        message += " " + String(localized: "The previous download was already stopped.")
+                        await loadGrabbedTitles(model: model)
+                    }
+                    grabError = message
                     return
                 }
+            } else if replace {
+                grabError = String(localized: "This release can't replace a download.")
+                return
             } else if let token = release.downloadToken {
                 let result = try await client.grabByToken(token)
                 if !result.grabbed {
@@ -351,7 +387,7 @@ final class ReleaseSearchSession {
         } catch APIError.unauthorized {
             adminOnlyNote = String(localized: "Admin only")
         } catch {
-            grabError = String(localized: "Grab failed for \"\(release.title)\".")
+            grabError = grabFailureMessage(error, title: release.title)
         }
     }
 

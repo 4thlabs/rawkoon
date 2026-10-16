@@ -599,7 +599,12 @@ describe("approveRequest", () => {
       },
     ];
     const r = await approveRequest(1, 3, "admin-1");
-    expect(r).toEqual({ ok: true });
+    expect(r).toEqual({
+      ok: true,
+      library_media_id: 909,
+      search_queued: true,
+      search_skipped_reason: null,
+    });
     const row = state.requests[0];
     expect(row.status).toBe("approved");
     expect(row.libraryMediaId).toBe(909);

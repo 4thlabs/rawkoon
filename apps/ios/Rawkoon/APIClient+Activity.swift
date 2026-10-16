@@ -85,8 +85,9 @@ extension APIClient {
         try await get(Endpoints.rssStatus)
     }
 
-    func approveRequest(id: Int, qualityProfileId: Int) async throws {
-        try await postExpectOK("/api/requests/\(id)/approve", body: ApproveRequestBody(qualityProfileId: qualityProfileId))
+    /// The search fields are absent for a book request and on an older server.
+    func approveRequest(id: Int, qualityProfileId: Int) async throws -> ApproveRequestResult {
+        try await post("/api/requests/\(id)/approve", body: ApproveRequestBody(qualityProfileId: qualityProfileId))
     }
 
     func denyRequest(id: Int, reason: String?) async throws {

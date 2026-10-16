@@ -307,12 +307,7 @@ struct LibraryMediaView: View {
                 )
                 .transition(.rawkoonSwap)
         } else if mediaItem.status == "wanted" || mediaItem.status == "missing" {
-            Circle().fill(Theme.muted.opacity(0.9)).frame(width: 22, height: 22)
-                .overlay(
-                    Image(systemName: "questionmark")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Theme.base)
-                )
+            WantedBadge(media: mediaItem)
                 .transition(.rawkoonSwap)
         }
     }

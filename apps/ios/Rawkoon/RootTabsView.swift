@@ -54,6 +54,7 @@ struct RootTabsView: View {
             case "reader": DebugEbookReader()
             case "settings": NavigationStack { SettingsView() }
             case "requests": NavigationStack { RequestsView() }
+            case "autoGrab": NavigationStack { AutoGrabSettingsView() }
             case "qualityProfiles": NavigationStack { QualityProfilesView() }
             case "qualityProfileEditor": NavigationStack { DebugFirstQualityProfile() }
             case "notifications": NavigationStack { NotificationsSettingsView() }
@@ -121,6 +122,16 @@ struct RootTabsView: View {
                 // The phone container insets its own navigation bars for the strip.
                 sidebarTabs(validSelection)
                     .offlineStrip(isOffline: model.isOffline)
+            }
+        }
+        .onChange(of: model.requestedRootTab) { _, tab in
+            guard let tab else { return }
+            model.requestedRootTab = nil
+            selection = tab
+            // Explore consumes the focus request on mount; drop it if nothing did.
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                model.exploreSearchFocusRequest = false
             }
         }
         .focusedSceneValue(\.rootTabSelection, validSelection)

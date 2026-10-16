@@ -487,3 +487,14 @@ nonisolated struct Cached<Value> {
 }
 
 extension Cached: Sendable where Value: Sendable {}
+
+extension APIError {
+    /// The server said the title is already added or requested.
+    var isConflict: Bool {
+        switch self {
+        case let .http(status): status == 409
+        case let .server(status, _): status == 409
+        default: false
+        }
+    }
+}

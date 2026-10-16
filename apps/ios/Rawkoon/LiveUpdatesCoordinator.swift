@@ -55,6 +55,8 @@ final class LiveUpdatesCoordinator {
     private(set) var bannerNotification: StreamNotificationDTO?
 
     private var libraryEventsTask: Task<Void, Never>?
+    private var searchRefreshTask: Task<Void, Never>?
+    private var pendingSearchRefreshIds: Set<Int> = []
     private var notificationStreamTask: Task<Void, Never>?
     private var bannerDismissTask: Task<Void, Never>?
 
@@ -182,6 +184,10 @@ final class LiveUpdatesCoordinator {
             libraryChangeToken += 1
             let now = Int(Date().timeIntervalSince1970 * 1000)
             recentArrivals = LandedArrivals.insert(recentArrivals, arrival.received(at: now), now: now)
+        case let .searchResult(result):
+            logSSE("library", "search-result media=\(result.mediaId) outcome=\(result.outcome.rawValue)")
+            appModel?.liveSearch.apply(result)
+            queueSearchRefresh(mediaId: result.mediaId)
         case let .book(id):
             logSSE("library", "book id=\(id)")
             SSEEventRegistry.apply(.book(id: id), to: store)
@@ -189,6 +195,21 @@ final class LiveUpdatesCoordinator {
         case let .downloadProgress(mediaId, items):
             logSSE("library", "download-progress media=\(mediaId) rows=\(items.count)")
             applyDownloadProgress(mediaId: mediaId, items: items)
+        }
+    }
+
+    /// The stored outcome changed: refetch the item, its lists and any open page, once per burst of results.
+    private func queueSearchRefresh(mediaId: Int) {
+        pendingSearchRefreshIds.insert(mediaId)
+        searchRefreshTask?.cancel()
+        searchRefreshTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, let self, let store = appModel?.serverStateStore else { return }
+            for id in pendingSearchRefreshIds {
+                SSEEventRegistry.apply(.media(id: id), to: store)
+            }
+            pendingSearchRefreshIds = []
+            libraryChangeToken += 1
         }
     }
 
@@ -220,7 +241,7 @@ final class LiveUpdatesCoordinator {
                     unreadNotificationCount += 1
                     syncAppIconBadge()
                     notificationChangeToken += 1
-                    if !LibraryNotification.isSilent(notification) {
+                    if !LibraryNotification.isSilent(notification), !isCoveredByLiveSearch(notification) {
                         showBanner(notification)
                     }
                 }
@@ -242,6 +263,21 @@ final class LiveUpdatesCoordinator {
             try? await Task.sleep(for: .seconds(backoff))
             backoff = min(backoff * 2, 30)
         }
+    }
+
+    /// The item's live search toast already reports this very grab; the notification still lands in the list.
+    private func isCoveredByLiveSearch(_ notification: StreamNotificationDTO) -> Bool {
+        guard notification.type == "library_media_grabbed",
+              let mediaId = LibraryNotification.mediaID(in: notification)
+        else { return false }
+        var season: Int?
+        var episode: Int?
+        if case let .media(_, urlSeason, urlEpisode, _)? = NotificationDestination.resolve(url: notification.url) {
+            season = urlSeason
+            episode = urlEpisode
+        }
+        let notice = GrabNotice(mediaId: mediaId, season: season, episode: episode, body: notification.body)
+        return appModel?.liveSearch.suppressesGrabNotice(notice) ?? false
     }
 
     /// Shows the transient in-app banner for a live notification, replacing

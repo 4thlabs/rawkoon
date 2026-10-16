@@ -24,9 +24,15 @@ struct ScoreBreakdownPanel: View {
             }
             .padding(.top, 6)
         } label: {
-            Text("Score breakdown")
-                .font(.system(.caption2, design: .monospaced))
-                .foregroundStyle(Theme.muted)
+            Group {
+                if let total = breakdown.total {
+                    Text("Score \(total) · what counts")
+                } else {
+                    Text("Score breakdown")
+                }
+            }
+            .font(.system(.caption2, design: .monospaced))
+            .foregroundStyle(Theme.muted)
         }
         .tint(Theme.muted)
     }

@@ -12909,6 +12909,1286 @@
           }
         }
       }
+    },
+    "Automatic grabbing": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement automatique"
+          }
+        }
+      }
+    },
+    "Search when a title is added": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chercher quand un titre est ajouté"
+          }
+        }
+      }
+    },
+    "Look for a release and grab the best match right after you add a movie or show.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cherche une version et télécharge la meilleure juste après l'ajout d'un film ou d'une série."
+          }
+        }
+      }
+    },
+    "Search starts as soon as a title is added.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recherche démarre dès qu'un titre est ajouté."
+          }
+        }
+      }
+    },
+    "A new title waits for the scheduled check, or a manual search.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un nouveau titre attend la vérification planifiée, ou une recherche manuelle."
+          }
+        }
+      }
+    },
+    "Custom…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personnalisé…"
+          }
+        }
+      }
+    },
+    "Cron expression": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expression cron"
+          }
+        }
+      }
+    },
+    "Check for new releases": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifier les nouvelles sorties"
+          }
+        }
+      }
+    },
+    "How often wanted movies and episodes are searched for a release.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fréquence à laquelle les films et épisodes recherchés sont cherchés à nouveau."
+          }
+        }
+      }
+    },
+    "Five fields: minute, hour, day of month, month, day of week. Times follow the server's time zone.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cinq champs : minute, heure, jour du mois, mois, jour de la semaine. Les heures suivent le fuseau horaire du serveur."
+          }
+        }
+      }
+    },
+    "Every hour": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque heure"
+          }
+        }
+      }
+    },
+    "Every 6 hours": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les 6 heures"
+          }
+        }
+      }
+    },
+    "Every 12 hours": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les 12 heures"
+          }
+        }
+      }
+    },
+    "Every 24 hours": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les 24 heures"
+          }
+        }
+      }
+    },
+    "Custom: %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personnalisé : %@"
+          }
+        }
+      }
+    },
+    "Runs %@.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S'exécute %@."
+          }
+        }
+      }
+    },
+    "This runs too often. Release checks must be at least %lld minutes apart.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette fréquence est trop élevée. Les vérifications doivent être espacées d'au moins %lld minutes."
+          }
+        }
+      }
+    },
+    "This is not a valid cron expression. Use five fields, for example 0 */4 * * *.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expression cron invalide. Utilisez cinq champs, par exemple 0 */4 * * *."
+          }
+        }
+      }
+    },
+    "Couldn't run the checks.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de lancer les vérifications."
+          }
+        }
+      }
+    },
+    "Re-check": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revérifier"
+          }
+        }
+      }
+    },
+    "Ready to grab": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prêt à télécharger"
+          }
+        }
+      }
+    },
+    "Everything automatic grabbing needs is in place.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout ce qu'il faut aux téléchargements automatiques est en place."
+          }
+        }
+      }
+    },
+    "1 thing to fix": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 point à corriger"
+          }
+        }
+      }
+    },
+    "%lld things to fix": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld points à corriger"
+          }
+        }
+      }
+    },
+    "Not working": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ne fonctionne pas"
+          }
+        }
+      }
+    },
+    "Nothing is held. A quality profile with a grab delay holds releases here until the delay ends.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n'est retenu. Un profil de qualité avec un délai de téléchargement retient les versions ici jusqu'à la fin du délai."
+          }
+        }
+      }
+    },
+    "Couldn't load held releases.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de charger les versions retenues."
+          }
+        }
+      }
+    },
+    "Held releases": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versions retenues"
+          }
+        }
+      }
+    },
+    "Set per quality profile under Grab delay. Manual grabs are never held.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Défini par profil de qualité, sous Délai de téléchargement. Les téléchargements manuels ne sont jamais retenus."
+          }
+        }
+      }
+    },
+    "Grabs %@ unless a better release appears.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement %@ sauf si une meilleure version apparaît."
+          }
+        }
+      }
+    },
+    "Grab now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Télécharger maintenant"
+          }
+        }
+      }
+    },
+    "Grabbing %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement de %@"
+          }
+        }
+      }
+    },
+    "Not enough free space to grab it.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas assez d'espace libre pour le télécharger."
+          }
+        }
+      }
+    },
+    "It is no longer wanted.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il n'est plus recherché."
+          }
+        }
+      }
+    },
+    "It is already downloading.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il est déjà en téléchargement."
+          }
+        }
+      }
+    },
+    "Every held release was blocked or failed.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque version retenue a été bloquée ou a échoué."
+          }
+        }
+      }
+    },
+    "Nothing was grabbed.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n'a été téléchargé."
+          }
+        }
+      }
+    },
+    "Can't reach %@, so searches and RSS checks fail.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de joindre %@, donc les recherches et les vérifications RSS échouent."
+          }
+        }
+      }
+    },
+    "No indexer manager is set up, so nothing can be searched.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun gestionnaire d'indexeurs n'est configuré, donc rien ne peut être recherché."
+          }
+        }
+      }
+    },
+    "%@ is connected but has no enabled indexers, so searches find nothing.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ est connecté mais n'a aucun indexeur activé, donc les recherches ne trouvent rien."
+          }
+        }
+      }
+    },
+    "%@ is connected with 1 indexer enabled.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ est connecté avec 1 indexeur activé."
+          }
+        }
+      }
+    },
+    "%@ is connected with %lld indexers enabled.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ est connecté avec %lld indexeurs activés."
+          }
+        }
+      }
+    },
+    "Can't reach %@, so grabs fail.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de joindre %@, donc les téléchargements échouent."
+          }
+        }
+      }
+    },
+    "No download client is set up, so releases have nowhere to go.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun client de téléchargement n'est configuré, donc les versions n'ont nulle part où aller."
+          }
+        }
+      }
+    },
+    "%@ is connected.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ est connecté."
+          }
+        }
+      }
+    },
+    "New movies use the %@ quality profile.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les nouveaux films utilisent le profil de qualité %@."
+          }
+        }
+      }
+    },
+    "No default movie quality profile: new movies accept any release.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun profil de qualité par défaut pour les films : les nouveaux films acceptent n'importe quelle version."
+          }
+        }
+      }
+    },
+    "New shows use the %@ quality profile.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les nouvelles séries utilisent le profil de qualité %@."
+          }
+        }
+      }
+    },
+    "No default show quality profile: new shows accept any release.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun profil de qualité par défaut pour les séries : les nouvelles séries acceptent n'importe quelle version."
+          }
+        }
+      }
+    },
+    "RSS checks watch %lld of %lld indexers.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les vérifications RSS surveillent %lld indexeur(s) sur %lld."
+          }
+        }
+      }
+    },
+    "RSS checks watch no indexer, so new releases are never picked up on their own.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les vérifications RSS ne surveillent aucun indexeur, donc les nouvelles versions ne sont jamais récupérées d'elles-mêmes."
+          }
+        }
+      }
+    },
+    "Every quality profile has a maximum resolution.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque profil de qualité a une résolution maximale."
+          }
+        }
+      }
+    },
+    "1 quality profile has no maximum resolution, so a 1080p profile can still grab 4K.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 profil de qualité n'a pas de résolution maximale, donc un profil 1080p peut quand même récupérer du 4K."
+          }
+        }
+      }
+    },
+    "%lld quality profiles have no maximum resolution, so a 1080p profile can still grab 4K.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld profils de qualité n'ont pas de résolution maximale, donc un profil 1080p peut quand même récupérer du 4K."
+          }
+        }
+      }
+    },
+    "Search waits for the scheduled check after a movie or show is added.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recherche attend la vérification planifiée après l'ajout d'un film ou d'une série."
+          }
+        }
+      }
+    },
+    "Search starts as soon as a movie or show is added.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recherche démarre dès qu'un film ou une série est ajouté."
+          }
+        }
+      }
+    },
+    "Held releases are listed under Automatic grabbing, where you can grab one early.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les versions retenues sont listées sous Téléchargement automatique, où vous pouvez en télécharger une plus tôt."
+          }
+        }
+      }
+    },
+    "You have an unsaved schedule.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous avez une planification non enregistrée."
+          }
+        }
+      }
+    },
+    "Discard changes": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abandonner les modifications"
+          }
+        }
+      }
+    },
+    "Keep editing": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer à modifier"
+          }
+        }
+      }
+    },
+    "Back": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retour"
+          }
+        }
+      }
+    },
+    "This schedule never runs (for example 31 February).": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette planification ne s'exécute jamais (par exemple le 31 février)."
+          }
+        }
+      }
+    },
+    "Grabs shortly unless a better release appears.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement sous peu, sauf si une meilleure version apparaît."
+          }
+        }
+      }
+    },
+    "Best match": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meilleur choix"
+          }
+        }
+      }
+    },
+    "Stops the running download and its partial data, then grabs this release.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrête le téléchargement en cours et ses données partielles, puis récupère cette release."
+          }
+        }
+      }
+    },
+    "Keep current": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garder l'actuel"
+          }
+        }
+      }
+    },
+    "Replace download": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplacer le téléchargement"
+          }
+        }
+      }
+    },
+    "subtitles only": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sous-titres seulement"
+          }
+        }
+      }
+    },
+    "Replace": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplacer"
+          }
+        }
+      }
+    },
+    "Grab anyway": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Récupérer quand même"
+          }
+        }
+      }
+    },
+    "Downloading now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement en cours"
+          }
+        }
+      }
+    },
+    "Pick another release below to replace it.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez une autre release ci-dessous pour la remplacer."
+          }
+        }
+      }
+    },
+    "or": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ou"
+          }
+        }
+      }
+    },
+    "preferred language": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "langue préférée"
+          }
+        }
+      }
+    },
+    "preferred tracker": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tracker préféré"
+          }
+        }
+      }
+    },
+    "The previous download was already stopped.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le téléchargement précédent était déjà arrêté."
+          }
+        }
+      }
+    },
+    "This release can't replace a download.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette release ne peut pas remplacer un téléchargement."
+          }
+        }
+      }
+    },
+    "%lld hidden by filters": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld masquées par les filtres"
+          }
+        }
+      }
+    },
+    "Other French versions · %lld": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autres versions françaises · %lld"
+          }
+        }
+      }
+    },
+    "Other languages · %lld": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autres langues · %lld"
+          }
+        }
+      }
+    },
+    "No %@ release yet": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore de release %@"
+          }
+        }
+      }
+    },
+    "These are other versions of the language. They are never grabbed automatically; Rawkoon keeps checking for %@.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce sont d'autres versions de cette langue. Elles ne sont jamais récupérées automatiquement ; Rawkoon continue de chercher du %@."
+          }
+        }
+      }
+    },
+    "Score %lld · what counts": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Score %lld · ce qui compte"
+          }
+        }
+      }
+    },
+    "%lld seeders": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld seeders"
+          }
+        }
+      }
+    },
+    "Searching for %@…": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche de %@…"
+          }
+        }
+      }
+    },
+    "Still searching. You'll get a notification when it lands.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche toujours en cours. Vous recevrez une notification."
+          }
+        }
+      }
+    },
+    "Grabbed a release": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version récupérée"
+          }
+        }
+      }
+    },
+    "Grabbed %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ récupéré"
+          }
+        }
+      }
+    },
+    "Grabbed %@ · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ récupéré · %@"
+          }
+        }
+      }
+    },
+    "No match for %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune version trouvée pour %@"
+          }
+        }
+      }
+    },
+    "Waiting for a digital release date": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente d'une date de sortie numérique"
+          }
+        }
+      }
+    },
+    "Waiting for its digital release (%@)": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente de sa sortie numérique (%@)"
+          }
+        }
+      }
+    },
+    "Added %@. Auto-grab is off.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté. Le téléchargement automatique est désactivé."
+          }
+        }
+      }
+    },
+    "Added %@ without searching.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté sans recherche."
+          }
+        }
+      }
+    },
+    "Added %@, not monitored.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté, non suivi."
+          }
+        }
+      }
+    },
+    "Added %@. Digital release %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté. Sortie numérique le %@."
+          }
+        }
+      }
+    },
+    "Added %@. No digital release date yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté. Pas encore de date de sortie numérique."
+          }
+        }
+      }
+    },
+    "Added %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ajouté"
+          }
+        }
+      }
+    },
+    "Nothing to grab yet for %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien à télécharger pour l'instant pour %@"
+          }
+        }
+      }
+    },
+    "Search failed: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recherche a échoué : %@"
+          }
+        }
+      }
+    },
+    "Search now": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher maintenant"
+          }
+        }
+      }
+    },
+    "%@ held for %lld min": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ retenu pendant %lld min"
+          }
+        }
+      }
+    },
+    "%@ is held by the grab delay": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ est retenu par le délai de téléchargement"
+          }
+        }
+      }
+    },
+    "Grabbed some releases; others could not be": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certaines versions ont été récupérées, pas les autres"
+          }
+        }
+      }
+    },
+    "No match": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune version"
+          }
+        }
+      }
+    },
+    "Not released yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore sortie"
+          }
+        }
+      }
+    },
+    "Searched, grabbed a release": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherché, une version a été récupérée"
+          }
+        }
+      }
+    },
+    "Search again": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher à nouveau"
+          }
+        }
+      }
+    },
+    "See all": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout voir"
+          }
+        }
+      }
+    },
+    "Importing": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importation"
+          }
+        }
+      }
+    },
+    "See all missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir tous les manquants"
+          }
+        }
+      }
+    },
+    "+%lld more": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld de plus"
+          }
+        }
+      }
+    },
+    "Opens the download queue": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre la file de téléchargement"
+          }
+        }
+      }
+    },
+    "Held by the grab delay": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retenu par le délai de téléchargement"
+          }
+        }
+      }
+    },
+    "Complete": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complet"
+          }
+        }
+      }
+    },
+    "Manage seasons": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gérer les saisons"
+          }
+        }
+      }
+    },
+    "Search %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher %@"
+          }
+        }
+      }
+    },
+    "Monitor %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Surveiller %@"
+          }
+        }
+      }
+    },
+    "Partial": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partiel"
+          }
+        }
+      }
+    },
+    "Skip": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passer"
+          }
+        }
+      }
+    },
+    "Add & choose release": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter et choisir une version"
+          }
+        }
+      }
+    },
+    "Add without searching": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter sans rechercher"
+          }
+        }
+      }
+    },
+    "Requested %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ demandé"
+          }
+        }
+      }
+    },
+    "Request %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander %@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

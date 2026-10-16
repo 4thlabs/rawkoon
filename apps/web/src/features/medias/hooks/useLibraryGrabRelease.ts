@@ -19,6 +19,7 @@ export function useLibraryGrabRelease(libraryMediaId: number | null) {
       episode_id?: number | null;
       season?: number | null;
       is_upgrade?: boolean;
+      replace?: boolean;
     }) => {
       if (libraryMediaId == null || libraryMediaId <= 0) {
         throw new Error("Library context required");
@@ -40,6 +41,7 @@ export function useLibraryGrabRelease(libraryMediaId: number | null) {
             ...(body.episode_id != null ? { episode_id: body.episode_id } : {}),
             ...(body.season != null ? { season: body.season } : {}),
             ...(body.is_upgrade ? { is_upgrade: true } : {}),
+            ...(body.replace ? { replace: true } : {}),
           },
         },
       );

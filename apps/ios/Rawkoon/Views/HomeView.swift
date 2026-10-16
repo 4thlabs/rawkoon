@@ -17,6 +17,9 @@ struct HomeView: View {
     @State var nowPlaying: NowPlayingResponse?
     @State var speed: SpeedResponse?
     @State var attention: [AttentionItem] = []
+    @State var downloadRows: [ActivityView.QueueRow] = []
+    /// Wanted titles whose last search found nothing, newest first.
+    @State var wantedMisses: [LibraryMedia] = []
     @State var rss: RssStatusResponse?
     @State var stats: LibraryStats?
     @State private var growth: LibraryGrowth?
@@ -134,6 +137,11 @@ struct HomeView: View {
             }
         }
         .task { await model.refreshUnreadNotificationCount() }
+        // A download or search finishing (library events) and coming back to Home both refresh these two cards.
+        .task(id: [isActiveRootTab ? 1 : 0, model.libraryChangeToken, model.isAdmin ? 1 : 0]) {
+            guard isActiveRootTab, !model.isOffline else { return }
+            await loadQueueAndMisses()
+        }
         .onChange(of: model.reconnectToken) { _, _ in
             continueToken += 1
             Task { await load() }
@@ -152,6 +160,7 @@ struct HomeView: View {
         .refreshable {
             continueToken += 1
             await load()
+            await loadQueueAndMisses()
         }
     }
 
@@ -191,6 +200,33 @@ struct HomeView: View {
 
     private func greeting(onHero: Bool) -> some View {
         // Re-evaluated each minute so a Home left open overnight doesn't keep saying "Good morning".
+        HStack(alignment: .top, spacing: 12) {
+            greetingText(onHero: onHero)
+            Spacer(minLength: 0)
+            searchButton(onHero: onHero)
+        }
+        // On the hero, the hero's own content inset applies.
+        .padding(.horizontal, onHero ? 0 : 16)
+        // The name arrives after first render; the load-swap spring must not animate its reflow.
+        .transaction { $0.animation = nil }
+    }
+
+    private func searchButton(onHero: Bool) -> some View {
+        Button {
+            model.openExploreSearch()
+        } label: {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Theme.textStrong)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(onHero ? Color.black.opacity(0.35) : Theme.raised))
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
+        }
+        .buttonStyle(.rawkoonPressable)
+        .accessibilityLabel("Search")
+    }
+
+    private func greetingText(onHero: Bool) -> some View {
         TimelineView(.everyMinute) { context in
             let calendar = Calendar.current
             let hour = calendar.component(.hour, from: context.date)
@@ -204,10 +240,6 @@ struct HomeView: View {
                     .foregroundStyle(onHero ? Theme.text : Theme.muted)
             }
         }
-        // On the hero, the hero's own content inset applies.
-        .padding(.horizontal, onHero ? 0 : 16)
-        // The name arrives after first render; the load-swap spring must not animate its reflow.
-        .transaction { $0.animation = nil }
     }
 
     /// A fresh arrival outranks the time-of-day line.

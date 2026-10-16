@@ -5,6 +5,7 @@ import { createAndQueueNotification } from "@rawkoon/api/workers/notificationSer
 import { getGlobalTmdbRegion } from "@rawkoon/api/utils/medias/tmdbRegion";
 import { deleteCache } from "@rawkoon/api/services/cache";
 import { queueSearchOnAdd } from "@rawkoon/api/services/searchOnAdd";
+import type { SearchSkippedReason } from "@rawkoon/shared/types";
 import { TMDB_UPCOMING_CACHE_KEY } from "@rawkoon/api/utils/dashboard/tmdbUpcoming";
 import { getAdminNotificationTargets } from "@rawkoon/api/services/notificationPreferences";
 import { notificationCopy } from "@rawkoon/api/services/notificationCopy";
@@ -251,12 +252,19 @@ export async function createRequest(opts: CreateOpts): Promise<CreateResult> {
   return settleMovieShowRequest(created.id, opts);
 }
 
+/** What approving a movie or show request did about the new library item. */
+interface ApprovedMediaSearch {
+  library_media_id: number;
+  search_queued: boolean;
+  search_skipped_reason: SearchSkippedReason | null;
+}
+
 export async function approveRequest(
   id: number,
   qualityProfileId: number,
   adminId: string,
 ): Promise<
-  | { ok: true }
+  | ({ ok: true } & Partial<ApprovedMediaSearch>)
   | { ok: false; reason: "not_found" | "not_pending" | "invalid_profile" }
 > {
   const req = await prisma.mediaRequest.findUnique({ where: { id } });
@@ -318,10 +326,16 @@ export async function approveRequest(
     throw error;
   }
   await deleteCache(`${TMDB_UPCOMING_CACHE_KEY}:${region}`);
-  await queueSearchOnAdd(media);
+  const outcome = await queueSearchOnAdd(media);
+  const approved = {
+    ok: true as const,
+    library_media_id: media.id,
+    search_queued: outcome.search_queued,
+    search_skipped_reason: outcome.search_skipped_reason,
+  };
 
   // Deciding your own request needs no "approved" notification.
-  if (adminId === req.requestedById) return { ok: true };
+  if (adminId === req.requestedById) return approved;
 
   const requester = await getNotificationTarget(req.requestedById);
   const locale = requester?.locale ?? null;
@@ -338,7 +352,7 @@ export async function approveRequest(
     { preferenceKey: "request_decided" },
   );
 
-  return { ok: true };
+  return approved;
 }
 
 /**

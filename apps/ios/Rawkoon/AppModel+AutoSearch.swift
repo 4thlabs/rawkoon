@@ -1,37 +1,14 @@
 import Foundation
 
 extension AppModel {
-    /// Searches the indexers and grabs the best release for a movie, then says how
-    /// it went. `onChoose` backs the "Choose…" action on a miss. True when grabbed.
-    /// `canChoose` is read when the result lands: a screen left mid-search can't open the sheet.
+    /// Searches the indexers and grabs the best release for a movie, reporting through the
+    /// item's live toast. `onChoose` replaces the toast's default "Choose a release" action.
+    /// True when grabbed.
     @discardableResult
-    func autoSearchMovie(
-        libraryId: Int,
-        canChoose: () -> Bool = { true },
-        onChoose: @escaping () -> Void
-    ) async -> Bool {
+    func autoSearchMovie(libraryId: Int, title: String, onChoose: (() -> Void)? = nil) async -> Bool {
         guard let client = api() else { return false }
-        do {
-            let result = try await client.searchMovie(id: libraryId)
-            reportGrab(result, onChoose: result.grabbed || !canChoose() ? nil : onChoose)
-            return result.grabbed
-        } catch {
-            toast(String(localized: "Auto search failed."), style: .error)
-            return false
-        }
-    }
-
-    /// Toast for a search+grab response; a miss carries the server's reason.
-    func reportGrab(_ result: LibrarySearchResponse, onChoose: (() -> Void)? = nil) {
-        if result.grabbed {
-            let release = result.releaseTitle ?? String(localized: "a release")
-            let message = result.aiPicked == true
-                ? String(localized: "Grabbed \(release) (AI pick).")
-                : String(localized: "Grabbed \(release).")
-            toast(message, style: .success)
-        } else {
-            let action = onChoose.map { ToastAction(label: String(localized: "Choose…"), handler: $0) }
-            toast(result.reason ?? String(localized: "No release grabbed."), style: .info, action: action)
+        return await liveSearch.search(mediaId: libraryId, title: title, isShow: false, onChoose: onChoose) {
+            try await client.searchMovie(id: libraryId)
         }
     }
 

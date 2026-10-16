@@ -117,6 +117,7 @@ struct ReleaseSearchControls: View {
                 }
                 .rawkoonMotion(RawkoonMotion.snappy, value: filters.hasActiveFilters)
             }
+            .trailingScrollFade()
         }
     }
 
@@ -222,6 +223,7 @@ struct ReleaseSearchControls: View {
                 }
             }
         }
+        .trailingScrollFade()
     }
 
     private func seasonButton(
@@ -335,5 +337,19 @@ struct ReleaseSearchControls: View {
         .padding(.vertical, 10)
         .background(Theme.inset, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border, lineWidth: 1))
+    }
+}
+
+private extension View {
+    /// A row that scrolls sideways fades out at its trailing edge, so a cut-off chip reads as "more this way".
+    func trailingScrollFade() -> some View {
+        contentMargins(.trailing, 28, for: .scrollContent)
+            .mask(
+                HStack(spacing: 0) {
+                    Rectangle()
+                    LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 28)
+                }
+            )
     }
 }

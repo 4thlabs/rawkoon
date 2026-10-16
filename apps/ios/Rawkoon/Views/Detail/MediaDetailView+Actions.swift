@@ -27,17 +27,23 @@ extension MediaDetailView {
         showingReleaseSearch = true
     }
 
+    /// A live-search toast's "Choose a release" for this item: open the sheet and clear the request.
+    func openRequestedReleaseSheet() {
+        guard let libraryId, isOnScreen, model.releaseSheetRequest == libraryId else { return }
+        model.releaseSheetRequest = nil
+        openReleaseSearch()
+    }
+
     func movieAutoSearch() async {
         guard let libraryId, !autoSearching else { return }
         autoSearching = true
         defer { autoSearching = false }
-        let grabbed = await model.autoSearchMovie(libraryId: libraryId, canChoose: { isOnScreen }) {
-            openReleaseSearch()
-        }
+        let grabbed = await model.autoSearchMovie(libraryId: libraryId, title: title)
+        // A miss changes the stored outcome too, so the page refetches either way.
         if grabbed {
             store.invalidateLibraryRollup(itemID: libraryId)
-            await refreshManagementData()
         }
+        await refreshManagementData()
     }
 
     func applyQualityProfileChange(_ qualityProfileId: Int?) async {
@@ -172,14 +178,11 @@ extension MediaDetailView {
 
     func seasonAutoSearch(_ season: Int) async {
         guard let libraryId, let client = model.api() else { return }
-        do {
-            let result = try await client.searchSeason(id: libraryId, season: season)
-            reportGrab(result)
-            await reloadEpisodes()
-            await refreshManagementData()
-        } catch {
-            model.toast(String(localized: "Season search failed."), style: .error)
+        await model.liveSearch.search(mediaId: libraryId, title: title, isShow: true) {
+            try await client.searchSeason(id: libraryId, season: season)
         }
+        await reloadEpisodes()
+        await refreshManagementData()
     }
 
     func seasonRetrySkipped(_ season: Int) async {
@@ -205,14 +208,11 @@ extension MediaDetailView {
 
     func episodeAutoSearch(_ episode: Episode) async {
         guard let libraryId, let client = model.api() else { return }
-        do {
-            let result = try await client.searchEpisode(id: libraryId, episodeId: episode.id)
-            reportGrab(result)
-            await reloadEpisodes()
-            await refreshManagementData()
-        } catch {
-            model.toast(String(localized: "Episode search failed."), style: .error)
+        await model.liveSearch.search(mediaId: libraryId, title: title, isShow: true) {
+            try await client.searchEpisode(id: libraryId, episodeId: episode.id)
         }
+        await reloadEpisodes()
+        await refreshManagementData()
     }
 
     func episodeToggleMonitor(_ episode: Episode) async {
@@ -247,10 +247,6 @@ extension MediaDetailView {
         } catch {
             model.toast(String(localized: "Could not delete episode file."), style: .error)
         }
-    }
-
-    func reportGrab(_ result: LibrarySearchResponse) {
-        model.reportGrab(result)
     }
 
     /// The new profile rejects the file(s) on disk: offer to look for a better one.
@@ -382,7 +378,7 @@ extension MediaDetailView {
     }
 
     // Admin: add straight to the library from TMDB.
-    func submitAdd() async {
+    func submitAdd(mode: AddMode = .standard) async {
         guard let client = model.api() else {
             requestError = String(localized: "Not logged in.")
             return
@@ -394,7 +390,7 @@ extension MediaDetailView {
         do {
             // The store shows an `Adding…` row in Library immediately and swaps in
             // the server's created item — or drops it again if the add fails.
-            let item = try await model.serverStateStore.addToLibrary(
+            let item = try await model.addTitleToLibrary(
                 provisional: .provisional(
                     tmdbId: tmdbId,
                     type: type,
@@ -403,7 +399,11 @@ extension MediaDetailView {
                     posterUrl: resolvedPosterPath,
                     overview: details?.overview
                 ),
-                request: { try await client.addToLibrary(tmdbId: tmdbId, type: type) }
+                tmdbId: tmdbId,
+                type: type,
+                title: title,
+                searchOnAdd: mode.searchOnAdd,
+                announce: !mode.opensReleaseSheet
             )
             added = true
             model.requestPushAuthorization()
@@ -414,6 +414,9 @@ extension MediaDetailView {
             if showManagement {
                 detailTab = .manage
                 await refreshManagementData()
+            }
+            if mode.opensReleaseSheet {
+                openReleaseSearch()
             }
         } catch APIError.unauthorized {
             requestError = String(localized: "Admin only.")

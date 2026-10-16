@@ -100,4 +100,44 @@ struct LibraryEventMappingTests {
         }
         #expect(id == 5)
     }
+
+    @Test func searchResultDecodesHeldTargets() throws {
+        let dto = try decode(
+            #"{"kind":"search_result","media_id":9,"outcome":"delayed","delay_until":"2026-01-01T00:30:00.000Z","target_keys":["a","b"],"ts":1}"#
+        )
+        guard case let .searchResult(result) = LibraryEvent.from(dto) else {
+            Issue.record("expected search result")
+            return
+        }
+        #expect(result.mediaId == 9)
+        #expect(result.outcome == .delayed)
+        #expect(result.targetKeys == ["a", "b"])
+    }
+
+    @Test func searchResultDecodesGrabbedRelease() throws {
+        let dto = try decode(
+            #"{"kind":"search_result","media_id":9,"season":2,"outcome":"grabbed","release":{"title":"X.1080p","resolution":1080,"source":"WEB-DL","size_bytes":5000000000},"ts":1}"#
+        )
+        guard case let .searchResult(result) = LibraryEvent.from(dto) else {
+            Issue.record("expected search result")
+            return
+        }
+        #expect(result.season == 2)
+        #expect(result.releaseTitle == "X.1080p")
+        #expect(result.sizeBytes == 5_000_000_000)
+    }
+
+    @Test func singleTargetKeyBecomesAList() throws {
+        let dto = try decode(#"{"kind":"search_result","media_id":9,"outcome":"delayed","target_key":"k","ts":1}"#)
+        guard case let .searchResult(result) = LibraryEvent.from(dto) else {
+            Issue.record("expected search result")
+            return
+        }
+        #expect(result.targetKeys == ["k"])
+    }
+
+    @Test func unknownSearchOutcomeIsDroppedNotRefreshed() throws {
+        let dto = try decode(#"{"kind":"search_result","media_id":9,"outcome":"mystery","ts":1}"#)
+        #expect(LibraryEvent.from(dto) == nil)
+    }
 }

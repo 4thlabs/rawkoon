@@ -14,10 +14,8 @@ struct SwipeDeck: View {
     @FocusState private var deckFocused: Bool
 
     let label: String
-    /// The primary button's accessibility label — "Add" for an admin
-    /// (adds straight to the library), "Request" otherwise (files a
-    /// request). The button itself is icon-only, so this is what VoiceOver
-    /// announces the role difference through.
+    /// The primary button's label: "Add" for an admin (adds straight to the
+    /// library), "Request" otherwise (files a request).
     let primaryActionTitle: String
     let onDismiss: (DiscoverDeckItem) -> Void
     let onWatchlist: (DiscoverDeckItem) -> Void
@@ -236,7 +234,7 @@ struct SwipeDeck: View {
             return IntentStyle(tint: Theme.importing, icon: "bookmark.fill", progress: vProgress)
         }
         if dragOffset.width >= 0 {
-            return IntentStyle(tint: Theme.apricot, icon: "paperplane.fill", progress: hProgress)
+            return IntentStyle(tint: Theme.apricot, icon: model.isAdmin ? "plus" : "paperplane.fill", progress: hProgress)
         }
         return IntentStyle(tint: Theme.terracotta, icon: "xmark", progress: hProgress)
     }
@@ -340,11 +338,14 @@ struct SwipeDeck: View {
 
     private var actionBar: some View {
         GlassEffectContainer(spacing: 28) {
-            HStack(spacing: 28) {
-                actionButton(system: "xmark", label: "Not interested", filled: false) {
+            HStack(alignment: .top, spacing: 28) {
+                actionButton(system: "xmark", label: "Skip", filled: false) {
                     actOnTop(.dismiss)
                 }
-                actionButton(system: "paperplane.fill", label: LocalizedStringKey(primaryActionTitle), filled: true) {
+                actionButton(
+                    system: model.isAdmin ? "plus" : "paperplane.fill",
+                    label: LocalizedStringKey(primaryActionTitle), filled: true
+                ) {
                     actOnTop(.primary)
                 }
                 actionButton(system: "bookmark", label: "Watchlist", filled: false) {
@@ -358,12 +359,18 @@ struct SwipeDeck: View {
         system: String, label: LocalizedStringKey, filled: Bool, action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Image(systemName: system)
-                .font(.system(size: filled ? 22 : 18, weight: .semibold))
-                .foregroundStyle(model.isOffline ? Theme.faint : filled ? Theme.onAccent : Theme.text)
-                .frame(width: 52, height: 52)
-                // Glass ignores opacity, so the offline state drops the accent tint instead.
-                .glassEffect(.regular.tint(filled && !model.isOffline ? Theme.apricot : nil).interactive(), in: .circle)
+            VStack(spacing: 6) {
+                Image(systemName: system)
+                    .font(.system(size: filled ? 22 : 18, weight: .semibold))
+                    .foregroundStyle(model.isOffline ? Theme.faint : filled ? Theme.onAccent : Theme.text)
+                    .frame(width: 52, height: 52)
+                    // Glass ignores opacity, so the offline state drops the accent tint instead.
+                    .glassEffect(.regular.tint(filled && !model.isOffline ? Theme.apricot : nil).interactive(), in: .circle)
+                Text(label)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(model.isOffline ? Theme.faint : filled ? Theme.apricotSoft : Theme.muted)
+            }
+            .frame(minWidth: 64)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)

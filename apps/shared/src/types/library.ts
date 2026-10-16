@@ -412,6 +412,22 @@ export interface LibrarySearchResponse {
   language_fallback_summary?: LanguageFallbackSummary | null;
   /** The same outcome the library stream pushes, so a client need not wait for it. */
   search_result?: SearchResultPayload;
+  /** Set on a failed replace-grab: the running download was already stopped. */
+  replaced_previous?: boolean;
+}
+
+/** Body of POST /api/library/:id/grab. */
+export interface LibraryGrabRequest {
+  download_url: string;
+  release_title: string;
+  indexer?: string;
+  quality_parsed?: unknown;
+  size_bytes?: number | null;
+  episode_id?: number | null;
+  season?: number | null;
+  is_upgrade?: boolean;
+  /** Admin opt-in: stop a movie's running download and grab this release instead. */
+  replace?: boolean;
 }
 
 interface GlobalDownloadHistoryItem extends LibraryDownloadHistoryItem {

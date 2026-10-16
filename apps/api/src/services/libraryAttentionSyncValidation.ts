@@ -4,6 +4,7 @@ import {
   LIBRARY_ATTENTION_STUCK_PENDING_HOURS,
   LIBRARY_ATTENTION_WARN_ATTEMPTS,
 } from "@rawkoon/api/constants/libraryGrab";
+import { REPLACED_FAIL_REASON } from "@rawkoon/api/services/replacedDownload";
 import type { LibraryAttentionKind } from "@rawkoon/shared/types";
 
 type ValidationContext = {
@@ -13,6 +14,7 @@ type ValidationContext = {
     number,
     {
       failed: boolean;
+      failReason?: string | null;
       postProcessError: string | null;
       completedAt: Date | null;
       grabbedAt: Date;
@@ -96,6 +98,7 @@ export async function buildValidationContext(
           select: {
             id: true,
             failed: true,
+            failReason: true,
             postProcessError: true,
             completedAt: true,
             grabbedAt: true,
@@ -242,7 +245,9 @@ export function alertStillValidFromContext(
       if (alert.downloadHistoryId == null) return false;
       const dh = ctx.dhMap.get(alert.downloadHistoryId);
       return !!(
-        dh?.failed && dh.grabbedAt.getTime() >= ctx.issueCutoff.getTime()
+        dh?.failed &&
+        dh.failReason !== REPLACED_FAIL_REASON &&
+        dh.grabbedAt.getTime() >= ctx.issueCutoff.getTime()
       );
     }
     case "post_process_error": {

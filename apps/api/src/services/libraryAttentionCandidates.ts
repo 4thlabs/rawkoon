@@ -1,3 +1,4 @@
+import { REPLACED_FAIL_REASON } from "@rawkoon/api/services/replacedDownload";
 import { prisma } from "@rawkoon/api/db";
 import {
   LIBRARY_ATTENTION_ISSUE_LOOKBACK_DAYS,
@@ -145,7 +146,15 @@ export async function buildAttentionCandidates(): Promise<
     stalledEpisodes,
   ] = await Promise.all([
     prisma.downloadHistory.findMany({
-      where: { failed: true, grabbedAt: { gte: issueCutoff } },
+      where: {
+        failed: true,
+        grabbedAt: { gte: issueCutoff },
+        // A row stopped on purpose by a replace is not a failure.
+        OR: [
+          { failReason: null },
+          { failReason: { not: REPLACED_FAIL_REASON } },
+        ],
+      },
       orderBy: { grabbedAt: "desc" },
       take: LIBRARY_ATTENTION_PER_SOURCE_DH_TAKE,
       include: dhInclude,

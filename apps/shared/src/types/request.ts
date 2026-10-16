@@ -1,3 +1,5 @@
+import type { SearchSkippedReason } from "./library";
+
 export type MediaRequestStatus =
   | "pending"
   | "approved"
@@ -61,4 +63,12 @@ export interface ApproveMediaRequestBody {
 
 export interface DenyMediaRequestBody {
   deny_reason?: string;
+}
+
+/** Approving a movie or show request; the search fields are absent for a book request. */
+export interface ApproveRequestResponse {
+  ok: true;
+  library_media_id?: number;
+  search_queued?: boolean;
+  search_skipped_reason?: SearchSkippedReason | null;
 }

@@ -63,6 +63,58 @@ function duplicateGrabReason(target: GrabTarget, activeId?: number): string {
 }
 
 /**
+ * The refusals that need nothing but the release itself: a usable URL, a
+ * configured client, and no blocklist hit. Free space is left to the grab, since
+ * a replace frees the old download's space first.
+ */
+export async function preflightGrab(opts: {
+  downloadUrl: string;
+  releaseTitle: string;
+  /** The URL already passed this check (it resolves DNS), so don't repeat it. */
+  skipUrlCheck?: boolean;
+}): Promise<
+  | { refusal: GrabResult }
+  | {
+      downloadUrl: string;
+      releaseTitle: string;
+      isMagnet: boolean;
+      active: NonNullable<Awaited<ReturnType<typeof resolveActiveAdapter>>>;
+    }
+> {
+  const downloadUrl = opts.downloadUrl.trim();
+  const releaseTitle = opts.releaseTitle.trim();
+  const refuse = (reason: string, refusal?: GrabRefusal) => ({
+    refusal: {
+      grabbed: false as const,
+      reason,
+      ...(refusal ? { refusal } : {}),
+    },
+  });
+  if (!downloadUrl) return refuse("Missing download URL");
+  if (!releaseTitle) return refuse("Missing release title");
+
+  const isMagnet = downloadUrl.startsWith("magnet:");
+  if (isMagnet) {
+    if (downloadUrl.length > 16_384) return refuse("Magnet link too long");
+  } else if (
+    !opts.skipUrlCheck &&
+    !(await isServerTorrentFetchUrlAllowed(downloadUrl))
+  ) {
+    return refuse("Download URL is not allowed for server-side fetch");
+  }
+
+  const active = await resolveActiveAdapter();
+  if (!active) return refuse("No download client configured");
+
+  const earlyHash = isMagnet ? infoHashFromMagnet(downloadUrl) : null;
+  const blockReason = await checkBlocklist(releaseTitle, earlyHash);
+  if (blockReason) {
+    return refuse(`Blocklisted: ${blockReason}`, "blocklisted");
+  }
+  return { downloadUrl, releaseTitle, isMagnet, active };
+}
+
+/**
  * Add a known release URL to the active download client,
  * create DownloadHistory, set library status, and log activity.
  */
@@ -84,6 +136,8 @@ export async function grabRelease(opts: {
    * packs for different seasons of one show stay independent.
    */
   season?: number | null;
+  /** The caller already ran `preflightGrab`, so skip its DNS-resolving URL check. */
+  urlChecked?: boolean;
   /** Release size from the indexer; unknown (null/0) skips the free-space check. */
   sizeBytes?: number | null;
 }): Promise<GrabResult> {
@@ -101,10 +155,9 @@ export async function grabRelease(opts: {
       qualityParsed,
     } = opts;
 
-    const downloadUrl = rawUrl.trim();
-    const releaseTitle = rawTitle.trim();
-    if (!downloadUrl) return { grabbed: false, reason: "Missing download URL" };
-    if (!releaseTitle)
+    if (!rawUrl.trim())
+      return { grabbed: false, reason: "Missing download URL" };
+    if (!rawTitle.trim())
       return { grabbed: false, reason: "Missing release title" };
 
     const media = await prisma.libraryMedia.findUnique({
@@ -112,35 +165,17 @@ export async function grabRelease(opts: {
     });
     if (!media) return { grabbed: false, reason: "Library item not found" };
 
-    const isMagnet = downloadUrl.startsWith("magnet:");
-    if (isMagnet) {
-      if (downloadUrl.length > 16_384) {
-        return { grabbed: false, reason: "Magnet link too long" };
-      }
-    } else if (!(await isServerTorrentFetchUrlAllowed(downloadUrl))) {
-      return {
-        grabbed: false,
-        reason: "Download URL is not allowed for server-side fetch",
-      };
-    }
-
-    const active = await resolveActiveAdapter();
-    if (!active)
-      return { grabbed: false, reason: "No download client configured" };
+    const pre = await preflightGrab({
+      downloadUrl: rawUrl,
+      releaseTitle: rawTitle,
+      skipUrlCheck: opts.urlChecked,
+    });
+    if ("refusal" in pre) return pre.refusal;
+    const { downloadUrl, releaseTitle, isMagnet, active } = pre;
     const { adapter } = active;
 
     const category = qbCategoryForLibraryType(media.type);
     const qJson = qualityJsonValue(releaseTitle, qualityParsed);
-
-    const earlyHash = isMagnet ? infoHashFromMagnet(downloadUrl) : null;
-    const blockReason = await checkBlocklist(releaseTitle, earlyHash);
-    if (blockReason) {
-      return {
-        grabbed: false,
-        reason: `Blocklisted: ${blockReason}`,
-        refusal: "blocklisted",
-      };
-    }
 
     const spaceReason = await checkFreeSpaceForGrab({
       mediaType: media.type,
