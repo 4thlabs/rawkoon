@@ -273,6 +273,18 @@ describe("processPendingReleases", () => {
     expect(notifySkipped).toHaveBeenCalledTimes(1);
   });
 
+  it("grabs only the requested target when one is named", async () => {
+    rows = [
+      row(1, "a", 1, -5),
+      { ...row(2, "b", 1, -5), targetKey: "e:8", episodeId: 8 },
+    ];
+    const r = await processPendingReleases(NOW, "e:8");
+    expect(r.grabbed).toBe(1);
+    expect(grabRelease).toHaveBeenCalledTimes(1);
+    expect(grabRelease.mock.calls[0]![0].downloadUrl).toBe("magnet:?xt=b");
+    expect(rows.map((x) => x.targetKey)).toEqual(["e:7"]);
+  });
+
   it("expires rows older than a week", async () => {
     const stale = row(1, "a", 1, 600);
     stale.createdAt = new Date(NOW.getTime() - 8 * 86_400_000);

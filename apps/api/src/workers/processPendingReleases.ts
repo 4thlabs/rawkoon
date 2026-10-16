@@ -109,16 +109,21 @@ async function recordMiss(row: PendingRow, reason: string): Promise<void> {
 /**
  * Grab the best held release for every target whose delay window has ended.
  * Targets that were satisfied or unmonitored meanwhile are dropped without a grab.
+ * `onlyTargetKey` limits the pass to one target, for a manual "grab now".
  */
 export async function processPendingReleases(
   now = new Date(),
+  onlyTargetKey?: string,
 ): Promise<{ grabbed: number; dropped: number }> {
   await prisma.pendingRelease.deleteMany({
     where: { createdAt: { lt: new Date(now.getTime() - PENDING_TTL_MS) } },
   });
 
   const due = await prisma.pendingRelease.findMany({
-    where: { grabAfter: { lte: now } },
+    where: {
+      grabAfter: { lte: now },
+      ...(onlyTargetKey ? { targetKey: onlyTargetKey } : {}),
+    },
     select: { targetKey: true },
     distinct: ["targetKey"],
   });

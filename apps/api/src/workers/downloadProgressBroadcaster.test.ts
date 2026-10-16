@@ -64,6 +64,7 @@ describe("buildProgressPayload", () => {
         hash: "aaa",
         progress: 0.1,
         dlSpeed: 500,
+        sizeBytes: 1_000_000,
         state: "downloading",
       }),
       torrent({ hash: "bbb", progress: 0.9, dlSpeed: 0, state: "stalled" }),
@@ -71,6 +72,7 @@ describe("buildProgressPayload", () => {
         hash: "ccc",
         progress: 0.5,
         dlSpeed: 200,
+        sizeBytes: 1_000_000,
         state: "downloading",
       }),
     ];
@@ -81,7 +83,7 @@ describe("buildProgressPayload", () => {
         progress: 0.1,
         state: "downloading",
         downloadSpeed: 500,
-        etaSeconds: null,
+        etaSeconds: 1800,
       },
       {
         id: 2,
@@ -97,7 +99,7 @@ describe("buildProgressPayload", () => {
         progress: 0.5,
         state: "downloading",
         downloadSpeed: 200,
-        etaSeconds: null,
+        etaSeconds: 2500,
       },
     ]);
   });

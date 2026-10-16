@@ -1,6 +1,10 @@
 import { Hono } from "hono";
 import { resolveActiveAdapter } from "@rawkoon/api/services/downloadClient/registry";
-import { ok } from "@rawkoon/api/errors";
+import { ok, serverError } from "@rawkoon/api/errors";
+import {
+  buildActiveDownloads,
+  loadActiveGrabRows,
+} from "@rawkoon/api/services/downloads/activeDownloads";
 import type { Env } from "@rawkoon/api/honoEnv";
 import { requireUser } from "@rawkoon/api/middleware/hono/auth";
 
@@ -25,5 +29,25 @@ export const dashboardDownloadsRoutes = new Hono<Env>()
       });
     } catch {
       return ok({ enabled: true, connected: false, dl_speed: 0, ul_speed: 0 });
+    }
+  })
+  // Same audience as the speed total: every signed-in user.
+  .get("/downloads/active", async () => {
+    const active = await resolveActiveAdapter();
+    if (!active) return ok({ enabled: false, connected: false, items: [] });
+
+    try {
+      const [rows, torrents] = await Promise.all([
+        loadActiveGrabRows(),
+        active.adapter.listTorrents().catch(() => null),
+      ]);
+      if (!torrents) return ok({ enabled: true, connected: false, items: [] });
+      return ok({
+        enabled: true,
+        connected: true,
+        items: buildActiveDownloads(rows, torrents),
+      });
+    } catch {
+      return serverError("Failed to load active downloads");
     }
   });

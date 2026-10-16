@@ -1,6 +1,7 @@
 import type { DownloadProgressItem } from "@rawkoon/shared/types";
 import { prisma } from "@rawkoon/api/db";
 import type { NormalizedTorrent } from "@rawkoon/api/services/downloadClient/types";
+import { estimateEtaSeconds } from "@rawkoon/api/services/downloadClient/eta";
 import {
   emitDownloadProgress,
   libraryEventBus,
@@ -57,7 +58,7 @@ export function buildProgressPayload(
       progress: torrent.progress,
       state: torrent.state,
       downloadSpeed: torrent.dlSpeed,
-      etaSeconds: null,
+      etaSeconds: estimateEtaSeconds(torrent),
     };
     const list = grouped.get(row.mediaId);
     if (list) list.push(item);

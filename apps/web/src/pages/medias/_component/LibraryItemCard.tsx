@@ -7,6 +7,7 @@ import { formatDate } from "@rawkoon/shared/utils/date";
 import type { LibraryMedia } from "@rawkoon/shared/types";
 import type { ViewMode } from "@/utils/libraryUtils";
 import { usePrefetchLibraryItem } from "@/features/medias/hooks/usePrefetchLibraryItem";
+import { useStatusLabel } from "@/features/medias/hooks/useStatusLabel";
 import { libraryStatusPresentation } from "@/utils/libraryStatusPresentation";
 
 interface LibraryItemCardProps {
@@ -27,7 +28,7 @@ export function LibraryItemCard({
   const prefetchLibraryItem = usePrefetchLibraryItem();
 
   const p = libraryStatusPresentation(item.status);
-  const statusLabel = t(p.labelKey);
+  const statusLabel = useStatusLabel(item, p.labelKey);
 
   const digitalLabel =
     item.type === "movie" && item.digital_release_date

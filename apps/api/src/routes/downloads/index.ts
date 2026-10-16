@@ -35,6 +35,7 @@ import {
   buildSeedingTorrents,
   supersededIds,
 } from "@rawkoon/api/services/seeding/seedingView";
+import { processPendingReleases } from "@rawkoon/api/workers/processPendingReleases";
 import type {
   PendingReleaseItem,
   ReleasedTorrent,
@@ -52,6 +53,9 @@ async function listClientTorrents(): Promise<NormalizedTorrent[] | null> {
   if (!active) return [];
   return active.adapter.listTorrents().catch(() => null);
 }
+
+/** Shapes produced by grabDelay.targetKey: movie, season pack or episode. */
+const TARGET_KEY_PATTERN = /^(m:\d+|s:\d+:\d+|e:\d+)$/;
 
 const hashParam = z.object({ hash: z.string().regex(/^[0-9a-fA-F]{40}$/) });
 const indexerParam = z.object({ indexer: z.string().min(1).max(200) });
@@ -375,7 +379,7 @@ export const downloadsRoutes = new Hono<Env>()
     try {
       const rows = await prisma.pendingRelease.findMany({
         orderBy: [{ grabAfter: "asc" }, { score: "desc" }],
-        include: { media: { select: { title: true } } },
+        include: { media: { select: { title: true, posterUrl: true } } },
       });
       const episodeIds = [
         ...new Set(
@@ -402,6 +406,7 @@ export const downloadsRoutes = new Hono<Env>()
           target_key: r.targetKey,
           media_id: r.mediaId,
           media_title: r.media.title,
+          poster_url: r.media.posterUrl,
           season: ep?.season ?? r.season,
           episode: ep?.episode ?? null,
           release_title: r.releaseTitle,
@@ -422,6 +427,31 @@ export const downloadsRoutes = new Hono<Env>()
       return serverError("Failed to load pending releases");
     }
   })
+  .post(
+    "/pending-releases/grab-now",
+    requireAdmin,
+    jsonV(z.object({ target_key: z.string().regex(TARGET_KEY_PATTERN) })),
+    async (c) => {
+      const { target_key } = c.req.valid("json");
+      try {
+        // Pull the window forward, then replay the normal due-target pass for this target only.
+        const moved = await prisma.pendingRelease.updateMany({
+          where: { targetKey: target_key },
+          data: { grabAfter: new Date() },
+        });
+        if (moved.count === 0)
+          return notFound("No held release for that target");
+        const { grabbed } = await processPendingReleases(
+          new Date(),
+          target_key,
+        );
+        return ok({ grabbed: grabbed > 0 });
+      } catch (e) {
+        console.error("[downloads] grab-now failed:", e);
+        return serverError("Failed to grab the held release");
+      }
+    },
+  )
   .get("/janitor-stats", requireAdmin, async () => {
     try {
       const since = new Date(Date.now() - 30 * 86_400_000);

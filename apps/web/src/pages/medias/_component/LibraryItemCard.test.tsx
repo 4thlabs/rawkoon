@@ -26,6 +26,11 @@ vi.mock("@/features/medias/hooks/usePrefetchLibraryItem", () => ({
   usePrefetchLibraryItem: () => mockPrefetch,
 }));
 
+// The live percent has its own test; here the label is just the key.
+vi.mock("@/features/medias/hooks/useStatusLabel", () => ({
+  useStatusLabel: (_item: unknown, labelKey: string) => labelKey,
+}));
+
 // Mock libraryStatusPresentation (use real impl - import normally)
 // No need to mock - we'll use the real implementation
 

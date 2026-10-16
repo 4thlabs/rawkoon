@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatRuntimeMinutes } from "@rawkoon/shared/utils";
+import { useStatusLabel } from "@/features/medias/hooks/useStatusLabel";
 import { libraryStatusPresentation } from "@/utils/libraryStatusPresentation";
 import type {
   LibraryMedia,
@@ -58,6 +59,7 @@ export function LibraryItemHero({
   const rtScore = ratingsData?.rotten_tomatoes ?? null;
   const tmdbUrl = `https://www.themoviedb.org/${mediaType}/${item.tmdb_id}`;
   const p = libraryStatusPresentation(item.status);
+  const statusLabel = useStatusLabel(item, p.labelKey);
 
   return (
     <div
@@ -160,7 +162,7 @@ export function LibraryItemHero({
                   p.badgeClass,
                 )}
               >
-                {t(p.labelKey)}
+                {statusLabel}
               </span>
             </div>
 

@@ -215,8 +215,18 @@
       "downloadsTitle": "Downloads",
       "transfer": "Transfer",
       "downloadClientNotConfigured": "Download client not configured",
-      "pendingDelay": "Pending (delay)",
-      "pendingGrabAt": "grab at {{time}}",
+      "pendingDelay": "Waiting to grab",
+      "pendingGrabIn": "Grabs in {{time}}",
+      "pendingGrabDue": "Grabbing shortly",
+      "grabNow": "Grab now",
+      "nothingDownloading": "Nothing downloading",
+      "downloadClientUnreachable": "Download client unreachable",
+      "etaLeft": "{{time}} left",
+      "downloadState": {
+        "stalled": "Stalled",
+        "paused": "Paused",
+        "error": "Error"
+      },
       "pendingMore": "+{{count}} more",
       "upcomingEmpty": "Nothing upcoming"
     },
@@ -1707,6 +1717,7 @@
         "digital_release_date": "Digital release",
         "file_size": "File size"
       },
+      "itemStatusPercent": "{{label}} {{percent}}%",
       "itemStatus": {
         "wanted": "Missing",
         "downloading": "Downloading",
