@@ -19,7 +19,11 @@ import {
   normalizeTitleLanguage,
 } from "@rawkoon/shared/constants";
 
-import { mapLibraryMedia, libraryMediaInclude } from "./libraryHelpers";
+import {
+  adminView,
+  mapLibraryMedia,
+  libraryMediaInclude,
+} from "./libraryHelpers";
 import {
   buildLocalizedCountQuery,
   buildLocalizedIdQuery,
@@ -124,7 +128,9 @@ export const libraryListRoutes = new Hono<Env>()
           include: libraryMediaInclude,
           take: 5000,
         });
-        mappedItems = items.map((r) => mapLibraryMedia(r, titleLanguage));
+        mappedItems = items.map((r) =>
+          mapLibraryMedia(r, titleLanguage, adminView(c)),
+        );
         if (titleLanguage !== DEFAULT_TITLE_LANGUAGE) {
           // This path sorts in SQL on the English title; re-sort on what the
           // caller will actually see.
@@ -151,7 +157,9 @@ export const libraryListRoutes = new Hono<Env>()
           });
           const sliced = slicePage(rows, take);
           has_more = sliced.has_more;
-          mappedItems = sliced.items.map((r) => mapLibraryMedia(r));
+          mappedItems = sliced.items.map((r) =>
+            mapLibraryMedia(r, undefined, adminView(c)),
+          );
         } else {
           // Prisma cannot order by a to-many relation column, so resolve the
           // page's ids in SQL and hydrate them through the normal include.
@@ -179,7 +187,7 @@ export const libraryListRoutes = new Hono<Env>()
           mappedItems = ids
             .map((id) => byId.get(id))
             .filter((r): r is (typeof rows)[number] => r !== undefined)
-            .map((r) => mapLibraryMedia(r, titleLanguage));
+            .map((r) => mapLibraryMedia(r, titleLanguage, adminView(c)));
         }
       }
 
@@ -222,7 +230,7 @@ export const libraryListRoutes = new Hono<Env>()
         items: ids
           .map((id) => byId.get(id))
           .filter((r): r is (typeof rows)[number] => r !== undefined)
-          .map((r) => mapLibraryMedia(r, titleLanguage)),
+          .map((r) => mapLibraryMedia(r, titleLanguage, adminView(c))),
       });
     } catch {
       return serverError("Failed to fetch random library items");
@@ -241,7 +249,9 @@ export const libraryListRoutes = new Hono<Env>()
       const itemTitleLanguage = normalizeTitleLanguage(
         c.req.query("title_language"),
       );
-      return ok({ item: mapLibraryMedia(item, itemTitleLanguage) });
+      return ok({
+        item: mapLibraryMedia(item, itemTitleLanguage, adminView(c)),
+      });
     } catch {
       return serverError("Failed to fetch library item");
     }
@@ -274,7 +284,10 @@ export const libraryListRoutes = new Hono<Env>()
           });
           await deleteCache(`${TMDB_UPCOMING_CACHE_KEY}:${region}`);
           const search = await queueSearchOnAdd(item, search_on_add);
-          return ok({ item: mapLibraryMedia(item), ...search });
+          return ok({
+            item: mapLibraryMedia(item, undefined, adminView(c)),
+            ...search,
+          });
         } catch (e) {
           const msg = e instanceof Error ? e.message : "";
           if (msg === "TMDB is not configured") {

@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useLibraryNavigation } from "@/features/medias/context/LibraryNavigationContext";
 import { useTranslation } from "react-i18next";
 import { Info, Search, Settings2, Sparkles } from "lucide-react";
+import { LastSearchNote } from "@/features/medias/components/LastSearchNote";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { useLibraryItem } from "@/features/medias/hooks/useLibraryItem";
 import { useLibraryEvents } from "@/features/medias/hooks/useLibraryEvents";
@@ -200,6 +201,8 @@ export function LibraryItemPage() {
 
       {/* ── Body ──────────────────────────────────────────────────────────── */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+        <LastSearchNote item={item} className="text-xs" />
+
         {/* Overview */}
         {overview && (
           <p className="text-sm text-neutral-300 leading-relaxed max-w-2xl">
@@ -291,7 +294,6 @@ export function LibraryItemPage() {
                   setEpisodeSearchCtx(null);
                   setActiveTab("search");
                 }}
-                onShowReleases={() => setActiveTab("search")}
                 onUpgradeManualSearch={() => {
                   setUpgradeSearchMode(true);
                   setActiveTab("search");

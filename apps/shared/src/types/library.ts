@@ -90,6 +90,10 @@ export interface LibraryMedia {
   digital_release_date: string | null;
   quality_profile_id: number | null;
   search_attempts: number;
+  /** Last automatic or manual search; null until one has run. */
+  last_search_at: string | null;
+  last_search_outcome: SearchOutcome | null;
+  last_search_reason: string | null;
   quality_profile: LibraryQualityProfileRef | null;
   needs_upgrade?: boolean;
   affected_episodes?: number;
@@ -363,6 +367,41 @@ export interface DownloadProgressEvent {
   downloads: DownloadProgressItem[];
 }
 
+export type SearchOutcome =
+  | "grabbed"
+  | "delayed"
+  | "no_match"
+  | "not_released"
+  | "error";
+
+/** How a finished search (automatic or "Search now") ended. */
+export interface SearchResultPayload {
+  media_id: number;
+  /** Set when the search covered one season of a show. */
+  season?: number;
+  outcome: SearchOutcome;
+  release?: {
+    title: string;
+    resolution: number | null;
+    source: string | null;
+    size_bytes: number | null;
+  };
+  /** ISO time: when a held grab is released, or the digital release for not_released. */
+  delay_until?: string;
+  /** For a held grab: the pending-release target, used to grab it early. */
+  target_key?: string;
+  /** Every held target of this search (a show can hold several seasons or episodes). */
+  target_keys?: string[];
+  reason?: string;
+  language_fallback_summary?: LanguageFallbackSummary;
+}
+
+/** Pushed on the library SSE stream when a search finishes. `ts` is epoch milliseconds. */
+export interface SearchResultEvent extends SearchResultPayload {
+  kind: "search_result";
+  ts: number;
+}
+
 export interface LibrarySearchResponse {
   grabbed: boolean;
   release_title?: string;
@@ -371,6 +410,8 @@ export interface LibrarySearchResponse {
   reason?: string;
   /** Set when the miss is because only other versions of the preferred language exist. */
   language_fallback_summary?: LanguageFallbackSummary | null;
+  /** The same outcome the library stream pushes, so a client need not wait for it. */
+  search_result?: SearchResultPayload;
 }
 
 interface GlobalDownloadHistoryItem extends LibraryDownloadHistoryItem {

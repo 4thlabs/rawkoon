@@ -46,6 +46,12 @@ test("models SSE routing from fields actually present on each payload", () => {
     routing: { type: "payload-field", field: "kind", value: "landed" },
     ios_policy: "invalidate",
   });
+  expect(
+    sseContract.find((entry) => entry.id === "library.search-result"),
+  ).toMatchObject({
+    routing: { type: "payload-field", field: "kind", value: "search_result" },
+    ios_policy: "invalidate",
+  });
   for (const id of ["library.migrate-status", "admin.jobs-status"]) {
     expect(sseContract.find((entry) => entry.id === id)).toMatchObject({
       routing: { type: "endpoint" },

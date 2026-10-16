@@ -33,3 +33,6 @@ export const QBIT_CATEGORY_RAWKOON_BOOKS = "rawkoon-books";
 
 /** qBittorrent category for audiobook grabs */
 export const QBIT_CATEGORY_RAWKOON_AUDIOBOOKS = "rawkoon-audiobooks";
+
+/** Search reason when nothing in the indexer results fit; the one miss that is not an error. */
+export const NO_MATCH_REASON = "No matching releases found";

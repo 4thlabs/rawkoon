@@ -26,6 +26,11 @@ vi.mock("@/features/medias/hooks/usePrefetchLibraryItem", () => ({
   usePrefetchLibraryItem: () => mockPrefetch,
 }));
 
+// The live percent has its own test; here the label is just the key.
+vi.mock("@/features/medias/hooks/useStatusLabel", () => ({
+  useStatusLabel: (_item: unknown, labelKey: string) => labelKey,
+}));
+
 // Mock libraryStatusPresentation (use real impl - import normally)
 // No need to mock - we'll use the real implementation
 
@@ -49,6 +54,9 @@ function makeItem(overrides: Partial<LibraryMedia> = {}): LibraryMedia {
     digital_release_date: null,
     quality_profile_id: null,
     search_attempts: 0,
+    last_search_at: null,
+    last_search_outcome: null,
+    last_search_reason: null,
     quality_profile: null,
     added_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",

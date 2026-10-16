@@ -69,7 +69,7 @@ mock.module("@rawkoon/api/db", () => ({
         },
       ],
       update: async (a: { data: Record<string, unknown> }) => {
-        mediaUpdates.push(a.data);
+        if (!("lastSearchAt" in a.data)) mediaUpdates.push(a.data);
         return {};
       },
     },

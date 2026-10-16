@@ -52,6 +52,21 @@
     "ios_policy": "invalidate"
   },
   {
+    "id": "library.search-result",
+    "path": "/api/library/events",
+    "routing": {
+      "type": "payload-field",
+      "field": "kind",
+      "value": "search_result"
+    },
+    "payload": {
+      "media_id": "number",
+      "outcome": "string",
+      "ts": "number"
+    },
+    "ios_policy": "invalidate"
+  },
+  {
     "id": "library.handshake",
     "path": "/api/library/events",
     "routing": { "type": "required-fields", "fields": ["connected", "ts"] },

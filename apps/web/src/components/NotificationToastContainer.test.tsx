@@ -23,6 +23,10 @@ class FakeEventSource {
 }
 
 import { NotificationToastContainer } from "./NotificationToastContainer";
+import {
+  resetLiveSearchToasts,
+  trackSearch,
+} from "@/features/medias/lib/liveSearchToast";
 
 function wrap(client: QueryClient) {
   return ({ children }: { children: ReactNode }) =>
@@ -93,6 +97,64 @@ describe("NotificationToastContainer silent notifications", () => {
     });
 
     expect(screen.queryByText("Application mise a jour")).toBeNull();
+  });
+});
+
+describe("NotificationToastContainer live search toast", () => {
+  const track = (mediaId: number) =>
+    trackSearch({
+      mediaId,
+      title: "T",
+      profileName: null,
+      isShow: false,
+      t: (key) => key,
+      language: "en",
+      openItem: () => {},
+      grabNow: () => {},
+    });
+  const grabbed = (mediaId: number) => ({
+    id: mediaId,
+    title: "Grab started",
+    body: "Some release",
+    type: "library_media_grabbed",
+    url: `/library/${mediaId}`,
+    metadata: { media_id: mediaId },
+  });
+
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({
+      user: { id: "u1" },
+      isAuthenticated: true,
+      isLoading: false,
+    });
+  });
+  afterEach(() => resetLiveSearchToasts());
+
+  function emit(payload: unknown) {
+    const stream = FakeEventSource.instances.find(
+      (es) => es.url === "/api/notifications/stream",
+    );
+    act(() => {
+      stream?.onmessage?.({ data: JSON.stringify(payload) } as MessageEvent);
+    });
+  }
+
+  it("hides the grab popup for an item whose live toast is tracking", () => {
+    render(createElement(NotificationToastContainer), {
+      wrapper: wrap(new QueryClient()),
+    });
+    track(7);
+    emit(grabbed(7));
+    expect(screen.queryByText("Grab started")).toBeNull();
+  });
+
+  it("still pops up grabs for other items", () => {
+    render(createElement(NotificationToastContainer), {
+      wrapper: wrap(new QueryClient()),
+    });
+    track(7);
+    emit(grabbed(8));
+    expect(screen.queryByText("Grab started")).not.toBeNull();
   });
 });
 

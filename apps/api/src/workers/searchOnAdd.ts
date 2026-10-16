@@ -11,6 +11,13 @@ import {
 } from "@rawkoon/api/services/searchOnAdd";
 import { activeShowGrabCover } from "@rawkoon/api/services/activeShowGrab";
 import { isNoMissRefusal } from "@rawkoon/api/services/grabRefusal";
+import type { SearchResultPayload } from "@rawkoon/shared/types";
+import {
+  GENERIC_ERROR_REASON,
+  notReleasedResult,
+  publishSearchResult,
+  searchResultFrom,
+} from "@rawkoon/api/services/searchResult";
 
 type SearchTarget = {
   id: number;
@@ -32,7 +39,28 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 export async function searchOnAdd(
   mediaId: number,
   scope?: SearchScope,
+  /** False while BullMQ will retry the job. */
+  isFinalAttempt = true,
 ): Promise<void> {
+  const season = typeof scope === "number" ? scope : undefined;
+  try {
+    await runSearchOnAdd(mediaId, scope);
+  } catch (e) {
+    console.warn(`[searchOnAdd] Search failed for ${mediaId}:`, e);
+    // A retry may still grab, so only the last attempt tells the toast it failed.
+    if (isFinalAttempt) {
+      await publishSearchResult({
+        media_id: mediaId,
+        ...(season != null ? { season } : {}),
+        outcome: "error",
+        reason: GENERIC_ERROR_REASON,
+      });
+    }
+    throw e;
+  }
+}
+
+async function runSearchOnAdd(mediaId: number, scope?: SearchScope) {
   const media = await prisma.libraryMedia.findUnique({
     where: { id: mediaId },
     select: {
@@ -83,6 +111,7 @@ async function searchCompleteSeries(media: SearchTarget): Promise<void> {
       });
       // A full disk won't improve by searching season by season either.
       if (pack.grabbed || pack.delayed || isNoMissRefusal(pack.refusal)) {
+        await publishSearchResult(searchResultFrom(media.id, pack));
         return;
       }
     } catch (e) {
@@ -106,13 +135,21 @@ async function searchMovie(
       digital = await refreshLibraryMovieDigitalDate(media.id);
     } catch (e) {
       console.warn(`[searchOnAdd] TMDB refresh failed for ${media.id}:`, e);
+      await publishSearchResult({
+        media_id: media.id,
+        outcome: "error",
+        reason: GENERIC_ERROR_REASON,
+      });
       return;
     }
   }
-  if (!isMovieReleased(digital)) return;
+  if (!isMovieReleased(digital)) {
+    await publishSearchResult(notReleasedResult(media.id, digital));
+    return;
+  }
 
   const { queries } = resolveSearchTitles(media);
-  await searchAndGrabWithTitleFallback({
+  const result = await searchAndGrabWithTitleFallback({
     trigger: "scheduled",
     mediaId: media.id,
     mediaType: "movie",
@@ -120,6 +157,31 @@ async function searchMovie(
     suffix: media.year ? ` ${media.year}` : "",
     qualityProfileId: media.qualityProfileId,
   });
+  await publishSearchResult(searchResultFrom(media.id, result));
+}
+
+/** One result for the whole call: a grab beats a held grab, which beats a miss. */
+function summarize(
+  mediaId: number,
+  season: number | undefined,
+  results: SearchResultPayload[],
+): SearchResultPayload {
+  const withSeason = (r: SearchResultPayload): SearchResultPayload =>
+    season != null ? { ...r, season } : r;
+  const grabbed = results.find((r) => r.outcome === "grabbed");
+  if (grabbed) return withSeason(grabbed);
+  const held = results
+    .filter((r) => r.outcome === "delayed")
+    .sort((a, b) => (a.delay_until ?? "").localeCompare(b.delay_until ?? ""));
+  if (held[0]) {
+    const keys = held.flatMap((r) => (r.target_key ? [r.target_key] : []));
+    return withSeason({ ...held[0], target_keys: keys });
+  }
+  const miss = results.find((r) => r.outcome === "no_match");
+  if (miss) return withSeason(miss);
+  const failed = results.find((r) => r.outcome === "error");
+  if (failed) return withSeason(failed);
+  return withSeason({ media_id: mediaId, outcome: "not_released" });
 }
 
 async function searchShow(
@@ -154,8 +216,9 @@ async function searchShow(
     seasons.set(ep.season, list);
   }
 
+  const results: SearchResultPayload[] = [];
   const { queries } = resolveSearchTitles(media);
-  for (const [season, all] of seasons) {
+  seasonLoop: for (const [season, all] of seasons) {
     if (cover?.(season)) continue;
     const wanted = all.filter(
       (ep) =>
@@ -164,7 +227,15 @@ async function searchShow(
         ep.airDate != null &&
         ep.airDate <= cutoff,
     );
-    if (wanted.length === 0) continue;
+    if (wanted.length === 0) {
+      // Nothing to look for yet; the next air date tells the user when.
+      const next = all
+        .filter((ep) => ep.airDate != null && ep.airDate > cutoff)
+        .map((ep) => ep.airDate!)
+        .sort((a, b) => a.getTime() - b.getTime())[0];
+      results.push(notReleasedResult(media.id, next ?? null));
+      continue;
+    }
 
     // A fully aired, untouched season is looked for as a pack first.
     if (wanted.length === all.length) {
@@ -178,6 +249,7 @@ async function searchShow(
           suffix: ` S${pad2(season)}`,
           qualityProfileId: media.qualityProfileId,
         });
+        results.push(searchResultFrom(media.id, pack));
         // A held grab or a full disk won't improve by searching episode by episode.
         if (pack.grabbed || pack.delayed || isNoMissRefusal(pack.refusal)) {
           continue;
@@ -201,12 +273,20 @@ async function searchShow(
           suffix: ` S${pad2(ep.season)}E${pad2(ep.episode)}`,
           qualityProfileId: media.qualityProfileId,
         });
+        results.push(searchResultFrom(media.id, result));
         if (!result.grabbed && isNoMissRefusal(result.refusal)) {
-          return;
+          break seasonLoop;
         }
       } catch (e) {
         console.warn(`[searchOnAdd] Episode ${ep.id} failed:`, e);
+        results.push({
+          media_id: media.id,
+          outcome: "error",
+          reason: GENERIC_ERROR_REASON,
+        });
       }
     }
   }
+
+  await publishSearchResult(summarize(media.id, onlySeason, results));
 }

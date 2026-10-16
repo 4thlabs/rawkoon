@@ -23,6 +23,7 @@ type Ep = {
 let media: Record<string, unknown> | null;
 let episodes: Ep[];
 let refreshedDate: Date | null;
+let searchError: Error | null = null;
 let packResult: { grabbed: boolean; reason: string; delayed?: true };
 let seriesResult: {
   grabbed: boolean;
@@ -40,6 +41,7 @@ const searches: Array<{
 }> = [];
 const seasonJobs: number[] = [];
 const writes: unknown[] = [];
+const outcomes: Array<Record<string, unknown>> = [];
 
 mock.module("@rawkoon/api/services/mediaGrabberSearch", () => ({
   ...realSearch,
@@ -61,6 +63,7 @@ mock.module("@rawkoon/api/services/mediaGrabberSearch", () => ({
         : { suffix: o.suffix, season: o.season, episodeId: o.episodeId },
     );
     expect(o.trigger).toBe("scheduled");
+    if (searchError) throw searchError;
     if (o.completeSeasons) return seriesResult;
     return o.episodeId == null && o.season != null
       ? packResult
@@ -85,8 +88,10 @@ mock.module("@rawkoon/api/db", () => ({
     },
     libraryMedia: {
       findUnique: async () => media,
-      update: async (a: unknown) => {
-        writes.push(a);
+      update: async (a: { data: Record<string, unknown> }) => {
+        // The stored search outcome is the one write a search-on-add may make.
+        if ("lastSearchAt" in a.data) outcomes.push(a.data);
+        else writes.push(a);
         return {};
       },
     },
@@ -143,8 +148,10 @@ beforeEach(() => {
   activeTitle = "Some.Title.Integrale.MULTi.1080p";
   seriesResult = { grabbed: false, reason: "No matching releases found" };
   writes.length = 0;
+  outcomes.length = 0;
   episodes = [];
   refreshedDate = null;
+  searchError = null;
   packResult = { grabbed: false, reason: "No matching releases found" };
 });
 
@@ -160,6 +167,19 @@ describe("searchOnAdd worker: movies", () => {
     await searchOnAdd(1);
     expect(searches).toEqual([{ suffix: " 2020" }]);
     expect(writes).toHaveLength(0);
+    expect(outcomes).toMatchObject([{ lastSearchOutcome: "no_match" }]);
+  });
+
+  it("records that an unreleased movie is waiting on its digital release", async () => {
+    media = {
+      ...base,
+      type: "movie",
+      status: "wanted",
+      digitalReleaseDate: null,
+      _count: { files: 0 },
+    };
+    await searchOnAdd(1);
+    expect(outcomes).toMatchObject([{ lastSearchOutcome: "not_released" }]);
   });
 
   it("re-validates a missing date and skips when TMDB still has none", async () => {
@@ -185,6 +205,23 @@ describe("searchOnAdd worker: movies", () => {
     refreshedDate = past;
     await searchOnAdd(1);
     expect(searches).toHaveLength(1);
+  });
+
+  it("tells the toast about a failure only on the last attempt", async () => {
+    media = {
+      ...base,
+      type: "movie",
+      status: "wanted",
+      digitalReleaseDate: past,
+      _count: { files: 0 },
+    };
+    searchError = new Error("connect ECONNREFUSED http://indexer.internal");
+    await expect(searchOnAdd(1, undefined, false)).rejects.toThrow();
+    expect(outcomes).toHaveLength(0);
+    await expect(searchOnAdd(1, undefined, true)).rejects.toThrow();
+    expect(outcomes).toMatchObject([
+      { lastSearchOutcome: "error", lastSearchReason: "The search failed" },
+    ]);
   });
 
   it("skips a movie that already has files", async () => {
@@ -239,6 +276,19 @@ describe("searchOnAdd worker: shows", () => {
       { suffix: " S02", season: 2, episodeId: undefined },
     ]);
     expect(writes).toHaveLength(0);
+  });
+
+  it("reports one outcome for the season it searched", async () => {
+    packResult = { grabbed: true, reason: "" };
+    episodes = [ep(1, 1), ep(1, 2), ep(2, 1)];
+    await searchOnAdd(1, 1);
+    expect(outcomes).toMatchObject([{ lastSearchOutcome: "grabbed" }]);
+  });
+
+  it("reports a season with nothing aired as waiting", async () => {
+    episodes = [ep(1, 1, { airDate: new Date("2999-01-01") })];
+    await searchOnAdd(1, 1);
+    expect(outcomes).toMatchObject([{ lastSearchOutcome: "not_released" }]);
   });
 
   it("falls back to aired episodes when the pack misses, never the unaired one", async () => {

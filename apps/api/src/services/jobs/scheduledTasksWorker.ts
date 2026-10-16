@@ -119,7 +119,8 @@ export async function processScheduledJob(job: Job) {
           season?: number;
           series?: boolean;
         };
-        await searchOnAdd(mediaId, series ? "series" : season);
+        const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
+        await searchOnAdd(mediaId, series ? "series" : season, isFinalAttempt);
         break;
       }
       case SCHEDULED_JOB_NAMES.REFRESH_GITHUB_RELEASES: {

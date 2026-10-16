@@ -16,7 +16,14 @@ import {
   searchAndGrab,
   searchAndGrabWithTitleFallback,
 } from "@rawkoon/api/services/mediaGrabberSearch";
-import type { LanguageFallbackSummary } from "@rawkoon/shared/types";
+import type {
+  LanguageFallbackSummary,
+  SearchResultPayload,
+} from "@rawkoon/shared/types";
+import {
+  publishSearchResult,
+  searchResultFrom,
+} from "@rawkoon/api/services/searchResult";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 import {
   episodeMapKey,
@@ -28,13 +35,17 @@ import {
   SCHEDULED_JOB_NAMES,
 } from "@rawkoon/api/services/queueService";
 
-function missBody(miss: {
-  reason: string;
-  languageFallback?: LanguageFallbackSummary;
-}) {
+function missBody(
+  miss: {
+    reason: string;
+    languageFallback?: LanguageFallbackSummary;
+  },
+  searchResult: SearchResultPayload,
+) {
   return {
     grabbed: false,
     reason: miss.reason,
+    search_result: searchResult,
     ...(miss.languageFallback
       ? { language_fallback_summary: miss.languageFallback }
       : {}),
@@ -183,15 +194,19 @@ export const libraryGrabRoutes = new Hono<Env>()
             qualityProfileId: media.qualityProfileId,
           });
 
+      const searchResult = searchResultFrom(id, result);
+      await publishSearchResult(searchResult);
+
       if (result.grabbed) {
         return ok({
           grabbed: true,
           release_title: result.releaseTitle,
           ai_picked: result.aiPicked === true,
+          search_result: searchResult,
         });
       }
 
-      return ok(missBody(result));
+      return ok(missBody(result, searchResult));
     } catch (err) {
       console.error("Library search error:", err);
       return serverError("Search failed");
@@ -259,15 +274,20 @@ export const libraryGrabRoutes = new Hono<Env>()
               qualityProfileId: media.qualityProfileId,
             });
 
+        // An episode outcome says nothing about the show as a whole, so it is not stored.
+        const searchResult = searchResultFrom(mediaId, result);
+        await publishSearchResult(searchResult, { persist: false });
+
         if (result.grabbed) {
           return ok({
             grabbed: true,
             release_title: result.releaseTitle,
             ai_picked: result.aiPicked === true,
+            search_result: searchResult,
           });
         }
 
-        return ok(missBody(result));
+        return ok(missBody(result, searchResult));
       } catch (err) {
         console.error("Library episode search error:", err);
         return serverError("Search failed");
@@ -354,15 +374,19 @@ export const libraryGrabRoutes = new Hono<Env>()
               qualityProfileId: media.qualityProfileId,
             });
 
+        const searchResult = searchResultFrom(mediaId, result, season);
+        await publishSearchResult(searchResult);
+
         if (result.grabbed) {
           return ok({
             grabbed: true,
             release_title: result.releaseTitle,
             ai_picked: result.aiPicked === true,
+            search_result: searchResult,
           });
         }
 
-        return ok(missBody(result));
+        return ok(missBody(result, searchResult));
       } catch (err) {
         console.error("Library season search error:", err);
         return serverError("Search failed");

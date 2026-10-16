@@ -31,6 +31,10 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 // happy-dom cancels WAAPI animations noisily; the carousel logic is what's under test.
+vi.mock("@/features/medias/hooks/useLiveSearchToast", () => {
+  const live = { announceAdd: vi.fn(), announceSearch: vi.fn() };
+  return { useLiveSearchToast: () => live };
+});
 vi.mock("motion/react", async () => {
   const React = await import("react");
   const strip = (tag: string) =>

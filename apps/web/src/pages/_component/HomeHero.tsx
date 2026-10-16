@@ -15,7 +15,7 @@ import {
 } from "@/features/medias/components/AddSearchControls";
 import { useAddToLibrary } from "@/features/medias/hooks/useAddToLibrary";
 import { useSearchOnAddEnabled } from "@/features/medias/hooks/useSearchOnAddEnabled";
-import { addToastMessage } from "@/features/medias/lib/addToastMessage";
+import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
 import { useCurrentUser } from "@/lib/auth/useAuth";
 import { useCreateRequest } from "@/pages/requests/_hooks/useRequests";
 import { formatRelativeTime } from "@/lib/utils/relativeTime";
@@ -95,6 +95,7 @@ function HeroCarousel({
   const [added, setAdded] = useState<Set<number>>(() => new Set());
   const addToLibrary = useAddToLibrary();
   const searchOnAddEnabled = useSearchOnAddEnabled();
+  const liveSearchToast = useLiveSearchToast();
   const createRequest = useCreateRequest();
   const { data: user } = useCurrentUser();
 
@@ -137,7 +138,7 @@ function HeroCarousel({
       ...callbacks,
       onSuccess: (response: AddToLibraryResponse) => {
         callbacks.onSuccess();
-        toast.success(addToastMessage(t, item.title, response, i18n.language));
+        liveSearchToast.announceAdd(response, item.title);
       },
     };
     // Adding to the library is admin-only; everyone else files a request, as on iOS.

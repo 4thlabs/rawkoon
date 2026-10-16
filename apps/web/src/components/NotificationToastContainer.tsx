@@ -5,6 +5,7 @@ import type { NotificationType } from "@rawkoon/shared/types";
 import { NotificationMenuRow } from "@/components/NotificationMenuRow";
 import { openNotificationTarget } from "@/lib/notifications/navigation";
 import { useAuth } from "@/lib/auth/useAuth";
+import { isGrabPopupSuppressed } from "@/features/medias/lib/liveSearchToast";
 import {
   useNotificationStream,
   type StreamNotification,
@@ -43,6 +44,15 @@ export function NotificationToastContainer() {
   const handleNotification = useCallback(
     (notification: StreamNotification) => {
       if (notification.metadata?.silent === true) return;
+      // The item's live search toast already reports this grab; it still lands in Notifications.
+      const grabbedMediaId = notification.metadata?.media_id;
+      if (
+        notification.type === "library_media_grabbed" &&
+        typeof grabbedMediaId === "number" &&
+        isGrabPopupSuppressed(grabbedMediaId)
+      ) {
+        return;
+      }
       if (seenIds.current.has(notification.id)) return;
       seenIds.current.add(notification.id);
       // Keep the dedup set bounded over long-lived sessions.

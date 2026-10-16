@@ -7,6 +7,7 @@ import { formatDate } from "@rawkoon/shared/utils/date";
 import { formatDurationCompactSeconds } from "@rawkoon/shared/utils";
 import type { LibraryMedia } from "@rawkoon/shared/types";
 import { usePrefetchLibraryItem } from "@/features/medias/hooks/usePrefetchLibraryItem";
+import { useStatusLabel } from "@/features/medias/hooks/useStatusLabel";
 import { libraryStatusPresentation } from "@/utils/libraryStatusPresentation";
 
 function formatBytes(bytesStr: string | null | undefined): string | null {
@@ -86,6 +87,7 @@ export function LibraryItemRow({
   const navigate = useNavigate();
   const prefetchLibraryItem = usePrefetchLibraryItem();
   const p = libraryStatusPresentation(item.status);
+  const statusLabel = useStatusLabel(item, p.labelKey);
 
   const sizeLabel = formatBytes(item.total_size_bytes);
   const addedLabel = formatDate(item.added_at, i18n.language);
@@ -184,7 +186,7 @@ export function LibraryItemRow({
               p.badgeClass,
             )}
           >
-            {t(p.labelKey)}
+            {statusLabel}
           </span>
 
           {item.needs_upgrade && (

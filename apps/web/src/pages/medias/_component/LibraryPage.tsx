@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useSearch } from "@tanstack/react-router";
 import {
   Film,
   Tv,
@@ -9,13 +9,12 @@ import {
   Download,
   BarChart3,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useLibraryNavigation } from "@/features/medias/context/LibraryNavigationContext";
 import { PageLayout } from "@/components/PageLayout";
 import { type SegmentedTabItem } from "@/components/ui/segmented-tabs";
 import { useInfiniteLibrary } from "@/features/medias/hooks/useInfiniteLibrary";
 import { useLibraryLanguageTags } from "@/features/medias/hooks/useLibraryLanguageTags";
-import { toastSearchMiss } from "@/features/medias/lib/languageFallback";
+import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
 import { useSearchLibraryMovie } from "@/features/medias/hooks/useSearchLibraryMovie";
 import { useLibraryEvents } from "@/features/medias/hooks/useLibraryEvents";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -50,7 +49,7 @@ export function LibraryPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
 
   const searchMovie = useSearchLibraryMovie();
-  const navigate = useNavigate();
+  const liveSearchToast = useLiveSearchToast();
 
   // ─── Filter / sort state (URL-persisted) ───────────────────────────────────
   const { state, setState, activeFilterCount } = useLibraryPageState(
@@ -100,22 +99,15 @@ export function LibraryPage() {
   );
 
   const handleMovieSearch = (id: number) => {
-    searchMovie.mutate(
-      { id },
+    const item = sorted.find((m) => m.id === id);
+    liveSearchToast.announceSearch(
       {
-        onSuccess: (r) => {
-          if (r.grabbed) toast.success(t("library.management.grabbed"));
-          else
-            toastSearchMiss(t, r, () =>
-              navigate({
-                to: "/library/$libraryId",
-                params: { libraryId: String(id) },
-                search: { tab: "search" },
-              }),
-            );
-        },
-        onError: () => toast.error(t("library.management.grabFailed")),
+        mediaId: id,
+        title: item?.title ?? "",
+        profileName: item?.quality_profile?.name ?? null,
+        isShow: false,
       },
+      () => searchMovie.mutateAsync({ id }),
     );
   };
 

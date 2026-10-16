@@ -6,6 +6,10 @@ import { isNoMissRefusal } from "@rawkoon/api/services/grabRefusal";
 import { MAX_CRON_GRAB_ATTEMPTS } from "@rawkoon/api/constants/libraryGrab";
 import { recordMovieMiss } from "@rawkoon/api/services/grabAttempts";
 import {
+  publishSearchResult,
+  searchResultFrom,
+} from "@rawkoon/api/services/searchResult";
+import {
   APP_DISPLAY_TIMEZONE,
   localDateYmd,
   toUtcMidnightDate,
@@ -73,6 +77,8 @@ export async function checkMovieReleases(): Promise<void> {
         suffix: m.year ? ` ${m.year}` : "",
         qualityProfileId: m.qualityProfileId,
       });
+
+      await publishSearchResult(searchResultFrom(m.id, result));
 
       // A grab held by the profile's delay isn't a miss; don't burn an attempt.
       if (result.grabbed || result.delayed) continue;
