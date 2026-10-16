@@ -21,13 +21,13 @@ export type QueueReason =
   | { kind: "failed" }
   | { kind: "alert"; alertKind: AlertQueueKind; detail: string | null };
 
-export type AlertQueueKind =
+type AlertQueueKind =
   | "download_failed"
   | "post_process_error"
   | "download_stuck";
 
 /** The library attention alert behind a row, with the ids its actions need. */
-export interface QueueAlert {
+interface QueueAlert {
   id: number;
   kind: AlertQueueKind;
   downloadHistoryId: number | null;
