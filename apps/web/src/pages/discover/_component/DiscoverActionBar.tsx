@@ -64,7 +64,11 @@ export function DiscoverActionBar({
         </button>
         <button
           type="button"
-          aria-label={requestMode ? t("requests.request") : t("medias.discover.addToLibrary")}
+          aria-label={
+            requestMode
+              ? t("requests.request")
+              : t("medias.discover.addToLibrary")
+          }
           disabled={disabled}
           onClick={onAdd}
           className={cn(
