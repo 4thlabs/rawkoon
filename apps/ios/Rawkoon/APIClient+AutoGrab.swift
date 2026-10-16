@@ -7,7 +7,7 @@ nonisolated struct UpdateAutoGrabBody: Encodable, Sendable {
     var releaseCheckCron: String
 }
 
-nonisolated private struct GrabPendingBody: Encodable, Sendable {
+private nonisolated struct GrabPendingBody: Encodable, Sendable {
     let targetKey: String
 }
 

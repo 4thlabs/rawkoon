@@ -1,7 +1,7 @@
 import Foundation
 
-/// Models and rules behind Settings > Automatic grabbing. Decoded with
-/// `convertFromSnakeCase`, like the rest of the API.
+// Models and rules behind Settings > Automatic grabbing. Decoded with
+// `convertFromSnakeCase`, like the rest of the API.
 
 public enum GrabReadinessStatus: String, Decodable, Sendable {
     case ok, warn, error
@@ -168,7 +168,9 @@ public struct PendingRelease: Decodable, Equatable, Sendable, Identifiable {
     private static func parse(_ value: String) -> Date? {
         let withFraction = ISO8601DateFormatter()
         withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = withFraction.date(from: value) { return date }
+        if let date = withFraction.date(from: value) {
+            return date
+        }
         return ISO8601DateFormatter().date(from: value)
     }
 }
@@ -205,6 +207,6 @@ public struct GrabPendingReleaseResponse: Decodable, Equatable, Sendable {
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         grabbed = try c.decode(Bool.self, forKey: .grabbed)
-        reason = (try? c.decodeIfPresent(String.self, forKey: .reason)).flatMap { $0 }.flatMap(GrabPendingReason.init(rawValue:))
+        reason = (try? c.decodeIfPresent(String.self, forKey: .reason)).flatMap(\.self).flatMap(GrabPendingReason.init(rawValue:))
     }
 }

@@ -64,7 +64,7 @@ public enum ReleaseCheckCron {
         Field(min: 1, max: 12, names: months, nameOffset: 1),
         Field(min: 0, max: 7, names: weekdays, nameOffset: 0),
     ]
-    // Longest each month can be (February counts leap years).
+    /// Longest each month can be (February counts leap years).
     private static let monthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
     private static func squash(_ expr: String) -> String {
@@ -89,7 +89,9 @@ public enum ReleaseCheckCron {
     private static func expand(_ field: String, _ spec: Field) -> [Int]? {
         var values = Set<Int>()
         for part in field.split(separator: ",", omittingEmptySubsequences: false) {
-            if part.isEmpty { return nil }
+            if part.isEmpty {
+                return nil
+            }
             let slash = part.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
             guard slash.count <= 2 else { return nil }
             let range = slash[0]
@@ -130,7 +132,9 @@ public enum ReleaseCheckCron {
     /// False when day-of-month and month can never name a real date (31 Feb).
     private static func hasReachableDate(_ parts: [String]) -> Bool {
         // With a weekday restriction cron fires on either match, so the date alone can't rule it out.
-        if parts[4] != "*" { return true }
+        if parts[4] != "*" {
+            return true
+        }
         guard let days = expand(parts[2], fields[2]), let mons = expand(parts[3], fields[3]) else { return false }
         return mons.contains { m in days.contains { $0 <= monthDays[m - 1] } }
     }
@@ -166,7 +170,9 @@ public enum ReleaseCheckCron {
     }
 
     private static func time(_ hour: Int, _ minute: Int, _ locale: CronLocale) -> String {
-        if locale == .fr { return "\(hour) h \(pad2(minute))" }
+        if locale == .fr {
+            return "\(hour) h \(pad2(minute))"
+        }
         let h12 = hour % 12 == 0 ? 12 : hour % 12
         return "\(h12):\(pad2(minute)) \(hour < 12 ? "AM" : "PM")"
     }
@@ -178,8 +184,12 @@ public enum ReleaseCheckCron {
     }
 
     private static func ordinal(_ n: Int, _ locale: CronLocale) -> String {
-        if locale == .fr { return n == 1 ? "1er" : "\(n)" }
-        if (11 ... 13).contains(n % 100) { return "\(n)th" }
+        if locale == .fr {
+            return n == 1 ? "1er" : "\(n)"
+        }
+        if (11 ... 13).contains(n % 100) {
+            return "\(n)th"
+        }
         switch n % 10 {
         case 1: return "\(n)st"
         case 2: return "\(n)nd"
@@ -190,7 +200,9 @@ public enum ReleaseCheckCron {
 
     /// A `*` or `*/n` / `0/n` over a whole range: the step, else nil.
     private static func wholeRangeStep(_ field: String) -> Int? {
-        if field == "*" { return 1 }
+        if field == "*" {
+            return 1
+        }
         let parts = field.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
         guard parts.count == 2, parts[0] == "*" || parts[0] == "0", isDigits(parts[1]) else { return nil }
         return Int(parts[1])
@@ -210,14 +222,18 @@ public enum ReleaseCheckCron {
         }
         guard start <= 59 else { return nil }
         let base = locale == .fr ? "toutes les \(step) minutes" : "every \(step) minutes"
-        if start == 0 { return base }
+        if start == 0 {
+            return base
+        }
         return locale == .fr ? "\(base), à partir de la minute \(start)" : "\(base), starting at minute \(start)"
     }
 
     private static func describeWeekdays(_ days: [Int], _ locale: CronLocale) -> String {
         let set = Array(Set(days.map { $0 % 7 })).sorted()
         let names = locale == .fr ? frWeekdays : enWeekdays
-        if set == [1, 2, 3, 4, 5] { return locale == .fr ? "chaque jour de semaine" : "every weekday" }
+        if set == [1, 2, 3, 4, 5] {
+            return locale == .fr ? "chaque jour de semaine" : "every weekday"
+        }
         // Monday-first reads naturally; Sunday sorts last.
         let ordered = set.contains(0) ? set.filter { $0 != 0 } + [0] : set
         let contiguous = ordered.count >= 3 && ordered.indices.allSatisfy { i in
@@ -235,22 +251,34 @@ public enum ReleaseCheckCron {
     private static func describeFiveField(_ parts: [String], _ locale: CronLocale) -> String? {
         let minF = parts[0], hourF = parts[1], domF = parts[2], monF = parts[3], dowF = parts[4]
         let fr = locale == .fr
-        if monF != "*" { return nil }
+        if monF != "*" {
+            return nil
+        }
 
         if domF == "*", dowF == "*" {
             if hourF == "*" {
-                if minF == "*" { return fr ? "chaque minute" : "every minute" }
-                if let text = minuteStep(minF, locale) { return text }
+                if minF == "*" {
+                    return fr ? "chaque minute" : "every minute"
+                }
+                if let text = minuteStep(minF, locale) {
+                    return text
+                }
                 if isDigits(minF), let minute = Int(minF) {
-                    if minute == 0 { return fr ? "chaque heure" : "every hour" }
+                    if minute == 0 {
+                        return fr ? "chaque heure" : "every hour"
+                    }
                     return fr ? "chaque heure, à la minute \(minute)" : "every hour, at minute \(minute)"
                 }
                 return nil
             }
             if let step = wholeRangeStep(hourF), step > 1, isDigits(minF), let minute = Int(minF) {
-                if 24 % step != 0 { return nil }
+                if 24 % step != 0 {
+                    return nil
+                }
                 let base = fr ? "toutes les \(step) heures" : "every \(step) hours"
-                if minute == 0 { return base }
+                if minute == 0 {
+                    return base
+                }
                 return fr ? "\(base), à la minute \(minute)" : "\(base), at minute \(minute)"
             }
         }
@@ -260,7 +288,9 @@ public enum ReleaseCheckCron {
               let hours = expand(hourF, fields[1]), !hours.isEmpty, hours.count <= 4 else { return nil }
         let times = join(hours.map { time($0, minute, locale) }, locale)
 
-        if domF == "*", dowF == "*" { return fr ? "chaque jour à \(times)" : "every day at \(times)" }
+        if domF == "*", dowF == "*" {
+            return fr ? "chaque jour à \(times)" : "every day at \(times)"
+        }
         if domF == "*" {
             guard let days = expand(dowF, fields[4]) else { return nil }
             return "\(describeWeekdays(days, locale)) \(fr ? "à" : "at") \(times)"

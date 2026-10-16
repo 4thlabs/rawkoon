@@ -45,7 +45,9 @@ struct ReleaseCheckCronTests {
     }
 
     @Test func describesInEnglish() {
-        func d(_ s: String) -> String { ReleaseCheckCron.describe(s, locale: .en) }
+        func d(_ s: String) -> String {
+            ReleaseCheckCron.describe(s, locale: .en)
+        }
         #expect(d("0 * * * *") == "every hour")
         #expect(d("0 */6 * * *") == "every 6 hours")
         #expect(d("30 */4 * * *") == "every 4 hours, at minute 30")
@@ -60,7 +62,9 @@ struct ReleaseCheckCronTests {
     }
 
     @Test func describesInFrench() {
-        func d(_ s: String) -> String { ReleaseCheckCron.describe(s, locale: .fr) }
+        func d(_ s: String) -> String {
+            ReleaseCheckCron.describe(s, locale: .fr)
+        }
         #expect(d("0 * * * *") == "chaque heure")
         #expect(d("0 */6 * * *") == "toutes les 6 heures")
         #expect(d("0 3 * * *") == "chaque jour à 3 h 00")
