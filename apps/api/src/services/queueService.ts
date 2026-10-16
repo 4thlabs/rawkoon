@@ -34,6 +34,7 @@ export const SCHEDULED_JOB_NAMES = {
   CHECK_LIBRARY_INTEGRITY: "check-library-integrity",
   POLL_INDEXER_RSS: "poll-indexer-rss",
   UPGRADE_MEDIA_SEARCH: "upgrade-media-search",
+  SEARCH_ON_ADD: "search-on-add",
   REFRESH_GITHUB_RELEASES: "refresh-github-releases",
   SYNC_LIBRARY_ATTENTION_ALERTS: "sync-library-attention-alerts",
   CHECK_BOOK_RELEASES: "check-book-releases",

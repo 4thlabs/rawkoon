@@ -1,5 +1,5 @@
 import { prisma } from "@rawkoon/api/db";
-import type { AiTrigger } from "@rawkoon/shared/types";
+import type { AiTrigger, LanguageFallbackSummary } from "@rawkoon/shared/types";
 import type { AiProviderConfig } from "@rawkoon/api/utils/integrations/types";
 import {
   loadEnabledAiProviderConfig,
@@ -10,6 +10,11 @@ import {
   parseReleaseSeasonEpisode,
   parseReleaseTitle,
 } from "@rawkoon/api/utils/medias/filenameParser";
+import {
+  buildLanguageFallbackSummary,
+  classifyLanguageFallback,
+  languageFallbackReason,
+} from "@rawkoon/api/utils/medias/languageFallback";
 import { scoreRelease } from "@rawkoon/api/utils/medias/releaseScorer";
 import type { QualityProfileScoreInput } from "@rawkoon/api/utils/medias/releaseScorer";
 import {
@@ -30,6 +35,16 @@ import {
   resolveSearchTitles,
 } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 
+const NO_MATCH_REASON = "No matching releases found";
+
+type SearchMiss = {
+  grabbed: false;
+  reason: string;
+  delayed?: true;
+  /** Set when only other versions of the preferred language were found. */
+  languageFallback?: LanguageFallbackSummary;
+};
+
 export async function searchAndGrab(opts: {
   mediaId: number;
   episodeId?: number;
@@ -44,8 +59,7 @@ export async function searchAndGrab(opts: {
   /** Pre-loaded by the fallback wrapper; undefined means load it here. */
   aiConfig?: AiProviderConfig | null;
 }): Promise<
-  | { grabbed: true; releaseTitle: string; aiPicked?: boolean }
-  | { grabbed: false; reason: string; delayed?: true }
+  { grabbed: true; releaseTitle: string; aiPicked?: boolean } | SearchMiss
 > {
   try {
     const {
@@ -75,7 +89,7 @@ export async function searchAndGrab(opts: {
     });
 
     if (releases.length === 0) {
-      return { grabbed: false, reason: "No matching releases found" };
+      return { grabbed: false, reason: NO_MATCH_REASON };
     }
 
     // Guard against indexers returning releases for a different show/episode
@@ -109,6 +123,8 @@ export async function searchAndGrab(opts: {
     }
 
     const rows: CandidateRow[] = [];
+    // Rejected for language only; reported on a miss, never grabbed.
+    const fallbackTags: string[] = [];
 
     let profileInput: QualityProfileScoreInput | null = null;
     let delaySettings = delaySettingsOf(null);
@@ -156,7 +172,15 @@ export async function searchAndGrab(opts: {
           release.freeleech,
           release.seeders,
         );
-        if (Array.isArray(sc)) continue;
+        if (Array.isArray(sc)) {
+          const tag = classifyLanguageFallback(
+            title,
+            sc,
+            profileInput.preferredLanguages,
+          );
+          if (tag) fallbackTags.push(tag);
+          continue;
+        }
         rows.push({
           raw: {
             _downloadUrl: downloadUrl,
@@ -186,9 +210,22 @@ export async function searchAndGrab(opts: {
 
     rows.sort((a, b) => b.score - a.score);
 
-    if (rows.length === 0) {
-      return { grabbed: false, reason: "No matching releases found" };
-    }
+    // Candidate-less misses are the ones a language fallback explains.
+    const noMatch = (): SearchMiss => {
+      const summary = buildLanguageFallbackSummary(
+        profileInput?.preferredLanguages ?? [],
+        fallbackTags,
+      );
+      return summary
+        ? {
+            grabbed: false,
+            reason: languageFallbackReason(summary),
+            languageFallback: summary,
+          }
+        : { grabbed: false, reason: NO_MATCH_REASON };
+    };
+
+    if (rows.length === 0) return noMatch();
 
     // Pre-filter blocklisted titles so we don't waste the grab attempt on them.
     // Scope the query to the candidate titles actually being checked rather
@@ -323,10 +360,7 @@ export async function searchAndGrab(opts: {
       return result;
     }
 
-    return {
-      grabbed: false,
-      reason: spaceRefusal ?? "No matching releases found",
-    };
+    return spaceRefusal ? { grabbed: false, reason: spaceRefusal } : noMatch();
   } catch (e) {
     console.warn("[mediaGrabber] searchAndGrab failed:", e);
     return {
@@ -356,10 +390,10 @@ export async function searchAndGrabWithTitleFallback(opts: {
   /** Recorded in the AI usage ledger; defaults to upgrade/manual_search from isUpgrade. */
   trigger?: AiTrigger;
 }): Promise<
-  | { grabbed: true; releaseTitle: string; aiPicked?: boolean }
-  | { grabbed: false; reason: string; delayed?: true }
+  { grabbed: true; releaseTitle: string; aiPicked?: boolean } | SearchMiss
 > {
-  let lastReason = "No matching releases found";
+  let miss: SearchMiss = { grabbed: false, reason: NO_MATCH_REASON };
+  let fallback: SearchMiss | null = null;
   const aiConfig = await loadEnabledAiProviderConfig().catch(() => null);
   for (const base of opts.titleBaseQueries) {
     const result = await searchAndGrab({
@@ -374,8 +408,20 @@ export async function searchAndGrabWithTitleFallback(opts: {
       aiConfig,
     });
     if (result.grabbed) return result;
-    lastReason = result.reason;
-    if (result.reason !== "No matching releases found") return result;
+    miss = result;
+    if (result.languageFallback) {
+      // Keep the title that surfaced the most other-language releases.
+      if (
+        !fallback?.languageFallback ||
+        fallbackTotal(result.languageFallback) >
+          fallbackTotal(fallback.languageFallback)
+      )
+        fallback = result;
+    } else if (result.reason !== NO_MATCH_REASON) return result;
   }
-  return { grabbed: false, reason: lastReason };
+  return fallback ?? miss;
+}
+
+function fallbackTotal(summary: LanguageFallbackSummary): number {
+  return Object.values(summary.counts).reduce((a, b) => a + b, 0);
 }

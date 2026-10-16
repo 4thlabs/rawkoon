@@ -40,6 +40,7 @@ export function mapSettings(row: {
   postProcessingEnabled: boolean;
   defaultMovieQualityProfileId?: number | null;
   defaultShowQualityProfileId?: number | null;
+  searchOnAdd?: boolean;
   activeIndexerManager?: string | null;
   booksLibraryPath?: string | null;
   audiobooksLibraryPath?: string | null;
@@ -65,6 +66,7 @@ export function mapSettings(row: {
     post_processing_enabled: row.postProcessingEnabled,
     default_movie_quality_profile_id: row.defaultMovieQualityProfileId ?? null,
     default_show_quality_profile_id: row.defaultShowQualityProfileId ?? null,
+    search_on_add: row.searchOnAdd ?? true,
     active_indexer_manager: row.activeIndexerManager ?? null,
     // Book paths and templates live on the same row: post-processing settings
     // are per-instance, not per-media-kind, and splitting them would mean two
@@ -122,6 +124,7 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
         default_show_quality_profile_id: z
           .union([z.number(), z.null()])
           .optional(),
+        search_on_add: z.boolean().optional(),
         active_indexer_manager: z
           .union([z.literal("prowlarr"), z.literal("jackett"), z.null()])
           .optional(),
@@ -166,6 +169,7 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
           postProcessingEnabled?: boolean;
           defaultMovieQualityProfileId?: number | null;
           defaultShowQualityProfileId?: number | null;
+          searchOnAdd?: boolean;
           activeIndexerManager?: string | null;
           booksLibraryPath?: string | null;
           audiobooksLibraryPath?: string | null;
@@ -208,6 +212,8 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
         if (body.default_show_quality_profile_id !== undefined)
           update.defaultShowQualityProfileId =
             body.default_show_quality_profile_id;
+        if (body.search_on_add !== undefined)
+          update.searchOnAdd = body.search_on_add;
         if (body.active_indexer_manager !== undefined) {
           if (
             body.active_indexer_manager !== null &&

@@ -31,6 +31,7 @@ const state: {
   bookEditionStatusByBookId: Record<number, string>;
   defaultProfiles: { movie: number | null; show: number | null };
   failLibraryAdd: boolean;
+  searchQueued: number[];
 } = {
   library: [],
   libraryBooks: [],
@@ -45,6 +46,7 @@ const state: {
   bookEditionStatusByBookId: {},
   defaultProfiles: { movie: null, show: null },
   failLibraryAdd: false,
+  searchQueued: [],
 };
 
 function installMediaRequestDbMock() {
@@ -202,7 +204,24 @@ mock.module("@rawkoon/api/services/libraryFromTmdb", () => ({
           tmdbId: tmdb_id,
           type: "movie",
           title: "T",
+          status: "wanted",
+          digitalReleaseDate: new Date("2020-01-01"),
         }),
+}));
+
+const realSearchOnAdd = {
+  ...(await import("@rawkoon/api/services/searchOnAdd")),
+};
+mock.module("@rawkoon/api/services/searchOnAdd", () => ({
+  isMovieReleased: () => true,
+  searchOnAddJobId: (id: number) => `search-on-add-${id}`,
+  queueSearchOnAdd: (media: { id: number }) => {
+    state.searchQueued.push(media.id);
+    return Promise.resolve({
+      search_queued: true,
+      search_skipped_reason: null,
+    });
+  },
 }));
 
 mock.module("@rawkoon/api/utils/medias/tmdbRegion", () => ({
@@ -263,6 +282,7 @@ const {
 } = await import("@rawkoon/api/services/mediaRequests");
 
 afterAll(() => {
+  mock.module("@rawkoon/api/services/searchOnAdd", () => realSearchOnAdd);
   mock.restore();
 });
 
@@ -280,6 +300,7 @@ beforeEach(() => {
   state.bookEditionStatusByBookId = {};
   state.defaultProfiles = { movie: null, show: null };
   state.failLibraryAdd = false;
+  state.searchQueued = [];
 });
 
 describe("createRequest", () => {
@@ -585,6 +606,8 @@ describe("approveRequest", () => {
     expect(state.notifications).toEqual([
       { userId: "u1", type: "request_decided" },
     ]);
+    // Approving searches right away, like a direct add.
+    expect(state.searchQueued).toEqual([909]);
   });
 
   it("rejects a stale/deleted quality profile without touching the request", async () => {

@@ -60,7 +60,8 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
   const aiTarget = resolveAiTarget(props.episodeTarget, state.selectedSeason);
 
   const aiInput: AiPickInput = {
-    releases: state.releases,
+    // Language fallbacks stay manual picks.
+    releases: state.releases.filter((r) => !r.language_fallback),
     mediaTitle: props.media?.title ?? props.defaultSearchQuery ?? "",
     mediaYear: props.media?.year ?? null,
     mediaType: mediaType as "movie" | "tv",
@@ -274,6 +275,7 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
           totalReleases={state.totalReleases}
           isError={state.activeQuery.isError}
           onResetView={state.resetView}
+          languageFallbackSummary={state.languageFallbackSummary}
           aiPickKey={
             !aiDismissed && aiEnabled
               ? (aiPick.data?.release_key ?? null)

@@ -860,7 +860,12 @@
       "scanRunning": "Scanning…",
       "scanResult": "Matched {{count}} title(s).",
       "scanUnmatched": "Unmatched",
-      "scanError": "Scan failed"
+      "scanError": "Scan failed",
+      "searchOnAdd": {
+        "title": "When you add a movie or show",
+        "on": "Search and grab it right away",
+        "off": "Add it to the library only (waits for the scheduled check or Search now)"
+      }
     },
     "arrImport": {
       "title": "Import library from Radarr / Sonarr",
@@ -1859,6 +1864,20 @@
       "loading": "Loading releases...",
       "empty": "No releases found.",
       "noMatches": "No releases match your current view.",
+      "languageFallback": {
+        "or": " or ",
+        "bannerTitle": "No {{languages}} release yet",
+        "bannerBodyFrench_one": "{{count}} release in other French versions: {{breakdown}}. Rawkoon keeps checking for {{languages}}.",
+        "bannerBodyFrench_other": "{{count}} releases in other French versions: {{breakdown}}. Rawkoon keeps checking for {{languages}}.",
+        "bannerBodyOther_one": "{{count}} release in other languages: {{breakdown}}. Rawkoon keeps checking for {{languages}}.",
+        "bannerBodyOther_other": "{{count}} releases in other languages: {{breakdown}}. Rawkoon keeps checking for {{languages}}.",
+        "groupFrench": "Other French versions",
+        "groupOther": "Other languages",
+        "collapsedFrench_one": "{{count}} other French version",
+        "collapsedFrench_other": "{{count}} other French versions",
+        "collapsedOther_one": "{{count}} release in other languages",
+        "collapsedOther_other": "{{count}} releases in other languages"
+      },
       "filtersTitle": "Filters",
       "filtersButton": "Advanced filters",
       "clearFilters": "Clear",
@@ -1961,6 +1980,16 @@
       "daysAll": "All time",
       "empty": "No download history found.",
       "paginationRange": "{{start}}–{{end}} of {{total}}"
+    },
+    "addToast": {
+      "searching": "Added {{title}} — searching for a release",
+      "notReleased": "Added {{title}} — waiting for its digital release ({{date}})",
+      "notReleasedNoDate": "Added {{title}} — waiting for a digital release date"
+    },
+    "addSearch": {
+      "caption": "Searches for a release right away",
+      "addOnly": "Add only (don't search)",
+      "moreOptions": "More add options"
     }
   },
   "library": {
@@ -2061,6 +2090,9 @@
       "episodeSearch": "Grab episode",
       "grabbed": "Added to download client",
       "grabFailed": "No suitable release found",
+      "languageFallbackMissFrench": "No {{languages}} release yet; {{count}} in other French versions ({{breakdown}})",
+      "languageFallbackMissOther": "No {{languages}} release yet; {{count}} in other languages ({{breakdown}})",
+      "seeReleases": "See them",
       "delete": "Delete media",
       "deleteConfirmTitle": "Delete this media?",
       "deleteFilesLabel": "Also delete hardlinked files from disk",

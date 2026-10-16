@@ -74,6 +74,7 @@ export function MediaPostProcessingSettingsBody({
         episodeTemplate: z.string(),
         defaultMovieQualityProfileId: z.string(),
         defaultShowQualityProfileId: z.string(),
+        searchOnAdd: z.enum(["on", "off"]),
         activeIndexerManager: z.string(),
       }),
     [],
@@ -99,6 +100,7 @@ export function MediaPostProcessingSettingsBody({
         settings.default_movie_quality_profile_id?.toString() ?? "",
       defaultShowQualityProfileId:
         settings.default_show_quality_profile_id?.toString() ?? "",
+      searchOnAdd: settings.search_on_add ? "on" : "off",
       activeIndexerManager: settings.active_indexer_manager ?? "",
     },
   });
@@ -137,6 +139,7 @@ export function MediaPostProcessingSettingsBody({
           data.defaultShowQualityProfileId === ""
             ? null
             : parseInt(data.defaultShowQualityProfileId, 10),
+        search_on_add: data.searchOnAdd === "on",
         active_indexer_manager:
           data.activeIndexerManager === "prowlarr" ||
           data.activeIndexerManager === "jackett"
@@ -367,6 +370,32 @@ export function MediaPostProcessingSettingsBody({
               {t("settings.mediaLibrary.defaultShowQualityProfileHint")}
             </p>
           </div>
+
+          <fieldset className="rounded-lg border border-neutral-700/60 bg-neutral-900/40 p-4">
+            <legend className="px-1 text-sm font-medium text-neutral-300">
+              {t("settings.mediaLibrary.searchOnAdd.title")}
+            </legend>
+            <div className="space-y-2">
+              {(["on", "off"] as const).map((value) => (
+                <label
+                  key={value}
+                  className="flex items-start gap-2 text-sm text-neutral-200"
+                >
+                  <input
+                    type="radio"
+                    value={value}
+                    {...register("searchOnAdd")}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    {value === "on"
+                      ? t("settings.mediaLibrary.searchOnAdd.on")
+                      : t("settings.mediaLibrary.searchOnAdd.off")}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           <div className="pt-2 border-t border-neutral-700/60">
             <Button type="submit" disabled={updateMut.isPending}>

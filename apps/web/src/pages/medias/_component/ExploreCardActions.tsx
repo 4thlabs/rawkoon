@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrentUser } from "@/lib/auth/useAuth";
+import {
+  AddOnlyMenu,
+  AddSearchCaption,
+} from "@/features/medias/components/AddSearchControls";
 import { RequestButton } from "@/pages/medias/_component/RequestButton";
 
 interface ExploreCardActionsProps {
@@ -23,7 +27,10 @@ interface ExploreCardActionsProps {
   isWatchlistPending: boolean;
   trailerData: TmdbTrailerResponse | null;
   tmdbUrl: string;
+  /** Admin setting: Add also searches for a release. */
+  searchOnAdd: boolean;
   onAdd: () => void;
+  onAddOnly: () => void;
   onWatchlistToggle: () => void;
   onClose: () => void;
 }
@@ -35,7 +42,9 @@ export function ExploreCardActions({
   isWatchlistPending,
   trailerData,
   tmdbUrl,
+  searchOnAdd,
   onAdd,
+  onAddOnly,
   onWatchlistToggle,
   onClose,
 }: ExploreCardActionsProps) {
@@ -91,18 +100,30 @@ export function ExploreCardActions({
 
       {/* Add to library — admin only */}
       {!item.already_exists && item.can_add && isAdmin && (
-        <button
-          onClick={onAdd}
-          disabled={isAddPending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-neutral-950 transition-[background-color] hover:bg-primary-500 active:bg-primary-700 disabled:opacity-50"
-        >
-          {isAddPending ? (
-            <div className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-950 border-t-transparent" />
-          ) : (
-            <Plus size={12} />
-          )}
-          {t("medias.detail.addToLibrary")}
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <div className="inline-flex items-stretch overflow-hidden rounded-lg bg-primary-600">
+            <button
+              onClick={onAdd}
+              disabled={isAddPending}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-950 transition-[background-color] hover:bg-primary-500 active:bg-primary-700 disabled:opacity-50"
+            >
+              {isAddPending ? (
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-950 border-t-transparent" />
+              ) : (
+                <Plus size={12} />
+              )}
+              {t("medias.detail.addToLibrary")}
+            </button>
+            {searchOnAdd && (
+              <AddOnlyMenu
+                onAddOnly={onAddOnly}
+                disabled={isAddPending}
+                className="border-l border-neutral-950/20 px-1.5 text-neutral-950 transition-[background-color] hover:bg-primary-500"
+              />
+            )}
+          </div>
+          {searchOnAdd && <AddSearchCaption />}
+        </div>
       )}
 
       {/* Request — non-admin when not in library */}

@@ -291,6 +291,7 @@ export function LibraryItemPage() {
                   setEpisodeSearchCtx(null);
                   setActiveTab("search");
                 }}
+                onShowReleases={() => setActiveTab("search")}
                 onUpgradeManualSearch={() => {
                   setUpgradeSearchMode(true);
                   setActiveTab("search");

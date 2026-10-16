@@ -4,7 +4,9 @@ import { queryKeys } from "@/lib/queryKeys";
 import { LIBRARY_ENDPOINTS } from "@/lib/endpoints";
 import type { MediaPostProcessingSettingsResponse } from "@rawkoon/shared/types";
 
-export function useMediaPostProcessingSettings() {
+export function useMediaPostProcessingSettings(options?: {
+  enabled?: boolean;
+}) {
   const fetcher = useFetcher();
 
   return useQuery({
@@ -13,5 +15,6 @@ export function useMediaPostProcessingSettings() {
       fetcher<MediaPostProcessingSettingsResponse>(
         LIBRARY_ENDPOINTS.POST_PROCESSING_SETTINGS,
       ),
+    enabled: options?.enabled ?? true,
   });
 }

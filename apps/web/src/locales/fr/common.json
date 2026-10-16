@@ -860,7 +860,12 @@
       "scanRunning": "Scan…",
       "scanResult": "{{count}} titre(s) ajouté(s).",
       "scanUnmatched": "Non reconnus",
-      "scanError": "Échec du scan"
+      "scanError": "Échec du scan",
+      "searchOnAdd": {
+        "title": "Quand vous ajoutez un film ou une série",
+        "on": "Lancer la recherche et le téléchargement tout de suite",
+        "off": "Ajouter à la bibliothèque seulement (attend la vérification planifiée ou « Rechercher maintenant »)"
+      }
     },
     "arrImport": {
       "title": "Importer la bibliothèque depuis Radarr / Sonarr",
@@ -1859,6 +1864,20 @@
       "loading": "Chargement des releases...",
       "empty": "Aucune release trouvée.",
       "noMatches": "Aucune release ne correspond à la vue actuelle.",
+      "languageFallback": {
+        "or": " ou ",
+        "bannerTitle": "Pas encore de release {{languages}}",
+        "bannerBodyFrench_one": "{{count}} release dans d'autres versions françaises : {{breakdown}}. Rawkoon continue de chercher du {{languages}}.",
+        "bannerBodyFrench_other": "{{count}} releases dans d'autres versions françaises : {{breakdown}}. Rawkoon continue de chercher du {{languages}}.",
+        "bannerBodyOther_one": "{{count}} release dans d'autres langues : {{breakdown}}. Rawkoon continue de chercher du {{languages}}.",
+        "bannerBodyOther_other": "{{count}} releases dans d'autres langues : {{breakdown}}. Rawkoon continue de chercher du {{languages}}.",
+        "groupFrench": "Autres versions françaises",
+        "groupOther": "Autres langues",
+        "collapsedFrench_one": "{{count}} autre version française",
+        "collapsedFrench_other": "{{count}} autres versions françaises",
+        "collapsedOther_one": "{{count}} release dans une autre langue",
+        "collapsedOther_other": "{{count}} releases dans d'autres langues"
+      },
       "filtersTitle": "Filtres",
       "filtersButton": "Filtres avancés",
       "clearFilters": "Effacer",
@@ -1961,6 +1980,16 @@
       "daysAll": "Tout le temps",
       "empty": "Aucun historique de téléchargement.",
       "paginationRange": "{{start}}–{{end}} sur {{total}}"
+    },
+    "addToast": {
+      "searching": "{{title}} ajouté — recherche d'une version en cours",
+      "notReleased": "{{title}} ajouté — en attente de sa sortie numérique ({{date}})",
+      "notReleasedNoDate": "{{title}} ajouté — en attente d'une date de sortie numérique"
+    },
+    "addSearch": {
+      "caption": "Lance tout de suite la recherche d'une version",
+      "addOnly": "Ajouter seulement (sans rechercher)",
+      "moreOptions": "Plus d'options d'ajout"
     }
   },
   "library": {
@@ -2061,6 +2090,9 @@
       "episodeSearch": "Télécharger l’épisode",
       "grabbed": "Ajouté au client de téléchargement",
       "grabFailed": "Aucune release adaptée",
+      "languageFallbackMissFrench": "Pas encore de release {{languages}} ; {{count}} dans d'autres versions françaises ({{breakdown}})",
+      "languageFallbackMissOther": "Pas encore de release {{languages}} ; {{count}} dans d'autres langues ({{breakdown}})",
+      "seeReleases": "Les voir",
       "delete": "Supprimer le média",
       "deleteConfirmTitle": "Supprimer ce média ?",
       "deleteFilesLabel": "Supprimer également les fichiers du disque",

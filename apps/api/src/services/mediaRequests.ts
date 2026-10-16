@@ -4,6 +4,7 @@ import { addBookFromVolume } from "@rawkoon/api/services/books/bookLibrary";
 import { createAndQueueNotification } from "@rawkoon/api/workers/notificationService";
 import { getGlobalTmdbRegion } from "@rawkoon/api/utils/medias/tmdbRegion";
 import { deleteCache } from "@rawkoon/api/services/cache";
+import { queueSearchOnAdd } from "@rawkoon/api/services/searchOnAdd";
 import { TMDB_UPCOMING_CACHE_KEY } from "@rawkoon/api/utils/dashboard/tmdbUpcoming";
 import { getAdminNotificationTargets } from "@rawkoon/api/services/notificationPreferences";
 import { notificationCopy } from "@rawkoon/api/services/notificationCopy";
@@ -317,6 +318,7 @@ export async function approveRequest(
     throw error;
   }
   await deleteCache(`${TMDB_UPCOMING_CACHE_KEY}:${region}`);
+  await queueSearchOnAdd(media);
 
   // Deciding your own request needs no "approved" notification.
   if (adminId === req.requestedById) return { ok: true };

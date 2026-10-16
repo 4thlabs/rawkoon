@@ -2705,9 +2705,11 @@ exports[`release-name corpus parseAudioFlags 1`] = `
   ],
   "Le.Grand.Depart.2022.MULTi.1080p.BluRay.x264-GRP": [
     "MULTI",
+    "fr",
   ],
   "Le.Grand.Depart.2022.MULTi.1080p.WEB.H264-GRP.mkv": [
     "MULTI",
+    "fr",
   ],
   "Le.Grand.Depart.2022.MULTi.VF2.1080p.BluRay.x264-GRP": [
     "MULTI",
@@ -2732,6 +2734,7 @@ exports[`release-name corpus parseAudioFlags 1`] = `
   ],
   "Le.Grand.Depart.2022.TRUEFRENCH.1080p.BluRay.x264-GRP": [
     "TRUEFRENCH",
+    "VFF",
   ],
   "Le.Grand.Depart.2022.VFI.1080p.WEB.x264-GRP": [
     "VFI",
@@ -2916,6 +2919,7 @@ exports[`release-name corpus parseAudioFlags 1`] = `
   "The.Long.Voyage.2021.MULTi.TRUEFRENCH.1080p.BluRay.x264-GRP": [
     "MULTI",
     "TRUEFRENCH",
+    "VFF",
   ],
   "The.Long.Voyage.2021.PROPER.1080p.BluRay.x264-GRP": [],
   "The.Long.Voyage.2021.REAL.PROPER.1080p.WEB.h264-GRP": [],
@@ -3254,6 +3258,7 @@ exports[`release-name corpus parseFilenameMetadata 1`] = `
     "audioChannels": null,
     "audioFlags": [
       "MULTI",
+      "fr",
     ],
     "audioFormat": null,
     "edition": null,
@@ -3268,6 +3273,7 @@ exports[`release-name corpus parseFilenameMetadata 1`] = `
     "audioChannels": null,
     "audioFlags": [
       "MULTI",
+      "fr",
     ],
     "audioFormat": null,
     "edition": null,
@@ -3358,6 +3364,7 @@ exports[`release-name corpus parseFilenameMetadata 1`] = `
     "audioChannels": null,
     "audioFlags": [
       "TRUEFRENCH",
+      "VFF",
     ],
     "audioFormat": null,
     "edition": null,
@@ -5148,6 +5155,7 @@ exports[`release-name corpus parseFilenameMetadata 1`] = `
     "audioFlags": [
       "MULTI",
       "TRUEFRENCH",
+      "VFF",
     ],
     "audioFormat": null,
     "edition": null,
