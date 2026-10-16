@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth/useAuth";
 import { type FilterType, type FilterStatus } from "@/utils/libraryUtils";
 import { GrabReadinessBanner } from "./GrabReadinessBanner";
 import { LibraryPageHeader } from "./LibraryPageHeader";
+import { LibrarySwitch } from "./LibrarySwitch";
 import { LibraryMobileFilterSheet } from "./LibraryMobileFilterSheet";
 import { TmdbSearchModal } from "./TmdbSearchModal";
 import { LibraryToolbar } from "./LibraryToolbar";
@@ -147,6 +148,7 @@ export function LibraryPage() {
 
   return (
     <PageLayout>
+      <LibrarySwitch active="media" />
       <LibraryPageHeader
         movieCount={movieCount}
         showCount={showCount}

@@ -1,6 +1,6 @@
 import i18n from "@/lib/i18n";
 
-export function syncBadge(): void {
+function syncBadge(): void {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.ready.then((registration) => {
       if (registration.active) {

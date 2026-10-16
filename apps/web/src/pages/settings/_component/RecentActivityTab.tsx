@@ -16,7 +16,7 @@ import {
   getActivityPresentation,
   getActivityServiceLabel,
   getActivityTypeLabel,
-} from "@/pages/activity/_component/activityPresentation";
+} from "@/pages/activity/history/_component/activityPresentation";
 import { SettingsPageHeader } from "@/pages/settings/_component/SettingsPageHeader";
 
 const PAGE_SIZE = 25;

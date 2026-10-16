@@ -113,14 +113,14 @@ function prefetchHomePageDataOptimistic(queryClient: QueryClient): void {
  * Returns array of {queryKey, queryFn} objects
  */
 const routeQueryDefinitions = {
-  "/calendar": () => [
+  "/activity/calendar": () => [
     {
       queryKey: queryKeys.dashboard.upcoming(),
       queryFn: () => webFetcher(DASHBOARD_ENDPOINTS.UPCOMING.LIST),
     },
   ],
 
-  "/explore": () => [
+  "/find": () => [
     {
       queryKey: queryKeys.medias.explore(),
       queryFn: () => webFetcher(`${MEDIAS_ENDPOINTS.EXPLORE}?language=en`),
@@ -129,7 +129,7 @@ const routeQueryDefinitions = {
 
   // "/library" is prefetched as an infinite query — see prefetchRouteData.
 
-  "/notifications": () => [
+  "/activity": () => [
     {
       queryKey: queryKeys.notifications.unreadCount(),
       queryFn: () => webFetcher(NOTIFICATION_ENDPOINTS.UNREAD_COUNT),
@@ -138,7 +138,7 @@ const routeQueryDefinitions = {
     // with ensureQueryData due to structure mismatch if not careful.
   ],
 
-  "/activity": (params: { service?: string; type?: string }) => [
+  "/activity/history": (params: { service?: string; type?: string }) => [
     {
       queryKey: queryKeys.dashboard.activityFeed({
         limit: 25,

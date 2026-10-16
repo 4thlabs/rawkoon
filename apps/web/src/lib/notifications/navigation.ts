@@ -1,9 +1,9 @@
 import { normalizeNotificationUrl } from "@rawkoon/shared/utils";
 function getNotificationTargetUrl(
   url: string | null | undefined,
-  fallback = "/notifications",
+  fallback = "/activity",
 ): string {
-  return normalizeNotificationUrl(url) ?? fallback;
+  return normalizeNotificationUrl(url, window.location.origin) ?? fallback;
 }
 
 /** The in-app path (with search and hash) for same-origin targets, else null. */
@@ -20,7 +20,7 @@ function toInAppHref(target: string): string | null {
 
 export function openNotificationTarget(
   url: string | null | undefined,
-  fallback = "/notifications",
+  fallback = "/activity",
 ): void {
   const target = getNotificationTargetUrl(url, fallback);
   const href = toInAppHref(target);

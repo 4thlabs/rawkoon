@@ -22,7 +22,7 @@ export function DiscoverPanel() {
   const { t, i18n } = useTranslation("common");
   const lang = i18n.language;
 
-  const search = useSearch({ from: "/explore/" });
+  const search = useSearch({ from: "/find/" });
   const { state, setState } = useDiscoverPageState(search);
 
   const mediaType = state.type;

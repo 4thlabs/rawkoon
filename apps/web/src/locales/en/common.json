@@ -1,19 +1,13 @@
 {
   "nav": {
     "dashboard": "Home",
-    "explore": "Browse",
     "discover": "For You",
     "library": "Library",
-    "books": "Books",
-    "requests": "Requests",
-    "watchlist": "Watchlist",
-    "collections": "Collections",
-    "calendar": "Calendar",
     "logout": "Logout",
-    "positionTitle": "Navigation position",
-    "search": "Search",
-    "more": "More",
-    "mobileTabs": "Main navigation"
+    "mobileTabs": "Main navigation",
+    "find": "Find",
+    "activity": "Activity",
+    "account": "Account"
   },
   "requests": {
     "title": "Requests",
@@ -388,15 +382,8 @@
     "expand": "Expand",
     "refetch": "Refresh",
     "quickActions": "Quick Actions",
-    "quickActionsPlaceholder": "Search movies, series and pages...",
-    "quickActionsHint": "Type a title to search movies and series",
-    "quickActionsTitlesHint": "Enter adds or opens, Shift+Enter shows details",
-    "quickActionsTitlesHintTouch": "Tap a title to add it, or the info button for details",
-    "quickActionsTitlesFailed": "Movie and series search is unavailable right now.",
-    "quickActionsSearchingTitles": "Searching movies and series...",
-    "quickActionsSectionTitles": "Movies & series",
-    "quickActionsAdd": "Add",
-    "quickActionsDetails": "Details",
+    "quickActionsPlaceholder": "Search your library, pages and actions...",
+    "quickActionsHint": "Type a title to find it in your library, or search Find",
     "quickActionsNoResults": "No quick action found",
     "quickActionsNoResultsDescription": "Try a different keyword or open a section directly from the sidebar.",
     "quickActionsOpenPage": "Open {{page}}",
@@ -418,7 +405,6 @@
     "unexpectedError": "An unexpected error occurred",
     "reloadPage": "Reload page",
     "failedToLoad": "Failed to load",
-    "userMenu": "User menu",
     "create": "Create",
     "creating": "Creating...",
     "update": "Update",
@@ -431,7 +417,11 @@
     "copy": "Copy",
     "open": "Open",
     "requestFailed": "Request failed",
-    "tooManyRequests": "Too many requests. Please slow down."
+    "tooManyRequests": "Too many requests. Please slow down.",
+    "quickActionsSearchFind": "Search Find for “{{query}}”",
+    "quickActionsSearchFindDescription": "Look up movies, series and books",
+    "quickActionsSectionFind": "Find",
+    "quickActionsSearching": "Searching..."
   },
   "notifications": {
     "modal": {
@@ -442,7 +432,6 @@
     },
     "title": "Notifications",
     "description": "View and manage your notifications",
-    "bell": "Notifications",
     "pushFallback": "You have a new notification",
     "noNotifications": "No notifications",
     "markAllAsRead": "Mark all as read",
@@ -1758,7 +1747,10 @@
       "needsUpgrade": "Needs Upgrade",
       "episodesMissing_one": "{{count}} ep missing",
       "episodesMissing_other": "{{count}} eps missing",
-      "downloadsImport": "Import downloads"
+      "downloadsImport": "Import downloads",
+      "switchLabel": "Library sections",
+      "switchMedia": "Movies & Shows",
+      "switchBooks": "Books"
     },
     "watchlist": {
       "pageTitle": "Watchlist",
@@ -2958,6 +2950,16 @@
       "ssimClipMin": "SSIM per-clip minimum",
       "cpuThreads": "CPU threads (empty = auto)",
       "actionFailed": "Action failed"
+    }
+  },
+  "activity": {
+    "lanes": {
+      "label": "Activity sections",
+      "inbox": "Inbox",
+      "queue": "Queue",
+      "requests": "Requests",
+      "calendar": "Calendar",
+      "history": "History"
     }
   }
 }

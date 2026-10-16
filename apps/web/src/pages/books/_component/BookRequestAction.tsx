@@ -2,7 +2,7 @@ import { Loader2, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MediaRequestStatus } from "@rawkoon/shared/types";
 import { Button } from "@/components/ui/button";
-import { useCreateRequest } from "@/pages/requests/_hooks/useRequests";
+import { useCreateRequest } from "@/pages/activity/requests/_hooks/useRequests";
 
 const STATUS_STYLES: Record<MediaRequestStatus, string> = {
   pending: "bg-amber-500/15 text-amber-400",
