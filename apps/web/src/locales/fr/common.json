@@ -860,7 +860,12 @@
       "scanRunning": "Scan…",
       "scanResult": "{{count}} titre(s) ajouté(s).",
       "scanUnmatched": "Non reconnus",
-      "scanError": "Échec du scan"
+      "scanError": "Échec du scan",
+      "searchOnAdd": {
+        "title": "Quand vous ajoutez un film ou une série",
+        "on": "Lancer la recherche et le téléchargement tout de suite",
+        "off": "Ajouter à la bibliothèque seulement (attend la vérification planifiée ou « Rechercher maintenant »)"
+      }
     },
     "arrImport": {
       "title": "Importer la bibliothèque depuis Radarr / Sonarr",
@@ -1961,6 +1966,16 @@
       "daysAll": "Tout le temps",
       "empty": "Aucun historique de téléchargement.",
       "paginationRange": "{{start}}–{{end}} sur {{total}}"
+    },
+    "addToast": {
+      "searching": "{{title}} ajouté — recherche d'une version en cours",
+      "notReleased": "{{title}} ajouté — en attente de sa sortie numérique ({{date}})",
+      "notReleasedNoDate": "{{title}} ajouté — en attente d'une date de sortie numérique"
+    },
+    "addSearch": {
+      "caption": "Lance tout de suite la recherche d'une version",
+      "addOnly": "Ajouter seulement (sans rechercher)",
+      "moreOptions": "Plus d'options d'ajout"
     }
   },
   "library": {

@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAddToLibrary } from "@/features/medias/hooks/useAddToLibrary";
+import { useSearchOnAddEnabled } from "@/features/medias/hooks/useSearchOnAddEnabled";
+import { addToastMessage } from "@/features/medias/lib/addToastMessage";
 import { useAddToWatchlist } from "@/features/medias/hooks/useAddToWatchlist";
 import { useMediaModalData } from "@/features/medias/hooks/useMediaModalData";
 import { useRemoveFromWatchlist } from "@/features/medias/hooks/useRemoveFromWatchlist";
@@ -35,6 +37,7 @@ export function ExploreCardDetailDialog({
   const [imageError, setImageError] = useState(false);
 
   const addMutation = useAddToLibrary();
+  const searchOnAddEnabled = useSearchOnAddEnabled();
   const addToWatchlist = useAddToWatchlist();
   const removeFromWatchlist = useRemoveFromWatchlist();
 
@@ -89,14 +92,15 @@ export function ExploreCardDetailDialog({
     ? activeTab
     : "info";
 
-  const handleAdd = async () => {
+  const handleAdd = async (searchOnAdd?: boolean) => {
     if (addMutation.isPending || !item.can_add) return;
     try {
-      await addMutation.mutateAsync({
+      const response = await addMutation.mutateAsync({
         tmdb_id: item.tmdb_id,
         type: item.media_type === "tv" ? "show" : "movie",
+        ...(searchOnAdd === false ? { search_on_add: false } : {}),
       });
-      toast.success(t("medias.addSuccess", { title: item.title }));
+      toast.success(addToastMessage(t, item.title, response, i18n.language));
       onAdded?.();
     } catch {
       toast.error(t("medias.addFailed"));
@@ -201,7 +205,9 @@ export function ExploreCardDetailDialog({
                 }
                 trailerData={trailerData}
                 tmdbUrl={tmdbUrl}
-                onAdd={handleAdd}
+                searchOnAdd={searchOnAddEnabled}
+                onAdd={() => void handleAdd()}
+                onAddOnly={() => void handleAdd(false)}
                 onWatchlistToggle={handleWatchlistToggle}
                 onClose={onClose}
               />
