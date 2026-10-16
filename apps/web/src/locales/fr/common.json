@@ -882,6 +882,7 @@
         "customLabel": "Expression cron",
         "customHint": "Cinq champs : minute, heure, jour du mois, mois, jour de la semaine.",
         "invalidCron": "Expression cron invalide. Utilisez cinq champs, par exemple 0 */4 * * *.",
+        "tooFrequent": "Cette fréquence est trop élevée. Les vérifications doivent être espacées d'au moins {{minutes}} minutes.",
         "invalidTime": "Choisissez une heure.",
         "summary": "S'exécute {{schedule}}.",
         "timezoneHint": "Les heures suivent le fuseau horaire du serveur."

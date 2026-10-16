@@ -42,7 +42,7 @@ still wanted is searched automatically, by two jobs that hit the same indexer:
 
 | Job | Schedule | What it does |
 | --- | --- | --- |
-| Release search | every 6 hours by default; change it under Settings, Media, Library Settings, "Check for new releases" | Searches each wanted movie and episode, and grabs the best match its quality profile allows. A season whose aired episodes are all wanted is searched as one season pack. |
+| Release search | every 6 hours by default; change it under Settings, Media, Library Settings, "Check for new releases"; a shorter interval means more indexer searches, and the minimum is 15 minutes | Searches each wanted movie and episode, and grabs the best match its quality profile allows. A season whose aired episodes are all wanted is searched as one season pack. |
 | RSS | every 15 minutes | Matches new releases from the indexer feeds against the same wanted titles. |
 
 Neither job searches a title before it can exist:

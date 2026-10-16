@@ -54,6 +54,30 @@ describe("ReleaseCheckFieldset", () => {
     expect(screen.getByLabelText(`${P}.timeLabel`)).toHaveValue("02:15");
   });
 
+  it("flags an impossible date and an interval under 15 minutes", () => {
+    const onChange = vi.fn();
+    render(
+      <ReleaseCheckFieldset initialCron="0 */4 * * *" onChange={onChange} />,
+    );
+    const input = screen.getByLabelText(`${P}.customLabel`);
+
+    fireEvent.change(input, { target: { value: "0 0 31 2 *" } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      cron: "0 0 31 2 *",
+      valid: false,
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(`${P}.invalidCron`);
+
+    fireEvent.change(input, { target: { value: "*/5 * * * *" } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      cron: "*/5 * * * *",
+      valid: false,
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      `${P}.tooFrequent minutes:15`,
+    );
+  });
+
   it("previews a custom cron and flags an invalid one", () => {
     const onChange = vi.fn();
     render(

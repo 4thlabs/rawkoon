@@ -309,7 +309,9 @@ export async function setupScheduledJobs() {
   console.log("⏰ Setting up scheduled jobs...");
 
   // Lazy: the schedule service imports this module for the queue.
-  const { loadReleaseCheckCron } = await import("./releaseCheckSchedule");
+  const { loadReleaseCheckCron, registerSchedulers } = await import(
+    "./releaseCheckSchedule"
+  );
   const releaseCheckCron = await loadReleaseCheckCron();
 
   const jobs = [
@@ -393,12 +395,5 @@ export async function setupScheduledJobs() {
     await scheduledTasksQueue.removeJobScheduler(scheduler.key);
   }
 
-  for (const job of jobs) {
-    await scheduledTasksQueue.upsertJobScheduler(
-      job.name,
-      { pattern: job.pattern },
-      { name: job.name, data: {} },
-    );
-    console.log(`   - Scheduled ${job.name} with pattern ${job.pattern}`);
-  }
+  await registerSchedulers(jobs);
 }

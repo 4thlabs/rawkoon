@@ -882,6 +882,7 @@
         "customLabel": "Cron expression",
         "customHint": "Five fields: minute, hour, day of month, month, day of week.",
         "invalidCron": "This is not a valid cron expression. Use five fields, for example 0 */4 * * *.",
+        "tooFrequent": "This runs too often. Release checks must be at least {{minutes}} minutes apart.",
         "invalidTime": "Pick a time of day.",
         "summary": "Runs {{schedule}}.",
         "timezoneHint": "Times follow the server's time zone."

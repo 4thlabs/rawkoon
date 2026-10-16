@@ -4,7 +4,8 @@ import {
   dailyCronAt,
   describeCron,
   detectReleaseCheckPreset,
-  isValidCron,
+  MIN_RELEASE_CHECK_INTERVAL_MINUTES,
+  validateReleaseCheckCron,
   releaseCheckCronFor,
 } from "@rawkoon/shared/utils";
 import { cronLocale } from "@/lib/utils/cron";
@@ -63,7 +64,7 @@ export function ReleaseCheckFieldset({
     }
     if (nextKind === "custom") {
       const cron = nextCustom.trim().replace(/\s+/g, " ");
-      return { cron, valid: isValidCron(cron) };
+      return { cron, valid: validateReleaseCheckCron(cron).ok };
     }
     return { cron: releaseCheckCronFor({ kind: nextKind }), valid: true };
   };
@@ -82,6 +83,12 @@ export function ReleaseCheckFieldset({
   };
 
   const customInvalid = kind === "custom" && !current.valid;
+  const tooFrequent =
+    customInvalid &&
+    (() => {
+      const r = validateReleaseCheckCron(custom);
+      return !r.ok && r.reason === "tooFrequent";
+    })();
   const dailyInvalid = kind === "daily" && !current.valid;
 
   return (
@@ -151,7 +158,11 @@ export function ReleaseCheckFieldset({
       {customInvalid || dailyInvalid ? (
         <p role="alert" className="mt-3 text-sm text-red-400">
           {customInvalid
-            ? t("settings.mediaLibrary.releaseCheck.invalidCron")
+            ? tooFrequent
+              ? t("settings.mediaLibrary.releaseCheck.tooFrequent", {
+                  minutes: MIN_RELEASE_CHECK_INTERVAL_MINUTES,
+                })
+              : t("settings.mediaLibrary.releaseCheck.invalidCron")
             : t("settings.mediaLibrary.releaseCheck.invalidTime")}
         </p>
       ) : (

@@ -13,7 +13,10 @@ import { badRequest, ok, serverError } from "@rawkoon/api/errors";
 import type { Env } from "@rawkoon/api/honoEnv";
 import { requireAdmin } from "@rawkoon/api/middleware/hono/auth";
 import { jsonV } from "@rawkoon/api/middleware/validate";
-import { applyReleaseCheckSchedule } from "@rawkoon/api/services/releaseCheckSchedule";
+import {
+  parseReleaseCheckCron,
+  rescheduleThenPersist,
+} from "@rawkoon/api/services/releaseCheckSchedule";
 import { normalizeExtension } from "@rawkoon/api/services/seeding/seedPolicy";
 import { TMDB_LANGUAGE_LIBRARY_PERSISTENCE } from "@rawkoon/api/utils/medias/tmdbFetcherTypes";
 import { listVideoFilesUnder } from "@rawkoon/api/utils/medias/fileIdentifier";
@@ -224,13 +227,9 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
         if (body.search_on_add !== undefined)
           update.searchOnAdd = body.search_on_add;
         if (body.release_check_cron !== undefined) {
-          const cron = normalizeCron(body.release_check_cron);
-          if (cron === null) {
-            return badRequest(
-              "release_check_cron must be a 5-field cron expression",
-            );
-          }
-          update.releaseCheckCron = cron;
+          const parsed = parseReleaseCheckCron(body.release_check_cron);
+          if (!parsed.ok) return badRequest(parsed.error);
+          update.releaseCheckCron = parsed.cron;
         }
         if (body.active_indexer_manager !== undefined) {
           if (
@@ -278,23 +277,33 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
         let row = await prisma.mediaSettings.findUnique({ where: { id: 1 } });
         const previousCron =
           row?.releaseCheckCron ?? DEFAULT_RELEASE_CHECK_CRON;
-        if (!row) {
-          row = await prisma.mediaSettings.create({
-            data: { id: 1, ...update },
-          });
-        } else if (Object.keys(update).length > 0) {
-          row = await prisma.mediaSettings.update({
-            where: { id: 1 },
-            data: update,
-          });
-        }
+        const existing = row;
+        const persist = async () => {
+          if (!existing) {
+            row = await prisma.mediaSettings.create({
+              data: { id: 1, ...update },
+            });
+          } else if (Object.keys(update).length > 0) {
+            row = await prisma.mediaSettings.update({
+              where: { id: 1 },
+              data: update,
+            });
+          }
+        };
         if (
           update.releaseCheckCron !== undefined &&
           update.releaseCheckCron !== previousCron
         ) {
-          await applyReleaseCheckSchedule(update.releaseCheckCron);
+          // Schedule before saving so a cron BullMQ rejects is never stored.
+          await rescheduleThenPersist(
+            update.releaseCheckCron,
+            previousCron,
+            persist,
+          );
+        } else {
+          await persist();
         }
-        return ok({ settings: mapSettings(row) });
+        return ok({ settings: mapSettings(row!) });
       } catch {
         return serverError("Failed to update media settings");
       }

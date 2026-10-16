@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import {
   DEFAULT_RELEASE_CHECK_CRON,
+  MIN_RELEASE_CHECK_INTERVAL_MINUTES,
+  cronMinIntervalMinutes,
+  validateReleaseCheckCron,
   dailyCronAt,
   describeCron,
   detectReleaseCheckPreset,
@@ -8,6 +11,85 @@ import {
   normalizeCron,
   releaseCheckCronFor,
 } from "../cron";
+
+describe("impossible dates", () => {
+  it.each(["0 0 31 2 *", "0 0 30 2 *", "0 0 31 4 *", "0 0 31 6,9,11 *"])(
+    "rejects %s",
+    (expr) => {
+      expect(isValidCron(expr)).toBe(false);
+    },
+  );
+
+  it.each(["0 0 29 2 *", "0 0 31 1,2 *", "0 0 30 * *", "0 0 31 2 1"])(
+    "accepts %s",
+    (expr) => {
+      expect(isValidCron(expr)).toBe(true);
+    },
+  );
+});
+
+describe("cronMinIntervalMinutes", () => {
+  it.each([
+    ["* * * * *", 1],
+    ["*/5 * * * *", 5],
+    ["7-59/15 * * * *", 15],
+    ["0 * * * *", 60],
+    ["0 */6 * * *", 360],
+    ["0 3,15 * * *", 720],
+    ["30 4 * * *", 1440],
+    ["50 23 * * *", 1440],
+    ["0,10 * * * *", 10],
+  ])("%s", (expr, minutes) => {
+    expect(cronMinIntervalMinutes(expr)).toBe(minutes);
+  });
+
+  it("is null for an invalid cron", () => {
+    expect(cronMinIntervalMinutes("0 0 31 2 *")).toBeNull();
+  });
+});
+
+describe("validateReleaseCheckCron", () => {
+  it("accepts and normalizes a cron at or above the floor", () => {
+    expect(validateReleaseCheckCron(" */15  * * * * ")).toEqual({
+      ok: true,
+      cron: "*/15 * * * *",
+    });
+    expect(MIN_RELEASE_CHECK_INTERVAL_MINUTES).toBe(15);
+  });
+
+  it("rejects an interval under 15 minutes", () => {
+    expect(validateReleaseCheckCron("*/14 * * * *")).toEqual({
+      ok: false,
+      reason: "tooFrequent",
+    });
+    expect(validateReleaseCheckCron("* * * * *")).toEqual({
+      ok: false,
+      reason: "tooFrequent",
+    });
+  });
+
+  it("rejects syntax errors and impossible dates as invalid", () => {
+    expect(validateReleaseCheckCron("nope")).toEqual({
+      ok: false,
+      reason: "invalid",
+    });
+    expect(validateReleaseCheckCron("0 0 31 2 *")).toEqual({
+      ok: false,
+      reason: "invalid",
+    });
+  });
+
+  it("accepts every preset", () => {
+    for (const cron of [
+      "0 * * * *",
+      "0 */3 * * *",
+      "0 */6 * * *",
+      "0 */12 * * *",
+    ]) {
+      expect(validateReleaseCheckCron(cron).ok).toBe(true);
+    }
+  });
+});
 
 describe("normalizeCron", () => {
   it("collapses whitespace", () => {

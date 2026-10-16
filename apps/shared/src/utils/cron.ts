@@ -96,14 +96,67 @@ function splitCron(expr: string): string[] | null {
   return parts.length === 5 && parts[0] !== "" ? parts : null;
 }
 
-/** True for a standard 5-field cron expression (minute hour day month weekday). */
+// Longest each month can be (February counts leap years).
+const MONTH_DAYS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+/** False when the day-of-month and month fields can never name a real date (e.g. 31 Feb). */
+function hasReachableDate(parts: string[]): boolean {
+  // With a weekday restriction cron fires on either match, so the date alone can't make it unreachable.
+  if (parts[4] !== "*") return true;
+  const days = expandField(parts[2]!, FIELDS[2]!);
+  const months = expandField(parts[3]!, FIELDS[3]!);
+  if (!days || !months) return false;
+  return months.some((m) => days.some((d) => d <= MONTH_DAYS[m - 1]!));
+}
+
+/** True for a 5-field cron expression (minute hour day month weekday) that can actually fire. */
 export function isValidCron(expr: string): boolean {
   const parts = splitCron(expr);
   if (!parts) return false;
-  return parts.every((p, i) => {
+  const fieldsOk = parts.every((p, i) => {
     const values = expandField(p, FIELDS[i]!);
     return values !== null && values.length > 0;
   });
+  return fieldsOk && hasReachableDate(parts);
+}
+
+/** Same floor as the indexer RSS poll: more frequent release checks only hammer the indexers. */
+export const MIN_RELEASE_CHECK_INTERVAL_MINUTES = 15;
+
+/**
+ * Smallest gap in minutes between two runs, or null for an invalid cron.
+ * Treats the fire times of one day as repeating daily, which can only
+ * under-state the gap when day fields skip days, never over-state it.
+ */
+export function cronMinIntervalMinutes(expr: string): number | null {
+  const parts = splitCron(expr);
+  if (!parts || !isValidCron(expr)) return null;
+  const minutes = expandField(parts[0]!, FIELDS[0]!)!;
+  const hours = expandField(parts[1]!, FIELDS[1]!)!;
+  const times = hours
+    .flatMap((h) => minutes.map((m) => h * 60 + m))
+    .sort((a, b) => a - b);
+  let min = 1440 - times[times.length - 1]! + times[0]!;
+  for (let i = 1; i < times.length; i++) {
+    min = Math.min(min, times[i]! - times[i - 1]!);
+  }
+  return min;
+}
+
+export type ReleaseCheckCronResult =
+  | { ok: true; cron: string }
+  | { ok: false; reason: "invalid" | "tooFrequent" };
+
+/** Normalizes a release-check cron and checks it parses, can fire, and is not too frequent. */
+export function validateReleaseCheckCron(expr: string): ReleaseCheckCronResult {
+  const cron = normalizeCron(expr);
+  if (cron === null) return { ok: false, reason: "invalid" };
+  const interval = cronMinIntervalMinutes(cron);
+  if (interval === null) return { ok: false, reason: "invalid" };
+  if (interval < MIN_RELEASE_CHECK_INTERVAL_MINUTES) {
+    return { ok: false, reason: "tooFrequent" };
+  }
+  return { ok: true, cron };
 }
 
 const EN_WEEKDAYS = [
