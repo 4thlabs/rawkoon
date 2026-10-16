@@ -8,6 +8,7 @@ import type {
 } from "@rawkoon/shared/types";
 import {
   downloadProgressForMedia,
+  etaForMedia,
   type MediaDownloadProgress,
 } from "../lib/activeDownloads";
 
@@ -43,6 +44,22 @@ export function useDownloadProgress(
     enabled: downloading,
     refetchInterval: 30_000,
     select: (response) => downloadProgressForMedia(response, mediaId),
+  });
+  return downloading ? (data ?? null) : null;
+}
+
+/** ETA for one title from the admin queue list; the poll only runs while it downloads. */
+export function useDownloadEta(
+  mediaId: number,
+  downloading: boolean,
+): number | null {
+  const fetcher = useFetcher();
+  const { data } = useQuery<ActiveDownloadsResponse, Error, number | null>({
+    queryKey: queryKeys.downloads.active(),
+    queryFn: () => fetcher<ActiveDownloadsResponse>(DOWNLOADS_ENDPOINTS.ACTIVE),
+    enabled: downloading,
+    refetchInterval: 30_000,
+    select: (response) => etaForMedia(response, mediaId),
   });
   return downloading ? (data ?? null) : null;
 }

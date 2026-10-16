@@ -48,7 +48,7 @@ export function useLiveSearchToast() {
           void navigate({
             to: "/library/$libraryId",
             params: { libraryId: String(target.mediaId) },
-            ...(releases ? { search: { tab: "search" as const } } : {}),
+            ...(releases ? { search: { tab: "releases" as const } } : {}),
           }),
         grabNow: (targetKeys) => {
           start(target);

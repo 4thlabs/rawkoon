@@ -39,6 +39,10 @@ export interface InteractiveSearchPanelProps {
   episodeTarget?: { season: number; episode: number } | null;
   /** Pre-select a season (number) or complete series ("complete") when opening */
   defaultSeason?: number | "complete" | null;
+  /** Named on the pinned best-match card of the release list */
+  profileName?: string | null;
+  /** Resolution of the file on disk; upgrade mode pins only a higher one */
+  currentResolution?: number | null;
   /** When true, grabs are sent with is_upgrade: true */
   isUpgradeMode?: boolean;
   onDownloadSuccess?: () => void;
@@ -276,6 +280,10 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
           isError={state.activeQuery.isError}
           onResetView={state.resetView}
           languageFallbackSummary={state.languageFallbackSummary}
+          profileName={props.profileName ?? null}
+          serverOrder={state.activeQuery.data?.releases}
+          isUpgradeMode={props.isUpgradeMode}
+          currentResolution={props.currentResolution ?? null}
           aiPickKey={
             !aiDismissed && aiEnabled
               ? (aiPick.data?.release_key ?? null)

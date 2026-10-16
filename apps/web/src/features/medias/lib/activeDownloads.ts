@@ -72,3 +72,14 @@ export function downloadProgressForMedia(
     count: mine.length,
   };
 }
+
+/** The longest ETA among a title's in-flight grabs, or null when none reports one. */
+export function etaForMedia(
+  data: ActiveDownloadsResponse | undefined,
+  mediaId: number,
+): number | null {
+  const etas = (data?.items ?? [])
+    .filter((row) => row.media_id === mediaId)
+    .flatMap((row) => (row.eta_seconds != null ? [row.eta_seconds] : []));
+  return etas.length > 0 ? Math.max(...etas) : null;
+}

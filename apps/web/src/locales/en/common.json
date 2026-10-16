@@ -1925,7 +1925,6 @@
       "watchTrailer": "Watch Trailer",
       "tabInfo": "Info",
       "tabSimilar": "Similar",
-      "tabSearch": "Search",
       "tabManagement": "Management",
       "releaseDate": "Release:",
       "firstAir": "First aired:",
@@ -1958,7 +1957,8 @@
       "cast": "Cast",
       "searchingEpisode": "Searching for",
       "searchingSeasonPack": "Searching season pack",
-      "upgradeMode": "Upgrade mode — grab will replace the existing file"
+      "upgradeMode": "Upgrade mode — grab will replace the existing file",
+      "tabReleases": "Releases"
     },
     "addSuccess": "Added {{title}} to library.",
     "addFailed": "Failed to add media to library.",
@@ -2017,8 +2017,8 @@
       "retry": "Retry",
       "errorTitle": "Could not load releases.",
       "errorDescription": "Please try again in a moment.",
-      "download": "Download this release",
-      "redownload": "Re-grab this release",
+      "download": "Grab",
+      "redownload": "Grab again",
       "downloading": "Starting...",
       "downloadStarted": "Release download started.",
       "downloadFailed": "Failed to start release download.",
@@ -2049,7 +2049,22 @@
       "blocked": "Blocked",
       "blockTitle": "Block this release so it's never grabbed again",
       "blockSuccess": "Release blocked. It won't be grabbed again.",
-      "blockFailed": "Could not block this release."
+      "blockFailed": "Could not block this release.",
+      "moreActions": "More actions",
+      "profileFallback": "profile",
+      "bestMatch": {
+        "title": "Best match for {{profile}}",
+        "titleNoProfile": "Best match",
+        "reasonQuality": "{{quality}}",
+        "reasonLanguage": "Preferred language ({{languages}})",
+        "reasonLanguageAny": "Preferred language",
+        "reasonTracker": "Preferred tracker ({{indexer}})",
+        "reasonSeeders_one": "{{count}} seeder",
+        "reasonSeeders_other": "{{count}} seeders",
+        "reasonSize": "{{size}}",
+        "titleAi": "AI pick for {{profile}}",
+        "titleAiNoProfile": "AI pick"
+      }
     },
     "tmdb": {
       "title": "Search and add from TMDB",
@@ -2291,6 +2306,26 @@
     "lastSearch": {
       "noMatch": "No match · {{relative}}",
       "noMatchNoTime": "No match"
+    },
+    "itemActions": {
+      "chooseRelease": "Choose release",
+      "searchUpgrade": "Search for upgrade",
+      "downloadingPercent": "Downloading {{percent}}%",
+      "downloadingEpisodes_one": "Downloading {{count}} episode",
+      "downloadingEpisodes_other": "Downloading {{count}} episodes",
+      "eta": "ETA {{eta}}",
+      "paused": "Paused"
+    },
+    "statusLine": {
+      "profile": "Profile {{name}}",
+      "lastSearched": "Last searched {{relative}}",
+      "outcome": {
+        "grabbed": "grabbed a release",
+        "delayed": "release held",
+        "no_match": "no match",
+        "not_released": "not released yet",
+        "error": "search failed"
+      }
     }
   },
   "downloadsImport": {
@@ -2366,15 +2401,15 @@
   },
   "scoring": {
     "reject": {
-      "resolutionBelowMin": "Below minimum resolution",
-      "resolutionAboveCutoff": "Exceeds cutoff resolution",
-      "hdrRequiredAbsent": "HDR required but not present",
-      "languageNoMatch": "Language does not match profile",
-      "sizeOverCap": "File size exceeds cap",
-      "isSample": "Sample file rejected",
-      "seedersBelowMin": "Not enough seeders",
-      "customFormatRequiredAbsent": "Required custom format absent",
-      "customFormatForbiddenPresent": "Forbidden custom format present"
+      "resolutionBelowMin": "Below the minimum resolution",
+      "resolutionAboveCutoff": "Above the {{profile}} limit",
+      "hdrRequiredAbsent": "No HDR, which the profile requires",
+      "languageNoMatch": "Not in a preferred language",
+      "sizeOverCap": "Larger than the size limit",
+      "isSample": "A sample file",
+      "seedersBelowMin": "Too few seeders",
+      "customFormatRequiredAbsent": "Missing a required custom format",
+      "customFormatForbiddenPresent": "Has a forbidden custom format"
     },
     "component": {
       "resolutionTier": "Resolution tier",

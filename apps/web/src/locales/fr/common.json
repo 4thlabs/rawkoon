@@ -1925,7 +1925,6 @@
       "watchTrailer": "Voir la bande-annonce",
       "tabInfo": "Infos",
       "tabSimilar": "Similaires",
-      "tabSearch": "Recherche",
       "tabManagement": "Gestion",
       "releaseDate": "Sortie :",
       "firstAir": "Première diffusion :",
@@ -1958,7 +1957,8 @@
       "cast": "Casting",
       "searchingEpisode": "Recherche de",
       "searchingSeasonPack": "Recherche du pack saison",
-      "upgradeMode": "Mode mise à niveau — le fichier existant sera remplacé"
+      "upgradeMode": "Mode mise à niveau — le fichier existant sera remplacé",
+      "tabReleases": "Releases"
     },
     "addSuccess": "{{title}} ajouté à la bibliothèque.",
     "addFailed": "Échec de l'ajout du média à la bibliothèque.",
@@ -2022,8 +2022,8 @@
       "retry": "Réessayer",
       "errorTitle": "Impossible de charger les releases.",
       "errorDescription": "Veuillez réessayer dans un instant.",
-      "download": "Télécharger cette release",
-      "redownload": "Re-télécharger cette release",
+      "download": "Récupérer",
+      "redownload": "Récupérer à nouveau",
       "downloading": "Démarrage...",
       "downloadStarted": "Téléchargement de la release lancé.",
       "downloadFailed": "Impossible de lancer le téléchargement de la release.",
@@ -2049,7 +2049,22 @@
       "blocked": "Bloquée",
       "blockTitle": "Bloquer cette release pour qu'elle ne soit plus jamais récupérée",
       "blockSuccess": "Release bloquée. Elle ne sera plus récupérée.",
-      "blockFailed": "Impossible de bloquer cette release."
+      "blockFailed": "Impossible de bloquer cette release.",
+      "moreActions": "Plus d'actions",
+      "profileFallback": "profil",
+      "bestMatch": {
+        "title": "Meilleur choix pour {{profile}}",
+        "titleNoProfile": "Meilleur choix",
+        "reasonQuality": "{{quality}}",
+        "reasonLanguage": "Langue préférée ({{languages}})",
+        "reasonLanguageAny": "Langue préférée",
+        "reasonTracker": "Tracker préféré ({{indexer}})",
+        "reasonSeeders_one": "{{count}} seeder",
+        "reasonSeeders_other": "{{count}} seeders",
+        "reasonSize": "{{size}}",
+        "titleAi": "Choix de l'IA pour {{profile}}",
+        "titleAiNoProfile": "Choix de l'IA"
+      }
     },
     "tmdb": {
       "title": "Rechercher et ajouter depuis TMDB",
@@ -2291,6 +2306,26 @@
     "lastSearch": {
       "noMatch": "Aucune version · {{relative}}",
       "noMatchNoTime": "Aucune version"
+    },
+    "itemActions": {
+      "chooseRelease": "Choisir une release",
+      "searchUpgrade": "Chercher une amélioration",
+      "downloadingPercent": "Téléchargement {{percent}} %",
+      "downloadingEpisodes_one": "Téléchargement de {{count}} épisode",
+      "downloadingEpisodes_other": "Téléchargement de {{count}} épisodes",
+      "eta": "Reste {{eta}}",
+      "paused": "En pause"
+    },
+    "statusLine": {
+      "profile": "Profil {{name}}",
+      "lastSearched": "Dernière recherche {{relative}}",
+      "outcome": {
+        "grabbed": "release récupérée",
+        "delayed": "release en attente",
+        "no_match": "aucun résultat",
+        "not_released": "pas encore sorti",
+        "error": "recherche échouée"
+      }
     }
   },
   "downloadsImport": {
@@ -2367,14 +2402,14 @@
   "scoring": {
     "reject": {
       "resolutionBelowMin": "Sous la résolution minimale",
-      "resolutionAboveCutoff": "Dépasse la résolution de coupure",
-      "hdrRequiredAbsent": "HDR requis mais absent",
-      "languageNoMatch": "La langue ne correspond pas au profil",
-      "sizeOverCap": "Taille du fichier dépasse la limite",
-      "isSample": "Fichier sample rejeté",
-      "seedersBelowMin": "Pas assez de sources",
-      "customFormatRequiredAbsent": "Format personnalisé requis absent",
-      "customFormatForbiddenPresent": "Format personnalisé interdit présent"
+      "resolutionAboveCutoff": "Au-dessus de la limite de {{profile}}",
+      "hdrRequiredAbsent": "Pas de HDR, que le profil exige",
+      "languageNoMatch": "Pas dans une langue préférée",
+      "sizeOverCap": "Plus gros que la limite de taille",
+      "isSample": "Un fichier d'échantillon",
+      "seedersBelowMin": "Trop peu de seeders",
+      "customFormatRequiredAbsent": "Format personnalisé requis manquant",
+      "customFormatForbiddenPresent": "Contient un format personnalisé interdit"
     },
     "component": {
       "resolutionTier": "Niveau de résolution",

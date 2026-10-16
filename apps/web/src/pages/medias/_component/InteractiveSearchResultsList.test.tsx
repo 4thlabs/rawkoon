@@ -65,6 +65,50 @@ function renderList(
   );
 }
 
+describe("InteractiveSearchResultsList best match", () => {
+  const scored = (title: string, score: number) =>
+    release(title, {
+      quality_score: score,
+      score_breakdown: {
+        rejected: false,
+        total: score,
+        components: [],
+        matched_formats: [],
+      },
+    });
+
+  it("pins the top scored release once, with a primary grab, and demotes the rest", () => {
+    renderList([scored("Film high", 900), scored("Film low", 100)], null);
+    expect(
+      screen.getByText(
+        /medias.interactive.bestMatch.titleNoProfile|bestMatch.title/,
+      ),
+    ).toBeTruthy();
+    expect(screen.getAllByText("Film high")).toHaveLength(1);
+    const grabs = screen.getAllByRole("button", {
+      name: "medias.interactive.download",
+    });
+    expect(grabs).toHaveLength(2);
+    // Best match first, and only it carries the primary fill.
+    expect(grabs[0].className).toContain("bg-primary-600");
+    expect(grabs[1].className).not.toContain("bg-primary-600");
+  });
+
+  it("shows no best match without profile scores", () => {
+    renderList([release("Film A"), release("Film B")], null);
+    expect(screen.queryByText(/bestMatch/)).toBeNull();
+  });
+
+  it("keeps fallback rows secondary", () => {
+    renderList([scored("Film VFQ", 500), fallback("Film VFF A", "VFF")], null);
+    fireEvent.click(screen.getByRole("button", { name: /collapsedFrench/ }));
+    const grabs = screen.getAllByRole("button", {
+      name: "medias.interactive.download",
+    });
+    expect(grabs[1].className).not.toContain("bg-primary-600");
+  });
+});
+
 describe("InteractiveSearchResultsList language fallback", () => {
   it("leads with the banner and an expanded group when no preferred release exists", () => {
     renderList([fallback("Film VFF A", "VFF"), fallback("Film VFF B", "VFF")], {

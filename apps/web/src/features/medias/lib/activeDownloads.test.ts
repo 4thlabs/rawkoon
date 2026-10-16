@@ -5,9 +5,26 @@ import type {
 } from "@rawkoon/shared/types";
 import {
   downloadProgressForMedia,
+  etaForMedia,
   mergeActiveProgress,
   mergeSummaryProgress,
 } from "./activeDownloads";
+
+describe("etaForMedia", () => {
+  it("takes the longest ETA among the title's grabs and ignores other titles", () => {
+    const data = response([
+      item({ id: 1, media_id: 10, eta_seconds: 60 }),
+      item({ id: 2, media_id: 10, eta_seconds: 300 }),
+      item({ id: 3, media_id: 11, eta_seconds: 9999 }),
+    ]);
+    expect(etaForMedia(data, 10)).toBe(300);
+  });
+
+  it("is null without an ETA or without a list", () => {
+    expect(etaForMedia(response([item({ eta_seconds: null })]), 10)).toBeNull();
+    expect(etaForMedia(undefined, 10)).toBeNull();
+  });
+});
 
 function item(over: Partial<ActiveDownloadItem>): ActiveDownloadItem {
   return {
