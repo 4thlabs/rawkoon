@@ -196,6 +196,7 @@ export function LibraryItemSearchTab({
         }
         defaultSeason={seasonSearchCtx}
         isUpgradeMode={isUpgradeMode}
+        replaceRunning={item.type === "movie" && item.status === "downloading"}
         profileName={item.quality_profile?.name ?? null}
         currentResolution={item.resolution}
       />

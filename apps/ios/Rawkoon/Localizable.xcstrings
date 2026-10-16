@@ -13539,6 +13539,216 @@
           }
         }
       }
+    },
+    "Best match": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meilleur choix"
+          }
+        }
+      }
+    },
+    "Stops the running download and its partial data, then grabs this release.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrête le téléchargement en cours et ses données partielles, puis récupère cette release."
+          }
+        }
+      }
+    },
+    "Keep current": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garder l'actuel"
+          }
+        }
+      }
+    },
+    "Replace download": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplacer le téléchargement"
+          }
+        }
+      }
+    },
+    "subtitles only": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sous-titres seulement"
+          }
+        }
+      }
+    },
+    "Replace": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplacer"
+          }
+        }
+      }
+    },
+    "Grab anyway": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Récupérer quand même"
+          }
+        }
+      }
+    },
+    "Downloading now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement en cours"
+          }
+        }
+      }
+    },
+    "Pick another release below to replace it.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez une autre release ci-dessous pour la remplacer."
+          }
+        }
+      }
+    },
+    "or": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ou"
+          }
+        }
+      }
+    },
+    "preferred language": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "langue préférée"
+          }
+        }
+      }
+    },
+    "preferred tracker": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tracker préféré"
+          }
+        }
+      }
+    },
+    "The previous download was already stopped.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le téléchargement précédent était déjà arrêté."
+          }
+        }
+      }
+    },
+    "This release can't replace a download.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette release ne peut pas remplacer un téléchargement."
+          }
+        }
+      }
+    },
+    "%lld hidden by filters": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld masquées par les filtres"
+          }
+        }
+      }
+    },
+    "Other French versions · %lld": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autres versions françaises · %lld"
+          }
+        }
+      }
+    },
+    "Other languages · %lld": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autres langues · %lld"
+          }
+        }
+      }
+    },
+    "No %@ release yet": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore de release %@"
+          }
+        }
+      }
+    },
+    "These are other versions of the language. They are never grabbed automatically; Rawkoon keeps checking for %@.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce sont d'autres versions de cette langue. Elles ne sont jamais récupérées automatiquement ; Rawkoon continue de chercher du %@."
+          }
+        }
+      }
+    },
+    "Score %lld · what counts": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Score %lld · ce qui compte"
+          }
+        }
+      }
+    },
+    "%lld seeders": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld seeders"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -14,6 +14,15 @@ struct ReleaseRow: View {
     let isAiPick: Bool
     let onGrab: () async -> Void
     let onBlock: () async -> Void
+    var languageTag: ReleaseSheetLogic.LanguageTag?
+    /// Pinned as what an automatic search would grab; `bestReasons` says why in plain words.
+    var isBest = false
+    var bestReasons: String?
+    /// A download is running: the action replaces it, after an inline confirmation.
+    var replaceMode = false
+    var isConfirmingReplace = false
+    var onAskReplace: () -> Void = {}
+    var onCancelReplace: () -> Void = {}
 
     private var isRejected: Bool {
         release.rejected == true
@@ -29,11 +38,14 @@ struct ReleaseRow: View {
                 .frame(maxHeight: .infinity)
 
             VStack(alignment: .leading, spacing: 10) {
+                if isBest {
+                    bestHeader
+                }
                 titleRow
 
                 footerLine
 
-                if isRejected {
+                if isRejected, languageTag?.kind != .fallback {
                     rejectionReasons
                 }
 
@@ -74,7 +86,7 @@ struct ReleaseRow: View {
         if isRejected {
             return Theme.apricotSoft
         }
-        if isAiPick {
+        if isAiPick || isBest {
             return Theme.apricot.opacity(0.5)
         }
         return Theme.border
@@ -94,9 +106,61 @@ struct ReleaseRow: View {
         }
     }
 
+    private var bestHeader: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Label("Best match", systemImage: "trophy.fill")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.apricot)
+            if let bestReasons {
+                Text(bestReasons)
+                    .font(.caption)
+                    .foregroundStyle(Theme.muted)
+            }
+        }
+    }
+
     /// Actions sit on their own row so the title can use the full card width:
     /// Block quiet on the left, Grab (the primary) reachable on the right.
+    @ViewBuilder
     private var actionsRow: some View {
+        if isConfirmingReplace {
+            replaceConfirmRow
+        } else {
+            standardActionsRow
+        }
+    }
+
+    /// Inline, not an alert: alerts on a sheet pushed over a zoom destination can stay hidden.
+    private var replaceConfirmRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Stops the running download and its partial data, then grabs this release.")
+                .font(.caption)
+                .foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 10) {
+                Button("Keep current") { onCancelReplace() }
+                    .buttonStyle(.bordered)
+                    .tint(Theme.muted)
+                    .controlSize(.small)
+                    .frame(minHeight: 44)
+                Spacer(minLength: 8)
+                Button {
+                    Task { await onGrab() }
+                } label: {
+                    Text("Replace download")
+                        .font(.system(.caption, design: .monospaced).weight(.semibold))
+                        .foregroundStyle(Theme.onAccent)
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 44)
+                        .background(Theme.terracotta, in: Capsule())
+                }
+                .requiresConnection(model.isOffline)
+            }
+        }
+        .transition(.rawkoonSwap)
+    }
+
+    private var standardActionsRow: some View {
         HStack(spacing: 10) {
             // Each control keeps one slot, so its states crossfade in place.
             ZStack(alignment: .leading) {
@@ -135,6 +199,9 @@ struct ReleaseRow: View {
     /// size, seeders (green), score (apricot), then faint provenance. Wraps if long.
     private var footerLine: some View {
         ReleaseFlowLayout(spacing: 8) {
+            if let languageTag {
+                languageToken(languageTag)
+            }
             if let packLabel {
                 footerRun(packLabel, Theme.apricotSoft)
             }
@@ -155,9 +222,6 @@ struct ReleaseRow: View {
             }
             if release.seeders != nil || release.leechers != nil {
                 seedRun
-            }
-            if let qualityScore = release.qualityScore {
-                scoreRun(Int(qualityScore.rounded()))
             }
             if let metaText {
                 footerRun(metaText, Theme.faint)
@@ -189,14 +253,29 @@ struct ReleaseRow: View {
         .fixedSize()
     }
 
-    private func scoreRun(_ value: Int) -> some View {
-        HStack(spacing: 3) {
-            Image(systemName: "gauge.with.needle")
-                .font(.system(size: 9))
-            Text(verbatim: "\(value)")
-                .font(.system(.caption2, design: .monospaced).weight(.semibold))
+    /// Profile match: apricot outline. Other version: muted outline. Subtitles only: dashed, faint.
+    private func languageToken(_ tag: ReleaseSheetLogic.LanguageTag) -> some View {
+        let color: Color = switch tag.kind {
+        case .audio: Theme.apricotSoft
+        case .fallback: Theme.muted
+        case .subtitlesOnly: Theme.faint
         }
-        .foregroundStyle(Theme.apricotSoft)
+        return HStack(spacing: 4) {
+            Text(verbatim: tag.label)
+                .font(.system(.caption2, design: .monospaced).weight(.semibold))
+            if tag.kind == .subtitlesOnly {
+                Text("subtitles only")
+                    .font(.system(.caption2, design: .monospaced))
+            }
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 2)
+        .overlay(
+            Capsule().strokeBorder(
+                color, style: StrokeStyle(lineWidth: 1, dash: tag.kind == .subtitlesOnly ? [3, 2] : [])
+            )
+        )
         .fixedSize()
     }
 
@@ -249,12 +328,22 @@ struct ReleaseRow: View {
                 .transition(.rawkoonSwap)
         } else {
             Button {
-                Task { await onGrab() }
+                if replaceMode {
+                    onAskReplace()
+                } else {
+                    Task { await onGrab() }
+                }
             } label: {
                 Group {
-                    if alreadyGrabbed {
+                    if replaceMode {
+                        Label("Replace", systemImage: "arrow.triangle.swap")
+                            .labelStyle(.titleOnly)
+                    } else if alreadyGrabbed {
                         Label("Re-grab", systemImage: "arrow.triangle.2.circlepath")
                             .labelStyle(.titleAndIcon)
+                    } else if languageTag?.kind == .fallback {
+                        Label("Grab anyway", systemImage: "arrow.down.circle")
+                            .labelStyle(.titleOnly)
                     } else {
                         Label("Grab", systemImage: "arrow.down.circle")
                             .labelStyle(.titleOnly)

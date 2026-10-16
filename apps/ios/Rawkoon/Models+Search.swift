@@ -56,6 +56,15 @@ nonisolated struct InteractiveSearchResponse: Decodable, Sendable {
     let service: String?
     let releases: [ReleaseItem]
     let indexerWarnings: [IndexerWarning]?
+    /// Set when only other versions of the preferred language exist (absent on older servers).
+    let languageFallbackSummary: LanguageFallbackSummary?
+}
+
+nonisolated struct LanguageFallbackSummary: Decodable, Sendable {
+    /// The profile's preferred languages.
+    let missing: [String]
+    /// Fallback releases per display tag.
+    let counts: [String: Int]
 }
 
 nonisolated struct IndexerWarning: Decodable, Identifiable, Sendable {
@@ -88,6 +97,9 @@ nonisolated struct ReleaseItem: Decodable, Identifiable, Sendable {
     let parsedQuality: ParsedQuality?
     let qualityRejectionReasons: [String]?
     let scoreBreakdown: ScoreBreakdown?
+    /// Rejected only for its language, yet in the preferred language's family (absent on older servers).
+    let languageFallback: Bool?
+    let languageFallbackTag: String?
 
     var id: String {
         guid
@@ -99,7 +111,7 @@ nonisolated struct ReleaseItem: Decodable, Identifiable, Sendable {
         case guid, title, indexer, indexerId, languages, age, seeders, leechers, rejected, rejectionReason, freeleech, qualityScore
         case protocolType = "protocol"
         case sizeBytes, infoURL = "infoUrl", downloadToken, downloadUrl, isSeasonPack, isCompleteSeries
-        case source, parsedQuality, qualityRejectionReasons, scoreBreakdown
+        case source, parsedQuality, qualityRejectionReasons, scoreBreakdown, languageFallback, languageFallbackTag
     }
 }
 
@@ -146,6 +158,8 @@ nonisolated struct GrabUrlBody: Encodable, Sendable {
     let qualityParsed: ParsedQuality?
     let sizeBytes: Int?
     let isUpgrade: Bool?
+    /// Admin opt-in: stop a movie's running download and grab this release instead.
+    var replace: Bool?
 }
 
 // MARK: - AI pick / blocklist (interactive search)

@@ -66,3 +66,13 @@ extension ReleaseItem: InteractiveSortable {
         rejected ?? false
     }
 }
+
+extension ReleaseItem: BestMatchCandidate {
+    var guidValue: String {
+        guid
+    }
+
+    var languageFallbackFlag: Bool {
+        languageFallback ?? false
+    }
+}
