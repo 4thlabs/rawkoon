@@ -15,6 +15,7 @@ import { ReleaseCard } from "./ReleaseCard";
 import { Button } from "@/components/ui/button";
 import { splitLanguageFallback } from "@/lib/utils/interactive-search";
 import { joinLanguages } from "@/features/medias/lib/languageFallback";
+import { pickBestMatch } from "@/features/medias/lib/bestMatch";
 
 interface InteractiveSearchResultsListProps {
   releases: InteractiveReleaseItem[];
@@ -34,6 +35,8 @@ interface InteractiveSearchResultsListProps {
   onResetView: () => void;
   aiPickKey?: string | null;
   languageFallbackSummary?: LanguageFallbackSummary | null;
+  /** Quality profile the scores come from; names the pinned best match. */
+  profileName?: string | null;
 }
 
 export function InteractiveSearchResultsList({
@@ -54,16 +57,23 @@ export function InteractiveSearchResultsList({
   onResetView,
   aiPickKey,
   languageFallbackSummary = null,
+  profileName = null,
 }: InteractiveSearchResultsListProps) {
   const { t } = useTranslation("common");
   const [fallbackOpen, setFallbackOpen] = useState(false);
   const groups = splitLanguageFallback(releases);
+  // Pinned first, so the main list below skips it.
+  const bestMatch = pickBestMatch(groups.primary);
+  const mainRows = groups.primary.filter((r) => r !== bestMatch);
   // With no preferred-language release the other versions lead, expanded.
   const leadWithFallback =
     languageFallbackSummary != null && groups.fallback.length > 0;
   const showFallbackGroup = leadWithFallback || fallbackOpen;
 
-  const renderCard = (release: InteractiveReleaseItem) => {
+  const renderCard = (
+    release: InteractiveReleaseItem,
+    variant: "row" | "best" = "row",
+  ) => {
     const releaseKey = `${release.guid}-${release.indexer_id ?? "x"}`;
     return (
       <ReleaseCard
@@ -79,6 +89,8 @@ export function InteractiveSearchResultsList({
         }
         alreadyGrabbed={grabbedTitles.has(release.title.trim().toLowerCase())}
         isAiPick={aiPickKey != null && release.guid === aiPickKey}
+        variant={variant}
+        profileName={profileName}
         t={t}
       />
     );
@@ -119,7 +131,9 @@ export function InteractiveSearchResultsList({
           </button>
         )}
         {showFallbackGroup && (
-          <div className="space-y-2">{groups.fallback.map(renderCard)}</div>
+          <div className="space-y-2">
+            {groups.fallback.map((r) => renderCard(r))}
+          </div>
         )}
       </section>
     );
@@ -209,7 +223,10 @@ export function InteractiveSearchResultsList({
             </div>
           )}
           {leadWithFallback && fallbackGroup}
-          <div className="space-y-2">{groups.primary.map(renderCard)}</div>
+          {bestMatch && (
+            <div className="mb-3">{renderCard(bestMatch, "best")}</div>
+          )}
+          <div className="space-y-2">{mainRows.map((r) => renderCard(r))}</div>
           {!leadWithFallback && fallbackGroup}
         </div>
       )}

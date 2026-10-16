@@ -196,6 +196,7 @@ export function LibraryItemSearchTab({
         }
         defaultSeason={seasonSearchCtx}
         isUpgradeMode={isUpgradeMode}
+        profileName={item.quality_profile?.name ?? null}
       />
     </>
   );
