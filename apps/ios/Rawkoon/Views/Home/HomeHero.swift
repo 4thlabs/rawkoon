@@ -94,7 +94,11 @@ struct HomeHero<Greeting: View>: View {
                         }
                 )
                 .onChange(of: fingerDown) { _, down in
-                    if down { touchBegan() } else { touchEnded() }
+                    if down {
+                        touchBegan()
+                    } else {
+                        touchEnded()
+                    }
                 }
                 .sensoryFeedback(RawkoonHaptics.feedback(for: .tap), trigger: swipes)
                 .task(id: RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab, epoch: gateEpoch)) {
