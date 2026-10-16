@@ -15,6 +15,8 @@ struct DetailSeasonsSection: View {
     let filesBySeason: [Int: [LibraryFileInfo]]
     let inLibrary: Bool
     let isAdmin: Bool
+    /// Manage-tab presentation: inline Search + monitor toggle + state per season.
+    var manage = false
 
     let onSeasonAutoSearch: (Int) -> Void
     let onSeasonReleaseSearch: (Int) -> Void
@@ -84,6 +86,17 @@ struct DetailSeasonsSection: View {
                 }
                 .buttonStyle(.plain)
 
+                if canManage, manage {
+                    Button {
+                        onSeasonAutoSearch(season.seasonNumber)
+                    } label: {
+                        Label("Search", systemImage: "sparkle.magnifyingglass")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(Theme.apricot)
+                    .requiresConnection(model.isOffline)
+                }
                 if canManage {
                     seasonMenu(season, episodes: episodes)
                 }
@@ -91,6 +104,10 @@ struct DetailSeasonsSection: View {
 
             if inLibrary, total > 0 {
                 DuskProgress(value: Double(downloaded) / Double(total))
+            }
+
+            if canManage, manage {
+                manageFooter(season, episodes: episodes, downloaded: downloaded, total: total)
             }
 
             if isExpanded {
@@ -110,6 +127,39 @@ struct DetailSeasonsSection: View {
         .background(Theme.raised, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border, lineWidth: 1))
         .rawkoonMotion(RawkoonMotion.snappy, value: isExpanded)
+    }
+
+    private func manageFooter(_ season: SeasonSummary, episodes: [Episode], downloaded: Int, total: Int) -> some View {
+        let monitored = !episodes.isEmpty && episodes.allSatisfy(\.monitored)
+        let state = seasonState(episodes, downloaded: downloaded, total: total)
+        return HStack(spacing: 8) {
+            if let state {
+                statusBadge(state.label, tint: state.tint)
+            }
+            Spacer(minLength: 0)
+            if !episodes.isEmpty {
+                Text("Monitored")
+                    .font(.caption)
+                    .foregroundStyle(Theme.muted)
+                Toggle("Monitored", isOn: Binding(
+                    get: { monitored },
+                    set: { onSeasonToggleMonitor(season.seasonNumber, $0) }
+                ))
+                .labelsHidden()
+                .tint(Theme.terracotta)
+                .scaleEffect(0.8)
+                .requiresConnection(model.isOffline)
+            }
+        }
+    }
+
+    private func seasonState(_ episodes: [Episode], downloaded: Int, total: Int) -> (label: String, tint: Color)? {
+        if total > 0, downloaded == total { return (String(localized: "Complete"), Theme.seed) }
+        if episodes.contains(where: { $0.status == "downloading" || $0.status == "upgrading" }) {
+            return (String(localized: "Downloading"), Theme.importing)
+        }
+        if episodes.contains(where: { $0.status == "wanted" }) { return (String(localized: "Wanted"), Theme.apricotSoft) }
+        return nil
     }
 
     private func countLabel(downloaded: Int, total: Int, season: SeasonSummary) -> String {

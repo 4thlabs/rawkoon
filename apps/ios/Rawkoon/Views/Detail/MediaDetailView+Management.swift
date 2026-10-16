@@ -30,6 +30,9 @@ extension MediaDetailView {
         } else if let managementItem {
             managementControlsCard(managementItem)
                 .id("management")
+            if mediaType == "tv" {
+                manageSeasonsSection
+            }
             // TV files fold into the seasons section; only movies keep a card.
             if mediaType != "tv" {
                 managementFilesCard
