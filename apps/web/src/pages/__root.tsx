@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Toaster } from "sonner";
 import type { QueryClient } from "@tanstack/react-query";
 import { Sidebar } from "@/components/Sidebar";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { PageTransition } from "@/components/PageTransition";
 import { NotificationPermissionModal } from "@/components/NotificationPermissionModal";
 import { QuickActionPalette } from "@/components/QuickActionPalette";
@@ -63,9 +64,16 @@ function RootLayout() {
                 position={position}
                 onOpenQuickActions={() => setIsQuickActionsOpen(true)}
               />
+              <MobileTabBar />
             </>
           )}
-          <div className={shouldShowNav ? contentPadding[position] : ""}>
+          <div
+            className={
+              shouldShowNav
+                ? `${contentPadding[position]} max-lg:pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))]`
+                : ""
+            }
+          >
             <MainWithPlayerPad isSettings={isSettings} />
           </div>
           <QuickActionPalette
@@ -78,7 +86,13 @@ function RootLayout() {
             onAllow={handleAllow}
             onDismiss={handleDismiss}
           />
-          <Toaster position="bottom-center" richColors />
+          <Toaster
+            position="bottom-center"
+            richColors
+            mobileOffset={{
+              bottom: "calc(4.5rem + env(safe-area-inset-bottom, 0px))",
+            }}
+          />
           <MiniPlayer />
         </LibraryNavigationProvider>
       </PlayerProvider>

@@ -12,11 +12,14 @@ interface Props {
   inputRef?: React.RefObject<HTMLInputElement | null>;
   /** "modal" strips the card wrapper — use when rendering inside a full-screen overlay */
   variant?: "default" | "modal";
+  /** Called after an item was added from the detail dialog. */
+  onAdded?: () => void;
 }
 
 export function TmdbMediaSearchPanel({
   inputRef: externalInputRef,
   variant = "default",
+  onAdded,
 }: Props = {}) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
@@ -156,6 +159,7 @@ export function TmdbMediaSearchPanel({
       onAdded={() => {
         setSelectedItem(null);
         searchQuery.refetch();
+        onAdded?.();
       }}
     />
   );
