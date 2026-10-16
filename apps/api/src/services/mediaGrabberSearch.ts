@@ -7,7 +7,11 @@ import {
 } from "@rawkoon/api/services/aiProvider/client";
 import { getActiveIndexerManager } from "@rawkoon/api/services/indexerManager";
 import { tieredSearch } from "@rawkoon/api/services/indexerManager/searchStrategy";
-import { releaseCoversSeasons } from "@rawkoon/api/utils/medias/completeSeries";
+import {
+  isMultiSeasonRelease,
+  multiSeasonReleaseCovers,
+  releaseCoversSeasons,
+} from "@rawkoon/api/utils/medias/completeSeries";
 import {
   parseReleaseSeasonEpisode,
   parseReleaseTitle,
@@ -30,8 +34,10 @@ import {
   evaluateDelay,
   toDelayCandidate,
 } from "@rawkoon/api/services/grabDelay";
-import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
-import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
+import {
+  grabRelease,
+  type GrabRefusal,
+} from "@rawkoon/api/services/mediaGrabberGrab";
 import {
   releaseMatchesExpectedTitles,
   resolveSearchTitles,
@@ -43,6 +49,8 @@ type SearchMiss = {
   grabbed: false;
   reason: string;
   delayed?: true;
+  /** Set when the grab was refused up front; callers branch on it, not on the reason. */
+  refusal?: GrabRefusal;
   /** Set when only other versions of the preferred language were found. */
   languageFallback?: LanguageFallbackSummary;
 };
@@ -176,6 +184,16 @@ export async function searchAndGrab(opts: {
 
       // A complete-series pack must name every wanted season, or the rest stays unfetched.
       if (completeSeasons && !releaseCoversSeasons(title, completeSeasons)) {
+        continue;
+      }
+      // A multi-season pack found by a season search must carry that season.
+      if (
+        !completeSeasons &&
+        season != null &&
+        episodeId == null &&
+        isMultiSeasonRelease(title) &&
+        !multiSeasonReleaseCovers(title, season)
+      ) {
         continue;
       }
 
@@ -355,9 +373,13 @@ export async function searchAndGrab(opts: {
       const result = await grabRelease({
         mediaId,
         episodeId,
-        season,
         downloadUrl,
         releaseTitle: candidate.title,
+        // A multi-season pack is recorded show-level (with its span), never as one season's.
+        season:
+          !completeSeasons && isMultiSeasonRelease(candidate.title)
+            ? null
+            : season,
         indexer: null,
         qualityParsed: candidate.parsed,
         isUpgrade,
@@ -375,9 +397,9 @@ export async function searchAndGrab(opts: {
 
       // Only continue to the next candidate on a blocklist hit or a space refusal.
       // All other failures (network, download client) are terminal.
-      if (!result.grabbed && result.reason.startsWith("Blocklisted:")) continue;
+      if (result.refusal === "blocklisted") continue;
       // Smaller candidates further down may still fit.
-      if (!result.grabbed && result.reason.startsWith(SPACE_REFUSAL_PREFIX)) {
+      if (result.refusal === "no_space") {
         spaceRefusal ??= result.reason;
         continue;
       }
@@ -385,7 +407,9 @@ export async function searchAndGrab(opts: {
       return result;
     }
 
-    return spaceRefusal ? { grabbed: false, reason: spaceRefusal } : noMatch();
+    return spaceRefusal
+      ? { grabbed: false, reason: spaceRefusal, refusal: "no_space" }
+      : noMatch();
   } catch (e) {
     console.warn("[mediaGrabber] searchAndGrab failed:", e);
     return {

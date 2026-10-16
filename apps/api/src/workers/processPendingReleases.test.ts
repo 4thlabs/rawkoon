@@ -161,6 +161,7 @@ describe("processPendingReleases", () => {
     grabRelease.mockImplementationOnce(async () => ({
       grabbed: false,
       reason: "Blocklisted: bad",
+      refusal: "blocklisted" as const,
     }));
     const r = await processPendingReleases(NOW);
     expect(grabRelease).toHaveBeenCalledTimes(2);
@@ -240,6 +241,7 @@ describe("processPendingReleases", () => {
     grabRelease.mockImplementation(async () => ({
       grabbed: false,
       reason: "Not enough free space: needs 1.0 GB, 0.5 GB free, keeping 10 GB",
+      refusal: "no_space" as const,
     }));
     await processPendingReleases(NOW);
     expect(grabRelease.mock.calls[0]?.[0]).toMatchObject({ sizeBytes: 1e9 });
@@ -252,6 +254,19 @@ describe("processPendingReleases", () => {
     grabRelease.mockImplementation(async () => ({
       grabbed: false,
       reason: "A download is already active for episode 7",
+      refusal: "already_active" as const,
+    }));
+    await processPendingReleases(NOW);
+    expect(episodeUpdate).not.toHaveBeenCalled();
+    expect(rows).toHaveLength(0);
+  });
+
+  it("does not count a miss while a show-level pack carries the target", async () => {
+    rows = [row(1, "a", 1, -5)];
+    grabRelease.mockImplementation(async () => ({
+      grabbed: false,
+      reason: "A complete-series download is already active — cancel it",
+      refusal: "show_grab_active" as const,
     }));
     await processPendingReleases(NOW);
     expect(episodeUpdate).not.toHaveBeenCalled();

@@ -27,7 +27,10 @@ import {
 import type { AiPickMediaContext } from "@rawkoon/api/utils/medias/buildAiPickPrompt";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 import { pollIndexerRssBooks } from "@rawkoon/api/workers/pollIndexerRssBooks";
-import { parseReleaseStructure } from "@rawkoon/shared/utils/releaseStructure";
+import {
+  parseReleaseSeasonSpan,
+  parseReleaseStructure,
+} from "@rawkoon/shared/utils/releaseStructure";
 import {
   APP_DISPLAY_TIMEZONE,
   localDateYmd,
@@ -237,6 +240,8 @@ export async function pollIndexerRss(): Promise<RssRunStats | null> {
   >();
 
   for (const release of releases) {
+    // A multi-season pack has no single season slot; it is found by the add-time search, not matched as season N.
+    if (parseReleaseSeasonSpan(release.title)) continue;
     const parsed = extractTitleFromRelease(release.title);
     if (!parsed) continue;
 

@@ -48,7 +48,11 @@ const tiered = mock(async (_adapter: unknown, _opts: unknown) => ({
   releases: titles.map(release),
   indexerWarnings: [],
 }));
-const freetext = mock(async () => ({ releases: [], indexerWarnings: [] }));
+let freeTitles: string[] = [];
+const freetext = mock(async () => ({
+  releases: freeTitles.map(release),
+  indexerWarnings: [],
+}));
 mock.module("@rawkoon/api/services/indexerManager", () => ({
   ...realIndexer,
   getActiveIndexerManager: async () => ({ search: freetext }),
@@ -99,6 +103,7 @@ beforeEach(() => {
   grabRelease.mockClear();
   tiered.mockClear();
   freetext.mockClear();
+  freeTitles = [];
 });
 
 describe("searchAndGrab for a complete-series pack", () => {
@@ -150,5 +155,38 @@ describe("searchAndGrab for a complete-series pack", () => {
     titles = ["Other.Series.Integrale.MULTi.1080p.WEB"];
     expect((await search([1, 2])).grabbed).toBe(false);
     expect(grabRelease).not.toHaveBeenCalled();
+  });
+});
+
+describe("searchAndGrab for one season", () => {
+  const seasonSearch = (season: number) =>
+    searchAndGrabWithTitleFallback({
+      trigger: "scheduled",
+      mediaId: 1,
+      season,
+      mediaType: "tv",
+      titleBaseQueries: ["Show Name"],
+      suffix: ` S0${season}`,
+      qualityProfileId: null,
+    });
+
+  it("records a multi-season pack show-level instead of as that season's", async () => {
+    freeTitles = ["Show.Name.S01-S03.COMPLETE.1080p.WEB-DL"];
+    expect((await seasonSearch(2)).grabbed).toBe(true);
+    const call = grabRelease.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(call.season).toBeNull();
+  });
+
+  it("rejects a ranged pack that does not carry the season", async () => {
+    freeTitles = ["Show.Name.S01-S02.1080p.WEB-DL"];
+    expect((await seasonSearch(3)).grabbed).toBe(false);
+    expect(grabRelease).not.toHaveBeenCalled();
+  });
+
+  it("keeps a plain season pack keyed to its season", async () => {
+    freeTitles = ["Show.Name.S02.1080p.WEB-DL"];
+    expect((await seasonSearch(2)).grabbed).toBe(true);
+    const call = grabRelease.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(call.season).toBe(2);
   });
 });

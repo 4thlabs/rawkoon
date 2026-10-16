@@ -61,7 +61,7 @@ let episodeRows: Record<string, unknown>[] = [];
 
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
-    downloadHistory: { findFirst: async () => null },
+    downloadHistory: { findMany: async () => [] },
     libraryEpisode: {
       findMany: async (a: { where?: { status?: string } }) =>
         a.where?.status

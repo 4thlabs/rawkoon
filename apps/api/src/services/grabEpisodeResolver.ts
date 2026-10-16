@@ -2,6 +2,7 @@ import {
   parseReleaseSeasonSpan,
   parseReleaseStructure,
 } from "@rawkoon/shared/utils/releaseStructure";
+import { singleSeasonNamed } from "@rawkoon/api/utils/medias/completeSeries";
 import { parseReleaseSeasonEpisode } from "@rawkoon/api/utils/medias/filenameParser";
 
 export type GrabEpisodeRef = { id: number; season: number; episode: number };
@@ -92,5 +93,9 @@ export function resolveGrabSeason(opts: {
   if (opts.mediaType !== "show") return null;
   // A multi-season pack is show-level, not season N's: it must not collide with S01's own pack.
   if (parseReleaseSeasonSpan(opts.releaseTitle)) return null;
-  return parseReleaseSeasonEpisode(opts.releaseTitle)?.season ?? null;
+  return (
+    parseReleaseSeasonEpisode(opts.releaseTitle)?.season ??
+    // "Intégrale Saison 2" parses as a whole-series label but is one season.
+    singleSeasonNamed(opts.releaseTitle)
+  );
 }

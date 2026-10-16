@@ -1,5 +1,4 @@
 import { afterAll, beforeEach, describe, expect, it, mock } from "bun:test";
-import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 
 // Search-on-add reuses the scheduled grab path but must never record a miss.
 const realSearch = {
@@ -25,8 +24,14 @@ let media: Record<string, unknown> | null;
 let episodes: Ep[];
 let refreshedDate: Date | null;
 let packResult: { grabbed: boolean; reason: string; delayed?: true };
-let seriesResult: { grabbed: boolean; reason: string; delayed?: true };
+let seriesResult: {
+  grabbed: boolean;
+  reason: string;
+  delayed?: true;
+  refusal?: "no_space";
+};
 let activeShowGrab = false;
+let activeTitle = "Some.Title.Integrale.MULTi.1080p";
 const searches: Array<{
   suffix: string;
   season?: number;
@@ -75,7 +80,8 @@ mock.module("@rawkoon/api/services/libraryTmdbRefresh", () => ({
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
     downloadHistory: {
-      findFirst: async () => (activeShowGrab ? { id: 1 } : null),
+      findMany: async () =>
+        activeShowGrab ? [{ mediaId: 1, releaseTitle: activeTitle }] : [],
     },
     libraryMedia: {
       findUnique: async () => media,
@@ -134,6 +140,7 @@ beforeEach(() => {
   searches.length = 0;
   seasonJobs.length = 0;
   activeShowGrab = false;
+  activeTitle = "Some.Title.Integrale.MULTi.1080p";
   seriesResult = { grabbed: false, reason: "No matching releases found" };
   writes.length = 0;
   episodes = [];
@@ -316,7 +323,8 @@ describe("searchOnAdd worker: complete-series first", () => {
     await searchOnAdd(1, "series");
     seriesResult = {
       grabbed: false,
-      reason: `${SPACE_REFUSAL_PREFIX} for this release`,
+      reason: "Not enough free space: needs 50.0 GB",
+      refusal: "no_space",
     };
     await searchOnAdd(1, "series");
     expect(seasonJobs).toEqual([]);
@@ -366,5 +374,30 @@ describe("searchOnAdd worker: complete-series first", () => {
     await searchOnAdd(1);
     expect(searches).toHaveLength(0);
     expect(seasonJobs).toEqual([]);
+  });
+});
+
+describe("searchOnAdd worker: scope of an active show-level pack", () => {
+  beforeEach(() => {
+    media = { ...base, type: "show", status: "wanted", _count: { files: 0 } };
+    episodes = [ep(1, 1), ep(2, 1), ep(3, 1)];
+    activeShowGrab = true;
+  });
+
+  it("still searches seasons a ranged pack does not name", async () => {
+    activeTitle = "Some.Title.S01-S02.COMPLETE.1080p";
+    await searchOnAdd(1);
+    expect(searches.map((s) => s.suffix)).toEqual([" S03", " S03E01"]);
+  });
+
+  it("leaves every season to a complete-series label", async () => {
+    await searchOnAdd(1);
+    expect(searches).toHaveLength(0);
+  });
+
+  it("queues no season job for a covered season", async () => {
+    activeTitle = "Some.Title.S01-S02.COMPLETE.1080p";
+    await searchOnAdd(1, 2);
+    expect(searches).toHaveLength(0);
   });
 });

@@ -1,5 +1,5 @@
 import { prisma } from "@rawkoon/api/db";
-import { hasActiveShowGrab } from "@rawkoon/api/services/activeShowGrab";
+import { activeShowGrabCover } from "@rawkoon/api/services/activeShowGrab";
 import type { AddToLibraryResponse } from "@rawkoon/shared/types";
 import {
   APP_DISPLAY_TIMEZONE,
@@ -45,7 +45,7 @@ export const searchOnAddJobId = (mediaId: number, scope?: SearchScope) =>
 export async function completeSeriesSeasons(
   mediaId: number,
 ): Promise<number[] | null> {
-  if (await hasActiveShowGrab(mediaId)) return null;
+  if (await activeShowGrabCover(mediaId)) return null;
   const cutoff = airedEpisodeCutoff();
   const episodes = await prisma.libraryEpisode.findMany({
     where: { mediaId, monitored: true, season: { gt: 0 } },
@@ -75,8 +75,8 @@ export async function completeSeriesSeasons(
 
 /** Seasons (specials excluded) with at least one aired, wanted episode that has no file. */
 async function airedWantedSeasons(mediaId: number): Promise<number[]> {
-  // A complete-series pack in flight already covers every season.
-  if (await hasActiveShowGrab(mediaId)) return [];
+  // Seasons a show-level pack in flight already carries are left to it.
+  const cover = await activeShowGrabCover(mediaId);
   const rows = await prisma.libraryEpisode.findMany({
     where: {
       mediaId,
@@ -90,7 +90,7 @@ async function airedWantedSeasons(mediaId: number): Promise<number[]> {
     distinct: ["season"],
     orderBy: { season: "asc" },
   });
-  return rows.map((r) => r.season);
+  return rows.map((r) => r.season).filter((s) => !cover?.(s));
 }
 
 async function enqueueSearch(

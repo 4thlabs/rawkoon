@@ -14,8 +14,13 @@ const realRefresh = {
 
 // 1 = the lone wanted episode is a whole season (pack path); 2 = individual path.
 let monitoredTotal = 1;
-let grabResult: { grabbed: false; reason: string };
+let grabResult: {
+  grabbed: false;
+  reason: string;
+  refusal?: "no_space" | "show_grab_active";
+};
 let packedMediaIds: number[] = [];
+let packedTitle = "Some.Show.Integrale.MULTi.1080p";
 let searchCalls = 0;
 const mediaUpdates: Record<string, unknown>[] = [];
 const episodeUpdates: Record<string, unknown>[] = [];
@@ -44,7 +49,11 @@ mock.module("@rawkoon/api/services/libraryTmdbRefresh", () => ({
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
     downloadHistory: {
-      findMany: async () => packedMediaIds.map((mediaId) => ({ mediaId })),
+      findMany: async () =>
+        packedMediaIds.map((mediaId) => ({
+          mediaId,
+          releaseTitle: packedTitle,
+        })),
     },
     libraryMedia: {
       findMany: async () => [
@@ -110,6 +119,7 @@ afterAll(() => {
 
 beforeEach(() => {
   packedMediaIds = [];
+  packedTitle = "Some.Show.Integrale.MULTi.1080p";
   searchCalls = 0;
   mediaUpdates.length = 0;
   episodeUpdates.length = 0;
@@ -118,7 +128,7 @@ beforeEach(() => {
 
 describe("cron release checks on a space refusal", () => {
   it("movie: leaves the item untouched", async () => {
-    grabResult = { grabbed: false, reason: SPACE };
+    grabResult = { grabbed: false, reason: SPACE, refusal: "no_space" };
     await checkMovieReleases();
     expect(mediaUpdates).toHaveLength(0);
     expect(notifications).toHaveLength(0);
@@ -137,7 +147,7 @@ describe("cron release checks on a space refusal", () => {
   ] as const) {
     it(`episode (${label}): leaves the episode untouched`, async () => {
       monitoredTotal = total;
-      grabResult = { grabbed: false, reason: SPACE };
+      grabResult = { grabbed: false, reason: SPACE, refusal: "no_space" };
       await checkEpisodeReleases();
       expect(episodeUpdates).toHaveLength(0);
       expect(notifications).toHaveLength(0);
@@ -172,5 +182,34 @@ describe("episode check while a complete-series pack downloads", () => {
     grabResult = { grabbed: false, reason: "No matching releases found" };
     await checkEpisodeReleases();
     expect(searchCalls).toBe(1);
+  });
+});
+
+describe("episode check scope of a show-level pack", () => {
+  it("only stands down for the seasons a ranged pack names", async () => {
+    packedMediaIds = [2];
+    monitoredTotal = 1;
+    grabResult = { grabbed: false, reason: "No matching releases found" };
+
+    packedTitle = "Some.Show.S01-S03.COMPLETE.1080p";
+    await checkEpisodeReleases();
+    expect(searchCalls).toBe(0);
+
+    // Season 1 is outside S02-S05, so its episode is still searched.
+    packedTitle = "Some.Show.S02-S05.COMPLETE.1080p";
+    await checkEpisodeReleases();
+    expect(searchCalls).toBe(1);
+  });
+
+  it("counts no miss when the grab is refused for a show-level pack", async () => {
+    monitoredTotal = 2;
+    grabResult = {
+      grabbed: false,
+      reason: "A complete-series download is already active",
+      refusal: "show_grab_active",
+    };
+    await checkEpisodeReleases();
+    expect(episodeUpdates).toHaveLength(0);
+    expect(notifications).toHaveLength(0);
   });
 });

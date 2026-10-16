@@ -206,6 +206,11 @@ export async function postProcessSeasonPack(
     return { success: false, reason };
   };
 
+  if (placeable.length === 0 && unknownSeasonFiles.length > 0) {
+    return refusePack(
+      `None of the seasons in this pack exist in the show — nothing imported. Unmatched: ${unknownSeasonFiles.join(", ")}`,
+    );
+  }
   if (!mapping.ok) {
     // Import nothing. A partially-correct season is worse than none: the files
     // that "work" get renamed to the wrong episode's title and look fine until

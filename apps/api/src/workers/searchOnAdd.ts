@@ -9,8 +9,8 @@ import {
   isMovieReleased,
   type SearchScope,
 } from "@rawkoon/api/services/searchOnAdd";
-import { hasActiveShowGrab } from "@rawkoon/api/services/activeShowGrab";
-import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
+import { activeShowGrabCover } from "@rawkoon/api/services/activeShowGrab";
+import { isNoMissRefusal } from "@rawkoon/api/services/grabRefusal";
 
 type SearchTarget = {
   id: number;
@@ -67,7 +67,7 @@ export async function searchOnAdd(
  * A grab or a hold ends the search; anything else queues the season jobs.
  */
 async function searchCompleteSeries(media: SearchTarget): Promise<void> {
-  if (await hasActiveShowGrab(media.id)) return;
+  if (await activeShowGrabCover(media.id)) return;
   const seasons = await completeSeriesSeasons(media.id);
   if (seasons) {
     try {
@@ -82,11 +82,7 @@ async function searchCompleteSeries(media: SearchTarget): Promise<void> {
         qualityProfileId: media.qualityProfileId,
       });
       // A full disk won't improve by searching season by season either.
-      if (
-        pack.grabbed ||
-        pack.delayed ||
-        pack.reason.startsWith(SPACE_REFUSAL_PREFIX)
-      ) {
+      if (pack.grabbed || pack.delayed || isNoMissRefusal(pack.refusal)) {
         return;
       }
     } catch (e) {
@@ -130,8 +126,8 @@ async function searchShow(
   media: SearchTarget,
   onlySeason?: number,
 ): Promise<void> {
-  // A complete-series pack in flight carries every episode; searching them again double-grabs.
-  if (await hasActiveShowGrab(media.id)) return;
+  // Seasons a show-level pack in flight carries would double-grab if searched again.
+  const cover = await activeShowGrabCover(media.id);
 
   const cutoff = airedEpisodeCutoff();
   const episodes = await prisma.libraryEpisode.findMany({
@@ -160,6 +156,7 @@ async function searchShow(
 
   const { queries } = resolveSearchTitles(media);
   for (const [season, all] of seasons) {
+    if (cover?.(season)) continue;
     const wanted = all.filter(
       (ep) =>
         ep.status === "wanted" &&
@@ -182,11 +179,7 @@ async function searchShow(
           qualityProfileId: media.qualityProfileId,
         });
         // A held grab or a full disk won't improve by searching episode by episode.
-        if (
-          pack.grabbed ||
-          pack.delayed ||
-          pack.reason.startsWith(SPACE_REFUSAL_PREFIX)
-        ) {
+        if (pack.grabbed || pack.delayed || isNoMissRefusal(pack.refusal)) {
           continue;
         }
       } catch (e) {
@@ -208,7 +201,7 @@ async function searchShow(
           suffix: ` S${pad2(ep.season)}E${pad2(ep.episode)}`,
           qualityProfileId: media.qualityProfileId,
         });
-        if (!result.grabbed && result.reason.startsWith(SPACE_REFUSAL_PREFIX)) {
+        if (!result.grabbed && isNoMissRefusal(result.refusal)) {
           return;
         }
       } catch (e) {
