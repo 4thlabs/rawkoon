@@ -35,6 +35,7 @@ import {
   evaluateDelay,
   toDelayCandidate,
 } from "@rawkoon/api/services/grabDelay";
+import { inFlightGrabWhere } from "@rawkoon/api/services/activeShowGrab";
 import {
   grabRelease,
   type GrabRefusal,
@@ -151,25 +152,49 @@ export async function searchAndGrab(opts: {
       }
     }
 
-    let usedSeasons: number[] | null = null;
-    const seasonsInUse = async (): Promise<number[]> => {
-      usedSeasons ??= (
-        await prisma.libraryEpisode.findMany({
+    // Seasons already downloaded, grabbed or carried by a grab in flight; `all` when a series-wide pack is.
+    let inUse: { seasons: number[]; all: boolean } | null = null;
+    const seasonsInUse = async () => {
+      if (inUse) return inUse;
+      const [eps, grabs] = await Promise.all([
+        prisma.libraryEpisode.findMany({
           where: { mediaId, season: { gt: 0 } },
           select: {
             season: true,
             status: true,
             _count: { select: { files: true } },
           },
-        })
-      )
+        }),
+        prisma.downloadHistory.findMany({
+          where: { ...(await inFlightGrabWhere()), mediaId },
+          select: {
+            season: true,
+            episodeId: true,
+            releaseTitle: true,
+            episode: { select: { season: true } },
+          },
+        }),
+      ]);
+      const seasons = eps
         .filter(
           (e) =>
             e._count.files > 0 ||
             ["downloaded", "downloading", "upgrading"].includes(e.status),
         )
         .map((e) => e.season);
-      return usedSeasons;
+      let all = false;
+      for (const g of grabs) {
+        const s = g.season ?? g.episode?.season;
+        if (s != null) {
+          seasons.push(s);
+          continue;
+        }
+        const span = parseReleaseSeasonSpan(g.releaseTitle);
+        if (!span) all = true;
+        else for (let n = span.from; n <= span.to; n++) seasons.push(n);
+      }
+      inUse = { seasons, all };
+      return inUse;
     };
 
     const rows: CandidateRow[] = [];
@@ -218,10 +243,13 @@ export async function searchAndGrab(opts: {
       ) {
         if (!multiSeasonReleaseCovers(title, season)) continue;
         const span = parseReleaseSeasonSpan(title);
-        const inUse = (await seasonsInUse()).some(
-          (s) => !span || (s >= span.from && s <= span.to),
-        );
-        if (inUse) continue;
+        const used = await seasonsInUse();
+        if (
+          used.all ||
+          used.seasons.some((s) => !span || (s >= span.from && s <= span.to))
+        ) {
+          continue;
+        }
       }
 
       // For episode grabs, require the release's SxxExx to match the episode.
@@ -425,6 +453,13 @@ export async function searchAndGrab(opts: {
       // Only continue to the next candidate on a blocklist hit or a space refusal.
       // All other failures (network, download client) are terminal.
       if (result.refusal === "blocklisted") continue;
+      // A multi-season pack clashing with a running grab says nothing about the single-season candidates below it.
+      if (
+        result.refusal === "already_active" &&
+        isMultiSeasonRelease(candidate.title)
+      ) {
+        continue;
+      }
       // Smaller candidates further down may still fit.
       if (result.refusal === "no_space") {
         spaceRefusal ??= result.reason;

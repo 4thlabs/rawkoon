@@ -102,6 +102,12 @@ export async function postProcessSeasonPack(
   adapter: DownloadClientAdapter,
 ): Promise<
   | { success: true; destinationPath: string; episodeCount: number }
+  | {
+      success: true;
+      destinationPath: string;
+      skipped: true;
+      skipReason: string;
+    }
   | PostProcessFailure
 > {
   const hash = dh.torrentHash?.trim();
@@ -226,25 +232,46 @@ export async function postProcessSeasonPack(
     );
   }
   // A show-level pack spans seasons the show may already hold; those episodes keep their files unless this is an upgrade.
-  const withFiles =
+  const existingFiles =
     dh.season == null && !dh.isUpgrade
-      ? new Set(
-          (
-            await prisma.mediaFile.findMany({
-              where: { mediaId: dh.media.id, episodeId: { not: null } },
-              select: { episodeId: true },
-            })
-          ).map((f) => f.episodeId),
-        )
-      : new Set<number | null>();
+      ? await prisma.mediaFile.findMany({
+          where: { mediaId: dh.media.id, episodeId: { not: null } },
+          select: { episodeId: true, filePath: true },
+        })
+      : [];
+  const withFiles = new Set(existingFiles.map((f) => f.episodeId));
   const placements = mapping.placements.filter(
     (p) => !withFiles.has(p.episode.id),
   );
   if (placements.length === 0) {
+    // A harmless duplicate, not a failure: record why, keep the torrent seeding, blocklist nothing.
+    await prisma.libraryEpisode.updateMany({
+      where: {
+        id: { in: mapping.placements.map((p) => p.episode.id) },
+        status: { not: "downloaded" },
+      },
+      data: { status: "downloaded" },
+    });
+    await prisma.libraryMedia.update({
+      where: { id: dh.media.id },
+      data: {
+        status: resolveDownloadedStatus(dh.media.type, dh.media.tmdbStatus),
+      },
+    });
+    const destinationPath = existingFiles[0]!.filePath;
+    await prisma.downloadHistory.update({
+      where: { id: downloadHistoryId },
+      data: {
+        postProcessDestinationPath: destinationPath,
+        postProcessError: null,
+        postProcessSkipReason: "all-episodes-present",
+      },
+    });
     return {
-      success: false,
-      reason:
-        "Every episode in this pack already has a file — nothing imported",
+      success: true,
+      destinationPath,
+      skipped: true,
+      skipReason: "all-episodes-present",
     };
   }
 

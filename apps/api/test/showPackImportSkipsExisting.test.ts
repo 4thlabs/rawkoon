@@ -16,15 +16,22 @@ const episodes: Ep[] = [
 let filesFor: number[] = [];
 const createdFiles: Array<{ episodeId: number; filePath: string }> = [];
 const updatedFiles: unknown[] = [];
+const historyUpdates: Record<string, unknown>[] = [];
+const blocklisted: number[] = [];
 
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
     libraryEpisode: {
       findMany: async () => episodes,
       update: async () => ({}),
+      updateMany: async () => ({}),
     },
     mediaFile: {
-      findMany: async () => filesFor.map((episodeId) => ({ episodeId })),
+      findMany: async () =>
+        filesFor.map((episodeId) => ({
+          episodeId,
+          filePath: `/lib/${episodeId}.mkv`,
+        })),
       findFirst: async () => null,
       create: async (a: { data: { episodeId: number; filePath: string } }) => {
         createdFiles.push(a.data);
@@ -36,8 +43,19 @@ mock.module("@rawkoon/api/db", () => ({
       },
     },
     libraryMedia: { update: async () => ({}) },
-    downloadHistory: { update: async () => ({}), findMany: async () => [] },
-    grabBlocklist: { create: async () => ({}) },
+    downloadHistory: {
+      update: async (a: { data: Record<string, unknown> }) => {
+        historyUpdates.push(a.data);
+        return {};
+      },
+      findMany: async () => [],
+    },
+    grabBlocklist: {
+      create: async () => {
+        blocklisted.push(1);
+        return {};
+      },
+    },
   },
 }));
 mock.module("@rawkoon/api/utils/medias/mediainfoScanner", () => ({
@@ -110,6 +128,8 @@ beforeEach(() => {
   filesFor = [];
   createdFiles.length = 0;
   updatedFiles.length = 0;
+  historyUpdates.length = 0;
+  blocklisted.length = 0;
 });
 
 describe("show-level pack import", () => {
@@ -124,8 +144,21 @@ describe("show-level pack import", () => {
   it("imports nothing when every episode already has a file", async () => {
     filesFor = [101, 201];
     const result = await run(false);
-    expect(result.success).toBe(false);
+    // A harmless duplicate: a skip, not a failure, so no failure notice or attention alert.
+    expect(result).toMatchObject({
+      success: true,
+      skipped: true,
+      skipReason: "all-episodes-present",
+    });
     expect(createdFiles).toHaveLength(0);
+    expect(blocklisted).toHaveLength(0);
+    expect(historyUpdates).toEqual([
+      {
+        postProcessDestinationPath: "/lib/101.mkv",
+        postProcessError: null,
+        postProcessSkipReason: "all-episodes-present",
+      },
+    ]);
   });
 
   it("replaces existing files for an upgrade", async () => {

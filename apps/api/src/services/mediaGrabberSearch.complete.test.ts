@@ -30,6 +30,7 @@ mock.module("@rawkoon/api/db", () => ({
     },
     qualityProfile: { findUnique: mock(async () => null) },
     grabBlocklist: { findMany: mock(async () => []) },
+    downloadHistory: { findMany: mock(async () => inFlightRows) },
   },
 }));
 
@@ -47,6 +48,12 @@ const release = (title: string) => ({
 });
 
 let titles: string[] = [];
+let inFlightRows: Array<{
+  season: number | null;
+  episodeId: number | null;
+  releaseTitle: string;
+  episode: { season: number } | null;
+}> = [];
 let episodeRows: Array<{
   season: number;
   status: string;
@@ -113,6 +120,7 @@ beforeEach(() => {
   freetext.mockClear();
   freeTitles = [];
   episodeRows = [];
+  inFlightRows = [];
 });
 
 describe("searchAndGrab for a complete-series pack", () => {
@@ -222,5 +230,66 @@ describe("searchAndGrab for one season", () => {
     freeTitles = ["Show.Name.S01-S03.1080p.WEB-DL"];
     episodeRows = [{ season: 3, status: "downloading", _count: { files: 0 } }];
     expect((await seasonSearch(2)).grabbed).toBe(false);
+  });
+
+  it("sees a season pack in flight and falls to the single-season candidate", async () => {
+    freeTitles = [
+      "Show.Name.S01-S03.1080p.WEB-DL",
+      "Show.Name.S01.1080p.WEB-DL",
+    ];
+    inFlightRows = [
+      {
+        season: 2,
+        episodeId: null,
+        releaseTitle: "Show.Name.S02.1080p.WEB-DL",
+        episode: null,
+      },
+    ];
+    expect((await seasonSearch(1)).grabbed).toBe(true);
+    expect(grabRelease).toHaveBeenCalledTimes(1);
+    const call = grabRelease.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(call.releaseTitle).toBe("Show.Name.S01.1080p.WEB-DL");
+  });
+
+  it("treats an in-flight complete pack as covering every season", async () => {
+    freeTitles = ["Show.Name.S01-S03.1080p.WEB-DL"];
+    inFlightRows = [
+      {
+        season: null,
+        episodeId: null,
+        releaseTitle: "Show.Name.Integrale.MULTi.1080p",
+        episode: null,
+      },
+    ];
+    expect((await seasonSearch(1)).grabbed).toBe(false);
+    expect(grabRelease).not.toHaveBeenCalled();
+  });
+
+  it("tries the next candidate when a multi-season pack is refused as already active", async () => {
+    freeTitles = [
+      "Show.Name.S01-S03.1080p.WEB-DL",
+      "Show.Name.S01.1080p.WEB-DL",
+    ];
+    grabRelease.mockImplementationOnce(async () => ({
+      grabbed: false,
+      reason: "A download is already active",
+      refusal: "already_active" as const,
+    }));
+    expect((await seasonSearch(1)).grabbed).toBe(true);
+    expect(grabRelease).toHaveBeenCalledTimes(2);
+    expect(
+      (grabRelease.mock.calls[1]?.[0] as Record<string, unknown>).releaseTitle,
+    ).toBe("Show.Name.S01.1080p.WEB-DL");
+  });
+
+  it("still stops on an already-active refusal for a single-season candidate", async () => {
+    freeTitles = ["Show.Name.S01.1080p.WEB-DL", "Show.Name.S01.720p.WEB-DL"];
+    grabRelease.mockImplementationOnce(async () => ({
+      grabbed: false,
+      reason: "A download is already active",
+      refusal: "already_active" as const,
+    }));
+    expect((await seasonSearch(1)).grabbed).toBe(false);
+    expect(grabRelease).toHaveBeenCalledTimes(1);
   });
 });
