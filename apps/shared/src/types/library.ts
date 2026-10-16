@@ -506,3 +506,25 @@ export interface LibraryGrowth {
 export interface LibraryGrowthResponse {
   growth: LibraryGrowth;
 }
+
+export type GrabReadinessStatus = "ok" | "warn" | "error";
+
+export type GrabReadinessCheckId =
+  | "indexer_manager"
+  | "download_client"
+  | "default_movie_profile"
+  | "default_show_profile"
+  | "rss_indexers"
+  | "profiles_without_maximum"
+  | "search_on_add";
+
+export interface GrabReadinessCheck {
+  id: GrabReadinessCheckId;
+  status: GrabReadinessStatus;
+  /** Check-specific values the client interpolates into its message and fix. */
+  params: Record<string, unknown>;
+}
+
+export interface GrabReadinessResponse {
+  checks: GrabReadinessCheck[];
+}

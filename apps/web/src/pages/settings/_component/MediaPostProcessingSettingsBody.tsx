@@ -10,6 +10,7 @@ import { useLibraryScan } from "@/features/medias/hooks/useLibraryScan";
 import { useReindexLanguages } from "@/features/medias/hooks/useReindexLanguages";
 import { useReindexLanguagesStatus } from "@/features/medias/hooks/useReindexLanguagesStatus";
 import { useUpdateMediaPostProcessingSettings } from "@/features/medias/hooks/useUpdateMediaPostProcessingSettings";
+import { GrabReadinessChecklist } from "./GrabReadinessChecklist";
 import { useProwlarrIntegration } from "@/pages/settings/useProwlarrIntegration";
 import { useJackettIntegration } from "@/pages/settings/useJackettIntegration";
 import type {
@@ -395,6 +396,7 @@ export function MediaPostProcessingSettingsBody({
                 </label>
               ))}
             </div>
+            <GrabReadinessChecklist />
           </fieldset>
 
           <div className="pt-2 border-t border-neutral-700/60">

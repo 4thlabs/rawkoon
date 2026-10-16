@@ -1,5 +1,6 @@
 import { sourceLabel } from "./qualityProfileSources";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Pencil, Trash2 } from "lucide-react";
@@ -24,6 +25,21 @@ export function QualityProfilesTab() {
   const { data, isLoading, error } = useQualityProfilesList();
   const deleteMut = useDeleteQualityProfile();
   const [draft, setDraft] = useState<QualityProfileDraft>(null);
+  const navigate = useNavigate();
+  const { edit } = useSearch({ from: "/settings/" });
+
+  // The grab-readiness checklist deep-links here to open a profile's edit form.
+  useEffect(() => {
+    if (!edit || !data) return;
+    if (data.profiles.some((p) => p.id === edit)) {
+      setDraft({ kind: "edit", id: edit });
+    }
+    navigate({
+      to: "/settings",
+      search: { tab: "media", subtab: "quality-profiles" },
+      replace: true,
+    });
+  }, [edit, data, navigate]);
 
   const onDelete = async (p: QualityProfile) => {
     confirm({

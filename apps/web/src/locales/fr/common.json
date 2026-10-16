@@ -865,6 +865,61 @@
         "title": "Quand vous ajoutez un film ou une série",
         "on": "Lancer la recherche et le téléchargement tout de suite",
         "off": "Ajouter à la bibliothèque seulement (attend la vérification planifiée ou « Rechercher maintenant »)"
+      },
+      "grabReadiness": {
+        "title": "Prêt à télécharger",
+        "checking": "Vérification…",
+        "allClear": "Tout ce qu'il faut aux téléchargements automatiques est en place.",
+        "summary_one": "{{count}} point à corriger",
+        "summary_other": "{{count}} points à corriger",
+        "recheck": "Revérifier",
+        "loadError": "Impossible de lancer les vérifications.",
+        "status": {
+          "ok": "OK",
+          "warn": "À vérifier",
+          "error": "Ne fonctionne pas"
+        },
+        "fix": {
+          "watchAll": "Surveiller les {{count}}",
+          "pickDefault": "Choisir un défaut",
+          "setMaximum": "Fixer un maximum pour {{name}}",
+          "openIntegrations": "Ouvrir les intégrations"
+        },
+        "checks": {
+          "indexer_manager": {
+            "ok_one": "{{manager}} est connecté avec {{count}} indexeur activé.",
+            "ok_other": "{{manager}} est connecté avec {{count}} indexeurs activés.",
+            "warn": "{{manager}} est connecté mais n'a aucun indexeur activé, donc les recherches ne trouvent rien.",
+            "not_configured": "Aucun gestionnaire d'indexeurs n'est configuré, donc rien ne peut être recherché.",
+            "unreachable": "Impossible de joindre {{manager}}, donc les recherches et les vérifications RSS échouent."
+          },
+          "download_client": {
+            "ok": "{{client}} est connecté.",
+            "not_configured": "Aucun client de téléchargement n'est configuré, donc les versions n'ont nulle part où aller.",
+            "unreachable": "Impossible de joindre {{client}}, donc les téléchargements échouent."
+          },
+          "default_movie_profile": {
+            "ok": "Les nouveaux films utilisent le profil de qualité {{name}}.",
+            "warn": "Aucun profil de qualité par défaut pour les films : les nouveaux films acceptent n'importe quelle version."
+          },
+          "default_show_profile": {
+            "ok": "Les nouvelles séries utilisent le profil de qualité {{name}}.",
+            "warn": "Aucun profil de qualité par défaut pour les séries : les nouvelles séries acceptent n'importe quelle version."
+          },
+          "rss_indexers": {
+            "ok": "Les vérifications RSS surveillent {{watched}} indexeur(s) sur {{total}}.",
+            "warn": "Les vérifications RSS ne surveillent aucun indexeur, donc les nouvelles versions ne sont jamais récupérées d'elles-mêmes."
+          },
+          "profiles_without_maximum": {
+            "ok": "Chaque profil de qualité a une résolution maximale.",
+            "warn_one": "{{count}} profil de qualité n'a pas de résolution maximale, donc un profil 1080p peut quand même récupérer du 4K.",
+            "warn_other": "{{count}} profils de qualité n'ont pas de résolution maximale, donc un profil 1080p peut quand même récupérer du 4K."
+          },
+          "search_on_add": {
+            "on": "La recherche démarre dès qu'un film ou une série est ajouté.",
+            "off": "La recherche attend la vérification planifiée après l'ajout d'un film ou d'une série."
+          }
+        }
       }
     },
     "arrImport": {
@@ -1676,6 +1731,10 @@
       "pageSubtitle": "Films, séries et suivi des téléchargements",
       "searchPlaceholder": "Rechercher dans la bibliothèque…",
       "typeAll": "Tout",
+      "grabReadinessBanner_one": "Les téléchargements automatiques sont limités : {{count}} point à corriger",
+      "grabReadinessBanner_other": "Les téléchargements automatiques sont limités : {{count}} points à corriger",
+      "grabReadinessReview": "Voir",
+      "grabReadinessDismiss": "Fermer",
       "moviesWithCount": "Films ({{count}})",
       "showsWithCount": "Séries ({{count}})",
       "statusAll": "Tout",
