@@ -929,6 +929,27 @@
             "off": "Search waits for the scheduled check after a movie or show is added."
           }
         }
+      },
+      "releaseCheck": {
+        "title": "Check for new releases",
+        "description": "How often wanted movies and episodes are searched for a release.",
+        "presets": {
+          "hourly": "Every hour",
+          "every3h": "Every 3 hours",
+          "every6h": "Every 6 hours",
+          "every12h": "Every 12 hours",
+          "daily": "Every day at",
+          "custom": "Custom"
+        },
+        "defaultTag": "Default",
+        "timeLabel": "Time of day",
+        "customLabel": "Cron expression",
+        "customHint": "Five fields: minute, hour, day of month, month, day of week.",
+        "invalidCron": "This is not a valid cron expression. Use five fields, for example 0 */4 * * *.",
+        "tooFrequent": "This runs too often. Release checks must be at least {{minutes}} minutes apart.",
+        "invalidTime": "Pick a time of day.",
+        "summary": "Runs {{schedule}}.",
+        "timezoneHint": "Times follow the server's time zone."
       }
     },
     "arrImport": {

@@ -929,6 +929,27 @@
             "off": "La recherche attend la vérification planifiée après l'ajout d'un film ou d'une série."
           }
         }
+      },
+      "releaseCheck": {
+        "title": "Vérifier les nouvelles sorties",
+        "description": "Fréquence à laquelle les films et épisodes recherchés sont cherchés à nouveau.",
+        "presets": {
+          "hourly": "Chaque heure",
+          "every3h": "Toutes les 3 heures",
+          "every6h": "Toutes les 6 heures",
+          "every12h": "Toutes les 12 heures",
+          "daily": "Chaque jour à",
+          "custom": "Personnalisé"
+        },
+        "defaultTag": "Par défaut",
+        "timeLabel": "Heure du jour",
+        "customLabel": "Expression cron",
+        "customHint": "Cinq champs : minute, heure, jour du mois, mois, jour de la semaine.",
+        "invalidCron": "Expression cron invalide. Utilisez cinq champs, par exemple 0 */4 * * *.",
+        "tooFrequent": "Cette fréquence est trop élevée. Les vérifications doivent être espacées d'au moins {{minutes}} minutes.",
+        "invalidTime": "Choisissez une heure.",
+        "summary": "S'exécute {{schedule}}.",
+        "timezoneHint": "Les heures suivent le fuseau horaire du serveur."
       }
     },
     "arrImport": {
