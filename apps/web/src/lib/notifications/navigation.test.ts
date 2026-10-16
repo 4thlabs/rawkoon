@@ -35,9 +35,9 @@ describe("openNotificationTarget", () => {
   });
 
   it("routes a same-origin absolute URL as a path", async () => {
-    openNotificationTarget("https://app.test/requests?x=1#top");
+    openNotificationTarget("https://app.test/library/4?x=1#top");
     await vi.waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith({ href: "/requests?x=1#top" }),
+      expect(navigate).toHaveBeenCalledWith({ href: "/library/4?x=1#top" }),
     );
     expect(assign).not.toHaveBeenCalled();
   });

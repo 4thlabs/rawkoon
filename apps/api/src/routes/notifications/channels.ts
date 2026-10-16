@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import { APP_PATHS } from "@rawkoon/shared/constants";
 import { prisma } from "@rawkoon/api/db";
 import { badRequest, notFound, ok, serverError } from "@rawkoon/api/errors";
 import type { Env } from "@rawkoon/api/honoEnv";
@@ -195,7 +196,7 @@ export const notificationChannelsRoutes = new Hono<Env>()
       await dispatchToChannel(mapChannel(channel), {
         title: "Rawkoon test notification",
         body: "If you see this, your notification channel is working.",
-        url: `${getBaseUrl().replace(/\/$/, "")}/settings?tab=notifications`,
+        url: `${getBaseUrl().replace(/\/$/, "")}${APP_PATHS.settingsAlerts}`,
       });
       return ok({ success: true });
     } catch (err) {

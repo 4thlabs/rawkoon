@@ -14,3 +14,5 @@ export function normalizeTitleLanguage(
     ? (base as TitleLanguage)
     : DEFAULT_TITLE_LANGUAGE;
 }
+
+export * from "./appPaths";

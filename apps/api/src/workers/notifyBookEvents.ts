@@ -1,4 +1,5 @@
 import { prisma } from "@rawkoon/api/db";
+import { APP_PATHS } from "@rawkoon/shared/constants";
 import { buildNotificationUrl } from "@rawkoon/shared/utils";
 import {
   notificationCopy,
@@ -206,7 +207,7 @@ export async function notifyAdminsAuthorNewReleases(
   if (titles.length === 0) return;
   const shown = titles.slice(0, 5).join(", ");
   const more = titles.length > 5 ? ` and ${titles.length - 5} more` : "";
-  const url = buildNotificationUrl("/books", { search: authorName });
+  const url = buildNotificationUrl(APP_PATHS.books, { search: authorName });
   await notifyAdmins({
     build: (locale) => ({
       title: notificationCopy(locale, "authorNewReleasesTitle", {

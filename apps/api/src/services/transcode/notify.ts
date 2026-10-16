@@ -1,3 +1,4 @@
+import { APP_PATHS } from "@rawkoon/shared/constants";
 import { notificationCopy } from "@rawkoon/api/services/notificationCopy";
 import { getAdminNotificationTargets } from "@rawkoon/api/services/notificationPreferences";
 import { createAndQueueNotification } from "@rawkoon/api/workers/notificationService";
@@ -25,7 +26,7 @@ async function toAdmins(
         msg.title,
         msg.body,
         msg.type,
-        "/settings?tab=transcode",
+        APP_PATHS.settingsReencode,
         mediaId != null ? { media_id: mediaId } : undefined,
         undefined,
         { preferenceKey, skipPreferenceCheck: false },
