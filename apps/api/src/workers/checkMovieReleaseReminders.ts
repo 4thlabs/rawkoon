@@ -3,6 +3,7 @@
  * Runs on a schedule; skips night hours (same window as other user notifications).
  */
 
+import { APP_PATHS } from "@rawkoon/shared/constants";
 import { buildNotificationUrl } from "@rawkoon/shared/utils";
 import { prisma } from "@rawkoon/api/db";
 import { loadTmdbConfig } from "@rawkoon/api/utils/medias/tmdbFetcherCore";
@@ -97,7 +98,7 @@ export async function checkMovieReleaseReminders(): Promise<void> {
       title,
       body,
       "movie_release_reminder",
-      buildNotificationUrl("/watchlist"),
+      buildNotificationUrl(APP_PATHS.findWatchlist),
       { tmdb_id: item.tmdbId, watchlist_item_id: item.id },
       item.posterUrl ?? undefined,
       { preferenceKey: "movie_release_reminder" },

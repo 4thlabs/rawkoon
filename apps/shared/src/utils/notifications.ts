@@ -1,5 +1,16 @@
 const LEGACY_NOTIFICATION_PATHS: Record<string, string> = {
   "/medias": "/library",
+  "/requests": "/activity/requests",
+  "/watchlist": "/find/watchlist",
+  "/notifications": "/activity",
+  "/calendar": "/activity/calendar",
+};
+
+/** Old `/settings?tab=` links still stored on past notifications. */
+const LEGACY_SETTINGS_TABS: Record<string, string> = {
+  releases: "/settings/updates",
+  transcode: "/settings/reencode",
+  notifications: "/settings/alerts",
 };
 
 function hasScheme(url: string): boolean {
@@ -32,7 +43,16 @@ export function normalizeNotificationUrl(
 
     const isAbsolute = hasScheme(raw);
     const parsed = new URL(raw, "https://rawkoon.local");
-    parsed.pathname = normalizePathname(parsed.pathname);
+    const legacySettings =
+      parsed.pathname === "/settings"
+        ? LEGACY_SETTINGS_TABS[parsed.searchParams.get("tab") ?? ""]
+        : undefined;
+    if (legacySettings) {
+      parsed.pathname = legacySettings;
+      parsed.search = "";
+    } else {
+      parsed.pathname = normalizePathname(parsed.pathname);
+    }
 
     if (isAbsolute) {
       return parsed.toString();
