@@ -1,19 +1,13 @@
 {
   "nav": {
     "dashboard": "Accueil",
-    "explore": "Parcourir",
     "discover": "Pour vous",
     "library": "Bibliothèque",
-    "books": "Livres",
-    "requests": "Demandes",
-    "watchlist": "À regarder",
-    "collections": "Collections",
-    "calendar": "Calendrier",
     "logout": "Déconnexion",
-    "positionTitle": "Position de la navigation",
-    "search": "Recherche",
-    "more": "Plus",
-    "mobileTabs": "Navigation principale"
+    "mobileTabs": "Navigation principale",
+    "find": "Trouver",
+    "activity": "Activité",
+    "account": "Compte"
   },
   "requests": {
     "title": "Demandes",
@@ -385,7 +379,6 @@
     "unexpectedError": "Une erreur inattendue est survenue",
     "reloadPage": "Recharger la page",
     "failedToLoad": "Échec du chargement",
-    "userMenu": "Menu utilisateur",
     "loading": "Chargement...",
     "cancel": "Annuler",
     "confirmDialog": {
@@ -402,15 +395,8 @@
     "expand": "Développer",
     "refetch": "Actualiser",
     "quickActions": "Actions rapides",
-    "quickActionsPlaceholder": "Rechercher un film, une série ou une page...",
-    "quickActionsHint": "Tapez un titre pour chercher des films et des séries",
-    "quickActionsTitlesHint": "Entrée ajoute ou ouvre, Maj+Entrée affiche les détails",
-    "quickActionsTitlesHintTouch": "Touchez un titre pour l'ajouter, ou le bouton d'info pour les détails",
-    "quickActionsTitlesFailed": "La recherche de films et de séries est indisponible pour le moment.",
-    "quickActionsSearchingTitles": "Recherche de films et de séries...",
-    "quickActionsSectionTitles": "Films et séries",
-    "quickActionsAdd": "Ajouter",
-    "quickActionsDetails": "Détails",
+    "quickActionsPlaceholder": "Rechercher dans votre bibliothèque, les pages et les actions...",
+    "quickActionsHint": "Tapez un titre pour le trouver dans votre bibliothèque, ou cherchez dans Trouver",
     "quickActionsNoResults": "Aucune action rapide trouvée",
     "quickActionsNoResultsDescription": "Essayez un autre mot-clé ou ouvrez une section depuis la barre latérale.",
     "quickActionsOpenPage": "Ouvrir {{page}}",
@@ -431,7 +417,11 @@
     "copy": "Copier",
     "open": "Ouvrir",
     "requestFailed": "La requête a échoué",
-    "tooManyRequests": "Trop de requêtes. Veuillez ralentir."
+    "tooManyRequests": "Trop de requêtes. Veuillez ralentir.",
+    "quickActionsSearchFind": "Chercher « {{query}} » dans Trouver",
+    "quickActionsSearchFindDescription": "Chercher des films, séries et livres",
+    "quickActionsSectionFind": "Trouver",
+    "quickActionsSearching": "Recherche en cours..."
   },
   "notifications": {
     "modal": {
@@ -442,7 +432,6 @@
     },
     "title": "Notifications",
     "description": "Voir et gérer vos notifications",
-    "bell": "Notifications",
     "pushFallback": "Vous avez une nouvelle notification",
     "noNotifications": "Aucune notification",
     "markAllAsRead": "Tout marquer comme lu",
@@ -1758,7 +1747,10 @@
       "needsUpgrade": "Mise à niveau requise",
       "episodesMissing_one": "{{count}} ép. manquant",
       "episodesMissing_other": "{{count}} éps. manquants",
-      "downloadsImport": "Importer des téléchargements"
+      "downloadsImport": "Importer des téléchargements",
+      "switchLabel": "Sections de la bibliothèque",
+      "switchMedia": "Films et séries",
+      "switchBooks": "Livres"
     },
     "watchlist": {
       "pageTitle": "Liste de visionnage",
@@ -2958,6 +2950,16 @@
       "ssimClipMin": "SSIM minimum par extrait",
       "cpuThreads": "Threads CPU (vide = auto)",
       "actionFailed": "Échec de l'action"
+    }
+  },
+  "activity": {
+    "lanes": {
+      "label": "Sections d'activité",
+      "inbox": "Boîte de réception",
+      "queue": "File d'attente",
+      "requests": "Demandes",
+      "calendar": "Calendrier",
+      "history": "Historique"
     }
   }
 }

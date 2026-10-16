@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { RequestButton } from "@/pages/medias/_component/RequestButton";
 
 const mutate = vi.fn();
-vi.mock("@/pages/requests/_hooks/useRequests", () => ({
+vi.mock("@/pages/activity/requests/_hooks/useRequests", () => ({
   useCreateRequest: () => ({ mutate, isPending: false, isSuccess: false }),
 }));
 

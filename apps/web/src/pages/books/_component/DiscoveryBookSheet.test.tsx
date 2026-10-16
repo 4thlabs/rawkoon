@@ -9,7 +9,7 @@ vi.mock("@/lib/auth/useAuth", () => ({
 }));
 
 const requestMutate = vi.fn();
-vi.mock("@/pages/requests/_hooks/useRequests", () => ({
+vi.mock("@/pages/activity/requests/_hooks/useRequests", () => ({
   useCreateRequest: () => ({
     mutate: requestMutate,
     isPending: false,

@@ -37,7 +37,7 @@ describe("useDiscoverPageState", () => {
       result.current.setState({ genre: 28, page: 2 });
     });
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: "/explore/",
+      to: "/find/",
       search: { genre: 28, page: 2 },
       replace: false,
       resetScroll: false,

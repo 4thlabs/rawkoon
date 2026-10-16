@@ -33,7 +33,7 @@ vi.mock("../_hooks/useBooks", () => ({
     error: null,
   }),
 }));
-vi.mock("@/pages/requests/_hooks/useRequests", () => ({
+vi.mock("@/pages/activity/requests/_hooks/useRequests", () => ({
   useCreateRequest: () => ({
     mutate: requestMutate,
     isPending: false,

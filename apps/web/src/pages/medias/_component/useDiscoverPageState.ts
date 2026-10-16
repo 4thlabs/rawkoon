@@ -13,7 +13,7 @@ export type DiscoverPageSearchParams = Partial<typeof DISCOVER_DEFAULTS>;
 
 export function useDiscoverPageState(searchParams: DiscoverPageSearchParams) {
   const { state, setState } = useUrlState(
-    "/explore/",
+    "/find/",
     searchParams,
     DISCOVER_DEFAULTS,
   );

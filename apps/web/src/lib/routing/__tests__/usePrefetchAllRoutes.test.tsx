@@ -7,7 +7,7 @@ vi.mock("@tanstack/react-router", () => ({
   useRouter: () => ({ preloadRoute }),
 }));
 vi.mock("@/lib/routing/navigation", () => ({
-  navSections: [{ items: [{ path: "/" }, { path: "/library" }] }],
+  navItems: [{ path: "/" }, { path: "/library" }],
 }));
 
 import { usePrefetchAllRoutes } from "@/lib/routing/usePrefetchAllRoutes";
