@@ -292,38 +292,12 @@ struct AutoGrabSettingsView: View {
             NavigationLink {
                 target.destination
             } label: {
-                readinessLabel(check)
+                GrabReadinessRowLabel(check: check)
             }
             .listRowBackground(Theme.raised)
         } else {
-            readinessLabel(check).listRowBackground(Theme.raised)
+            GrabReadinessRowLabel(check: check).listRowBackground(Theme.raised)
         }
-    }
-
-    private func readinessLabel(_ check: GrabReadinessCheck) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            statusIcon(check.status)
-            Text(verbatim: AutoGrabText.readiness(check))
-                .font(.subheadline)
-                .foregroundStyle(Theme.text)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.vertical, 2)
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("autograb-check-\(check.id)")
-    }
-
-    private func statusIcon(_ status: GrabReadinessStatus) -> some View {
-        let (name, tint, label): (String, Color, LocalizedStringKey) = switch status {
-        case .ok: ("checkmark.circle.fill", Theme.seed, "OK")
-        case .warn: ("exclamationmark.triangle.fill", Theme.apricot, "Needs attention")
-        case .error: ("xmark.octagon.fill", Theme.terracotta, "Not working")
-        }
-        return Image(systemName: name)
-            .foregroundStyle(tint)
-            .font(.system(size: 17))
-            .frame(width: 22)
-            .accessibilityLabel(label)
     }
 
     private func fixDestination(_ check: GrabReadinessCheck) -> SettingsDestination? {

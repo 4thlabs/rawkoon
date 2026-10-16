@@ -78,3 +78,39 @@ enum AutoGrabText {
         }
     }
 }
+
+/// One readiness line: a status icon beside the check's wording.
+struct GrabReadinessRowLabel: View {
+    let check: GrabReadinessCheck
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            statusIcon
+            Text(verbatim: AutoGrabText.readiness(check))
+                .font(.subheadline)
+                .foregroundStyle(Theme.text)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("autograb-check-\(check.id)")
+    }
+
+    private var statusIcon: some View {
+        let style: (name: String, tint: Color) = switch check.status {
+        case .ok: ("checkmark.circle.fill", Theme.seed)
+        case .warn: ("exclamationmark.triangle.fill", Theme.apricot)
+        case .error: ("xmark.octagon.fill", Theme.terracotta)
+        }
+        let label: LocalizedStringKey = switch check.status {
+        case .ok: "OK"
+        case .warn: "Needs attention"
+        case .error: "Not working"
+        }
+        return Image(systemName: style.name)
+            .foregroundStyle(style.tint)
+            .font(.system(size: 17))
+            .frame(width: 22)
+            .accessibilityLabel(label)
+    }
+}
