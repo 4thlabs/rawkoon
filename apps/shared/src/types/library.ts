@@ -1,4 +1,4 @@
-import type { IndexerManagerType } from "./media";
+import type { IndexerManagerType, LanguageFallbackSummary } from "./media";
 import type { DownloadSeedState } from "./seeding";
 
 export type LibraryMediaStatus =
@@ -344,6 +344,8 @@ export interface LibrarySearchResponse {
   /** True when the AI judge's pick was the release grabbed. */
   ai_picked?: boolean;
   reason?: string;
+  /** Set when the miss is because only other versions of the preferred language exist. */
+  language_fallback_summary?: LanguageFallbackSummary | null;
 }
 
 interface GlobalDownloadHistoryItem extends LibraryDownloadHistoryItem {

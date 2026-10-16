@@ -16,6 +16,7 @@ import {
   searchAndGrab,
   searchAndGrabWithTitleFallback,
 } from "@rawkoon/api/services/mediaGrabberSearch";
+import type { LanguageFallbackSummary } from "@rawkoon/shared/types";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 import {
   episodeMapKey,
@@ -26,6 +27,19 @@ import {
   QUEUE_NAMES,
   SCHEDULED_JOB_NAMES,
 } from "@rawkoon/api/services/queueService";
+
+function missBody(miss: {
+  reason: string;
+  languageFallback?: LanguageFallbackSummary;
+}) {
+  return {
+    grabbed: false,
+    reason: miss.reason,
+    ...(miss.languageFallback
+      ? { language_fallback_summary: miss.languageFallback }
+      : {}),
+  };
+}
 
 const searchQueryBody = z.object({
   search_query: z.string().max(400).optional(),
@@ -177,7 +191,7 @@ export const libraryGrabRoutes = new Hono<Env>()
         });
       }
 
-      return ok({ grabbed: false, reason: result.reason });
+      return ok(missBody(result));
     } catch (err) {
       console.error("Library search error:", err);
       return serverError("Search failed");
@@ -253,7 +267,7 @@ export const libraryGrabRoutes = new Hono<Env>()
           });
         }
 
-        return ok({ grabbed: false, reason: result.reason });
+        return ok(missBody(result));
       } catch (err) {
         console.error("Library episode search error:", err);
         return serverError("Search failed");
@@ -348,7 +362,7 @@ export const libraryGrabRoutes = new Hono<Env>()
           });
         }
 
-        return ok({ grabbed: false, reason: result.reason });
+        return ok(missBody(result));
       } catch (err) {
         console.error("Library season search error:", err);
         return serverError("Search failed");

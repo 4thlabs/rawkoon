@@ -14,3 +14,4 @@ export * from "./bookFormats";
 export * from "./bookMetadataSources";
 export * from "./duration";
 export * from "./landedArrivals";
+export * from "./languageFamily";
