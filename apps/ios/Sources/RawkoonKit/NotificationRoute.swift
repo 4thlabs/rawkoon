@@ -44,15 +44,22 @@ public enum NotificationRoute: Equatable, Sendable {
             }
         case let ("books", id?):
             return Int(id).map { .book(bookId: $0) }
-        case ("activity", nil), ("notifications", nil): return .inbox
-        case ("activity", "requests"), ("requests", nil): return .requests
         case ("activity", "calendar"), ("calendar", nil): return .calendar(date: query("date"))
-        case ("find", "watchlist"), ("watchlist", nil): return .watchlist
-        case ("settings", "reencode"): return .reencode
-        case ("settings", "alerts"): return .alerts
-        case ("settings", "updates"): return .updates
         case ("settings", nil): return legacySettings(tab: query("tab"))
-        default: return nil
+        default: return pageRoute(head, segments.dropFirst().first)
+        }
+    }
+
+    /// The pages whose route depends on the path alone.
+    private static func pageRoute(_ head: String, _ second: String?) -> NotificationRoute? {
+        switch (head, second) {
+        case ("activity", nil), ("notifications", nil): .inbox
+        case ("activity", "requests"), ("requests", nil): .requests
+        case ("find", "watchlist"), ("watchlist", nil): .watchlist
+        case ("settings", "reencode"): .reencode
+        case ("settings", "alerts"): .alerts
+        case ("settings", "updates"): .updates
+        default: nil
         }
     }
 
