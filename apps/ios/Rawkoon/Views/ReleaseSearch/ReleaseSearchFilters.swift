@@ -82,17 +82,36 @@ final class ReleaseSearchFilters {
         )
     }
 
+    /// Releases the season or complete-series search itself narrows to; not something "Show" can undo.
+    private func searchScoped(_ session: ReleaseSearchSession) -> [ReleaseItem] {
+        guard session.selectedSeason != nil || session.completeSeries else { return session.releases }
+        return session.releases.filter { $0.isSeasonPack == true || $0.isCompleteSeries == true }
+    }
+
+    /// How many loaded releases the user's own filters are hiding right now.
+    func hiddenCount(in session: ReleaseSearchSession) -> Int {
+        max(0, searchScoped(session).count - filteredReleases(in: session).count)
+    }
+
+    /// One tap on "Show": every filter the user can set goes back to showing everything.
+    func revealHidden() {
+        hideRejected = false
+        showPacksOnly = false
+        filterQuery = ""
+        includedTrackers.removeAll()
+        excludedTrackers.removeAll()
+        includedLanguages.removeAll()
+    }
+
     func filteredReleases(in session: ReleaseSearchSession) -> [ReleaseItem] {
         let expectedTitle = InteractiveSearchLogic.stripTitleSuffixes(session.searchQuery)
         let normalizedFilter = InteractiveSearchLogic.normalizeKey(filterQuery)
-        return session.releases.filter { release in
+        return searchScoped(session).filter { release in
             if hideRejected, isRejected(release, expectedTitle: expectedTitle, session: session) {
                 return false
             }
-            if showPacksOnly || session.selectedSeason != nil || session.completeSeries {
-                if !(release.isSeasonPack == true || release.isCompleteSeries == true) {
-                    return false
-                }
+            if showPacksOnly, !(release.isSeasonPack == true || release.isCompleteSeries == true) {
+                return false
             }
             let trackerKey = trackerKey(for: release)
             if !includedTrackers.isEmpty, !includedTrackers.contains(trackerKey) {
@@ -115,8 +134,9 @@ final class ReleaseSearchFilters {
     private func isRejected(
         _ release: ReleaseItem, expectedTitle: String, session: ReleaseSearchSession
     ) -> Bool {
+        // A language fallback is "rejected" only for its language; it has its own group instead.
         if release.rejected == true {
-            return true
+            return release.languageFallback != true
         }
         guard session.libraryMediaId == nil, !expectedTitle.isEmpty else { return false }
         return InteractiveSearchLogic.isClientRejected(

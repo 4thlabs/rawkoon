@@ -308,6 +308,8 @@ nonisolated struct LibrarySearchResponse: Decodable, Sendable {
     let reason: String?
     /// True when the AI judge's pick was the release grabbed (absent on older servers).
     let aiPicked: Bool?
+    /// A failed replace-grab: the running download was already stopped.
+    let replacedPrevious: Bool?
 }
 
 /// `POST /api/library/:id/upgrade` — `mode` is "auto" (queue the search) or "manual".

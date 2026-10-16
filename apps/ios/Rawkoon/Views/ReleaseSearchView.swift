@@ -8,6 +8,7 @@ struct ReleaseSearchView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var session: ReleaseSearchSession
     @State private var filters: ReleaseSearchFilters
+    @State private var scrolledAway = false
     let inputs: ReleaseSearchInputs
     let onGrabbed: (() -> Void)?
 
@@ -68,25 +69,23 @@ struct ReleaseSearchView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                #if targetEnvironment(macCatalyst)
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(Theme.muted)
-                            .symbolRenderingMode(.hierarchical)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Close")
-                #endif
+                // An explicit close, since a drag over the list must never be what dismisses the sheet.
+                Button("Done") { dismiss() }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.apricot)
+                    .frame(minHeight: 44)
             }
             .padding(.horizontal, 16)
             .padding(.top, 6)
             .padding(.bottom, 10)
 
             ReleaseSearchControls(session: session, filters: filters)
-            ReleaseSearchResults(session: session, filters: filters, onGrabbed: onGrabbed)
+            ReleaseSearchResults(session: session, filters: filters, onGrabbed: onGrabbed, scrolledAway: $scrolledAway)
         }
         .background(Theme.base)
+        .presentationDetents([.large])
+        .presentationContentInteraction(.scrolls)
+        .interactiveDismissDisabled(scrolledAway)
         .rawkoonMotion(RawkoonMotion.spring, value: motionState)
         .sensoryFeedback(RawkoonHaptics.feedback(for: .grab), trigger: session.grabbedGuids.count)
         .task {
