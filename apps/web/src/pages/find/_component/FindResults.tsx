@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { BookOpen, Clapperboard, Tv } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -188,21 +188,7 @@ function BookRow({
             .join(" • ")}
         </p>
       </div>
-      {book.in_library ? (
-        book.library_book_id != null ? (
-          <Link
-            to="/books/$bookId"
-            params={{ bookId: String(book.library_book_id) }}
-            className="focus-ring shrink-0 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-400"
-          >
-            {t("books.add.inLibrary")}
-          </Link>
-        ) : (
-          <span className="shrink-0 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-400">
-            {t("books.add.inLibrary")}
-          </span>
-        )
-      ) : isAdmin ? (
+      {isAdmin ? (
         <button
           type="button"
           onClick={onAdd}
@@ -226,20 +212,40 @@ function BookRow({
   );
 }
 
+/** Google Books is rate-limited, so the books group waits out typing before it searches. */
+const BOOKS_DEBOUNCE_MS = 450;
+const BOOKS_MIN_QUERY = 3;
+
+function useDebounced(value: string, ms: number): string {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(timer);
+  }, [value, ms]);
+  return debounced;
+}
+
 function BooksGroup({ query }: { query: string }) {
   const { t } = useTranslation("common");
   const { data: me } = useCurrentUser();
   const [adding, setAdding] = useState(false);
-  // Google Books is rate-limited, so wait for a longer term than the other groups.
-  const search = useBookProviderSearch(query, query.length >= 3);
-  const results = search.data?.results ?? [];
-  if (search.isLoading || (results.length === 0 && !search.isError)) {
-    return null;
-  }
+  const settled = useDebounced(query, BOOKS_DEBOUNCE_MS);
+  const search = useBookProviderSearch(
+    settled,
+    settled.length >= BOOKS_MIN_QUERY,
+  );
+  if (query.length < BOOKS_MIN_QUERY) return null;
+
+  const waiting = settled !== query || search.isLoading;
+  // Books already in the library show in the library group.
+  const results = (search.data?.results ?? []).filter((b) => !b.in_library);
+  if (!waiting && !search.isError && results.length === 0) return null;
 
   return (
     <Group title={t("find.groups.books")}>
-      {search.isError ? (
+      {waiting ? (
+        <p className="text-sm text-neutral-400">{t("find.searchingBooks")}</p>
+      ) : search.isError ? (
         <p role="alert" className="text-sm text-amber-300">
           {t("books.add.searchFailed")}
         </p>

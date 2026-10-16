@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { PageLayout } from "@/components/PageLayout";
 import { DiscoverPanel } from "@/pages/medias/_component/DiscoverPanel";
 import { FindModeSwitch } from "./FindModeSwitch";
-import { rememberFindMode } from "./findMode";
+import { rememberFindMode } from "@/lib/routing/findMode";
 import { FindResults } from "./FindResults";
 import { FindShelves } from "./FindShelves";
 

@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { LayoutGrid, Layers } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { rememberFindMode, type FindMode } from "./findMode";
+import { rememberFindMode, type FindMode } from "@/lib/routing/findMode";
 
 /** Browse | Swipe, the two ways to explore on the Find page. */
 export function FindModeSwitch({ mode }: { mode: FindMode }) {

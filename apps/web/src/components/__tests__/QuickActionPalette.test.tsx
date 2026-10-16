@@ -20,6 +20,7 @@ vi.mock("@/lib/search/useSearch", () => ({
 }));
 vi.mock("@/lib/routing/navigation", () => ({
   navItems: [{ path: "/find", translationKey: "nav.find", icon: () => null }],
+  resolveNavPath: (p: string) => p,
 }));
 vi.mock("@/lib/routing/usePrefetchAllRoutes", () => ({
   usePrefetchAllRoutes: () => vi.fn(),

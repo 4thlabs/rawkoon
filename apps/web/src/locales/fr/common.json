@@ -2981,6 +2981,12 @@
       "collectionsHint": "Complétez les séries de films commencées",
       "bestsellers": "Meilleures ventes",
       "bestsellersHint": "Des listes de livres pour votre prochaine lecture"
-    }
+    },
+    "countInList": "titres dans cette liste",
+    "hiddenOnPage_one": "{{count}} titre que vous possédez est masqué sur cette page",
+    "hiddenOnPage_other": "{{count}} titres que vous possédez sont masqués sur cette page",
+    "allOwnedOnPage": "Tout ce qui figure sur cette page est déjà dans votre bibliothèque.",
+    "nextPage": "Page suivante",
+    "searchingBooks": "Recherche de livres..."
   }
 }

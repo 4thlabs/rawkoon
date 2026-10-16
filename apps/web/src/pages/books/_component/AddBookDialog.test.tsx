@@ -6,32 +6,36 @@ vi.mock("@/lib/auth/useAuth", () => ({
   useCurrentUser: () => ({ data: { id: "u", is_admin: auth.isAdmin } }),
 }));
 
+const providerSearch = vi.hoisted(() => vi.fn());
 const addMutate = vi.fn();
 const requestMutate = vi.fn();
 vi.mock("../_hooks/useBooks", () => ({
   useAddBook: () => ({ mutate: addMutate, isPending: false }),
-  useBookProviderSearch: () => ({
-    data: {
-      results: [
-        {
-          google_volume_id: "vol-1",
-          title: "Livre A",
-          subtitle: null,
-          authors: ["Auteur"],
-          language: "fr",
-          published_year: 2026,
-          isbn13: null,
-          cover_url: null,
-          overview: null,
-          in_library: false,
-          library_book_id: null,
-          request: null,
-        },
-      ],
-    },
-    isFetching: false,
-    error: null,
-  }),
+  useBookProviderSearch: (term: string, enabled: boolean) => {
+    providerSearch(term, enabled);
+    return {
+      data: {
+        results: [
+          {
+            google_volume_id: "vol-1",
+            title: "Livre A",
+            subtitle: null,
+            authors: ["Auteur"],
+            language: "fr",
+            published_year: 2026,
+            isbn13: null,
+            cover_url: null,
+            overview: null,
+            in_library: false,
+            library_book_id: null,
+            request: null,
+          },
+        ],
+      },
+      isFetching: false,
+      error: null,
+    };
+  },
 }));
 vi.mock("@/pages/activity/requests/_hooks/useRequests", () => ({
   useCreateRequest: () => ({
@@ -75,5 +79,13 @@ describe("AddBookDialog", () => {
       year: 2026,
     });
     expect(addMutate).not.toHaveBeenCalled();
+  });
+
+  it("starts searching for the initial query as soon as it opens", () => {
+    providerSearch.mockClear();
+    renderWithProviders(
+      <AddBookDialog onClose={vi.fn()} initialQuery="dune" />,
+    );
+    expect(providerSearch).toHaveBeenCalledWith("dune", true);
   });
 });

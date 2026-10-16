@@ -1,5 +1,4 @@
 export const MEDIAS_ENDPOINTS = {
-  EXPLORE: "/api/medias/explore",
   SIMILAR: (tmdbId: number, type: "movie" | "tv") =>
     `/api/medias/similar/${encodeURIComponent(String(tmdbId))}?type=${encodeURIComponent(type)}`,
   TMDB_SEARCH: (q: string, language?: string, kind?: "movie" | "tv") => {

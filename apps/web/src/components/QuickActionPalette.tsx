@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQuickSearch } from "@/lib/search/useSearch";
-import { navItems } from "@/lib/routing/navigation";
+import { navItems, resolveNavPath } from "@/lib/routing/navigation";
 import { usePrefetchAllRoutes } from "@/lib/routing/usePrefetchAllRoutes";
 import { Dialog } from "@/components/dialog";
 import { Input } from "@/components/ui/input";
@@ -103,7 +103,7 @@ export function QuickActionPalette({
       section: "actions" as const,
       keywords: [item.path, item.translationKey],
       action: () => {
-        navigate({ to: item.path });
+        navigate({ to: resolveNavPath(item.path) });
         handleClose();
       },
     }));

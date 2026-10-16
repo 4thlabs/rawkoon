@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { getCurrentUser } from "@/lib/auth";
 import { FindModeSwitch } from "@/pages/find/_component/FindModeSwitch";
-import { rememberFindMode } from "@/pages/find/_component/findMode";
+import { rememberFindMode } from "@/lib/routing/findMode";
 import { DiscoverDeck } from "@/pages/find/swipe/_component/DiscoverDeck";
 
 function SwipePage() {

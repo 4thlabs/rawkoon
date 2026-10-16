@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { getCurrentUser } from "@/lib/auth";
 import { FindPage } from "@/pages/find/_component/FindPage";
-import { readFindMode } from "@/pages/find/_component/findMode";
 
 type FindSearchParams = {
   type?: "movie" | "tv";
@@ -38,17 +37,10 @@ export const Route = createFileRoute("/find/")({
         ? true
         : undefined,
   }),
-  beforeLoad: async ({ search }) => {
+  beforeLoad: async () => {
     try {
       const user = await getCurrentUser();
       if (!user) throw redirect({ to: "/login" });
-      // Nav and shelf links land here without params, so reopen the session's last mode.
-      if (
-        readFindMode() === "swipe" &&
-        Object.values(search).every((v) => v === undefined)
-      ) {
-        throw redirect({ to: "/find/swipe", replace: true });
-      }
       return { user };
     } catch (e: unknown) {
       if ((e as { status?: number })?.status === 429) return { user: null };

@@ -71,3 +71,19 @@ describe("FindPage", () => {
     );
   });
 });
+
+describe("FindPage history navigation", () => {
+  it("re-syncs the field when ?q changes from back/forward", () => {
+    vi.useRealTimers();
+    search = { q: "dune" };
+    const { rerender } = render(<FindPage />);
+    const field = screen.getByRole("searchbox") as HTMLInputElement;
+    expect(field.value).toBe("dune");
+    search = {};
+    rerender(<FindPage />);
+    expect(field.value).toBe("");
+    search = { q: "arrival" };
+    rerender(<FindPage />);
+    expect(field.value).toBe("arrival");
+  });
+});

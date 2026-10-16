@@ -4,7 +4,11 @@ import { useTranslation } from "react-i18next";
 import type { LucideIcon } from "lucide-react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { NavBadge } from "@/components/NavBadge";
-import { isNavRouteActive, navItems } from "@/lib/routing/navigation";
+import {
+  isNavRouteActive,
+  navItems,
+  resolveNavPath,
+} from "@/lib/routing/navigation";
 import { useActivityBadge } from "@/lib/notifications/useActivityBadge";
 import { cn } from "@/lib/utils";
 
@@ -95,7 +99,7 @@ export function MobileTabBar() {
           {navItems.map((item) => (
             <TabLink
               key={item.path}
-              to={item.path}
+              to={resolveNavPath(item.path)}
               icon={item.icon}
               label={t(item.translationKey)}
               active={isNavRouteActive(item.path, pathname)}

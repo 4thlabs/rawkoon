@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { readFindMode, rememberFindMode } from "../findMode";
+import { readFindMode, rememberFindMode } from "@/lib/routing/findMode";
 
 describe("findMode", () => {
   beforeEach(() => sessionStorage.clear());
