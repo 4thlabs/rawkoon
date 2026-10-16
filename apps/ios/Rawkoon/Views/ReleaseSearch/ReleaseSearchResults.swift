@@ -271,10 +271,8 @@ struct ReleaseSearchResults: View {
             Text("No \(missing) release yet")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Theme.textStrong)
-            Text(
-                "These are other versions of the language. They are never grabbed automatically; "
-                    + "Rawkoon keeps checking for \(missing)."
-            )
+            // One literal so the sentence stays a localization key.
+            Text("These are other versions of the language. They are never grabbed automatically; Rawkoon keeps checking for \(missing).")
             .font(.caption)
             .foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)

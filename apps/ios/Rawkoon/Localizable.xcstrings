@@ -14068,6 +14068,17 @@
           }
         }
       }
+    },
+    "Held by the grab delay": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retenu par le délai de téléchargement"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
