@@ -12,54 +12,36 @@ extension ActivityView {
         let mediaTitle: String
         let releaseTitle: String
         let live: LiveDownload
-    }
+        let failed: Bool
+        let failReason: String?
+        let postProcessError: String?
 
-    /// The three live phases a queued download can be in. Derived locally from
-    /// `LiveDownload.state` so the counts stay in sync with the visible cards.
-    enum QueuePhase: String, CaseIterable, Identifiable {
-        case downloading, importing, seeding
-        var id: String {
-            rawValue
-        }
-
-        var label: LocalizedStringKey {
-            switch self {
-            case .downloading: "Downloading"
-            case .importing: "Importing"
-            case .seeding: "Seeding"
-            }
-        }
-
-        var tint: Color {
-            switch self {
-            case .downloading: Theme.terracotta
-            case .importing: Theme.importing
-            case .seeding: Theme.seed
-            }
+        /// The one status and reason the card shows; nil once the download is only seeding.
+        var line: QueueStatusLine? {
+            QueueClassifier.line(
+                state: live.state, failed: failed, failReason: failReason, postProcessError: postProcessError
+            )
         }
     }
 
-    func phase(of state: String) -> QueuePhase {
-        switch DownloadPhase.classify(state) {
-        case .downloading: .downloading
-        case .importing: .importing
-        case .seeding: .seeding
-        }
+    private var queueStatusCounts: [QueueStatus: Int] {
+        Dictionary(grouping: inFlightRows) { $0.line?.status ?? .downloading }.mapValues(\.count)
     }
 
-    private var queuePhaseCounts: [QueuePhase: Int] {
-        Dictionary(grouping: queueRows) { phase(of: $0.live.state) }.mapValues(\.count)
+    /// Downloads still in flight; a finished one that is only seeding is not in the queue.
+    private var inFlightRows: [QueueRow] {
+        queueRows.filter { $0.line != nil }
     }
 
     private var visibleQueueRows: [QueueRow] {
-        guard let filter = queuePhaseFilter else { return queueRows }
-        return queueRows.filter { phase(of: $0.live.state) == filter }
+        guard let filter = queueStatusFilter else { return inFlightRows }
+        return inFlightRows.filter { $0.line?.status == filter }
     }
 
     var queueContent: some View {
         // A container, not a bare conditional, so the lane slide and the state swaps never share one transition.
         ZStack(alignment: .top) {
-            if loadingQueue, queueRows.isEmpty {
+            if loadingQueue, inFlightRows.isEmpty {
                 LazyVStack(spacing: 10) {
                     ForEach(0 ..< 4, id: \.self) { _ in
                         queueSkeletonCard
@@ -67,10 +49,10 @@ extension ActivityView {
                 }
                 .padding(16)
                 .transition(.rawkoonSwap)
-            } else if let queueError, queueRows.isEmpty {
+            } else if let queueError, inFlightRows.isEmpty {
                 errorView(queueError)
                     .transition(.rawkoonSwap)
-            } else if queueRows.isEmpty {
+            } else if inFlightRows.isEmpty {
                 ContentUnavailableView(
                     "Nothing downloading",
                     systemImage: "arrow.down.circle",
@@ -81,7 +63,7 @@ extension ActivityView {
                 .transition(.rawkoonSwap)
             } else {
                 VStack(spacing: 12) {
-                    queuePhaseBar
+                    queueStatusBar
                     LazyVStack(spacing: 10) {
                         ForEach(visibleQueueRows) { row in
                             queueCard(row)
@@ -90,9 +72,9 @@ extension ActivityView {
                         }
                     }
                     .rawkoonEntranceScope()
-                    .rawkoonMotion(RawkoonMotion.snappy, value: queuePhaseFilter)
+                    .rawkoonMotion(RawkoonMotion.snappy, value: queueStatusFilter)
                     // A live reload that drops a finished item fades it out instead of cutting.
-                    .rawkoonMotion(RawkoonMotion.spring, value: queueRows.map(\.id))
+                    .rawkoonMotion(RawkoonMotion.spring, value: inFlightRows.map(\.id))
                 }
                 .padding(16)
                 .transition(.rawkoonSwap)
@@ -100,34 +82,34 @@ extension ActivityView {
         }
         .rawkoonMotion(
             RawkoonMotion.spring,
-            value: Self.laneState(loading: loadingQueue, failed: queueError != nil, isEmpty: queueRows.isEmpty)
+            value: Self.laneState(loading: loadingQueue, failed: queueError != nil, isEmpty: inFlightRows.isEmpty)
         )
     }
 
-    /// Live status chips: a tap filters the visible cards to that phase, a
+    /// Live status chips: a tap filters the visible cards to that status, a
     /// second tap clears it. Counts are computed from every queued row.
-    private var queuePhaseBar: some View {
+    private var queueStatusBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(QueuePhase.allCases) { phase in
-                    if let count = queuePhaseCounts[phase], count > 0 {
-                        queuePhaseChip(phase, count: count)
+                ForEach(QueueStatus.allCases, id: \.self) { status in
+                    if let count = queueStatusCounts[status], count > 0 {
+                        queueStatusChip(status, count: count)
                     }
                 }
             }
         }
     }
 
-    private func queuePhaseChip(_ phase: QueuePhase, count: Int) -> some View {
-        let selected = queuePhaseFilter == phase
+    private func queueStatusChip(_ status: QueueStatus, count: Int) -> some View {
+        let selected = queueStatusFilter == status
         return Button {
-            queuePhaseFilter = selected ? nil : phase
+            queueStatusFilter = selected ? nil : status
         } label: {
             HStack(spacing: 6) {
                 Circle()
-                    .fill(phase.tint)
+                    .fill(status.tint)
                     .frame(width: 7, height: 7)
-                Text(phase.label)
+                Text(status.label)
                     .font(.system(.caption, design: .rounded).weight(.medium))
                 Text("\(count)")
                     .font(.system(.caption, design: .monospaced))
@@ -151,6 +133,12 @@ extension ActivityView {
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(Theme.faint)
                         .lineLimit(1)
+                    if let reason = row.line?.reason.text {
+                        Text(verbatim: reason)
+                            .font(.caption)
+                            .foregroundStyle(row.line?.status == .failed ? Theme.terracotta : Theme.muted)
+                            .lineLimit(2)
+                    }
                 }
                 Spacer(minLength: 8)
                 if complete {
@@ -162,8 +150,10 @@ extension ActivityView {
                 }
                 // One slot keyed by the state, so a state change crossfades the badge in place.
                 ZStack(alignment: .trailing) {
-                    statusBadge(row.live.state, tint: stateTint(row.live.state))
-                        .id(row.live.state)
+                    if let status = row.line?.status {
+                        StatusBadge(text: status.label, tint: status.tint)
+                            .id(status)
+                    }
                 }
             }
 
@@ -217,20 +207,6 @@ extension ActivityView {
         .activityCard(cornerRadius: 13)
     }
 
-    private func stateTint(_ state: String) -> Color {
-        let lower = state.lowercased()
-        if lower.contains("seed") || lower.contains("complete") {
-            return Theme.seed
-        }
-        if lower.contains("import") || lower.contains("process") {
-            return Theme.importing
-        }
-        if lower.contains("download") {
-            return Theme.importing
-        }
-        return Theme.muted
-    }
-
     static func queueRows(
         media list: [LibraryMedia],
         downloads: [Int: [DownloadHistoryItem]]
@@ -244,7 +220,10 @@ extension ActivityView {
                         downloadId: item.id,
                         mediaTitle: media.title,
                         releaseTitle: item.releaseTitle,
-                        live: live
+                        live: live,
+                        failed: item.failed,
+                        failReason: item.failReason,
+                        postProcessError: item.postProcessError
                     )
                 }
             }
@@ -314,5 +293,44 @@ extension ActivityView {
         }
         try Task.checkCancellation()
         return queueRows(media: list.items, downloads: byId)
+    }
+}
+
+extension QueueStatus {
+    var label: LocalizedStringKey {
+        switch self {
+        case .downloading: "Downloading"
+        case .waiting: "Waiting"
+        case .importing: "Importing"
+        case .stalled: "Stalled"
+        case .failed: "Failed"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .downloading: Theme.importing
+        case .waiting: Theme.muted
+        case .importing: Theme.seed
+        case .stalled: Theme.apricotSoft
+        case .failed: Theme.terracotta
+        }
+    }
+}
+
+extension QueueReason {
+    /// The reason line, worded for the card; nil when the status says it all.
+    var text: String? {
+        switch self {
+        case .none: nil
+        case .paused: String(localized: "Paused in the download client")
+        case .queued: String(localized: "Queued behind other downloads")
+        case .checking: String(localized: "Checking files already on disk")
+        case .fetchingMetadata: String(localized: "Fetching the torrent's details")
+        case .noPeers: String(localized: "No one is sending data right now")
+        case .importing: String(localized: "Moving the files into your library")
+        case .clientError: String(localized: "The download client reported an error")
+        case let .detail(text): text
+        }
     }
 }

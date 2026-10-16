@@ -1,31 +1,14 @@
 import RawkoonKit
 import SwiftUI
 
-/// Tab root: download queue, recent history, and the upcoming calendar.
+/// Activity tab: the inbox, the download queue, requests, the upcoming calendar and history.
 struct ActivityView: View {
     @Environment(AppModel.self) var model
-
-    private enum Lane: String, CaseIterable, Identifiable {
-        case queue = "Queue"
-        case history = "History"
-        case calendar = "Calendar"
-        var id: String {
-            rawValue
-        }
-
-        var title: LocalizedStringKey {
-            switch self {
-            case .queue: "Queue"
-            case .history: "History"
-            case .calendar: "Calendar"
-            }
-        }
-    }
 
     /// One page of history rows; the limit grows by this as the list is scrolled.
     static let historyPageSize = 50
 
-    @State private var lane: Lane = .queue
+    @State private var lane: ActivityLane = .inbox
     /// The side the next lane enters from, set before the lane changes so the insertion reads it fresh.
     @State private var laneEdge: Edge = .trailing
     /// In-flight live-event reload, cancelled before the next starts so a burst
@@ -46,8 +29,8 @@ struct ActivityView: View {
     /// The skeleton is for the cold load only; live reloads keep the current lane still.
     @State var didLoadQueue = false
     @State var queueError: String?
-    /// nil = show every card; otherwise only cards in the tapped phase.
-    @State var queuePhaseFilter: QueuePhase?
+    /// nil = show every card; otherwise only cards with the tapped status.
+    @State var queueStatusFilter: QueueStatus?
 
     // History
     @State var activities: [ActivityRecord] = []
@@ -71,7 +54,7 @@ struct ActivityView: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("Lane", selection: laneSelection) {
-                ForEach(Lane.allCases) { lane in
+                ForEach(lanes, id: \.self) { lane in
                     Text(lane.title).tag(lane)
                 }
             }
@@ -79,26 +62,16 @@ struct ActivityView: View {
             .padding(.horizontal, 16)
             .padding(.top, 8)
 
-            if let speed, showsSpeed {
+            if let speed, showsSpeed, lane == .queue {
                 speedHeader(speed)
                     .transition(.rawkoonReveal)
             }
 
-            ScrollView {
-                // One slot, so a lane slides in over the one fading out instead of stacking under it.
-                ZStack(alignment: .top) {
-                    switch lane {
-                    case .queue:
-                        queueContent
-                            .transition(.rawkoonSlide(laneEdge))
-                    case .history:
-                        historyContent
-                            .transition(.rawkoonSlide(laneEdge))
-                    case .calendar:
-                        calendarContent
-                            .transition(.rawkoonSlide(laneEdge))
-                    }
-                }
+            // One slot, so a lane slides in over the one fading out instead of stacking under it.
+            ZStack(alignment: .top) {
+                laneContent
+                    .id(lane)
+                    .transition(.rawkoonSlide(laneEdge))
             }
         }
         .readableWidth()
@@ -109,7 +82,15 @@ struct ActivityView: View {
         .onAppear(perform: hydrateFromCache)
         .task { await loadSpeed() }
         .task(id: lane) { await loadCurrentLane() }
-        .refreshable { await loadCurrentLane() }
+        // A deep link or an inbox action opens a lane from outside.
+        .onChange(of: model.requestedActivityLane, initial: true) { _, requested in
+            guard let requested else { return }
+            model.requestedActivityLane = nil
+            select(requested)
+        }
+        .onChange(of: model.isAdmin) { _, _ in
+            lane = ActivityLane.validated(lane, isAdmin: model.isAdmin)
+        }
         .onChange(of: model.isOffline) { _, offline in
             guard !offline else { return }
             liveReloadTask?.cancel()
@@ -128,18 +109,46 @@ struct ActivityView: View {
         }
     }
 
+    private var lanes: [ActivityLane] {
+        ActivityLane.visible(isAdmin: model.isAdmin)
+    }
+
+    /// The inbox and requests are lists with their own scrolling and refresh; the other lanes share one scroll view.
+    @ViewBuilder
+    private var laneContent: some View {
+        switch lane {
+        case .inbox:
+            NotificationsListView(embedded: true)
+        case .requests:
+            RequestsView(embedded: true)
+        case .queue:
+            ScrollView { queueContent }
+                .reportsTabBarScroll()
+                .refreshable { await loadCurrentLane() }
+        case .calendar:
+            ScrollView { calendarContent }
+                .reportsTabBarScroll()
+                .refreshable { await loadCurrentLane() }
+        case .history:
+            ScrollView { historyContent }
+                .reportsTabBarScroll()
+                .refreshable { await loadCurrentLane() }
+        }
+    }
+
     /// Picker writes go through here, so the new lane slides in from the side of the tapped segment.
-    private var laneSelection: Binding<Lane> {
-        Binding(
-            get: { lane },
-            set: { newLane in
-                laneEdge = RawkoonSlide.edge(
-                    from: Lane.allCases.firstIndex(of: lane) ?? 0,
-                    to: Lane.allCases.firstIndex(of: newLane) ?? 0
-                )
-                withRawkoonMotion(RawkoonMotion.snappy) { lane = newLane }
-            }
+    private var laneSelection: Binding<ActivityLane> {
+        Binding(get: { lane }, set: { select($0) })
+    }
+
+    private func select(_ requested: ActivityLane) {
+        let newLane = ActivityLane.validated(requested, isAdmin: model.isAdmin)
+        guard newLane != lane else { return }
+        laneEdge = RawkoonSlide.edge(
+            from: lanes.firstIndex(of: lane) ?? 0,
+            to: lanes.firstIndex(of: newLane) ?? 0
         )
+        withRawkoonMotion(RawkoonMotion.snappy) { lane = newLane }
     }
 
     /// The header shows only while the client is connected and moving bytes.
@@ -273,7 +282,7 @@ struct ActivityView: View {
     private func hydrateFromCache() {
         guard !hydrated, let client = model.api() else { return }
         hydrated = true
-        if queueRows.isEmpty, let list = client.cached(Endpoints.libraryList(status: "downloading")) {
+        if model.isAdmin, queueRows.isEmpty, let list = client.cached(Endpoints.libraryList(status: "downloading")) {
             let downloads = Dictionary(
                 list.value.items.map { ($0.id, Self.cachedDownloads(client: client, libraryId: $0.id)) },
                 uniquingKeysWith: { first, _ in first }
@@ -289,7 +298,7 @@ struct ActivityView: View {
     }
 
     private func loadSpeed() async {
-        guard let client = model.api() else { return }
+        guard model.isAdmin, let client = model.api() else { return }
         speed = try? await client.speed()
     }
 
@@ -298,6 +307,7 @@ struct ActivityView: View {
         case .queue: await loadQueue()
         case .history: await loadHistory()
         case .calendar: await loadCalendar()
+        case .inbox, .requests: break // these lists load themselves
         }
     }
 
@@ -343,5 +353,29 @@ extension View {
             .frame(minHeight: 44)
             .background(selected ? Theme.raised : Theme.well, in: Capsule())
             .overlay(Capsule().strokeBorder(selected ? Theme.borderStrong : Theme.border, lineWidth: 1))
+    }
+}
+
+extension ActivityLane {
+    var title: LocalizedStringKey {
+        switch self {
+        case .inbox: "Inbox"
+        case .queue: "Queue"
+        case .requests: "Requests"
+        case .calendar: "Calendar"
+        case .history: "History"
+        }
+    }
+}
+
+extension View {
+    /// A lane hosted inside Activity leaves the title to Activity; opened on its own it names itself.
+    @ViewBuilder
+    func standaloneTitle(_ title: LocalizedStringKey, embedded: Bool) -> some View {
+        if embedded {
+            self
+        } else {
+            navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+        }
     }
 }

@@ -1,11 +1,15 @@
+import RawkoonKit
 import SwiftUI
 
-/// Ports the web `/notifications` page (spec T5): a paginated, infinite-scroll
-/// list with mark-all-as-read and per-row mark-read/delete. Opened from the
-/// Home bell (`HomeView`); each row and the live banner (`NotificationBannerView`)
-/// both resolve their tap through `AppModel.navigate(toNotificationUrl:)`.
+/// The Inbox lane of Activity: a paginated, infinite-scroll list with
+/// mark-all-as-read and per-row mark-read/delete. Each row and the live banner
+/// (`NotificationBannerView`) resolve their tap through `AppModel.navigate(toNotificationUrl:)`;
+/// a few rows also act in place (see `InboxAction`).
 struct NotificationsListView: View {
     @Environment(AppModel.self) private var model
+
+    /// True inside the Activity tab, which owns the navigation title.
+    var embedded = false
 
     @State private var notifications: [NotificationDTO] = []
     @State private var page = 1
@@ -15,6 +19,8 @@ struct NotificationsListView: View {
     @State private var errorMessage: String?
     @State private var pendingDeleteId: Int?
     @State private var markingAllAsRead = false
+    /// Rows whose Search again is running, so a second tap can't start a second search.
+    @State private var searchingIds: Set<Int> = []
 
     private let limit = 25
 
@@ -22,8 +28,7 @@ struct NotificationsListView: View {
         content
             .readableWidth(860)
             .background(Theme.base)
-            .navigationTitle("Notifications")
-            .navigationBarTitleDisplayMode(.inline)
+            .standaloneTitle("Notifications", embedded: embedded)
             .toolbar {
                 if !notifications.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -153,6 +158,43 @@ struct NotificationsListView: View {
     }
 
     private func row(_ notification: NotificationDTO) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            rowButton(notification)
+            let action = InboxAction.resolve(type: notification.type, url: notification.url, isAdmin: model.isAdmin)
+            if let action {
+                actionButton(action, for: notification)
+                    .padding(.leading, 52)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func actionButton(_ action: InboxAction, for notification: NotificationDTO) -> some View {
+        switch action {
+        case .reviewRequests:
+            Button("Review") { model.requestedActivityLane = .requests }
+                .buttonStyle(.bordered)
+                .tint(Theme.apricot)
+                .frame(minHeight: 44)
+        case let .searchAgain(libraryId, season, episode):
+            Button {
+                Task { await searchAgain(notification, libraryId: libraryId, season: season, episode: episode) }
+            } label: {
+                if searchingIds.contains(notification.id) {
+                    ProgressView().tint(Theme.muted)
+                } else {
+                    Text("Search again")
+                }
+            }
+            .buttonStyle(.bordered)
+            .tint(Theme.apricot)
+            .frame(minHeight: 44)
+            .disabled(searchingIds.contains(notification.id))
+            .requiresConnection(model.isOffline)
+        }
+    }
+
+    private func rowButton(_ notification: NotificationDTO) -> some View {
         Button {
             Task { await open(notification) }
         } label: {
@@ -185,6 +227,38 @@ struct NotificationsListView: View {
     }
 
     // MARK: Networking
+
+    /// Runs the search that gave up again, for the title, season or episode the notification names.
+    /// The answer arrives through the item's live toast.
+    private func searchAgain(_ notification: NotificationDTO, libraryId: Int, season: Int?, episode: Int?) async {
+        guard let client = model.api(), searchingIds.insert(notification.id).inserted else { return }
+        defer { searchingIds.remove(notification.id) }
+        let item: LibraryMedia? = if let known = client.cachedLibraryItem(id: libraryId)?.value {
+            known
+        } else {
+            try? await client.libraryItem(id: libraryId)
+        }
+        let title = item?.title ?? notification.title
+        guard let season else {
+            await model.autoSearchMovie(libraryId: libraryId, title: title)
+            return
+        }
+        guard let episode else {
+            await model.liveSearch.search(mediaId: libraryId, title: title, isShow: true) {
+                try await client.searchSeason(id: libraryId, season: season)
+            }
+            return
+        }
+        let episodes = try? await client.libraryEpisodes(id: libraryId)
+        let match = episodes?.seasons.first { $0.season == season }?.episodes.first { $0.episode == episode }
+        guard let match else {
+            model.toast(String(localized: "Couldn't find that episode."), style: .error)
+            return
+        }
+        await model.liveSearch.search(mediaId: libraryId, title: title, isShow: true) {
+            try await client.searchEpisode(id: libraryId, episodeId: match.id)
+        }
+    }
 
     /// Paints the first page from the last saved response, the same page `load` fetches.
     private func hydrateFromCache() {

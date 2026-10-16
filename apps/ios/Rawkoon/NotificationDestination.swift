@@ -15,7 +15,7 @@ enum NotificationDestination: Identifiable, Equatable, Sendable {
     case media(libraryId: Int, season: Int?, episode: Int?, focusManagement: Bool)
     /// `/books/{bookId}`.
     case book(bookId: Int)
-    /// `/activity/requests`.
+    /// `/activity/requests`; opens the Requests lane of the Activity tab.
     case requests
     /// `/activity`; opens the Activity tab rather than a sheet.
     case inbox
@@ -76,8 +76,18 @@ enum NotificationDestination: Identifiable, Equatable, Sendable {
     /// The tab that hosts this destination, for the ones that are not a pushed screen.
     var hostTab: RootTab? {
         switch self {
-        case .inbox, .calendar: .activity
+        case .inbox, .requests, .calendar: .activity
         case .watchlist: .find
+        default: nil
+        }
+    }
+
+    /// The Activity lane a tab-hosted destination opens on.
+    var activityLane: ActivityLane? {
+        switch self {
+        case .inbox: .inbox
+        case .requests: .requests
+        case .calendar: .calendar
         default: nil
         }
     }

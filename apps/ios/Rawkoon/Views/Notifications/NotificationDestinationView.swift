@@ -52,15 +52,14 @@ struct NotificationDestinationView: View {
             } else {
                 statusView
             }
-        case .requests:
-            RequestsView()
         case .reencode:
             ReencodeAdminView()
         case .alerts:
             SettingsAlertsView()
         case .updates:
             ReleasesAdminView()
-        case .inbox, .calendar, .watchlist:
+        case .requests, .inbox, .calendar, .watchlist:
+            // Tab content: `navigate(toNotificationUrl:)` switches tabs instead of presenting these.
             EmptyView()
         }
     }

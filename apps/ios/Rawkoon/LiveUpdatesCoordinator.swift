@@ -330,6 +330,7 @@ final class LiveUpdatesCoordinator {
             if case .watchlist = destination {
                 appModel?.requestedFindShelf = .watchlist
             }
+            appModel?.requestedActivityLane = destination.activityLane
             appModel?.requestedRootTab = tab
             return
         }

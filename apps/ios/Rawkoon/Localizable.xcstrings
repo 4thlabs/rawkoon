@@ -1,6 +1,116 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Inbox": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boîte de réception"
+          }
+        }
+      }
+    },
+    "Waiting": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente"
+          }
+        }
+      }
+    },
+    "Review": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Examiner"
+          }
+        }
+      }
+    },
+    "Couldn't find that episode.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Épisode introuvable."
+          }
+        }
+      }
+    },
+    "Paused in the download client": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pause dans le client de téléchargement"
+          }
+        }
+      }
+    },
+    "Queued behind other downloads": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En file derrière d'autres téléchargements"
+          }
+        }
+      }
+    },
+    "Checking files already on disk": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérification des fichiers déjà sur le disque"
+          }
+        }
+      }
+    },
+    "Fetching the torrent's details": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Récupération des détails du torrent"
+          }
+        }
+      }
+    },
+    "No one is sending data right now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personne n'envoie de données pour le moment"
+          }
+        }
+      }
+    },
+    "Moving the files into your library": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacement des fichiers vers votre bibliothèque"
+          }
+        }
+      }
+    },
+    "The download client reported an error": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le client de téléchargement a signalé une erreur"
+          }
+        }
+      }
+    },
     "%@, in library": {
       "localizations": {
         "fr": {
