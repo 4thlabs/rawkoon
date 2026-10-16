@@ -27,7 +27,7 @@ public struct LastSearchNote: Equatable, Sendable {
 
     /// Misses newest first, capped; a miss without a time sorts last.
     public static func recentMisses<T>(_ items: [T], limit: Int, note: (T) -> LastSearchNote?) -> [T] {
-        let misses = items.compactMap { item in note(item).map { (item, $0) } }.filter { $0.1.isMiss }
+        let misses = items.compactMap { item in note(item).map { (item, $0) } }.filter(\.1.isMiss)
         let sorted = misses.enumerated().sorted { lhs, rhs in
             let (l, r) = (lhs.element.1.at ?? .distantPast, rhs.element.1.at ?? .distantPast)
             return l == r ? lhs.offset < rhs.offset : l > r

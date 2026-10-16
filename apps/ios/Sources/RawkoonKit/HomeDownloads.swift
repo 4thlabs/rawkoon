@@ -46,7 +46,9 @@ public struct HomeDownloadsSummary: Equatable, Sendable {
         let active = lines.filter { DownloadPhase.classify($0.state) != .seeding }
         let ranked = active.enumerated().sorted { lhs, rhs in
             let (l, r) = (lhs.element, rhs.element)
-            if l.speed != r.speed { return l.speed > r.speed }
+            if l.speed != r.speed {
+                return l.speed > r.speed
+            }
             return lhs.offset < rhs.offset
         }.map(\.element)
         let shown = Array(ranked.prefix(max(0, limit)))
