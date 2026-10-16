@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Search, Clapperboard } from "lucide-react";
+import { Search } from "lucide-react";
 import { useTmdbMediaSearch } from "@/features/medias/hooks/useTmdbMediaSearch";
 import { type TmdbMediaSearchItem } from "@rawkoon/shared/types";
+import { TmdbResultCard } from "@/pages/medias/_component/TmdbResultCard";
 import { ExploreCardDetailDialog } from "@/pages/medias/_component/ExploreCardDetailDialog";
 
 interface Props {
@@ -22,7 +22,6 @@ export function TmdbMediaSearchPanel({
   onAdded,
 }: Props = {}) {
   const { t, i18n } = useTranslation("common");
-  const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [debounced, setDebounced] = useState("");
   const [selectedItem, setSelectedItem] = useState<TmdbMediaSearchItem | null>(
@@ -73,76 +72,24 @@ export function TmdbMediaSearchPanel({
           <div className="text-sm text-neutral-400">
             {t("medias.tmdb.searching")}
           </div>
+        ) : searchQuery.isError ? (
+          <div role="alert" className="text-sm text-amber-300">
+            {t("medias.tmdb.searchFailed")}
+          </div>
         ) : results.length === 0 ? (
           <div className="text-sm text-neutral-400">
             {t("medias.tmdb.noResults")}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {results.map((item) => {
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    const libId = item.library_id;
-                    if (item.already_exists && libId != null && libId > 0) {
-                      void navigate({
-                        to: "/library/$libraryId",
-                        params: { libraryId: String(libId) },
-                      });
-                      return;
-                    }
-                    setSelectedItem(item);
-                  }}
-                  className="text-left rounded-xl border p-2.5 flex gap-2.5 transition-colors border-neutral-700 bg-neutral-900 hover:bg-neutral-800 cursor-pointer"
-                >
-                  <div className="w-12 h-16 shrink-0 rounded-md overflow-hidden bg-neutral-700">
-                    {item.poster_url ? (
-                      <img
-                        src={item.poster_url}
-                        alt={item.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Clapperboard className="w-5 h-5 text-neutral-500" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-neutral-50 line-clamp-2">
-                      {item.title}
-                    </p>
-                    <p className="text-xs text-neutral-400 mt-0.5">
-                      {item.release_year ?? t("medias.unknownYear")}
-                    </p>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      {item.library_id != null && item.library_id > 0 ? (
-                        <span className="rounded-full border border-primary-800 px-2 py-0.5 text-[10px] font-medium bg-primary-900/30 text-primary-300">
-                          {t("medias.tmdb.badgeLibrary")}
-                        </span>
-                      ) : null}
-                      {item.already_exists ? (
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-medium bg-emerald-500/20 text-emerald-300">
-                          {t("medias.tmdb.inLibrary")}
-                        </span>
-                      ) : !item.can_add ? (
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-medium bg-amber-500/20 text-amber-300">
-                          {t("medias.tmdb.notConfigured")}
-                        </span>
-                      ) : (
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-medium bg-primary-500/20 text-primary-300">
-                          {t("medias.tmdb.add")}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+            {results.map((item) => (
+              <TmdbResultCard
+                key={item.id}
+                item={item}
+                onOpenDetails={() => setSelectedItem(item)}
+                onAdded={() => void searchQuery.refetch()}
+              />
+            ))}
           </div>
         )
       ) : (
