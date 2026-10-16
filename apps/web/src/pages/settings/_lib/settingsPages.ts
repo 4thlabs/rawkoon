@@ -224,11 +224,14 @@ export function matchesSettingsQuery(
   pageDef: SettingsPageDef,
   title: string,
   query: string,
+  /** Comma-separated terms in the UI language, from the locale files. */
+  localizedKeywords = "",
 ): boolean {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
   return (
     title.toLowerCase().includes(needle) ||
+    localizedKeywords.toLowerCase().includes(needle) ||
     pageDef.keywords.some((k) => k.toLowerCase().includes(needle))
   );
 }

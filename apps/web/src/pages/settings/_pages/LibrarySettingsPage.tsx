@@ -1,19 +1,28 @@
 import { useEffect } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { MediaPostProcessingTab } from "@/pages/settings/_component/MediaPostProcessingTab";
 import { SettingsPageShell } from "@/pages/settings/_component/SettingsPageShell";
 
-/** Opens at the element a fix link points to, once the form has rendered. */
+/** Scrolls to and focuses the element a fix link points at, waiting for the form to render. */
 function useScrollToHash() {
+  const hash = useRouterState({ select: (s) => s.location.hash });
   useEffect(() => {
-    const id = window.location.hash.slice(1);
+    const id = hash.replace(/^#/, "");
     if (!id) return;
-    const timer = setTimeout(() => {
+    let tries = 0;
+    const timer = setInterval(() => {
       const el = document.getElementById(id);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      el?.focus({ preventScroll: true });
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
+      tries += 1;
+      if (el) {
+        clearInterval(timer);
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.focus({ preventScroll: true });
+      } else if (tries >= 40) {
+        clearInterval(timer);
+      }
+    }, 150);
+    return () => clearInterval(timer);
+  }, [hash]);
 }
 
 export function LibrarySettingsPage() {

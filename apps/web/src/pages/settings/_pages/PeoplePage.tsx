@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { ApiKeysTab } from "@/pages/settings/_component/ApiKeysTab";
@@ -7,11 +7,12 @@ import { SessionsTab } from "@/pages/settings/_component/SessionsTab";
 import { SettingsPageShell } from "@/pages/settings/_component/SettingsPageShell";
 import { UsersTab } from "@/pages/settings/_component/UsersTab";
 
-type View = "users" | "sso" | "api-keys" | "sessions";
+export type PeopleView = "users" | "sso" | "api-keys" | "sessions";
 
 export function PeoplePage() {
   const { t } = useTranslation("common");
-  const [view, setView] = useState<View>("users");
+  const navigate = useNavigate();
+  const { view = "users" } = useSearch({ from: "/settings/people/" });
   return (
     <SettingsPageShell id="people">
       <SegmentedTabs
@@ -25,7 +26,13 @@ export function PeoplePage() {
           { id: "sessions" as const, label: t("settings.sessions.title") },
         ]}
         value={view}
-        onChange={setView}
+        onChange={(next) =>
+          navigate({
+            to: "/settings/people",
+            search: { view: next === "users" ? undefined : next },
+            replace: true,
+          })
+        }
       />
       {view === "users" && <UsersTab />}
       {view === "sso" && <OidcProvidersTab />}

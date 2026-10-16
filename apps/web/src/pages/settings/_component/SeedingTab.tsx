@@ -53,10 +53,7 @@ export function SeedingTab() {
           {t("settings.seeding.viewTorrents")}
         </a>
       </div>
-      <SeedingSettingsSection
-        key={`seed-${settings.updated_at}`}
-        settings={settings}
-      />
+      <SeedingSettingsSection settings={settings} />
     </div>
   );
 }

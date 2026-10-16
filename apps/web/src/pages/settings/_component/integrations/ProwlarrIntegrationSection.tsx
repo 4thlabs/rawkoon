@@ -4,13 +4,18 @@ import { useProwlarrIndexers } from "@/pages/settings/useProwlarrIndexers";
 import { useUpdateProwlarrIntegration } from "@/pages/settings/useUpdateProwlarrIntegration";
 import { IndexerManagerIntegrationSection } from "@/pages/settings/_component/integrations/IndexerManagerIntegrationSection";
 
-export function ProwlarrIntegrationSection() {
+export function ProwlarrIntegrationSection({
+  onSaved,
+}: {
+  onSaved?: (enabled: boolean) => void;
+}) {
   const { data, isLoading } = useProwlarrIntegration();
   return (
     <ProwlarrIntegrationSectionImpl
       key={data?.integration?.type ?? "pending"}
       data={data}
       isLoading={isLoading}
+      onSaved={onSaved}
     />
   );
 }
@@ -18,7 +23,9 @@ export function ProwlarrIntegrationSection() {
 function ProwlarrIntegrationSectionImpl({
   data,
   isLoading,
+  onSaved,
 }: {
+  onSaved?: (enabled: boolean) => void;
   data: ReturnType<typeof useProwlarrIntegration>["data"];
   isLoading: boolean;
 }) {
@@ -35,7 +42,11 @@ function ProwlarrIntegrationSectionImpl({
       logoUrl="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png"
       translationKey="prowlarr"
       websiteUrlPlaceholder="https://prowlarr.example.com"
-      save={saveMutation.mutateAsync}
+      save={async (body) => {
+        const result = await saveMutation.mutateAsync(body);
+        onSaved?.(body.enabled);
+        return result;
+      }}
       useIndexers={useProwlarrIndexers}
     />
   );

@@ -29,10 +29,26 @@ vi.mock("@/pages/settings/useJackettIntegration", () => ({
   }),
 }));
 vi.mock("../integrations/ProwlarrIntegrationSection", () => ({
-  ProwlarrIntegrationSection: () => <div>prowlarr-fields</div>,
+  ProwlarrIntegrationSection: ({
+    onSaved,
+  }: {
+    onSaved?: (e: boolean) => void;
+  }) => (
+    <button type="button" onClick={() => onSaved?.(true)}>
+      prowlarr-fields
+    </button>
+  ),
 }));
 vi.mock("../integrations/JackettIntegrationSection", () => ({
-  JackettIntegrationSection: () => <div>jackett-fields</div>,
+  JackettIntegrationSection: ({
+    onSaved,
+  }: {
+    onSaved?: (e: boolean) => void;
+  }) => (
+    <button type="button" onClick={() => onSaved?.(true)}>
+      jackett-fields
+    </button>
+  ),
 }));
 
 import { IndexersCard } from "../integrations/IndexersCard";
@@ -40,7 +56,12 @@ import { IndexersCard } from "../integrations/IndexersCard";
 describe("IndexersCard", () => {
   beforeEach(() => {
     mutateAsync.mockReset();
-    mutateAsync.mockResolvedValue({});
+    mutateAsync.mockImplementation(
+      async (body: { active_indexer_manager: string }) => {
+        active = body.active_indexer_manager;
+        return {};
+      },
+    );
     active = "prowlarr";
     prowlarrEnabled = true;
     jackettEnabled = false;
@@ -52,7 +73,8 @@ describe("IndexersCard", () => {
     expect(screen.queryByText("jackett-fields")).toBeNull();
   });
 
-  it("switching sets the active manager and shows that manager's fields", async () => {
+  it("switching to an enabled manager sets it active and shows its fields", async () => {
+    jackettEnabled = true;
     render(<IndexersCard />);
     fireEvent.click(screen.getByText("Jackett"));
     await waitFor(() =>
@@ -64,6 +86,27 @@ describe("IndexersCard", () => {
     expect(screen.queryByText("prowlarr-fields")).toBeNull();
   });
 
+  it("refuses to activate a manager that is not enabled, and hints to save it", () => {
+    render(<IndexersCard />);
+    fireEvent.click(screen.getByText("Jackett"));
+    expect(mutateAsync).not.toHaveBeenCalled();
+    expect(screen.getByText("jackett-fields")).toBeTruthy();
+    expect(
+      screen.getByText("settings.connections.indexers.saveToActivate"),
+    ).toBeTruthy();
+  });
+
+  it("activates the manager once its own save enables it", async () => {
+    render(<IndexersCard />);
+    fireEvent.click(screen.getByText("Jackett"));
+    fireEvent.click(screen.getByText("jackett-fields"));
+    await waitFor(() =>
+      expect(mutateAsync).toHaveBeenCalledWith({
+        active_indexer_manager: "jackett",
+      }),
+    );
+  });
+
   it("falls back to the enabled manager when none is stored", () => {
     active = null;
     prowlarrEnabled = false;
@@ -73,6 +116,7 @@ describe("IndexersCard", () => {
   });
 
   it("reverts the switch when saving fails", async () => {
+    jackettEnabled = true;
     mutateAsync.mockRejectedValue(new Error("nope"));
     render(<IndexersCard />);
     fireEvent.click(screen.getByText("Jackett"));

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
@@ -14,19 +14,27 @@ export function SettingsIndex({
   isAdmin,
   currentPath,
   searchable = false,
+  autoFocusSearch = false,
   onNavigate,
 }: {
   isAdmin: boolean;
   currentPath: string;
   searchable?: boolean;
+  autoFocusSearch?: boolean;
   onNavigate?: () => void;
 }) {
   const { t } = useTranslation("common");
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
 
   const groups = useMemo(() => {
     const pages = visibleSettingsPages(isAdmin).filter((p) =>
-      matchesSettingsQuery(p, t(p.titleKey), query),
+      matchesSettingsQuery(
+        p,
+        t(p.titleKey),
+        query,
+        t(`settings.pages.${p.id}.keywords`, { defaultValue: "" }),
+      ),
     );
     return SETTINGS_GROUPS.map((g) => ({
       ...g,
@@ -45,7 +53,16 @@ export function SettingsIndex({
           <input
             type="search"
             value={query}
+            autoFocus={autoFocusSearch}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              const first = groups[0]?.pages[0];
+              if (e.key === "Enter" && first && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                void navigate({ to: first.path });
+                onNavigate?.();
+              }
+            }}
             aria-label={t("settings.search.label")}
             placeholder={t("settings.search.placeholder")}
             className="focus-ring h-10 w-full rounded-lg border border-neutral-700 bg-neutral-950 pl-9 pr-3 text-sm text-neutral-100 placeholder:text-neutral-400"

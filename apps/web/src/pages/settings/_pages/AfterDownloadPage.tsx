@@ -17,10 +17,8 @@ export function AfterDownloadPage() {
       {isLoading && <Loader size="md" />}
       {settings && (
         <AdvancedDisclosure label={t("settings.afterDownload.safety")}>
-          <DownloadSafetySection
-            key={`safety-${settings.updated_at}`}
-            settings={settings}
-          />
+          {/* Not keyed on updated_at: a save here must not reset unsaved seeding edits. */}
+          <DownloadSafetySection settings={settings} />
         </AdvancedDisclosure>
       )}
     </SettingsPageShell>

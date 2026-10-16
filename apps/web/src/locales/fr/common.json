@@ -1661,79 +1661,98 @@
     "pages": {
       "profile": {
         "title": "Profil",
-        "description": "Votre nom, courriel et photo."
+        "description": "Votre nom, courriel et photo.",
+        "keywords": "avatar, nom, courriel, compte"
       },
       "security": {
         "title": "Sécurité",
-        "description": "Mot de passe, clés d’accès et lien du calendrier."
+        "description": "Mot de passe, clés d’accès et lien du calendrier.",
+        "keywords": "mot de passe, clé d’accès, calendrier, abonnement, connexion"
       },
       "alerts": {
         "title": "Alertes",
-        "description": "Les notifications que vous recevez et où elles vont."
+        "description": "Les notifications que vous recevez et où elles vont.",
+        "keywords": "notifications, alertes, canaux"
       },
       "app": {
         "title": "Application",
-        "description": "La langue et l’emplacement de la navigation."
+        "description": "La langue et l’emplacement de la navigation.",
+        "keywords": "langue, navigation, position"
       },
       "connections": {
         "title": "Connexions",
-        "description": "Les services avec lesquels Rawkoon communique : métadonnées, serveur de médias, indexeurs et client de téléchargement."
+        "description": "Les services avec lesquels Rawkoon communique : métadonnées, serveur de médias, indexeurs et client de téléchargement.",
+        "keywords": "indexeur, indexeurs, recherche, client de téléchargement, métadonnées, serveur de médias"
       },
       "library": {
         "title": "Bibliothèque",
-        "description": "Dossiers, valeurs par défaut des nouveaux titres et fréquence de vérification des versions."
+        "description": "Dossiers, valeurs par défaut des nouveaux titres et fréquence de vérification des versions.",
+        "keywords": "dossiers, chemins, nommage, modèles, défauts, vérification, fréquence, recherche à l’ajout"
       },
       "quality": {
         "title": "Qualité",
-        "description": "Profils de qualité et formats personnalisés."
+        "description": "Profils de qualité et formats personnalisés.",
+        "keywords": "qualité, profil, résolution, format personnalisé, pointage"
       },
       "after-download": {
         "title": "Après le téléchargement",
-        "description": "Ce qui arrive à un torrent une fois importé, et les règles de sécurité des fichiers."
+        "description": "Ce qui arrive à un torrent une fois importé, et les règles de sécurité des fichiers.",
+        "keywords": "partage, ratio, torrent, sécurité, extensions, espace libre"
       },
       "books": {
         "title": "Livres",
-        "description": "La bibliothèque de livres et de livres audio, son fournisseur de métadonnées et l’emplacement des fichiers."
+        "description": "La bibliothèque de livres et de livres audio, son fournisseur de métadonnées et l’emplacement des fichiers.",
+        "keywords": "livre audio, livres, lecture, profil de qualité"
       },
       "people": {
         "title": "Personnes",
-        "description": "Utilisateurs, invitations, authentification unique, clés d’API et sessions."
+        "description": "Utilisateurs, invitations, authentification unique, clés d’API et sessions.",
+        "keywords": "utilisateurs, comptes, membres, invitations, sessions, clés d’api, authentification unique"
       },
       "general": {
         "title": "Général",
-        "description": "Pays et sorties à venir."
+        "description": "Pays et sorties à venir.",
+        "keywords": "pays, sorties à venir, région"
       },
       "ai": {
         "title": "IA",
-        "description": "Connectez un modèle compatible OpenAI pour aider à choisir les versions."
+        "description": "Connectez un modèle compatible OpenAI pour aider à choisir les versions.",
+        "keywords": "ia, modèle, fournisseur, tarifs"
       },
       "health": {
         "title": "Santé",
-        "description": "Rawkoon peut-il trouver, récupérer et importer en ce moment ?"
+        "description": "Rawkoon peut-il trouver, récupérer et importer en ce moment ?",
+        "keywords": "santé, diagnostic, état, préparation, flux rss"
       },
       "jobs": {
         "title": "Tâches",
-        "description": "Tâches planifiées, état des files et historique récent."
+        "description": "Tâches planifiées, état des files et historique récent.",
+        "keywords": "tâches, planifiées, file, historique"
       },
       "reencode": {
         "title": "Réencodage",
-        "description": "La file de réencodage, son historique et sa plage d’exécution."
+        "description": "La file de réencodage, son historique et sa plage d’exécution.",
+        "keywords": "réencodage, transcodage, compression, file"
       },
       "downloads": {
         "title": "Téléchargements",
-        "description": "Préparation, partage, restes, historique des téléchargements et importation Radarr et Sonarr."
+        "description": "Préparation, partage, restes, historique des téléchargements et importation Radarr et Sonarr.",
+        "keywords": "téléchargements, importation, partage, restes, historique, migration"
       },
       "blocklist": {
         "title": "Liste de blocage",
-        "description": "Les versions qui ne sont jamais récupérées automatiquement."
+        "description": "Les versions qui ne sont jamais récupérées automatiquement.",
+        "keywords": "liste de blocage, bloqué, versions"
       },
       "ai-usage": {
         "title": "Utilisation de l’IA",
-        "description": "Ce que coûte le fournisseur d’IA et ses performances."
+        "description": "Ce que coûte le fournisseur d’IA et ses performances.",
+        "keywords": "ia, utilisation, coût, budget, historique"
       },
       "updates": {
         "title": "Mises à jour",
-        "description": "Versions publiques de Rawkoon, actualisées toutes les 6 heures."
+        "description": "Versions publiques de Rawkoon, actualisées toutes les 6 heures.",
+        "keywords": "mises à jour, nouveautés, version, journal des changements"
       }
     },
     "groups": {
@@ -1758,7 +1777,8 @@
         "title": "Indexeurs",
         "help": "Choisissez le gestionnaire d’indexeurs que Rawkoon interroge.",
         "switchLabel": "Gestionnaire d’indexeurs",
-        "switchError": "Impossible de changer de gestionnaire d’indexeurs."
+        "switchError": "Impossible de changer de gestionnaire d’indexeurs.",
+        "saveToActivate": "Enregistrez {{manager}} pour en faire le gestionnaire d’indexeurs actif."
       }
     },
     "library": {

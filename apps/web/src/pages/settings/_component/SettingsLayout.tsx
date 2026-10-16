@@ -42,6 +42,7 @@ export function SettingsLayout() {
           isAdmin={isAdmin}
           currentPath={pathname}
           searchable
+          autoFocusSearch
           onNavigate={() => setIndexOpen(false)}
         />
       </Dialog>

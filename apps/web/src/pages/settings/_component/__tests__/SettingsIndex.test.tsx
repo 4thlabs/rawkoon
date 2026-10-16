@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { SettingsIndex } from "../SettingsIndex";
 
+const navigate = vi.fn();
 vi.mock("@tanstack/react-router", () => ({
+  useNavigate: () => navigate,
   Link: ({
     children,
     to,
@@ -58,5 +60,24 @@ describe("SettingsIndex", () => {
       target: { value: "zzzz" },
     });
     expect(screen.getByText("settings.search.empty")).toBeTruthy();
+  });
+
+  it("opens the first match on Enter and closes the sheet", () => {
+    const onNavigate = vi.fn();
+    render(
+      <SettingsIndex
+        isAdmin
+        currentPath="/settings/profile"
+        searchable
+        autoFocusSearch
+        onNavigate={onNavigate}
+      />,
+    );
+    const field = screen.getByRole("searchbox");
+    expect(document.activeElement).toBe(field);
+    fireEvent.change(field, { target: { value: "hevc" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(navigate).toHaveBeenCalledWith({ to: "/settings/reencode" });
+    expect(onNavigate).toHaveBeenCalled();
   });
 });

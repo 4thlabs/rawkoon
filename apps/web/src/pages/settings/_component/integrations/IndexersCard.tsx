@@ -29,18 +29,31 @@ export function IndexersCard() {
       ? "jackett"
       : "prowlarr";
   const active: Manager =
-    picked ??
-    (stored === "jackett" || stored === "prowlarr" ? stored : fallback);
+    stored === "jackett" || stored === "prowlarr" ? stored : fallback;
+  const enabledOf = (m: Manager) =>
+    Boolean((m === "jackett" ? jackett : prowlarr)?.integration?.enabled);
+  // The chips choose which manager's form is shown; only an enabled one is made active.
+  const shown: Manager = picked ?? active;
+  const pending = update.isPending;
 
-  const choose = async (next: Manager) => {
-    if (next === active) return;
-    setPicked(next);
+  const activate = async (m: Manager) => {
     try {
-      await update.mutateAsync({ active_indexer_manager: next });
+      await update.mutateAsync({ active_indexer_manager: m });
+      setPicked(null);
     } catch {
       setPicked(null);
       toast.error(t("settings.connections.indexers.switchError"));
     }
+  };
+
+  const choose = async (next: Manager) => {
+    if (next === shown || pending) return;
+    if (!enabledOf(next)) {
+      setPicked(next);
+      return;
+    }
+    setPicked(next);
+    await activate(next);
   };
 
   return (
@@ -61,14 +74,26 @@ export function IndexersCard() {
             { id: "prowlarr" as const, label: "Prowlarr" },
             { id: "jackett" as const, label: "Jackett" },
           ]}
-          value={active}
+          value={shown}
           onChange={(next) => void choose(next)}
+          disabled={pending}
         />
       </div>
-      {active === "prowlarr" ? (
-        <ProwlarrIntegrationSection />
+      {shown !== active && !enabledOf(shown) && (
+        <p className="px-1 text-xs text-amber-300">
+          {t("settings.connections.indexers.saveToActivate", {
+            manager: shown === "jackett" ? "Jackett" : "Prowlarr",
+          })}
+        </p>
+      )}
+      {shown === "prowlarr" ? (
+        <ProwlarrIntegrationSection
+          onSaved={(enabled) => enabled && void activate("prowlarr")}
+        />
       ) : (
-        <JackettIntegrationSection />
+        <JackettIntegrationSection
+          onSaved={(enabled) => enabled && void activate("jackett")}
+        />
       )}
     </section>
   );
