@@ -18,7 +18,6 @@ struct MediaLibrarySettingsView: View {
     @State private var fileOperation = "hardlink"
     @State private var movieTemplate = ""
     @State private var episodeTemplate = ""
-    @State private var minSeedRatioText = "0"
     @State private var activeManager: String? = nil
     @State private var defaultMovieProfile: Int? = nil
     @State private var defaultShowProfile: Int? = nil
@@ -42,7 +41,6 @@ struct MediaLibrarySettingsView: View {
         var fileOperation: String
         var movieTemplate: String
         var episodeTemplate: String
-        var minSeedRatioText: String
         var activeManager: String?
         var defaultMovieProfile: Int?
         var defaultShowProfile: Int?
@@ -52,14 +50,14 @@ struct MediaLibrarySettingsView: View {
     @State private var loaded = FormValues(
         ppEnabled: false, moviesPath: "", showsPath: "", downloadsPath: "",
         fileOperation: "hardlink", movieTemplate: "", episodeTemplate: "",
-        minSeedRatioText: "0", activeManager: nil, defaultMovieProfile: nil, defaultShowProfile: nil,
+        activeManager: nil, defaultMovieProfile: nil, defaultShowProfile: nil,
         minFreeSpaceGb: 10
     )
 
     private var current: FormValues {
         FormValues(ppEnabled: ppEnabled, moviesPath: moviesPath, showsPath: showsPath,
                    downloadsPath: downloadsPath, fileOperation: fileOperation, movieTemplate: movieTemplate,
-                   episodeTemplate: episodeTemplate, minSeedRatioText: minSeedRatioText,
+                   episodeTemplate: episodeTemplate,
                    activeManager: activeManager, defaultMovieProfile: defaultMovieProfile,
                    defaultShowProfile: defaultShowProfile, minFreeSpaceGb: minFreeSpaceGb)
     }
@@ -119,7 +117,6 @@ struct MediaLibrarySettingsView: View {
                     PickerRow(title: "File operation", selection: $fileOperation, options: Self.fileOpOptions)
                     LabeledTextFieldRow(title: "Movie template", text: $movieTemplate, mono: true)
                     LabeledTextFieldRow(title: "Episode template", text: $episodeTemplate, mono: true)
-                    LabeledTextFieldRow(title: "Min seed ratio", text: $minSeedRatioText, keyboard: .decimalPad)
                     PickerRow(title: "Active indexer manager", selection: $activeManager, options: managerOptions)
                     PickerRow(title: "Default movie profile", selection: $defaultMovieProfile, options: profileOptions)
                     PickerRow(title: "Default show profile", selection: $defaultShowProfile, options: profileOptions)
@@ -209,7 +206,6 @@ struct MediaLibrarySettingsView: View {
             fileOperation = settings.fileOperation ?? "hardlink"
             movieTemplate = settings.movieTemplate ?? ""
             episodeTemplate = settings.episodeTemplate ?? ""
-            minSeedRatioText = String(settings.minSeedRatio ?? 0)
             activeManager = settings.activeIndexerManager
             defaultMovieProfile = settings.defaultMovieQualityProfileId
             defaultShowProfile = settings.defaultShowQualityProfileId
@@ -234,7 +230,6 @@ struct MediaLibrarySettingsView: View {
                     fileOperation: fileOperation,
                     movieTemplate: movieTemplate,
                     episodeTemplate: episodeTemplate,
-                    minSeedRatio: Double(minSeedRatioText) ?? 0,
                     activeIndexerManager: activeManager,
                     defaultMovieQualityProfileId: defaultMovieProfile,
                     defaultShowQualityProfileId: defaultShowProfile,

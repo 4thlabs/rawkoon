@@ -1,47 +1,11 @@
+import RawkoonKit
 import SwiftUI
-
-private struct ChannelField {
-    let key: String
-    let label: LocalizedStringKey
-    var secret = false
-    var numeric = false
-}
 
 private enum ChannelSchema {
     static let types: [(value: String, label: LocalizedStringKey)] = [
         ("ntfy", "ntfy"), ("telegram", "Telegram"), ("discord", "Discord"),
         ("gotify", "Gotify"), ("pushover", "Pushover"), ("slack", "Slack"), ("webhook", "Webhook"),
     ]
-
-    static func fields(for type: String) -> [ChannelField] {
-        switch type {
-        case "ntfy":
-            [ChannelField(key: "server_url", label: "Server URL"),
-             ChannelField(key: "topic", label: "Topic"),
-             ChannelField(key: "access_token", label: "Access token", secret: true),
-             ChannelField(key: "priority", label: "Priority", numeric: true)]
-        case "telegram":
-            [ChannelField(key: "bot_token", label: "Bot token", secret: true),
-             ChannelField(key: "chat_id", label: "Chat ID")]
-        case "discord":
-            [ChannelField(key: "webhook_url", label: "Webhook URL")]
-        case "gotify":
-            [ChannelField(key: "server_url", label: "Server URL"),
-             ChannelField(key: "app_token", label: "App token", secret: true),
-             ChannelField(key: "priority", label: "Priority", numeric: true)]
-        case "pushover":
-            [ChannelField(key: "api_token", label: "API token", secret: true),
-             ChannelField(key: "user_key", label: "User key", secret: true)]
-        case "slack":
-            [ChannelField(key: "webhook_url", label: "Webhook URL")]
-        case "webhook":
-            [ChannelField(key: "url", label: "URL"),
-             ChannelField(key: "method", label: "Method (GET/POST)"),
-             ChannelField(key: "body_template", label: "Body template")]
-        default:
-            []
-        }
-    }
 }
 
 /// Notification channels CRUD (per-user, not admin-gated). `GET/POST/PATCH/DELETE
@@ -171,8 +135,8 @@ private struct ChannelEditorView: View {
     @State private var saving = false
     @State private var saveError: String?
 
-    private var fields: [ChannelField] {
-        ChannelSchema.fields(for: type)
+    private var fields: [NotificationChannelField] {
+        NotificationChannelSchema.fields(for: type)
     }
 
     var body: some View {
@@ -216,16 +180,17 @@ private struct ChannelEditorView: View {
         .onAppear(perform: seed)
     }
 
-    private func fieldRow(_ field: ChannelField) -> some View {
+    private func fieldRow(_ field: NotificationChannelField) -> some View {
         let binding = Binding(
             get: { values[field.key] ?? "" },
             set: { values[field.key] = $0 }
         )
         return Group {
             if field.secret {
-                SecretFieldRow(title: field.label, input: binding, isStored: !(values[field.key] ?? "").isEmpty)
+                SecretFieldRow(title: LocalizedStringKey(field.label), input: binding,
+                               isStored: !(values[field.key] ?? "").isEmpty)
             } else {
-                LabeledTextFieldRow(title: field.label, text: binding,
+                LabeledTextFieldRow(title: LocalizedStringKey(field.label), text: binding,
                                     keyboard: field.numeric ? .numberPad : .default)
             }
         }
@@ -240,7 +205,7 @@ private struct ChannelEditorView: View {
         for (key, value) in channel.config ?? [:] {
             seeded[key] = value.stringValue
         }
-        values = seeded
+        values = NotificationChannelSchema.upgradingLegacyKeys(seeded, type: channel.type)
     }
 
     private func buildConfig() -> [String: JSONValue] {

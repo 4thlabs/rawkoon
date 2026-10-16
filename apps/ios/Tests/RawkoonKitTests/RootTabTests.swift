@@ -37,6 +37,20 @@ final class RootTabTests: XCTestCase {
         }
     }
 
+    func testBooksTabFollowsTheFeatureFlag() {
+        XCTAssertFalse(RootTab.phoneTabs(booksEnabled: false).contains(.books))
+        XCTAssertEqual(RootTab.phoneTabs(booksEnabled: true), RootTab.phone)
+        XCTAssertFalse(RootTab.visibleSidebar(isAdmin: true, booksEnabled: false).contains(.books))
+        XCTAssertTrue(RootTab.visibleSidebar(isAdmin: true, booksEnabled: true).contains(.books))
+    }
+
+    func testStaleBooksSelectionFallsBackToHomeWhenDisabled() {
+        XCTAssertEqual(RootTab.validated("books", compact: true, booksEnabled: false), .home)
+        XCTAssertEqual(RootTab.validated("books", compact: false, booksEnabled: false), .home)
+        XCTAssertEqual(RootTab.validated("books", compact: true, booksEnabled: true), .books)
+        XCTAssertEqual(RootTab.validated("library", compact: true, booksEnabled: false), .library)
+    }
+
     func testNotificationsIsInTheSidebar() {
         XCTAssertEqual(RootTab.validated("notifications", compact: false), .notifications)
     }
