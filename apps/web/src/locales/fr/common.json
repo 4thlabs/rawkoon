@@ -24,6 +24,8 @@
     "requestedBy": "par {{name}}",
     "request": "Demander",
     "requested": "Demandé",
+    "requestedToast": "Demande envoyée pour « {{title}} »",
+    "requestFailed": "Impossible de demander « {{title}} »",
     "book": "Livre",
     "viewBook": "Voir le livre",
     "qualityPlaceholder": "Profil de qualité",

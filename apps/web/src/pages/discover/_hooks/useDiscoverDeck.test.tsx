@@ -6,9 +6,19 @@ import type { DiscoverDeckItem } from "@rawkoon/shared/types";
 import { useDiscoverDeck } from "./useDiscoverDeck";
 
 const mutateAsync = vi.fn().mockResolvedValue({ item: { id: 1 } });
+const addMutateAsync = vi.fn().mockResolvedValue({ item: { id: 1 } });
+const requestMutateAsync = vi.fn().mockResolvedValue({ id: 9 });
+let isAdmin = true;
+
+vi.mock("@/lib/auth/useAuth", () => ({
+  useCurrentUser: () => ({ data: { is_admin: isAdmin } }),
+}));
+vi.mock("@/pages/requests/_hooks/useRequests", () => ({
+  useCreateRequest: () => ({ mutateAsync: requestMutateAsync }),
+}));
 
 vi.mock("@/features/medias/hooks/useAddToLibrary", () => ({
-  useAddToLibrary: () => ({ mutateAsync }),
+  useAddToLibrary: () => ({ mutateAsync: addMutateAsync }),
 }));
 vi.mock("@/features/medias/hooks/useAddToWatchlist", () => ({
   useAddToWatchlist: () => ({ mutateAsync }),
@@ -91,5 +101,53 @@ describe("useDiscoverDeck", () => {
     });
 
     await waitFor(() => expect(result.current.current?.tmdb_id).toBe(6));
+  });
+
+  describe("addCurrent", () => {
+    const fetcher = () =>
+      vi.fn().mockResolvedValue({
+        items: [item(1), item(2), item(3)],
+        source: "trending",
+      }) as unknown as Fetcher;
+
+    it("adds to the library for an admin", async () => {
+      isAdmin = true;
+      addMutateAsync.mockClear();
+      requestMutateAsync.mockClear();
+      const { result } = renderHook(() => useDiscoverDeck(), {
+        wrapper: wrapper(fetcher()),
+      });
+      await waitFor(() => expect(result.current.current?.tmdb_id).toBe(1));
+      act(() => result.current.addCurrent());
+      expect(addMutateAsync).toHaveBeenCalledWith({
+        tmdb_id: 1,
+        type: "movie",
+      });
+      expect(requestMutateAsync).not.toHaveBeenCalled();
+      await waitFor(() => expect(result.current.current?.tmdb_id).toBe(2));
+      expect(result.current.canUndo).toBe(true);
+    });
+
+    it("files a request for a non-admin and advances without undo", async () => {
+      isAdmin = false;
+      addMutateAsync.mockClear();
+      requestMutateAsync.mockClear();
+      const { result } = renderHook(() => useDiscoverDeck(), {
+        wrapper: wrapper(fetcher()),
+      });
+      await waitFor(() => expect(result.current.current?.tmdb_id).toBe(1));
+      act(() => result.current.addCurrent());
+      expect(requestMutateAsync).toHaveBeenCalledWith({
+        tmdb_id: 1,
+        type: "movie",
+        title: "T1",
+        poster_url: null,
+        year: null,
+      });
+      expect(addMutateAsync).not.toHaveBeenCalled();
+      await waitFor(() => expect(result.current.current?.tmdb_id).toBe(2));
+      expect(result.current.canUndo).toBe(false);
+      isAdmin = true;
+    });
   });
 });

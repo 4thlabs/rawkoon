@@ -13,6 +13,8 @@ interface Props {
   onWatchlist: () => void;
   /** Admin setting: Add also searches for a release. */
   searchOnAdd: boolean;
+  /** Non-admins file a request instead of adding to the library. */
+  requestMode?: boolean;
   onAdd: () => void;
   onAddOnly: () => void;
   onUndo: () => void;
@@ -27,6 +29,7 @@ export function DiscoverActionBar({
   onDismiss,
   onWatchlist,
   searchOnAdd,
+  requestMode = false,
   onAdd,
   onAddOnly,
   onUndo,
@@ -61,7 +64,7 @@ export function DiscoverActionBar({
         </button>
         <button
           type="button"
-          aria-label={t("medias.discover.addToLibrary")}
+          aria-label={requestMode ? t("requests.request") : t("medias.discover.addToLibrary")}
           disabled={disabled}
           onClick={onAdd}
           className={cn(

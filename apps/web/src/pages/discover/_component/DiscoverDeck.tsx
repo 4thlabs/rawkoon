@@ -139,7 +139,8 @@ export function DiscoverDeck() {
           setInFlight(true);
           void deck.watchlistCurrent();
         }}
-        searchOnAdd={searchOnAddEnabled}
+        searchOnAdd={searchOnAddEnabled && deck.isAdmin}
+        requestMode={!deck.isAdmin}
         onAdd={() => {
           if (inFlight || !deck.current) return;
           setInFlight(true);
