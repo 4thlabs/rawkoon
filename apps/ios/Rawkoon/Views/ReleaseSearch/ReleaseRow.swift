@@ -45,7 +45,7 @@ struct ReleaseRow: View {
 
                 footerLine
 
-                if isRejected {
+                if isRejected, languageTag?.kind != .fallback {
                     rejectionReasons
                 }
 
