@@ -33,6 +33,7 @@ export function NotificationsPage() {
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-8">
       <PageHeader
+        headingLevel="h2"
         icon={Bell}
         iconColor="text-blue-600"
         title={t("notifications.title")}

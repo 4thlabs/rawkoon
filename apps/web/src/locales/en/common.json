@@ -438,7 +438,13 @@
     "viewAll": "View all",
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete this notification?",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "searchAgain": "Search again",
+    "review": "Review",
+    "searchAgainGrabbed": "Search started and a release was grabbed",
+    "searchAgainNothing": "Search finished, nothing matched yet",
+    "searchAgainFailed": "Could not start the search",
+    "searchAgainNothingTitle": "Searched the whole title, nothing matched yet"
   },
   "emotion": {
     "howDidYouFeel": "How did you feel?",
@@ -674,10 +680,6 @@
       "singleDevice": "Device-bound",
       "backedUp": "backed up",
       "addedOn": "Added {{date}}"
-    },
-    "activity": {
-      "title": "Activity",
-      "description": "Browse the paginated household activity feed with filters."
     },
     "media": {
       "title": "Media",
@@ -2958,6 +2960,28 @@
       "requests": "Requests",
       "calendar": "Calendar",
       "history": "History"
+    },
+    "queue": {
+      "filterLabel": "Filter the queue",
+      "all": "All",
+      "status": {
+        "downloading": "Downloading",
+        "waiting": "Waiting",
+        "importing": "Importing",
+        "stalled": "Stalled",
+        "failed": "Failed"
+      },
+      "reason": {
+        "grabIn_one": "Grabs in {{time}}, comparing {{count}} release",
+        "grabIn_other": "Grabs in {{time}}, comparing {{count}} releases",
+        "grabDue_one": "Ready to grab, {{count}} release collected",
+        "grabDue_other": "Ready to grab, {{count}} releases collected",
+        "paused": "Paused in the download client",
+        "importing": "Finished downloading, waiting for import",
+        "stalled": "No data is arriving from peers",
+        "failed": "The download client reported an error",
+        "importFailed": "Downloaded, but the import failed"
+      }
     }
   },
   "find": {

@@ -438,7 +438,13 @@
     "viewAll": "Voir tout",
     "delete": "Supprimer",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette notification ?",
-    "loadMore": "Charger plus"
+    "loadMore": "Charger plus",
+    "searchAgain": "Relancer la recherche",
+    "review": "Examiner",
+    "searchAgainGrabbed": "Recherche lancée, une version a été récupérée",
+    "searchAgainNothing": "Recherche terminée, rien ne correspond pour le moment",
+    "searchAgainFailed": "Impossible de lancer la recherche",
+    "searchAgainNothingTitle": "Recherche sur tout le titre, rien ne correspond pour le moment"
   },
   "emotion": {
     "howDidYouFeel": "Comment vous êtes-vous senti ?",
@@ -674,10 +680,6 @@
       "singleDevice": "Liée à l'appareil",
       "backedUp": "sauvegardée",
       "addedOn": "Ajoutée le {{date}}"
-    },
-    "activity": {
-      "title": "Activité",
-      "description": "Parcourez l’activité paginée du foyer avec des filtres."
     },
     "media": {
       "title": "Médias",
@@ -2958,6 +2960,28 @@
       "requests": "Demandes",
       "calendar": "Calendrier",
       "history": "Historique"
+    },
+    "queue": {
+      "filterLabel": "Filtrer la file d'attente",
+      "all": "Tout",
+      "status": {
+        "downloading": "Téléchargement",
+        "waiting": "En attente",
+        "importing": "Importation",
+        "stalled": "Bloqué",
+        "failed": "Échec"
+      },
+      "reason": {
+        "grabIn_one": "Récupération dans {{time}}, {{count}} version comparée",
+        "grabIn_other": "Récupération dans {{time}}, {{count}} versions comparées",
+        "grabDue_one": "Prêt à récupérer, {{count}} version trouvée",
+        "grabDue_other": "Prêt à récupérer, {{count}} versions trouvées",
+        "paused": "En pause dans le client de téléchargement",
+        "importing": "Téléchargement terminé, en attente d'importation",
+        "stalled": "Aucune donnée ne provient des pairs",
+        "failed": "Le client de téléchargement a signalé une erreur",
+        "importFailed": "Téléchargé, mais l'importation a échoué"
+      }
     }
   },
   "find": {

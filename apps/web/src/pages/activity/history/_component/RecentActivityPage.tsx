@@ -65,6 +65,7 @@ export function RecentActivityPage() {
   return (
     <PageLayout className="max-w-4xl">
       <PageHeader
+        headingLevel="h2"
         icon={Clock}
         iconColor="text-blue-600"
         title={t("dashboard.activityPage.title")}
