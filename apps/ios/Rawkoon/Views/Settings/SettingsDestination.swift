@@ -63,6 +63,7 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
     case bookProviders
     case ai
     case mediaLibrary
+    case autoGrab
     case seeding
     case arrImport
     case qualityProfiles
@@ -86,7 +87,7 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
         switch self {
         case .tmdb, .fanart, .jellyfin, .prowlarr, .jackett, .indexers, .downloadClient:
             .integrations
-        case .mediaLibrary, .seeding, .arrImport, .qualityProfiles, .customFormats:
+        case .mediaLibrary, .autoGrab, .seeding, .arrImport, .qualityProfiles, .customFormats:
             .libraryQuality
         case .books, .bookQualityProfiles, .bookProviders:
             .books
@@ -119,6 +120,7 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
         case .downloadClient: "Download client"
         case .bookProviders: "Book providers"
         case .mediaLibrary: "Library"
+        case .autoGrab: "Automatic grabbing"
         case .seeding: "Sharing"
         case .arrImport: "Import from Radarr/Sonarr"
         case .qualityProfiles: "Quality profiles"
@@ -154,6 +156,7 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
         case .downloadClient: "arrow.down.circle"
         case .bookProviders: "books.vertical"
         case .mediaLibrary: "folder"
+        case .autoGrab: "bolt.badge.clock"
         case .seeding: "arrow.up.arrow.down.circle"
         case .arrImport: "square.and.arrow.down"
         case .qualityProfiles: "slider.horizontal.3"
@@ -186,6 +189,7 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
         case .downloadClient: ["qbittorrent", "transmission", "deluge", "torrent", "download"]
         case .bookProviders: ["audnexus", "audible", "open library", "metadata", "books"]
         case .mediaLibrary: ["folders", "paths", "root", "media", "library"]
+        case .autoGrab: ["grab", "auto", "automatic", "search", "interval", "delay", "schedule", "cron", "check", "held", "pending", "readiness", "rss"]
         case .seeding: ["seeding", "seed", "ratio", "torrent", "release", "share", "sharing", "tracker"]
         case .arrImport: ["radarr", "sonarr", "migrate", "import"]
         case .qualityProfiles: ["quality", "profile", "resolution"]
@@ -230,6 +234,7 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
         case .downloadClient: DownloadClientEditView()
         case .bookProviders: BooksProviderView()
         case .mediaLibrary: MediaLibrarySettingsView()
+        case .autoGrab: AutoGrabSettingsView()
         case .seeding: SeedingSettingsView()
         case .arrImport: ArrLibraryImportView()
         case .qualityProfiles: QualityProfilesCrudView()

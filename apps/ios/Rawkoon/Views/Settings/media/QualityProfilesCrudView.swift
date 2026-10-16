@@ -204,7 +204,10 @@ private struct QualityProfileEditorView: View {
                 Toggle("Skip delay when cutoff is met", isOn: $bypassDelayIfCutoffMet)
                     .tint(Theme.apricot).listRowBackground(Theme.raised)
             } footer: {
-                Text("The delay holds automatic grabs so a better release can show up. Manual grabs are never delayed.")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("The delay holds automatic grabs so a better release can show up. Manual grabs are never delayed.")
+                    Text("Held releases are listed under Automatic grabbing, where you can grab one early.")
+                }
             }
             Section {
                 LabeledTextFieldRow(title: "Prioritized trackers", text: $trackersText,
