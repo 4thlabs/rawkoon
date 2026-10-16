@@ -275,9 +275,9 @@ struct ReleaseSearchResults: View {
                 "These are other versions of the language. They are never grabbed automatically; "
                     + "Rawkoon keeps checking for \(missing)."
             )
-                .font(.caption)
-                .foregroundStyle(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
+            .font(.caption)
+            .foregroundStyle(Theme.muted)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
