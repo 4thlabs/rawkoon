@@ -11,11 +11,6 @@ extension APIClient {
         return try await post("/api/library", body: Body(tmdbId: tmdbId, type: type, searchOnAdd: searchOnAdd))
     }
 
-    /// Releases a held grab early; one call per pending-release target.
-    func grabPendingNow(targetKey: String) async throws -> GrabPendingNowResponse {
-        try await post("/api/downloads/pending-releases/grab-now", body: GrabPendingNowBody(targetKey: targetKey))
-    }
-
     /// Library (movies / shows)
     func libraryList(
         type: String? = nil, status: String? = nil, q: String? = nil, page: Int? = nil, limit: Int? = nil,

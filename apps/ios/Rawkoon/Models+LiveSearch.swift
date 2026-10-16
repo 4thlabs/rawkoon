@@ -52,16 +52,6 @@ extension LiveSearchResult {
     }
 }
 
-/// `POST /api/downloads/pending-releases/grab-now`.
-nonisolated struct GrabPendingNowBody: Encodable, Sendable {
-    let targetKey: String
-}
-
-nonisolated struct GrabPendingNowResponse: Decodable, Sendable {
-    let grabbed: Bool
-    let reason: String?
-}
-
 /// `POST /api/requests/:id/approve`: the library item the approval created and what was done about searching.
 nonisolated struct ApproveRequestResult: Decodable, Sendable {
     let libraryMediaId: Int?
