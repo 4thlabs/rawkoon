@@ -1,6 +1,6 @@
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MobileTabBar, isTabBarRoute } from "@/components/MobileTabBar";
 
 let pathname = "/";
@@ -62,10 +62,27 @@ describe("isTabBarRoute", () => {
     expect(isTabBarRoute("/", "/")).toBe(true);
     expect(isTabBarRoute("/", "/library")).toBe(false);
     expect(isTabBarRoute("/library", "/library/12")).toBe(true);
+    expect(isTabBarRoute("/library", "/library")).toBe(true);
+    expect(isTabBarRoute("/library", "/libraryfoo")).toBe(false);
   });
 });
 
 describe("MobileTabBar", () => {
+  it("hides while a text field has focus and comes back on blur", () => {
+    render(
+      <>
+        <input aria-label="field" />
+        <MobileTabBar />
+      </>,
+    );
+    const nav = screen.getByRole("navigation");
+    const field = screen.getByLabelText("field");
+    act(() => field.focus());
+    expect(nav.hidden).toBe(true);
+    act(() => field.blur());
+    expect(nav.hidden).toBe(false);
+  });
+
   it("shows the five tabs and marks the current page", () => {
     pathname = "/library/3";
     render(<MobileTabBar />);

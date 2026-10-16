@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Link, useRouterState } from "@tanstack/react-router";
 import * as RadixDialog from "@radix-ui/react-dialog";
@@ -26,7 +26,8 @@ import { cn } from "@/lib/utils";
 export const TAB_BAR_PATHS = ["/", "/library", "/requests"];
 
 export function isTabBarRoute(path: string, pathname: string): boolean {
-  return path === "/" ? pathname === "/" : pathname.startsWith(path);
+  if (path === "/") return pathname === "/";
+  return pathname === path || pathname.startsWith(`${path}/`);
 }
 
 const tabClass = (active: boolean) =>
@@ -59,6 +60,40 @@ function TabLink({
   );
 }
 
+const TEXT_INPUT_TYPES = new Set([
+  "text",
+  "search",
+  "email",
+  "url",
+  "tel",
+  "password",
+  "number",
+]);
+
+function isTextEntry(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) return false;
+  if (el.isContentEditable || el instanceof HTMLTextAreaElement) return true;
+  return el instanceof HTMLInputElement && TEXT_INPUT_TYPES.has(el.type);
+}
+
+/** True while a text field has focus, i.e. while the on-screen keyboard is likely up. */
+export function useTextEntryFocused(): boolean {
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    const onIn = (e: FocusEvent) => setFocused(isTextEntry(e.target));
+    const onOut = (e: FocusEvent) => {
+      if (!isTextEntry(e.relatedTarget)) setFocused(false);
+    };
+    document.addEventListener("focusin", onIn);
+    document.addEventListener("focusout", onOut);
+    return () => {
+      document.removeEventListener("focusin", onIn);
+      document.removeEventListener("focusout", onOut);
+    };
+  }, []);
+  return focused;
+}
+
 export function MobileTabBar() {
   const { t } = useTranslation("common");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -68,6 +103,8 @@ export function MobileTabBar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Android shrinks the layout viewport for the keyboard, which would float the bar above it.
+  const typing = useTextEntryFocused();
 
   // The single place a phone opens search: commit the open state synchronously
   // so the input is no longer inert and focus() still runs inside the tap.
@@ -90,7 +127,8 @@ export function MobileTabBar() {
     <div className="lg:hidden">
       <nav
         aria-label={t("nav.mobileTabs")}
-        className="fixed inset-x-0 bottom-0 z-[var(--z-navigation)] border-t border-white/[0.08] bg-neutral-900/90 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-xl"
+        hidden={typing}
+        className="fixed inset-x-0 bottom-0 z-[var(--z-navigation)] border-t border-white/[0.08] bg-neutral-900 pb-[env(safe-area-inset-bottom,0px)]"
       >
         <div className="flex items-stretch px-1">
           <TabLink
