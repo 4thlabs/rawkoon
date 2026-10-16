@@ -101,7 +101,9 @@ struct PhoneTabsView<Root: View>: View {
                 onExpand: { chrome.expand() },
                 onReselect: { tab in
                     stackResets[tab, default: 0] += 1
-                    if tab == .explore { model.exploreSearchFocusRequest = true }
+                    if tab == .explore {
+                        model.exploreSearchFocusRequest = true
+                    }
                 },
                 horizontalPadding: insets.padding
             )

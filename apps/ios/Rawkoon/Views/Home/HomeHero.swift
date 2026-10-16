@@ -84,9 +84,9 @@ struct HomeHero<Greeting: View>: View {
                             touchEnded()
                             guard abs(value.translation.width) >= 20 || abs(value.translation.height) >= 20 else { return }
                             if let target = HeroRotation.swipe(
-                            from: index, count: items.count,
-                            dx: value.translation.width, dy: value.translation.height
-                        ) {
+                                from: index, count: items.count,
+                                dx: value.translation.width, dy: value.translation.height
+                            ) {
                                 select(target)
                                 swipes += 1
                             }
@@ -119,7 +119,9 @@ struct HomeHero<Greeting: View>: View {
 
     private func touchBegan() {
         guard !gate.touching else { return }
-        if items.indices.contains(index) { pressedItemId = items[index].id }
+        if items.indices.contains(index) {
+            pressedItemId = items[index].id
+        }
         gate.touchBegan(at: Date())
         gateEpoch += 1
     }
@@ -317,7 +319,11 @@ private struct HeroPressStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .onChange(of: configuration.isPressed) { _, pressed in
-                if pressed { onDown() } else { onUp() }
+                if pressed {
+                    onDown()
+                } else {
+                    onUp()
+                }
             }
     }
 }
