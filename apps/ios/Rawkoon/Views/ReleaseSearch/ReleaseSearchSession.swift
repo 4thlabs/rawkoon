@@ -358,7 +358,9 @@ final class ReleaseSearchSession {
                 if !result.grabbed {
                     var message = result.reason ?? String(localized: "Grab failed for \"\(release.title)\".")
                     if result.replacedPrevious == true {
-                        if let last = message.last, !".!?".contains(last) { message += "." }
+                        if let last = message.last, !".!?".contains(last) {
+                            message += "."
+                        }
                         message += " " + String(localized: "The previous download was already stopped.")
                         await loadGrabbedTitles(model: model)
                     }
