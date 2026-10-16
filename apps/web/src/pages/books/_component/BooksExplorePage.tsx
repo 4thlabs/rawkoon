@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FindBackLink } from "@/pages/find/_component/FindBackLink";
 import { useTranslation } from "react-i18next";
 import { Trophy } from "lucide-react";
 import type { BookDiscoveryBook } from "@rawkoon/shared/types";
@@ -71,6 +72,7 @@ export function BooksExplorePage() {
 
   return (
     <PageLayout>
+      <FindBackLink />
       <PageHeader
         icon={Trophy}
         iconColor="text-primary-400"

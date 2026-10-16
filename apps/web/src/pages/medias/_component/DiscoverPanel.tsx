@@ -31,6 +31,7 @@ export function DiscoverPanel() {
   const sortBy = state.sort;
   const page = state.page;
   const originalLanguage = state.lang;
+  const hideOwned = state.hide_owned;
 
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -108,7 +109,11 @@ export function DiscoverPanel() {
     dataPage: data?.page,
   });
   const showSkeletonGrid = !data && isFetching;
-  const hasItems = (data?.items.length ?? 0) > 0;
+  // Filters the page in view: the API has no "not in library" parameter.
+  const items = hideOwned
+    ? data?.items.filter((item) => !item.already_exists)
+    : data?.items;
+  const hasItems = (items?.length ?? 0) > 0;
 
   return (
     <section className="relative space-y-5">
@@ -149,6 +154,18 @@ export function DiscoverPanel() {
           onSortChange={changeSort}
           onLanguageToggle={toggleLanguage}
         />
+        <button
+          type="button"
+          aria-pressed={hideOwned}
+          onClick={() => setState({ hide_owned: !hideOwned })}
+          className={`focus-ring rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+            hideOwned
+              ? "border-primary-500/50 bg-primary-500/10 text-primary-200"
+              : "border-neutral-700 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
+          }`}
+        >
+          {t("find.hideOwned")}
+        </button>
       </div>
 
       <DiscoverResultsGrid
@@ -157,7 +174,7 @@ export function DiscoverPanel() {
         hasItems={hasItems}
         gridKey={gridKey}
         isPlaceholderData={isPlaceholderData}
-        items={data?.items}
+        items={items}
         noResultsLabel={t("medias.discover.noResults")}
       />
 

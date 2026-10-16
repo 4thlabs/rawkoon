@@ -1766,8 +1766,6 @@
       "ownedOf": "{{owned}}/{{total}}"
     },
     "explore": {
-      "pageTitle": "Découvrir",
-      "pageSubtitle": "Recherchez sur TMDB et parcourez Découvrir.",
       "trending": "Tendances",
       "popularMovies": "Films populaires",
       "popularShows": "Séries populaires",
@@ -2960,6 +2958,29 @@
       "requests": "Demandes",
       "calendar": "Calendrier",
       "history": "Historique"
+    }
+  },
+  "find": {
+    "title": "Trouver",
+    "browse": "Parcourir",
+    "swipe": "Swipe",
+    "modeLabel": "Mode de Trouver",
+    "placeholder": "Chercher films, séries, livres et votre bibliothèque",
+    "clear": "Effacer la recherche",
+    "hideOwned": "Masquer ce que je possède",
+    "groups": {
+      "library": "Dans votre bibliothèque",
+      "titles": "Films et séries",
+      "books": "Livres"
+    },
+    "shelves": {
+      "label": "Étagères",
+      "watchlist": "À regarder",
+      "watchlistHint": "Les titres mis de côté pour plus tard",
+      "collections": "Collections",
+      "collectionsHint": "Complétez les séries de films commencées",
+      "bestsellers": "Meilleures ventes",
+      "bestsellersHint": "Des listes de livres pour votre prochaine lecture"
     }
   }
 }

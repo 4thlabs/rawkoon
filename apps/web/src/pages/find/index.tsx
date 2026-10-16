@@ -1,9 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { getCurrentUser } from "@/lib/auth";
-import { prefetchRouteData } from "@/lib/routing/prefetch";
-import { ExplorePage } from "@/pages/medias/_component/ExplorePage";
+import { FindPage } from "@/pages/find/_component/FindPage";
+import { readFindMode } from "@/pages/find/_component/findMode";
 
-type ExploreSearchParams = {
+type FindSearchParams = {
   type?: "movie" | "tv";
   provider?: number;
   genre?: number;
@@ -11,6 +11,7 @@ type ExploreSearchParams = {
   page?: number;
   lang?: string;
   q?: string;
+  hide_owned?: boolean;
 };
 
 const parseOptionalInt = (val: unknown): number | undefined =>
@@ -21,7 +22,7 @@ const parseOptionalInt = (val: unknown): number | undefined =>
       : undefined;
 
 export const Route = createFileRoute("/find/")({
-  validateSearch: (search: Record<string, unknown>): ExploreSearchParams => ({
+  validateSearch: (search: Record<string, unknown>): FindSearchParams => ({
     type:
       search.type === "movie" || search.type === "tv" ? search.type : undefined,
     provider: parseOptionalInt(search.provider),
@@ -32,19 +33,27 @@ export const Route = createFileRoute("/find/")({
     lang:
       typeof search.lang === "string" && search.lang ? search.lang : undefined,
     q: typeof search.q === "string" && search.q ? search.q : undefined,
+    hide_owned:
+      search.hide_owned === true || search.hide_owned === "true"
+        ? true
+        : undefined,
   }),
-  beforeLoad: async () => {
+  beforeLoad: async ({ search }) => {
     try {
       const user = await getCurrentUser();
       if (!user) throw redirect({ to: "/login" });
+      // Nav and shelf links land here without params, so reopen the session's last mode.
+      if (
+        readFindMode() === "swipe" &&
+        Object.values(search).every((v) => v === undefined)
+      ) {
+        throw redirect({ to: "/find/swipe", replace: true });
+      }
       return { user };
     } catch (e: unknown) {
       if ((e as { status?: number })?.status === 429) return { user: null };
       throw e;
     }
   },
-  loader: async ({ context }) => {
-    await prefetchRouteData(context.queryClient, "/find");
-  },
-  component: ExplorePage,
+  component: FindPage,
 });
