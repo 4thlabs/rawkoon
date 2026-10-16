@@ -503,6 +503,10 @@ model LibraryMedia {
   digitalReleaseDate    DateTime? @map("digital_release_date")
   qualityProfileId      Int?      @map("quality_profile_id")
   searchAttempts        Int       @default(0) @map("search_attempts")
+  /// Last automatic or manual search; a miss stays visible after its toast is gone.
+  lastSearchAt          DateTime? @map("last_search_at")
+  lastSearchOutcome     String?   @map("last_search_outcome")
+  lastSearchReason      String?   @map("last_search_reason")
   addedAt               DateTime  @default(now()) @map("added_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
   /// Persisted MAX(download_history.grabbed_at); kept in sync by DB trigger.

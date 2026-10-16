@@ -19,6 +19,10 @@ vi.mock("@/features/medias/hooks/useRemoveFromLibrary", () => ({
 vi.mock("@/features/medias/hooks/useRemoveFromWatchlist", () => ({
   useRemoveFromWatchlist: () => ({ mutateAsync }),
 }));
+vi.mock("@/features/medias/hooks/useLiveSearchToast", () => {
+  const live = { announceAdd: vi.fn(), announceSearch: vi.fn() };
+  return { useLiveSearchToast: () => live };
+});
 vi.mock("./useDismissMedia", () => ({
   useDismissMedia: () => ({ mutateAsync }),
 }));

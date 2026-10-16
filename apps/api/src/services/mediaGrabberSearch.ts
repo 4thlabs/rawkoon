@@ -35,12 +35,27 @@ import {
   resolveSearchTitles,
 } from "@rawkoon/api/utils/medias/resolveSearchTitles";
 
-const NO_MATCH_REASON = "No matching releases found";
+import { NO_MATCH_REASON } from "@rawkoon/api/constants/libraryGrab";
 
-type SearchMiss = {
+export type SearchGrab = {
+  grabbed: true;
+  releaseTitle: string;
+  aiPicked?: boolean;
+  /** Quality facts of the release that was grabbed, for the live search result. */
+  release?: {
+    title: string;
+    resolution: number | null;
+    source: string | null;
+    sizeBytes: number | null;
+  };
+};
+
+export type SearchMiss = {
   grabbed: false;
   reason: string;
   delayed?: true;
+  /** When a held grab is released by its delay. */
+  delayUntil?: Date;
   /** Set when only other versions of the preferred language were found. */
   languageFallback?: LanguageFallbackSummary;
 };
@@ -58,9 +73,7 @@ export async function searchAndGrab(opts: {
   trigger?: AiTrigger;
   /** Pre-loaded by the fallback wrapper; undefined means load it here. */
   aiConfig?: AiProviderConfig | null;
-}): Promise<
-  { grabbed: true; releaseTitle: string; aiPicked?: boolean } | SearchMiss
-> {
+}): Promise<SearchGrab | SearchMiss> {
   try {
     const {
       mediaId,
@@ -274,6 +287,7 @@ export async function searchAndGrab(opts: {
           return {
             grabbed: false,
             delayed: true,
+            delayUntil: decision.grabAfter,
             reason: `Held by grab delay until ${decision.grabAfter.toISOString()}`,
           };
         }
@@ -345,7 +359,16 @@ export async function searchAndGrab(opts: {
         if (delaySettings.minutes > 0) {
           await clearPending(delayTarget).catch(() => {});
         }
-        return { ...result, aiPicked: candidate === aiRow };
+        return {
+          ...result,
+          aiPicked: candidate === aiRow,
+          release: {
+            title: candidate.title,
+            resolution: candidate.parsed.resolution ?? null,
+            source: candidate.parsed.source ?? null,
+            sizeBytes: candidate.size ?? null,
+          },
+        };
       }
 
       // Only continue to the next candidate on a blocklist hit or a space refusal.
@@ -389,9 +412,7 @@ export async function searchAndGrabWithTitleFallback(opts: {
   isUpgrade?: boolean;
   /** Recorded in the AI usage ledger; defaults to upgrade/manual_search from isUpgrade. */
   trigger?: AiTrigger;
-}): Promise<
-  { grabbed: true; releaseTitle: string; aiPicked?: boolean } | SearchMiss
-> {
+}): Promise<SearchGrab | SearchMiss> {
   let miss: SearchMiss = { grabbed: false, reason: NO_MATCH_REASON };
   let fallback: SearchMiss | null = null;
   const aiConfig = await loadEnabledAiProviderConfig().catch(() => null);

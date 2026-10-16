@@ -2,7 +2,7 @@ import type { TFunction } from "i18next";
 import type { AddToLibraryResponse } from "@rawkoon/shared/types";
 
 /** The date is a calendar day, so format it in UTC to avoid shifting it a day. */
-function formatReleaseDay(ymd: string, language: string): string {
+export function formatReleaseDay(ymd: string, language: string): string {
   const date = new Date(`${ymd}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) return ymd;
   return new Intl.DateTimeFormat(language, {

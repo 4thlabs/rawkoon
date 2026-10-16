@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 import type { LanguageFallbackSummary } from "@rawkoon/shared/types";
 import { isFrenchFallbackTag } from "@rawkoon/shared/utils/languageFamily";
 
@@ -52,26 +51,4 @@ export function languageFallbackMissMessage(
         .join(", "),
     },
   );
-}
-
-/** Toast for a "Search now" that grabbed nothing; offers the release list when only other language versions exist. */
-export function toastSearchMiss(
-  t: T,
-  miss: {
-    reason?: string;
-    language_fallback_summary?: LanguageFallbackSummary | null;
-  },
-  onSeeReleases: () => void,
-) {
-  const summary = miss.language_fallback_summary;
-  if (!summary) {
-    toast.error(miss.reason ?? t("library.management.grabFailed"));
-    return;
-  }
-  toast.error(languageFallbackMissMessage(t, summary), {
-    action: {
-      label: t("library.management.seeReleases"),
-      onClick: onSeeReleases,
-    },
-  });
 }

@@ -6,6 +6,7 @@ enum SSEContractID: String, CaseIterable, Sendable {
     case libraryLanded = "library.landed"
     case libraryDownloadProgress = "library.download-progress"
     case librarySeedState = "library.seed-state"
+    case librarySearchResult = "library.search-result"
     case libraryHandshake = "library.handshake"
     case notification = "notifications.notification"
     case notificationsHandshake = "notifications.handshake"

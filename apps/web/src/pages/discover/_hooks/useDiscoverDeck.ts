@@ -12,7 +12,7 @@ import { useAddToLibrary } from "@/features/medias/hooks/useAddToLibrary";
 import { useAddToWatchlist } from "@/features/medias/hooks/useAddToWatchlist";
 import { useRemoveFromLibrary } from "@/features/medias/hooks/useRemoveFromLibrary";
 import { useRemoveFromWatchlist } from "@/features/medias/hooks/useRemoveFromWatchlist";
-import { addToastMessage } from "@/features/medias/lib/addToastMessage";
+import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
 import { mergeBatch } from "./mergeBatch";
 import { useDismissMedia } from "./useDismissMedia";
 import { useUndismissMedia } from "./useUndismissMedia";
@@ -36,7 +36,7 @@ const libraryType = (t: "movie" | "tv"): "movie" | "show" =>
   t === "tv" ? "show" : "movie";
 
 export function useDiscoverDeck() {
-  const { t, i18n } = useTranslation("common");
+  const { t } = useTranslation("common");
   const fetcher = useFetcher();
   const [queue, setQueue] = useState<DiscoverDeckItem[]>([]);
   const [source, setSource] = useState<DiscoverDeckSource>("personalized");
@@ -47,6 +47,7 @@ export function useDiscoverDeck() {
   const fetching = useRef(false);
 
   const addToLibrary = useAddToLibrary();
+  const liveSearchToast = useLiveSearchToast();
   const addToWatchlist = useAddToWatchlist();
   const removeFromLibrary = useRemoveFromLibrary();
   const removeFromWatchlist = useRemoveFromWatchlist();
@@ -148,7 +149,7 @@ export function useDiscoverDeck() {
           ...(searchOnAdd === false ? { search_on_add: false } : {}),
         })
         .then((r) => {
-          toast.success(addToastMessage(t, item.title, r, i18n.language));
+          liveSearchToast.announceAdd(r, item.title);
           return r.item.id;
         })
         .catch((e) => {
@@ -159,7 +160,7 @@ export function useDiscoverDeck() {
       libraryId.catch(() => {});
       advance({ kind: "add", item, libraryId });
     },
-    [current, addToLibrary, advance, rollback, t, i18n.language],
+    [current, addToLibrary, advance, rollback, liveSearchToast],
   );
 
   const watchlistCurrent = useCallback(() => {

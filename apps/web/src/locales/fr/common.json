@@ -1990,6 +1990,25 @@
       "caption": "Lance tout de suite la recherche d'une version",
       "addOnly": "Ajouter seulement (sans rechercher)",
       "moreOptions": "Plus d'options d'ajout"
+    },
+    "searchToast": {
+      "searching": "Recherche de {{title}}…",
+      "grabbing": "Téléchargement de {{release}}, {{quality}}",
+      "grabbingPlain": "Téléchargement de {{release}}",
+      "view": "Voir",
+      "changeRelease": "Changer de version",
+      "held": "Retenu par le délai de téléchargement — démarre à {{time}} sauf si une meilleure version apparaît",
+      "grabNow": "Télécharger maintenant",
+      "noFit": "Aucune version ne convient à {{profile}} pour l’instant",
+      "noRelease": "Aucune version trouvée pour l’instant",
+      "chooseRelease": "Choisir une version",
+      "notReleased": "En attente de sa sortie numérique ({{date}})",
+      "notReleasedNoDate": "En attente d’une date de sortie numérique",
+      "notAiredYet": "Rien n’a encore été diffusé — prochain épisode {{date}}",
+      "notAiredYetNoDate": "Rien n’a encore été diffusé",
+      "stillSearching": "Recherche toujours en cours — vous recevrez une notification",
+      "failed": "La recherche a échoué",
+      "failedWithReason": "La recherche a échoué : {{reason}}"
     }
   },
   "library": {
@@ -2155,7 +2174,11 @@
       "storageByResolution": "Stockage par résolution",
       "error": "Impossible de charger les statistiques de la bibliothèque."
     },
-    "notFound": "Élément introuvable dans la bibliothèque."
+    "notFound": "Élément introuvable dans la bibliothèque.",
+    "lastSearch": {
+      "noMatch": "Aucune version · {{relative}}",
+      "noMatchNoTime": "Aucune version"
+    }
   },
   "downloadsImport": {
     "title": "Importer depuis Downloads",

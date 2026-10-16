@@ -1990,6 +1990,25 @@
       "caption": "Searches for a release right away",
       "addOnly": "Add only (don't search)",
       "moreOptions": "More add options"
+    },
+    "searchToast": {
+      "searching": "Searching for {{title}}…",
+      "grabbing": "Grabbing {{release}}, {{quality}}",
+      "grabbingPlain": "Grabbing {{release}}",
+      "view": "View",
+      "changeRelease": "Change release",
+      "held": "Held by grab delay — grabs at {{time}} unless a better release appears",
+      "grabNow": "Grab now",
+      "noFit": "No release fits {{profile}} yet",
+      "noRelease": "No release found yet",
+      "chooseRelease": "Choose a release",
+      "notReleased": "Waiting for its digital release ({{date}})",
+      "notReleasedNoDate": "Waiting for a digital release date",
+      "notAiredYet": "Nothing has aired yet — next episode {{date}}",
+      "notAiredYetNoDate": "Nothing has aired yet",
+      "stillSearching": "Still searching — you'll get a notification",
+      "failed": "The search failed",
+      "failedWithReason": "The search failed: {{reason}}"
     }
   },
   "library": {
@@ -2155,7 +2174,11 @@
       "storageByResolution": "Storage by resolution",
       "error": "Couldn't load library stats."
     },
-    "notFound": "Item not found in library."
+    "notFound": "Item not found in library.",
+    "lastSearch": {
+      "noMatch": "No match · {{relative}}",
+      "noMatchNoTime": "No match"
+    }
   },
   "downloadsImport": {
     "title": "Downloads import",

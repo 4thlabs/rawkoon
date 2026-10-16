@@ -24,6 +24,7 @@ let packResult: { grabbed: boolean; reason: string; delayed?: true };
 const searches: Array<{ suffix: string; season?: number; episodeId?: number }> =
   [];
 const writes: unknown[] = [];
+const outcomes: Array<Record<string, unknown>> = [];
 
 mock.module("@rawkoon/api/services/mediaGrabberSearch", () => ({
   ...realSearch,
@@ -52,8 +53,10 @@ mock.module("@rawkoon/api/db", () => ({
   prisma: {
     libraryMedia: {
       findUnique: async () => media,
-      update: async (a: unknown) => {
-        writes.push(a);
+      update: async (a: { data: Record<string, unknown> }) => {
+        // The stored search outcome is the one write a search-on-add may make.
+        if ("lastSearchAt" in a.data) outcomes.push(a.data);
+        else writes.push(a);
         return {};
       },
     },
@@ -102,6 +105,7 @@ const ep = (season: number, episode: number, over: Partial<Ep> = {}): Ep => ({
 beforeEach(() => {
   searches.length = 0;
   writes.length = 0;
+  outcomes.length = 0;
   episodes = [];
   refreshedDate = null;
   packResult = { grabbed: false, reason: "No matching releases found" };
@@ -119,6 +123,19 @@ describe("searchOnAdd worker: movies", () => {
     await searchOnAdd(1);
     expect(searches).toEqual([{ suffix: " 2020" }]);
     expect(writes).toHaveLength(0);
+    expect(outcomes).toMatchObject([{ lastSearchOutcome: "no_match" }]);
+  });
+
+  it("records that an unreleased movie is waiting on its digital release", async () => {
+    media = {
+      ...base,
+      type: "movie",
+      status: "wanted",
+      digitalReleaseDate: null,
+      _count: { files: 0 },
+    };
+    await searchOnAdd(1);
+    expect(outcomes).toMatchObject([{ lastSearchOutcome: "not_released" }]);
   });
 
   it("re-validates a missing date and skips when TMDB still has none", async () => {
@@ -198,6 +215,19 @@ describe("searchOnAdd worker: shows", () => {
       { suffix: " S02", season: 2, episodeId: undefined },
     ]);
     expect(writes).toHaveLength(0);
+  });
+
+  it("reports one outcome for the season it searched", async () => {
+    packResult = { grabbed: true, reason: "" };
+    episodes = [ep(1, 1), ep(1, 2), ep(2, 1)];
+    await searchOnAdd(1, 1);
+    expect(outcomes).toMatchObject([{ lastSearchOutcome: "grabbed" }]);
+  });
+
+  it("reports a season with nothing aired as waiting", async () => {
+    episodes = [ep(1, 1, { airDate: new Date("2999-01-01") })];
+    await searchOnAdd(1, 1);
+    expect(outcomes).toMatchObject([{ lastSearchOutcome: "not_released" }]);
   });
 
   it("falls back to aired episodes when the pack misses, never the unaired one", async () => {

@@ -7,6 +7,7 @@ import { formatDate } from "@rawkoon/shared/utils/date";
 import type { LibraryMedia } from "@rawkoon/shared/types";
 import type { ViewMode } from "@/utils/libraryUtils";
 import { usePrefetchLibraryItem } from "@/features/medias/hooks/usePrefetchLibraryItem";
+import { LastSearchNote } from "@/features/medias/components/LastSearchNote";
 import { libraryStatusPresentation } from "@/utils/libraryStatusPresentation";
 
 interface LibraryItemCardProps {
@@ -101,6 +102,7 @@ export function LibraryItemCard({
                 {t("medias.library.digitalRelease", { date: digitalLabel })}
               </p>
             )}
+            <LastSearchNote item={item} />
             {p.quickAction === "search" &&
               item.type === "movie" &&
               onMovieSearch && (

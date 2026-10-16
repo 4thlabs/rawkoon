@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAddToLibrary } from "@/features/medias/hooks/useAddToLibrary";
 import { useSearchOnAddEnabled } from "@/features/medias/hooks/useSearchOnAddEnabled";
-import { addToastMessage } from "@/features/medias/lib/addToastMessage";
+import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
 import { useAddToWatchlist } from "@/features/medias/hooks/useAddToWatchlist";
 import { useMediaModalData } from "@/features/medias/hooks/useMediaModalData";
 import { useRemoveFromWatchlist } from "@/features/medias/hooks/useRemoveFromWatchlist";
@@ -38,6 +38,7 @@ export function ExploreCardDetailDialog({
 
   const addMutation = useAddToLibrary();
   const searchOnAddEnabled = useSearchOnAddEnabled();
+  const liveSearchToast = useLiveSearchToast();
   const addToWatchlist = useAddToWatchlist();
   const removeFromWatchlist = useRemoveFromWatchlist();
 
@@ -100,7 +101,7 @@ export function ExploreCardDetailDialog({
         type: item.media_type === "tv" ? "show" : "movie",
         ...(searchOnAdd === false ? { search_on_add: false } : {}),
       });
-      toast.success(addToastMessage(t, item.title, response, i18n.language));
+      liveSearchToast.announceAdd(response, item.title);
       onAdded?.();
     } catch {
       toast.error(t("medias.addFailed"));

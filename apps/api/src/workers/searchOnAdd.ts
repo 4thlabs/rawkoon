@@ -7,6 +7,12 @@ import {
   isMovieReleased,
 } from "@rawkoon/api/services/searchOnAdd";
 import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
+import type { SearchResultPayload } from "@rawkoon/shared/types";
+import {
+  notReleasedResult,
+  publishSearchResult,
+  searchResultFrom,
+} from "@rawkoon/api/services/searchResult";
 
 type SearchTarget = {
   id: number;
@@ -29,6 +35,21 @@ export async function searchOnAdd(
   mediaId: number,
   season?: number,
 ): Promise<void> {
+  try {
+    await runSearchOnAdd(mediaId, season);
+  } catch (e) {
+    // The live toast is waiting on an outcome; BullMQ still retries the job.
+    await publishSearchResult({
+      media_id: mediaId,
+      ...(season != null ? { season } : {}),
+      outcome: "error",
+      reason: e instanceof Error ? e.message : "Search failed",
+    });
+    throw e;
+  }
+}
+
+async function runSearchOnAdd(mediaId: number, season?: number) {
   const media = await prisma.libraryMedia.findUnique({
     where: { id: mediaId },
     select: {
@@ -67,13 +88,21 @@ async function searchMovie(
       digital = await refreshLibraryMovieDigitalDate(media.id);
     } catch (e) {
       console.warn(`[searchOnAdd] TMDB refresh failed for ${media.id}:`, e);
+      await publishSearchResult({
+        media_id: media.id,
+        outcome: "error",
+        reason: "Could not check the digital release date",
+      });
       return;
     }
   }
-  if (!isMovieReleased(digital)) return;
+  if (!isMovieReleased(digital)) {
+    await publishSearchResult(notReleasedResult(media.id, digital));
+    return;
+  }
 
   const { queries } = resolveSearchTitles(media);
-  await searchAndGrabWithTitleFallback({
+  const result = await searchAndGrabWithTitleFallback({
     trigger: "scheduled",
     mediaId: media.id,
     mediaType: "movie",
@@ -81,6 +110,28 @@ async function searchMovie(
     suffix: media.year ? ` ${media.year}` : "",
     qualityProfileId: media.qualityProfileId,
   });
+  await publishSearchResult(searchResultFrom(media.id, result));
+}
+
+/** One result for the whole call: a grab beats a held grab, which beats a miss. */
+function summarize(
+  mediaId: number,
+  season: number | undefined,
+  results: SearchResultPayload[],
+): SearchResultPayload {
+  const withSeason = (r: SearchResultPayload): SearchResultPayload =>
+    season != null ? { ...r, season } : r;
+  const grabbed = results.find((r) => r.outcome === "grabbed");
+  if (grabbed) return withSeason(grabbed);
+  const held = results
+    .filter((r) => r.outcome === "delayed")
+    .sort((a, b) => (a.delay_until ?? "").localeCompare(b.delay_until ?? ""));
+  if (held[0]) return withSeason(held[0]);
+  const miss = results.find((r) => r.outcome === "no_match");
+  if (miss) return withSeason(miss);
+  const failed = results.find((r) => r.outcome === "error");
+  if (failed) return withSeason(failed);
+  return withSeason({ media_id: mediaId, outcome: "not_released" });
 }
 
 async function searchShow(
@@ -112,8 +163,9 @@ async function searchShow(
     seasons.set(ep.season, list);
   }
 
+  const results: SearchResultPayload[] = [];
   const { queries } = resolveSearchTitles(media);
-  for (const [season, all] of seasons) {
+  seasonLoop: for (const [season, all] of seasons) {
     const wanted = all.filter(
       (ep) =>
         ep.status === "wanted" &&
@@ -121,7 +173,15 @@ async function searchShow(
         ep.airDate != null &&
         ep.airDate <= cutoff,
     );
-    if (wanted.length === 0) continue;
+    if (wanted.length === 0) {
+      // Nothing to look for yet; the next air date tells the user when.
+      const next = all
+        .filter((ep) => ep.airDate != null && ep.airDate > cutoff)
+        .map((ep) => ep.airDate!)
+        .sort((a, b) => a.getTime() - b.getTime())[0];
+      results.push(notReleasedResult(media.id, next ?? null));
+      continue;
+    }
 
     // A fully aired, untouched season is looked for as a pack first.
     if (wanted.length === all.length) {
@@ -135,6 +195,7 @@ async function searchShow(
           suffix: ` S${pad2(season)}`,
           qualityProfileId: media.qualityProfileId,
         });
+        results.push(searchResultFrom(media.id, pack));
         // A held grab or a full disk won't improve by searching episode by episode.
         if (
           pack.grabbed ||
@@ -162,12 +223,20 @@ async function searchShow(
           suffix: ` S${pad2(ep.season)}E${pad2(ep.episode)}`,
           qualityProfileId: media.qualityProfileId,
         });
+        results.push(searchResultFrom(media.id, result));
         if (!result.grabbed && result.reason.startsWith(SPACE_REFUSAL_PREFIX)) {
-          return;
+          break seasonLoop;
         }
       } catch (e) {
         console.warn(`[searchOnAdd] Episode ${ep.id} failed:`, e);
+        results.push({
+          media_id: media.id,
+          outcome: "error",
+          reason: e instanceof Error ? e.message : "Search failed",
+        });
       }
     }
   }
+
+  await publishSearchResult(summarize(media.id, onlySeason, results));
 }

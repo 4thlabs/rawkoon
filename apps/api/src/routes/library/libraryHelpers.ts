@@ -7,6 +7,7 @@ import {
   DEFAULT_TITLE_LANGUAGE,
   type TitleLanguage,
 } from "@rawkoon/shared/constants";
+import type { SearchOutcome } from "@rawkoon/shared/types";
 
 export function computeTotalSizeBytes(
   files: { sizeBytes: bigint }[],
@@ -54,6 +55,9 @@ export function mapLibraryMedia(
     digitalReleaseDate: Date | null;
     qualityProfileId: number | null;
     searchAttempts: number;
+    lastSearchAt?: Date | null;
+    lastSearchOutcome?: string | null;
+    lastSearchReason?: string | null;
     qualityProfile: { id: number; name: string } | null;
     lastGrabbedAt?: Date | null;
     totalSizeBytes?: bigint | null;
@@ -140,6 +144,10 @@ export function mapLibraryMedia(
     digital_release_date: item.digitalReleaseDate?.toISOString() ?? null,
     quality_profile_id: item.qualityProfileId,
     search_attempts: item.searchAttempts,
+    last_search_at: item.lastSearchAt?.toISOString() ?? null,
+    last_search_outcome:
+      (item.lastSearchOutcome as SearchOutcome | null | undefined) ?? null,
+    last_search_reason: item.lastSearchReason ?? null,
     quality_profile: item.qualityProfile
       ? { id: item.qualityProfile.id, name: item.qualityProfile.name }
       : null,
