@@ -1,10 +1,8 @@
 {
   "nav": {
     "dashboard": "Accueil",
-    "chores": "Tâches",
     "explore": "Parcourir",
     "discover": "Pour vous",
-    "habits": "Habitudes",
     "library": "Bibliothèque",
     "books": "Livres",
     "requests": "Demandes",
@@ -89,7 +87,6 @@
     "customEventDeleted": "Événement supprimé",
     "customEventDeleteError": "Erreur lors de la suppression",
     "customEventDeleteConfirm": "Êtes-vous sûr de vouloir supprimer cet événement ?",
-    "chores": "Tâches",
     "publicHoliday": "Jours fériés",
     "mealPlans": "Repas",
     "event": "événement",
@@ -159,9 +156,7 @@
       "emptyDescription": "La nouvelle activité du foyer apparaîtra ici au fil du temps.",
       "emptyFilteredDescription": "Essayez un autre service ou un autre type d’activité.",
       "services": {
-        "chores": "Tâches",
         "calendar": "Calendrier",
-        "habits": "Habitudes",
         "system": "Système",
         "admin": "Admin",
         "tmdb": "TMDB",
@@ -172,8 +167,6 @@
       },
       "types": {
         "task_completed": "Tâche complétée",
-        "chore_completed": "Tâche complétée",
-        "habit_completed": "Habitude complétée",
         "cron_job_ended": "Cron terminé",
         "cron_job_skipped": "Cron ignoré",
         "app_updated": "Application mise à jour",
@@ -373,67 +366,6 @@
     "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
     "confirmPasswordRequired": "Veuillez confirmer votre mot de passe"
   },
-  "chores": {
-    "title": "Tâches",
-    "subtitle": "Suivez les tâches ménagères et les responsabilités.",
-    "addNewChore": "Ajouter une tâche",
-    "choreName": "Nom de la tâche *",
-    "choreNamePlaceholder": "ex. Aspirer le salon",
-    "assignTo": "Assigner à",
-    "anyoneCanDo": "N'importe qui peut le faire",
-    "description": "Description (optionnel)",
-    "descriptionPlaceholder": "Détails supplémentaires...",
-    "addChore": "Ajouter la tâche",
-    "currentChores": "Tâches actuelles",
-    "chore": "tâche",
-    "choresPlural": "tâches",
-    "noChores": "Aucune tâche assignée",
-    "addFirstChore": "Ajoutez votre première tâche en utilisant le formulaire ci-dessus.",
-    "addedBy": "Ajouté par",
-    "on": "le",
-    "assignedTo": "Assigné à",
-    "anyoneCanDoIt": "N'importe qui peut le faire",
-    "completedBy": "Complété par",
-    "markDone": "Marquer comme fait",
-    "undo": "Annuler",
-    "delete": "Supprimer",
-    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette tâche ?",
-    "recentlyCompleted": "Tâches récemment complétées",
-    "clearAll": "Tout supprimer",
-    "unknown": "Inconnu",
-    "enableReminder": "Activer le rappel",
-    "reminderDescription": "Recevez une notification quand il est temps de faire cette tâche",
-    "reminderDateTime": "Date et heure du rappel",
-    "noSubscriptionWarning": "Notifications non activées. Veuillez activer les notifications dans les paramètres de votre navigateur.",
-    "reminder": "Rappel:",
-    "overdue": "En retard",
-    "editChore": "Modifier la tâche",
-    "image": "Image",
-    "imageHelp": "Ajoutez une image pour illustrer cette tâche (optionnel)",
-    "removeImage": "Supprimer l'image",
-    "uploadingImage": "Téléchargement...",
-    "imageUploadError": "Erreur lors du téléchargement de l'image",
-    "enableRecurrence": "Activer la récurrence",
-    "recurrenceDescription": "Créez automatiquement une nouvelle tâche selon un planning",
-    "recurrenceType": "Type de récurrence",
-    "dailyInterval": "Tous les X jours",
-    "weekly": "Hebdomadaire",
-    "intervalDays": "Nombre de jours",
-    "weekday": "Jour de la semaine",
-    "monday": "Lundi",
-    "tuesday": "Mardi",
-    "wednesday": "Mercredi",
-    "thursday": "Jeudi",
-    "friday": "Vendredi",
-    "saturday": "Samedi",
-    "sunday": "Dimanche",
-    "removeRecurrence": "Retirer la récurrence",
-    "removeRecurrenceConfirm": "Voulez-vous retirer la récurrence de cette tâche ?",
-    "choreNameRequired": "Le nom de la tâche est requis",
-    "everyDay": "Tous les jours",
-    "everyXDays": "Tous les {{count}} jour",
-    "everyWeekday": "Chaque {{weekday}}"
-  },
   "common": {
     "language": "Langue",
     "theme": "Thème",
@@ -502,7 +434,7 @@
   "notifications": {
     "modal": {
       "title": "Activer les notifications ?",
-      "description": "Recevez des notifications pour les rappels de tâches et autres mises à jour importantes.",
+      "description": "Recevez des notifications pour les nouveaux téléchargements, les demandes et autres mises à jour importantes.",
       "allow": "Autoriser",
       "dismiss": "Plus tard"
     },
@@ -516,37 +448,6 @@
     "delete": "Supprimer",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette notification ?",
     "loadMore": "Charger plus"
-  },
-  "habits": {
-    "title": "Habitudes",
-    "subtitle": "Suivez vos habitudes quotidiennes",
-    "addHabit": "Ajouter une habitude",
-    "editHabit": "Modifier l'habitude",
-    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette habitude ?",
-    "name": "Nom",
-    "namePlaceholder": "ex. Boire de l'eau",
-    "emoji": "Emoji",
-    "description": "Description",
-    "descriptionPlaceholder": "Détails optionnels...",
-    "timesPerDay": "Fois par jour",
-    "timesPerDayDerived": "Calculé automatiquement à {{count}} selon vos heures de rappel.",
-    "scheduleTimes": "Heures de notification",
-    "addTime": "Ajouter une heure",
-    "streak": "Série de {{count}} jours",
-    "done": "Fait",
-    "notDone": "Pas fait",
-    "undoNotDone": "Annuler pas fait",
-    "doneCount": "Fait : {{count}}",
-    "notDoneCount": "Pas fait : {{count}}",
-    "remainingCount": "Restant : {{count}}",
-    "noHabits": "Aucune habitude",
-    "addFirstHabit": "Créez votre première habitude pour commencer",
-    "habitCreated": "Habitude créée",
-    "habitUpdated": "Habitude modifiée",
-    "habitDeleted": "Habitude supprimée",
-    "nameRequired": "Le nom est requis",
-    "active": "Active",
-    "inactive": "En pause"
   },
   "emotion": {
     "howDidYouFeel": "Comment vous êtes-vous senti ?",
@@ -576,8 +477,6 @@
       "loading": "Chargement des réglages...",
       "loadError": "Échec du chargement des réglages.",
       "countryCode": "Pays / région",
-      "subdivisionCode": "Province / État",
-      "subdivisionPlaceholder": "Jours fériés nationaux",
       "countryCodeHint": "Utilisé pour les disponibilités TMDB, les sorties à venir, les dates de sortie et les jours fériés.",
       "save": "Enregistrer les réglages",
       "saving": "Enregistrement...",
@@ -599,7 +498,7 @@
     },
     "notifications": {
       "title": "Notifications",
-      "description": "Gérez vos notifications push pour les rappels de tâches.",
+      "description": "Gérez vos notifications push.",
       "testNotificationTitle": "Notification test",
       "sendTestNotification": "Envoyer une notification test",
       "testNotificationDescription": "Cliquez pour envoyer une notification test et vérifier que tout fonctionne.",
@@ -717,8 +616,6 @@
         "regenerateError": "Impossible de regénérer l'URL.",
         "loadError": "Impossible de charger l'URL de votre calendrier."
       },
-      "comingSoon": "Plus de fonctionnalités à venir",
-      "comingSoonDescription": "Nous travaillons sur d'autres fonctionnalités de calendrier pour aider votre foyer à rester synchronisé.",
       "features": {
         "reminders": "Préférences de rappels personnalisées",
         "availability": "Disponibilité et heures de travail"
@@ -1107,29 +1004,13 @@
         "ago": "il y a"
       },
       "actions": {
-        "checkReminders": {
-          "label": "Vérifier les rappels",
-          "description": "Vérifier les rappels à envoyer et envoyer les notifications."
-        },
-        "checkAllDayEvents": {
-          "label": "Vérifier les événements toute la journée",
-          "description": "Vérifier les événements personnalisés toute la journée et envoyer les notifications."
-        },
         "cleanupNotifications": {
           "label": "Nettoyer les anciennes notifications",
           "description": "Supprimer les anciennes notifications de la base de données."
         },
-        "checkHabitReminders": {
-          "label": "Vérifier les rappels d'habitudes",
-          "description": "Vérifier les habitudes nécessitant un rappel et envoyer des notifications."
-        },
         "refreshUpcoming": {
           "label": "Actualiser les prochaines sorties",
           "description": "Interroger TMDB pour les prochains films et séries."
-        },
-        "refreshHabitsStreaks": {
-          "label": "Actualiser les séries d'habitudes",
-          "description": "Recalculer les séries quotidiennes pour toutes les habitudes utilisateur."
         },
         "checkMovieReleaseReminders": {
           "label": "Vérifier les rappels de sortie de films",
