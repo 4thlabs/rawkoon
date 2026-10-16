@@ -32,8 +32,7 @@ export function GrabReadinessBanner() {
         {t("medias.library.grabReadinessBanner", { count: problems })}
       </p>
       <Link
-        to="/settings"
-        search={{ tab: "media", subtab: "library-settings" }}
+        to="/settings/health"
         hash="grab-readiness"
         className="focus-ring inline-flex h-8 items-center rounded-md border border-amber-500/40 px-3 text-xs font-medium text-amber-100 transition-colors hover:bg-amber-500/20"
       >

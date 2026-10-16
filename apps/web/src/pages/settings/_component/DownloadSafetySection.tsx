@@ -69,7 +69,7 @@ export function DownloadSafetySection({
             imports: stats.data.import_rejected,
           })}{" "}
           <a
-            href="/settings?tab=blocklist"
+            href="/settings/blocklist"
             className="text-primary-400 underline underline-offset-2"
           >
             {t("settings.downloadSafety.statsLink")}

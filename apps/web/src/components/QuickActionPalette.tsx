@@ -120,7 +120,7 @@ export function QuickActionPalette({
         section: "actions",
         keywords: ["settings", "profile", "integrations"],
         action: () => {
-          navigate({ to: "/settings", search: { tab: "profile" as const } });
+          navigate({ to: "/settings/profile" });
           handleClose();
         },
       },
@@ -216,7 +216,7 @@ export function QuickActionPalette({
       icon: <User size={20} />,
       section: "users" as const,
       action: () => {
-        navigate({ to: "/settings", search: { tab: "profile" as const } });
+        navigate({ to: "/settings/people" });
         handleClose();
       },
     }));

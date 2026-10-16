@@ -26,7 +26,7 @@ export function QualityProfilesTab() {
   const deleteMut = useDeleteQualityProfile();
   const [draft, setDraft] = useState<QualityProfileDraft>(null);
   const navigate = useNavigate();
-  const { edit } = useSearch({ from: "/settings/" });
+  const { edit } = useSearch({ from: "/settings/quality/" });
 
   // The grab-readiness checklist deep-links here to open a profile's edit form.
   useEffect(() => {
@@ -35,8 +35,8 @@ export function QualityProfilesTab() {
       setDraft({ kind: "edit", id: edit });
     }
     navigate({
-      to: "/settings",
-      search: { tab: "media", subtab: "quality-profiles" },
+      to: "/settings/quality",
+      search: {},
       replace: true,
     });
   }, [edit, data, navigate]);

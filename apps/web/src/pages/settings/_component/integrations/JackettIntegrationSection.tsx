@@ -4,13 +4,18 @@ import { useJackettIndexers } from "@/pages/settings/useJackettIndexers";
 import { useUpdateJackettIntegration } from "@/pages/settings/useUpdateJackettIntegration";
 import { IndexerManagerIntegrationSection } from "@/pages/settings/_component/integrations/IndexerManagerIntegrationSection";
 
-export function JackettIntegrationSection() {
+export function JackettIntegrationSection({
+  onSaved,
+}: {
+  onSaved?: (enabled: boolean) => void;
+}) {
   const { data, isLoading } = useJackettIntegration();
   return (
     <JackettIntegrationSectionImpl
       key={data?.integration?.type ?? "pending"}
       data={data}
       isLoading={isLoading}
+      onSaved={onSaved}
     />
   );
 }
@@ -18,7 +23,9 @@ export function JackettIntegrationSection() {
 function JackettIntegrationSectionImpl({
   data,
   isLoading,
+  onSaved,
 }: {
+  onSaved?: (enabled: boolean) => void;
   data: ReturnType<typeof useJackettIntegration>["data"];
   isLoading: boolean;
 }) {
@@ -35,7 +42,11 @@ function JackettIntegrationSectionImpl({
       logoUrl="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jackett.png"
       translationKey="jackett"
       websiteUrlPlaceholder="https://jackett.example.com"
-      save={saveMutation.mutateAsync}
+      save={async (body) => {
+        const result = await saveMutation.mutateAsync(body);
+        onSaved?.(body.enabled);
+        return result;
+      }}
       useIndexers={useJackettIndexers}
     />
   );

@@ -43,7 +43,8 @@ describe("SeedingSettingsSection", () => {
     render(<SeedingSettingsSection settings={settings} />);
     expect(screen.getByText(/^settings\.seeding\.preview/)).toBeInTheDocument();
   });
-  it("saves ratio-only rules, clearing any seed-time target", async () => {
+  it("keeps the stored time targets and lets a ratio be cleared", async () => {
+    mutateAsync.mockClear();
     render(<SeedingSettingsSection settings={settings} />);
     fireEvent.change(screen.getAllByLabelText("settings.seeding.ratio")[0], {
       target: { value: "" },
@@ -57,9 +58,37 @@ describe("SeedingSettingsSection", () => {
         min_seed_ratio: 0,
         public_seed_time_mins: null,
         private_seed_ratio: 1,
-        private_seed_time_mins: null,
+        private_seed_time_mins: 4320,
       }),
     );
-    expect(screen.queryByLabelText("settings.seeding.seedTime")).toBeNull();
+  });
+
+  it("saves 'ratio or days' for public trackers", async () => {
+    mutateAsync.mockClear();
+    render(<SeedingSettingsSection settings={settings} />);
+    fireEvent.change(screen.getAllByLabelText("settings.seeding.orAfter")[0], {
+      target: { value: "7" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "settings.seeding.save" }),
+    );
+    await waitFor(() =>
+      expect(mutateAsync).toHaveBeenCalledWith({
+        seed_sweep_enabled: false,
+        min_seed_ratio: 1,
+        public_seed_time_mins: 10080,
+        private_seed_ratio: 1,
+        private_seed_time_mins: 4320,
+      }),
+    );
+  });
+
+  it("keeps per-indexer overrides behind Advanced", () => {
+    const { container } = render(
+      <SeedingSettingsSection settings={settings} />,
+    );
+    const details = container.querySelector("details");
+    expect(details).not.toBeNull();
+    expect(details?.open).toBe(false);
   });
 });

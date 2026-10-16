@@ -4,25 +4,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useScheduledJobs } from "@/pages/settings/useScheduledJobs";
 import { useTriggerAction } from "@/pages/settings/useTriggerAction";
-import { useLibraryHealth } from "@/pages/settings/useLibraryHealth";
 import { useJobHistory } from "@/pages/settings/useJobHistory";
 import { useCurrentUser } from "@/lib/auth/useAuth";
 import { describeCron } from "@rawkoon/shared/utils";
 import { cronLocale } from "@/lib/utils/cron";
 import { LoadingState } from "@/components/LoadingState";
-import {
-  Play,
-  AlertCircle,
-  CheckCircle2,
-  Loader2,
-  Timer,
-  Wrench,
-} from "lucide-react";
+import { Play, AlertCircle, CheckCircle2, Loader2, Timer } from "lucide-react";
 import { JOBS, type JobAction, type JobConfig } from "./jobsConfig";
 import { getStatusColor, formatDuration, timeAgo } from "./jobsUtils";
 import { QueueCard } from "./QueueCard";
-import { LibraryHealthCard } from "./LibraryHealthCard";
-import { SettingsPageHeader } from "@/pages/settings/_component/SettingsPageHeader";
 
 // ---------------------------------------------------------------------------
 // Main JobsTab
@@ -32,7 +22,6 @@ export function JobsTab() {
   const { t, i18n } = useTranslation("common");
   const { data: currentUser } = useCurrentUser();
   const { data: scheduledJobsData, isLoading, error } = useScheduledJobs();
-  const { data: libraryHealthData } = useLibraryHealth();
   const { data: historyData } = useJobHistory(50);
   const { mutateAsync: triggerAction } = useTriggerAction();
   const [executing, setExecuting] = useState<JobAction | null>(null);
@@ -67,11 +56,6 @@ export function JobsTab() {
       className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6"
       key="jobs-tab"
     >
-      <SettingsPageHeader
-        icon={Wrench}
-        title={t("settings.jobs.title")}
-        description={t("settings.jobs.description")}
-      />
       <div className="bg-neutral-800 rounded-xl border border-neutral-700 p-6">
         {isLoading ? (
           <LoadingState />
@@ -79,11 +63,6 @@ export function JobsTab() {
           <div className="text-red-400">{t("settings.jobs.loadError")}</div>
         ) : (
           <div className="space-y-6">
-            <LibraryHealthCard
-              latest={libraryHealthData?.latest ?? null}
-              t={t}
-            />
-
             {/* Queue Overview */}
             {scheduledJobsData?.queues && (
               <section>

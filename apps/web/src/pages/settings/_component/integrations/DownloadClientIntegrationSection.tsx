@@ -11,21 +11,17 @@ import { INTEGRATION_ENDPOINTS } from "@/lib/endpoints";
 import { useDownloadClientIntegration } from "@/pages/settings/useDownloadClientIntegration";
 import { useUpdateDownloadClientIntegration } from "@/pages/settings/useUpdateDownloadClientIntegration";
 import { LabeledField, TextField } from "./DownloadClientFields";
-import { DownloadClientHookSection } from "./DownloadClientHookSection";
 import { IntegrationSectionCard } from "./IntegrationSectionCard";
 import { IntegrationUrlInput } from "./IntegrationUrlInput";
 
 export function DownloadClientIntegrationSection() {
   const query = useDownloadClientIntegration();
   return (
-    <>
-      <DownloadClientIntegrationSectionImpl
-        key={`${query.data?.integration.type ?? "pending"}-${query.data?.integration.client_type ?? ""}`}
-        integration={query.data?.integration}
-        loading={query.isLoading}
-      />
-      <DownloadClientHookSection />
-    </>
+    <DownloadClientIntegrationSectionImpl
+      key={`${query.data?.integration.type ?? "pending"}-${query.data?.integration.client_type ?? ""}`}
+      integration={query.data?.integration}
+      loading={query.isLoading}
+    />
   );
 }
 

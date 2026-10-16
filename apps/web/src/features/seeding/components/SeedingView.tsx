@@ -89,7 +89,7 @@ export function SeedingView() {
             {t("seeding.disabled.title")}
           </span>
           <a
-            href="/settings?tab=media&subtab=seeding"
+            href="/settings/after-download"
             className="shrink-0 text-primary-400 underline underline-offset-2"
           >
             {t("seeding.disabled.action")}
@@ -99,7 +99,7 @@ export function SeedingView() {
       {data.enabled && (
         <div className="flex justify-end text-xs">
           <a
-            href="/settings?tab=media&subtab=seeding"
+            href="/settings/after-download"
             className="text-primary-400 underline underline-offset-2"
           >
             {t("seeding.rulesLink")}

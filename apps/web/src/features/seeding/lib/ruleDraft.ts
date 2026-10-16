@@ -58,7 +58,13 @@ export function ruleSentence(rule: SeedRule, t: T): string {
 
 /** Short rule label for list rows, where a full sentence would double the punctuation. */
 export function ruleLabel(rule: SeedRule, t: T): string {
-  return rule.ratio == null
-    ? t("settings.seeding.label.none")
-    : t("settings.seeding.label.ratio", { ratio: rule.ratio.toFixed(1) });
+  const ratio = rule.ratio == null ? null : rule.ratio.toFixed(1);
+  const time =
+    rule.seed_time_mins == null
+      ? null
+      : formatTargetTime(rule.seed_time_mins, t);
+  if (ratio && time) return t("settings.seeding.label.both", { ratio, time });
+  if (ratio) return t("settings.seeding.label.ratio", { ratio });
+  if (time) return t("settings.seeding.label.time", { time });
+  return t("settings.seeding.label.none");
 }

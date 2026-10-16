@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { KeyRound, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { OidcProvider } from "@rawkoon/shared/types";
@@ -10,7 +10,6 @@ import {
   useUpdateOidcProvider,
   useDeleteOidcProvider,
 } from "@/lib/auth/useOidcProviders";
-import { SettingsPageHeader } from "@/pages/settings/_component/SettingsPageHeader";
 import {
   ProviderForm,
   emptyForm,
@@ -82,12 +81,6 @@ export function OidcProvidersTab() {
 
   return (
     <div className="space-y-6">
-      <SettingsPageHeader
-        icon={KeyRound}
-        title={t("settings.integrations.sso.title")}
-        description={t("settings.integrations.sso.help")}
-      />
-
       {isLoading ? (
         <div className="space-y-2">
           {[1, 2].map((i) => (

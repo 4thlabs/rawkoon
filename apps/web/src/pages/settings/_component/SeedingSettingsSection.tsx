@@ -7,6 +7,7 @@ import type {
   MediaPostProcessingSettings,
   SeedRule,
 } from "@rawkoon/shared/types";
+import { AdvancedDisclosure } from "@/components/ui/advanced-disclosure";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useUpdateMediaPostProcessingSettings } from "@/features/medias/hooks/useUpdateMediaPostProcessingSettings";
@@ -48,6 +49,33 @@ function RuleFields({
           aria-label={t("settings.seeding.ratio")}
           onChange={(e) => onChange({ ...draft, ratio: e.target.value })}
         />
+      </label>
+      <label className="grid gap-1 text-xs text-neutral-500">
+        {t("settings.seeding.orAfter")}
+        <span className="flex gap-1.5">
+          <input
+            inputMode="decimal"
+            className={FIELD}
+            placeholder={t("settings.seeding.none")}
+            value={draft.time}
+            aria-label={t("settings.seeding.orAfter")}
+            onChange={(e) => onChange({ ...draft, time: e.target.value })}
+          />
+          <select
+            aria-label={t("settings.seeding.timeUnit")}
+            value={draft.unit}
+            onChange={(e) =>
+              onChange({
+                ...draft,
+                unit: e.target.value === "hours" ? "hours" : "days",
+              })
+            }
+            className="focus-ring rounded-lg border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm"
+          >
+            <option value="days">{t("settings.seeding.unitDays")}</option>
+            <option value="hours">{t("settings.seeding.unitHours")}</option>
+          </select>
+        </span>
       </label>
     </div>
   );
@@ -163,11 +191,7 @@ function IndexerRuleRow({ row }: { row: IndexerSeedRuleRow }) {
             type="button"
             size="sm"
             variant="ghost"
-            onClick={() =>
-              setEditing(
-                draftFromRule({ ...row.effective, seed_time_mins: null }),
-              )
-            }
+            onClick={() => setEditing(draftFromRule(row.effective))}
           >
             {t("settings.seeding.indexers.customize")}
           </Button>
@@ -188,13 +212,13 @@ export function SeedingSettingsSection({
   const [pub, setPub] = useState<RuleDraft>(() =>
     draftFromRule({
       ratio: settings.min_seed_ratio > 0 ? settings.min_seed_ratio : null,
-      seed_time_mins: null,
+      seed_time_mins: settings.public_seed_time_mins,
     }),
   );
   const [priv, setPriv] = useState<RuleDraft>(() =>
     draftFromRule({
       ratio: settings.private_seed_ratio,
-      seed_time_mins: null,
+      seed_time_mins: settings.private_seed_time_mins,
     }),
   );
   const preview = useSeeding({ preview: true, enabled: !enabled });
@@ -283,18 +307,20 @@ export function SeedingSettingsSection({
           {t("settings.seeding.save")}
         </Button>
       </div>
-      <div className="overflow-hidden rounded-xl border border-neutral-700 bg-neutral-800">
-        <ul className="divide-y divide-neutral-700">
-          {(rules.data?.indexers ?? []).map((row) => (
-            <IndexerRuleRow key={row.indexer} row={row} />
-          ))}
-        </ul>
-        {rules.data && rules.data.indexers.length === 0 && (
-          <p className="px-3 py-4 text-sm text-neutral-500">
-            {t("settings.seeding.indexers.empty")}
-          </p>
-        )}
-      </div>
+      <AdvancedDisclosure label={t("settings.seeding.indexers.advanced")}>
+        <div className="overflow-hidden rounded-xl border border-neutral-700 bg-neutral-800">
+          <ul className="divide-y divide-neutral-700">
+            {(rules.data?.indexers ?? []).map((row) => (
+              <IndexerRuleRow key={row.indexer} row={row} />
+            ))}
+          </ul>
+          {rules.data && rules.data.indexers.length === 0 && (
+            <p className="px-3 py-4 text-sm text-neutral-500">
+              {t("settings.seeding.indexers.empty")}
+            </p>
+          )}
+        </div>
+      </AdvancedDisclosure>
     </section>
   );
 }

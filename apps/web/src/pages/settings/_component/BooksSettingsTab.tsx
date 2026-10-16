@@ -1,17 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { BookOpen, ExternalLink, Loader2 } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   useAppSettings,
   useUpdateAppSettings,
@@ -23,16 +16,11 @@ import {
 } from "@/pages/settings/useGoogleBooksIntegration";
 import { useMediaPostProcessingSettings } from "@/features/medias/hooks/useMediaPostProcessingSettings";
 import { useUpdateMediaPostProcessingSettings } from "@/features/medias/hooks/useUpdateMediaPostProcessingSettings";
-import { useBookQualityProfiles } from "@/pages/books/_hooks/useBooks";
-import { SettingsPageHeader } from "@/pages/settings/_component/SettingsPageHeader";
 import { BookQualityProfilesSection } from "@/pages/settings/_component/BookQualityProfilesSection";
 import { AudnexusIntegrationSection } from "@/pages/settings/_component/AudnexusIntegrationSection";
 import { NytBooksIntegrationSection } from "@/pages/settings/_component/NytBooksIntegrationSection";
 import { BookMetadataSourcesSection } from "@/pages/settings/_component/BookMetadataSourcesSection";
 import { ApiError } from "@/lib/api/client";
-
-/** Radix Select has no empty value, so "no default" needs a sentinel. */
-const NO_PROFILE = "none";
 
 const LABEL = "block text-sm font-medium text-neutral-300 mb-1.5";
 const HINT = "mt-1.5 text-xs text-neutral-500";
@@ -89,9 +77,6 @@ export function BooksSettingsTab() {
   const { data: mediaSettings } = useMediaPostProcessingSettings();
   const updatePaths = useUpdateMediaPostProcessingSettings();
 
-  const { data: profilesData } = useBookQualityProfiles();
-  const profiles = profilesData?.profiles ?? [];
-
   const booksEnabled = appSettings?.settings.books_enabled ?? false;
   const hasKey = integration?.integration.has_api_key ?? false;
   const settings = mediaSettings?.settings;
@@ -101,7 +86,6 @@ export function BooksSettingsTab() {
   const [audiobooksPath, setAudiobooksPath] = useState("");
   const [bookTemplate, setBookTemplate] = useState("");
   const [audiobookTemplate, setAudiobookTemplate] = useState("");
-  const [defaultProfile, setDefaultProfile] = useState(NO_PROFILE);
 
   // Seed the file fields from the server value, re-seeding only when the server
   // value itself changes, so typing is never clobbered by a refetch. Adjusted
@@ -115,11 +99,6 @@ export function BooksSettingsTab() {
     setAudiobooksPath(settings.audiobooks_library_path ?? "");
     setBookTemplate(settings.book_template);
     setAudiobookTemplate(settings.audiobook_template);
-    setDefaultProfile(
-      settings.default_book_quality_profile_id != null
-        ? String(settings.default_book_quality_profile_id)
-        : NO_PROFILE,
-    );
   }
 
   const canEnable = hasKey || booksEnabled;
@@ -156,8 +135,6 @@ export function BooksSettingsTab() {
         audiobooks_library_path: audiobooksPath.trim() || null,
         book_template: bookTemplate.trim(),
         audiobook_template: audiobookTemplate.trim(),
-        default_book_quality_profile_id:
-          defaultProfile === NO_PROFILE ? null : Number(defaultProfile),
       });
       toast.success(t("settings.books.files.saved"));
     } catch (e) {
@@ -180,12 +157,6 @@ export function BooksSettingsTab() {
 
   return (
     <div className="space-y-6">
-      <SettingsPageHeader
-        icon={BookOpen}
-        title={t("settings.books.title")}
-        description={t("settings.books.description")}
-      />
-
       <CardSection
         title={t("settings.books.general.title")}
         description={t("settings.books.general.description")}
@@ -380,28 +351,6 @@ export function BooksSettingsTab() {
           </div>
         </div>
         <p className={HINT}>{t("settings.books.files.templateHint")}</p>
-
-        <div className="max-w-xs">
-          <label className={LABEL}>
-            {t("settings.books.files.defaultProfile")}
-          </label>
-          <Select value={defaultProfile} onValueChange={setDefaultProfile}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NO_PROFILE}>
-                {t("settings.books.files.noDefaultProfile")}
-              </SelectItem>
-              {profiles.map((p) => (
-                <SelectItem key={p.id} value={String(p.id)}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className={HINT}>{t("settings.books.files.defaultProfileHint")}</p>
-        </div>
 
         <Button
           onClick={() => void savePaths()}

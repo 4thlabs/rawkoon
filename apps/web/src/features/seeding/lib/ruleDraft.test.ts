@@ -62,4 +62,13 @@ describe("ruleLabel", () => {
       "settings.seeding.label.none",
     );
   });
+
+  it("includes the time target when there is one", () => {
+    expect(ruleLabel({ ratio: 2, seed_time_mins: 1440 * 7 }, t)).toBe(
+      'settings.seeding.label.both{"ratio":"2.0","time":"settings.seeding.days{\\"count\\":7}"}',
+    );
+    expect(ruleLabel({ ratio: null, seed_time_mins: 1440 }, t)).toBe(
+      'settings.seeding.label.time{"time":"settings.seeding.days{\\"count\\":1}"}',
+    );
+  });
 });
