@@ -8,7 +8,6 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
 import {
   Search,
   Sparkles,
@@ -21,13 +20,19 @@ import {
   User,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { TmdbMediaSearchItem } from "@rawkoon/shared/types";
 import { useQuickSearch } from "@/lib/search/useSearch";
 import { visibleNavSections } from "@/lib/routing/navigation";
 import { useFeatures } from "@/lib/routing/useFeatures";
 import { usePrefetchAllRoutes } from "@/lib/routing/usePrefetchAllRoutes";
+import { ExploreCardDetailDialog } from "@/pages/medias/_component/ExploreCardDetailDialog";
 import { Dialog } from "@/components/dialog";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { useTitleSearchActions } from "@/components/quick-actions/useTitleSearchActions";
+import {
+  QuickActionRow,
+  type QuickAction,
+} from "@/components/quick-actions/QuickActionRow";
 
 interface QuickActionPaletteProps {
   isOpen: boolean;
@@ -35,16 +40,13 @@ interface QuickActionPaletteProps {
   onOpen: () => void;
 }
 
-interface QuickAction {
-  id: string;
-  title: string;
-  description: string;
-  icon: ReactNode;
-  section: "actions" | "medias" | "books" | "users";
-  keywords?: string[];
-  shortcut?: string;
-  action: () => void;
-}
+const matchScore = (title: string, q: string): number => {
+  const lower = title.toLowerCase();
+  if (lower === q) return 3;
+  if (lower.startsWith(q)) return 2;
+  if (lower.includes(q)) return 1;
+  return 0;
+};
 
 export function QuickActionPalette({
   isOpen,
@@ -57,6 +59,9 @@ export function QuickActionPalette({
   const prefetchAllRoutes = usePrefetchAllRoutes();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [detailItem, setDetailItem] = useState<TmdbMediaSearchItem | null>(
+    null,
+  );
 
   const handleClose = useCallback(() => {
     setQuery("");
@@ -66,6 +71,7 @@ export function QuickActionPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
+  const trimmedQuery = query.trim();
   const isLoggedIn = router.location.pathname !== "/login";
   const { data: features } = useFeatures();
   const booksEnabled = !!features?.books_enabled;
@@ -74,6 +80,15 @@ export function QuickActionPalette({
     [booksEnabled],
   );
   const shouldSearch = isOpen && normalizedQuery.length >= 2 && isLoggedIn;
+
+  const { titleActions, titleItems, isSearchingTitles } = useTitleSearchActions(
+    {
+      isOpen: isOpen && isLoggedIn,
+      query: trimmedQuery,
+      onClose: handleClose,
+      onOpenDetails: setDetailItem,
+    },
+  );
 
   const actions = useMemo<QuickAction[]>(() => {
     const navActions = navSectionsVisible.flatMap((section) =>
@@ -228,6 +243,7 @@ export function QuickActionPalette({
 
   const sectionLabels: Record<QuickAction["section"], string> = useMemo(
     () => ({
+      titles: t("common.quickActionsSectionTitles"),
       medias: t("common.quickActionsSectionMedias"),
       books: t("common.quickActionsSectionBooks"),
       users: t("common.quickActionsSectionUsers"),
@@ -236,25 +252,33 @@ export function QuickActionPalette({
     [t],
   );
 
-  const matchScore = (title: string, q: string): number => {
-    const lower = title.toLowerCase();
-    if (lower === q) return 3;
-    if (lower.startsWith(q)) return 2;
-    if (lower.includes(q)) return 1;
-    return 0;
-  };
-
   const results = useMemo<QuickAction[]>(() => {
     if (!normalizedQuery) {
       return filteredActions;
     }
 
-    return [...collectionResults, ...filteredActions].sort(
-      (a, b) =>
-        matchScore(b.title, normalizedQuery) -
-        matchScore(a.title, normalizedQuery),
+    // A library title the TMDB list already shows would otherwise appear twice.
+    const shownLibraryIds = new Set(
+      titleItems.flatMap((item) =>
+        item.library_id != null ? [`media-${item.library_id}`] : [],
+      ),
     );
-  }, [filteredActions, normalizedQuery, collectionResults]);
+    const rest = [...collectionResults, ...filteredActions]
+      .filter((action) => !shownLibraryIds.has(action.id))
+      .sort(
+        (a, b) =>
+          matchScore(b.title, normalizedQuery) -
+          matchScore(a.title, normalizedQuery),
+      );
+
+    return [...titleActions, ...rest];
+  }, [
+    filteredActions,
+    normalizedQuery,
+    collectionResults,
+    titleActions,
+    titleItems,
+  ]);
 
   const isSearchingCollections = shouldSearch && searchQuery.isLoading;
 
@@ -314,102 +338,111 @@ export function QuickActionPalette({
 
     if (event.key === "Enter") {
       event.preventDefault();
-      results[safeActiveIndex]?.action();
+      const active = results[safeActiveIndex];
+      if (event.shiftKey && active?.onDetails) active.onDetails();
+      else active?.action();
     }
   };
 
+  const showTitlesHeading = titleActions.length > 0 && !!normalizedQuery;
+
   return (
-    <Dialog
-      isOpen={isOpen}
-      onClose={handleClose}
-      title={t("common.quickActions")}
-      panelClassName="max-w-3xl overflow-hidden p-0"
-    >
-      <div className="border-b px-5 py-4 border-neutral-700">
-        <div className="flex items-center gap-3 rounded-2xl border px-3 border-neutral-700 bg-neutral-900">
-          <Search className="h-4 w-4 text-neutral-400" />
-          <Input
-            ref={inputRef}
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setActiveIndex(0);
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder={t("common.quickActionsPlaceholder")}
-            className="border-0 bg-transparent! px-0 focus:ring-0"
-          />
-          <span className="hidden items-center rounded-lg border px-2 py-1 text-[11px] font-semibold text-neutral-400 border-neutral-700 sm:inline-flex">
-            ⌘K
-          </span>
-        </div>
-        <div className="mt-3 flex items-center justify-between gap-3 text-xs text-neutral-400">
-          <p>
-            {normalizedQuery.length >= 2
-              ? t("common.quickActionsSearchCollections")
-              : t("common.quickActionsHint")}
-          </p>
-          <p>{router.location.pathname}</p>
-        </div>
-      </div>
-
-      <div className="max-h-[60dvh] overflow-y-auto p-3">
-        {isSearchingCollections && (
-          <div className="px-3 pb-3 text-xs text-neutral-400">
-            {t("common.quickActionsLoadingResults")}
+    <>
+      <Dialog
+        isOpen={isOpen}
+        onClose={handleClose}
+        title={t("common.quickActions")}
+        panelClassName="max-w-3xl overflow-hidden p-0"
+      >
+        <div className="border-b px-5 py-4 border-neutral-700">
+          <div className="flex items-center gap-3 rounded-2xl border px-3 border-neutral-700 bg-neutral-900">
+            <Search className="h-4 w-4 text-neutral-400" />
+            <Input
+              ref={inputRef}
+              autoFocus
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setActiveIndex(0);
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder={t("common.quickActionsPlaceholder")}
+              className="border-0 bg-transparent! px-0 focus:ring-0"
+            />
+            <span className="hidden items-center rounded-lg border px-2 py-1 text-[11px] font-semibold text-neutral-400 border-neutral-700 sm:inline-flex">
+              ⌘K
+            </span>
           </div>
-        )}
-
-        {results.length > 0 ? (
-          <div className="space-y-1">
-            {results.map((action, index) => (
-              <button
-                key={action.id}
-                type="button"
-                onClick={action.action}
-                onMouseEnter={() => setActiveIndex(index)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors",
-                  safeActiveIndex === index
-                    ? "bg-neutral-700/70"
-                    : "hover:bg-neutral-700/40",
-                )}
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-800 text-neutral-400">
-                  {action.icon}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-white">{action.title}</p>
-                  <p className="truncate text-sm text-neutral-400">
-                    {action.description}
-                  </p>
-                </div>
-                {action.shortcut ? (
-                  <span className="shrink-0 rounded-lg border px-2 py-1 text-[11px] font-semibold text-neutral-400 border-neutral-700">
-                    {action.shortcut}
-                  </span>
-                ) : normalizedQuery ? (
-                  <span className="shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-neutral-800 text-neutral-500">
-                    {sectionLabels[action.section]}
-                  </span>
-                ) : null}
-              </button>
-            ))}
+          <div className="mt-3 flex items-center justify-between gap-3 text-xs text-neutral-400">
+            {normalizedQuery.length >= 2 ? (
+              <p>
+                <span className="hidden sm:inline">
+                  {t("common.quickActionsTitlesHint")}
+                </span>
+                <span className="sm:hidden">
+                  {t("common.quickActionsTitlesHintTouch")}
+                </span>
+              </p>
+            ) : (
+              <p>{t("common.quickActionsHint")}</p>
+            )}
+            <p className="hidden sm:block">{router.location.pathname}</p>
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-14 text-center border-neutral-700">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-800">
-              <Sparkles className="h-5 w-5 text-neutral-500" />
+        </div>
+
+        <div className="max-h-[60dvh] overflow-y-auto p-3">
+          {(isSearchingTitles || isSearchingCollections) &&
+            results.length === 0 && (
+              <div className="px-3 pb-3 text-xs text-neutral-400">
+                {t("common.quickActionsSearchingTitles")}
+              </div>
+            )}
+
+          {results.length > 0 ? (
+            <div className="space-y-1">
+              {results.map((action, index) => (
+                <QuickActionRow
+                  key={action.id}
+                  action={action}
+                  heading={
+                    showTitlesHeading && index === 0
+                      ? sectionLabels.titles
+                      : showTitlesHeading && index === titleActions.length
+                        ? sectionLabels.actions
+                        : null
+                  }
+                  isActive={safeActiveIndex === index}
+                  sectionLabel={
+                    normalizedQuery ? sectionLabels[action.section] : null
+                  }
+                  onHover={() => setActiveIndex(index)}
+                />
+              ))}
             </div>
-            <p className="font-medium text-white">
-              {t("common.quickActionsNoResults")}
-            </p>
-            <p className="mt-1 text-sm text-neutral-400">
-              {t("common.quickActionsNoResultsDescription")}
-            </p>
-          </div>
-        )}
-      </div>
-    </Dialog>
+          ) : isSearchingTitles ? null : (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-14 text-center border-neutral-700">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-800">
+                <Sparkles className="h-5 w-5 text-neutral-500" />
+              </div>
+              <p className="font-medium text-white">
+                {t("common.quickActionsNoResults")}
+              </p>
+              <p className="mt-1 text-sm text-neutral-400">
+                {t("common.quickActionsNoResultsDescription")}
+              </p>
+            </div>
+          )}
+        </div>
+      </Dialog>
+
+      {detailItem && (
+        <ExploreCardDetailDialog
+          item={detailItem}
+          isOpen
+          onClose={() => setDetailItem(null)}
+          onAdded={() => setDetailItem(null)}
+        />
+      )}
+    </>
   );
 }
