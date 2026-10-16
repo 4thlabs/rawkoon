@@ -11,7 +11,6 @@ export interface QuickAction {
   icon: ReactNode;
   section: "titles" | "actions" | "medias" | "books" | "users";
   keywords?: string[];
-  shortcut?: string;
   action: () => void;
   /** Set on TMDB title rows: the secondary path (Shift+Enter or the info button). */
   onDetails?: () => void;
@@ -104,10 +103,6 @@ export function QuickActionRow({
           </div>
           {action.trailing ? (
             action.trailing
-          ) : action.shortcut ? (
-            <span className="shrink-0 rounded-lg border px-2 py-1 text-[11px] font-semibold text-neutral-400 border-neutral-700">
-              {action.shortcut}
-            </span>
           ) : sectionLabel && !isTitle ? (
             <span className="shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-neutral-800 text-neutral-500">
               {sectionLabel}

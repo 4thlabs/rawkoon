@@ -11,11 +11,8 @@ type ActivityType =
 export interface Activity {
   id?: number;
   user_id?: string;
-  task_type?: string;
-  task_id?: number;
   completed_at?: string;
   task_name?: string;
-  emotion?: string | null;
   username?: string;
   description?: string;
   time?: string;

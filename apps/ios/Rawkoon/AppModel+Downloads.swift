@@ -292,7 +292,7 @@ extension AppModel {
     private func notifyDownloadComplete(editionId: Int) {
         guard UIApplication.shared.applicationState != .active else { return }
         let content = UNMutableNotificationContent()
-        content.title = String(localized: "Download complete")
+        content.title = String(localized: "Download finished")
         content.body = library.first { $0.audiobookEditionId == editionId }?.title ?? ""
         content.sound = .default
         let request = UNNotificationRequest(identifier: "download-complete-\(editionId)", content: content, trigger: nil)

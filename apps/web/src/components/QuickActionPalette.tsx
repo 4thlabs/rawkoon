@@ -147,7 +147,6 @@ export function QuickActionPalette({
         description: t("common.quickActionsRefreshCurrentPage"),
         icon: <RefreshCw size={20} />,
         section: "actions",
-        shortcut: "R",
         keywords: ["refresh", "reload"],
         action: () => {
           window.location.reload();

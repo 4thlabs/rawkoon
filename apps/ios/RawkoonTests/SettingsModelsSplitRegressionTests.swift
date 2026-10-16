@@ -99,7 +99,7 @@ struct SettingsModelsSplitRegressionTests {
             let body = UpdateMediaSettingsBody(
                 postProcessingEnabled: true, moviesLibraryPath: nil, showsLibraryPath: nil,
                 downloadsPath: nil, fileOperation: "hardlink", movieTemplate: "", episodeTemplate: "",
-                minSeedRatio: 0, activeIndexerManager: nil, defaultMovieQualityProfileId: nil,
+                activeIndexerManager: nil, defaultMovieQualityProfileId: nil,
                 defaultShowQualityProfileId: nil, minFreeSpaceGb: minFree
             )
             let encoder = JSONEncoder()
@@ -109,5 +109,6 @@ struct SettingsModelsSplitRegressionTests {
         #expect(try object(0)["min_free_space_gb"] as? Int == 0)
         #expect(try object(nil)["min_free_space_gb"] == nil)
         #expect(try object(nil)["seed_sweep_enabled"] == nil)
+        #expect(try object(nil)["min_seed_ratio"] == nil)
     }
 }

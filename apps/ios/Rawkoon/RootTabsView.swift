@@ -55,12 +55,9 @@ struct RootTabsView: View {
             case "settings": NavigationStack { SettingsView() }
             case "requests": NavigationStack { RequestsView() }
             case "autoGrab": NavigationStack { AutoGrabSettingsView() }
-            case "qualityProfiles": NavigationStack { QualityProfilesView() }
             case "qualityProfileEditor": NavigationStack { DebugFirstQualityProfile() }
             case "notifications": NavigationStack { NotificationsSettingsView() }
             case "indexers": NavigationStack { IndexersView() }
-            case "users": NavigationStack { UsersView() }
-            case "downloadClient": NavigationStack { DownloadClientView() }
             case "explore": NavigationStack { ExploreView() }
             default: mainTabs
             }
@@ -97,7 +94,9 @@ struct RootTabsView: View {
 
     /// The selection as shown: a tab absent at this width or role falls back instead of staying selected.
     private var shownTab: RootTab {
-        RootTab.validated(selection.rawValue, compact: compact, isAdmin: model.isAdmin)
+        RootTab.validated(
+            selection.rawValue, compact: compact, isAdmin: model.isAdmin, booksEnabled: model.booksEnabled
+        )
     }
 
     /// By device, not size class: an iPad window crossing compact width would
@@ -202,6 +201,7 @@ struct RootTabsView: View {
                 showFullPlayer = true
             }
         }
+        .task { await model.refreshBooksEnabled() }
         .task {
             if model.needsLibraryRefresh {
                 await model.loadLibrary()
@@ -219,8 +219,10 @@ struct RootTabsView: View {
             TabSection("Library") {
                 Tab("Movies & Shows", systemImage: "film.stack", value: RootTab.library) { sidebarRoot(.library) }
                     .customizationID("tab.library")
-                Tab("Books", systemImage: "books.vertical", value: RootTab.books) { sidebarRoot(.books) }
-                    .customizationID("tab.books")
+                if model.booksEnabled {
+                    Tab("Books", systemImage: "books.vertical", value: RootTab.books) { sidebarRoot(.books) }
+                        .customizationID("tab.books")
+                }
                 Tab("Watchlist", systemImage: "bookmark", value: RootTab.watchlist) { sidebarRoot(.watchlist) }
                     .customizationID("tab.watchlist")
             }

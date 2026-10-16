@@ -20,6 +20,8 @@ final class AppModel {
     var serverURL: String
     var library: [BookListItem] = []
     var isAdmin = false
+    /// Mirrors the server's books feature flag; stays on until the server says otherwise.
+    var booksEnabled = true
     var userFirstName: String?
     var userInitials: String?
     var ssoProviders: [SsoProvider] = []

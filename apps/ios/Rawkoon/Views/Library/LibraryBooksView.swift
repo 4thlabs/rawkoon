@@ -17,9 +17,11 @@ struct LibraryBooksView: View {
             booksGrid
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink { BookDiscoveryView() } label: {
-                    Label("Explore books", systemImage: "trophy")
+            if model.booksEnabled {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { BookDiscoveryView() } label: {
+                        Label("Explore books", systemImage: "trophy")
+                    }
                 }
             }
         }
