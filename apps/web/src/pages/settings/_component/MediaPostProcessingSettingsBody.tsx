@@ -10,13 +10,12 @@ import { useLibraryScan } from "@/features/medias/hooks/useLibraryScan";
 import { useReindexLanguages } from "@/features/medias/hooks/useReindexLanguages";
 import { useReindexLanguagesStatus } from "@/features/medias/hooks/useReindexLanguagesStatus";
 import { useUpdateMediaPostProcessingSettings } from "@/features/medias/hooks/useUpdateMediaPostProcessingSettings";
-import { GrabReadinessChecklist } from "./GrabReadinessChecklist";
 import {
   ReleaseCheckFieldset,
   type ReleaseCheckValue,
 } from "@/pages/settings/_component/ReleaseCheckFieldset";
-import { useProwlarrIntegration } from "@/pages/settings/useProwlarrIntegration";
-import { useJackettIntegration } from "@/pages/settings/useJackettIntegration";
+import { AdvancedDisclosure } from "@/components/ui/advanced-disclosure";
+import { useBookQualityProfiles } from "@/pages/books/_hooks/useBooks";
 import type {
   MediaPostProcessingSettings,
   QualityProfilesListResponse,
@@ -33,18 +32,23 @@ const SELECT_CLASS =
 const LABEL_CLASS = "block text-sm font-medium text-neutral-300 mb-1.5";
 
 function CardSection({
+  id,
   title,
   description,
   children,
   actions,
 }: {
+  id?: string;
   title: string;
   description?: string;
   children: React.ReactNode;
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-neutral-700 bg-neutral-800">
+    <div
+      id={id}
+      className="scroll-mt-24 overflow-hidden rounded-xl border border-neutral-700 bg-neutral-800"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-neutral-700/60 px-6 py-4">
         <div>
           <h2 className="text-sm font-semibold text-neutral-100">{title}</h2>
@@ -55,6 +59,42 @@ function CardSection({
         {actions}
       </div>
       <div className="space-y-4 p-6">{children}</div>
+    </div>
+  );
+}
+
+function ProfileSelect({
+  id,
+  label,
+  noneLabel,
+  hint,
+  profiles,
+  error,
+  registration,
+}: {
+  id: string;
+  label: string;
+  noneLabel: string;
+  hint: string;
+  profiles: { id: number; name: string }[];
+  error?: string;
+  registration: React.ComponentProps<"select">;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className={LABEL_CLASS}>
+        {label}
+      </label>
+      <select id={id} {...registration} className={SELECT_CLASS}>
+        <option value="">{noneLabel}</option>
+        {profiles.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+      {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
+      <p className="mt-1.5 text-xs text-neutral-400">{hint}</p>
     </div>
   );
 }
@@ -79,8 +119,8 @@ export function MediaPostProcessingSettingsBody({
         episodeTemplate: z.string(),
         defaultMovieQualityProfileId: z.string(),
         defaultShowQualityProfileId: z.string(),
+        defaultBookQualityProfileId: z.string(),
         searchOnAdd: z.enum(["on", "off"]),
-        activeIndexerManager: z.string(),
       }),
     [],
   );
@@ -105,8 +145,9 @@ export function MediaPostProcessingSettingsBody({
         settings.default_movie_quality_profile_id?.toString() ?? "",
       defaultShowQualityProfileId:
         settings.default_show_quality_profile_id?.toString() ?? "",
+      defaultBookQualityProfileId:
+        settings.default_book_quality_profile_id?.toString() ?? "",
       searchOnAdd: settings.search_on_add ? "on" : "off",
-      activeIndexerManager: settings.active_indexer_manager ?? "",
     },
   });
 
@@ -121,14 +162,7 @@ export function MediaPostProcessingSettingsBody({
     unmatched: string[];
   } | null>(null);
 
-  const { data: prowlarrData } = useProwlarrIntegration();
-  const { data: jackettData } = useJackettIntegration();
-  const prowlarrEnabled = Boolean(prowlarrData?.integration?.enabled);
-  const jackettEnabled = Boolean(jackettData?.integration?.enabled);
-  const indexerOptions = [
-    ...(prowlarrEnabled ? [{ value: "prowlarr", label: "Prowlarr" }] : []),
-    ...(jackettEnabled ? [{ value: "jackett", label: "Jackett" }] : []),
-  ];
+  const { data: bookProfilesData } = useBookQualityProfiles();
 
   const onSubmit = async (data: MediaSettingsFormValues) => {
     try {
@@ -148,13 +182,12 @@ export function MediaPostProcessingSettingsBody({
           data.defaultShowQualityProfileId === ""
             ? null
             : parseInt(data.defaultShowQualityProfileId, 10),
+        default_book_quality_profile_id:
+          data.defaultBookQualityProfileId === ""
+            ? null
+            : parseInt(data.defaultBookQualityProfileId, 10),
         search_on_add: data.searchOnAdd === "on",
         release_check_cron: releaseCheck.cron,
-        active_indexer_manager:
-          data.activeIndexerManager === "prowlarr" ||
-          data.activeIndexerManager === "jackett"
-            ? data.activeIndexerManager
-            : null,
       });
       toast.success(t("settings.mediaLibrary.saveSuccess"));
     } catch {
@@ -182,12 +215,12 @@ export function MediaPostProcessingSettingsBody({
 
   return (
     <div className="space-y-4">
-      {/* ── Post-processing settings ─────────────────────────────────── */}
-      <CardSection
-        title={t("settings.mediaLibrary.title")}
-        description={t("settings.mediaLibrary.description")}
-      >
-        <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+        {/* ── Folders ────────────────────────────────────────────────── */}
+        <CardSection
+          title={t("settings.library.folders.title")}
+          description={t("settings.library.folders.description")}
+        >
           <label className="flex items-center gap-2 text-sm font-medium text-neutral-200">
             <input
               type="checkbox"
@@ -245,247 +278,193 @@ export function MediaPostProcessingSettingsBody({
             )}
           </div>
 
-          <div>
-            <label
-              htmlFor="media-post-processing-settings-body-movie-template"
-              className={LABEL_CLASS}
-            >
-              {t("settings.mediaLibrary.movieTemplate")}
-            </label>
-            <textarea
-              id="media-post-processing-settings-body-movie-template"
-              {...register("movieTemplate")}
-              rows={2}
-              className="focus-ring w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm font-mono text-neutral-100"
-            />
-            {errors.movieTemplate && (
-              <p className="mt-1 text-sm text-red-400">
-                {errors.movieTemplate.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="media-post-processing-settings-body-episode-template"
-              className={LABEL_CLASS}
-            >
-              {t("settings.mediaLibrary.episodeTemplate")}
-            </label>
-            <textarea
-              id="media-post-processing-settings-body-episode-template"
-              {...register("episodeTemplate")}
-              rows={2}
-              className="focus-ring w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm font-mono text-neutral-100"
-            />
-            {errors.episodeTemplate && (
-              <p className="mt-1 text-sm text-red-400">
-                {errors.episodeTemplate.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="media-post-processing-settings-body-active-indexer-manager"
-              className={LABEL_CLASS}
-            >
-              {t("settings.mediaLibrary.activeIndexerManager")}
-            </label>
-            {indexerOptions.length === 0 ? (
-              <p className="text-sm text-neutral-400">
-                {t("settings.mediaLibrary.noIndexerConfigured")}
-              </p>
-            ) : (
-              <select
-                id="media-post-processing-settings-body-active-indexer-manager"
-                {...register("activeIndexerManager")}
-                className={SELECT_CLASS}
+          <AdvancedDisclosure label={t("settings.library.folders.templates")}>
+            <div>
+              <label
+                htmlFor="media-post-processing-settings-body-movie-template"
+                className={LABEL_CLASS}
               >
-                <option value="">
-                  {t("settings.mediaLibrary.noIndexerSelected")}
-                </option>
-                {indexerOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            )}
-            {errors.activeIndexerManager && (
-              <p className="mt-1 text-sm text-red-400">
-                {errors.activeIndexerManager.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="media-post-processing-settings-body-default-movie-quality-profile-id"
-              className={LABEL_CLASS}
-            >
-              {t("settings.mediaLibrary.defaultMovieQualityProfile")}
-            </label>
-            <select
-              id="media-post-processing-settings-body-default-movie-quality-profile-id"
-              {...register("defaultMovieQualityProfileId")}
-              className={SELECT_CLASS}
-            >
-              <option value="">
-                {t("settings.mediaLibrary.defaultMovieQualityProfileNone")}
-              </option>
-              {(profilesData?.profiles ?? []).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {errors.defaultMovieQualityProfileId && (
-              <p className="mt-1 text-sm text-red-400">
-                {errors.defaultMovieQualityProfileId.message}
-              </p>
-            )}
-            <p className="mt-1.5 text-xs text-neutral-400">
-              {t("settings.mediaLibrary.defaultMovieQualityProfileHint")}
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="media-post-processing-settings-body-default-show-quality-profile-id"
-              className={LABEL_CLASS}
-            >
-              {t("settings.mediaLibrary.defaultShowQualityProfile")}
-            </label>
-            <select
-              id="media-post-processing-settings-body-default-show-quality-profile-id"
-              {...register("defaultShowQualityProfileId")}
-              className={SELECT_CLASS}
-            >
-              <option value="">
-                {t("settings.mediaLibrary.defaultShowQualityProfileNone")}
-              </option>
-              {(profilesData?.profiles ?? []).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {errors.defaultShowQualityProfileId && (
-              <p className="mt-1 text-sm text-red-400">
-                {errors.defaultShowQualityProfileId.message}
-              </p>
-            )}
-            <p className="mt-1.5 text-xs text-neutral-400">
-              {t("settings.mediaLibrary.defaultShowQualityProfileHint")}
-            </p>
-          </div>
-
-          <fieldset className="rounded-lg border border-neutral-700/60 bg-neutral-900/40 p-4">
-            <legend className="px-1 text-sm font-medium text-neutral-300">
-              {t("settings.mediaLibrary.searchOnAdd.title")}
-            </legend>
-            <div className="space-y-2">
-              {(["on", "off"] as const).map((value) => (
-                <label
-                  key={value}
-                  className="flex items-start gap-2 text-sm text-neutral-200"
-                >
-                  <input
-                    type="radio"
-                    value={value}
-                    {...register("searchOnAdd")}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    {value === "on"
-                      ? t("settings.mediaLibrary.searchOnAdd.on")
-                      : t("settings.mediaLibrary.searchOnAdd.off")}
-                  </span>
-                </label>
-              ))}
+                {t("settings.mediaLibrary.movieTemplate")}
+              </label>
+              <textarea
+                id="media-post-processing-settings-body-movie-template"
+                {...register("movieTemplate")}
+                rows={2}
+                className="focus-ring w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm font-mono text-neutral-100"
+              />
+              {errors.movieTemplate && (
+                <p className="mt-1 text-sm text-red-400">
+                  {errors.movieTemplate.message}
+                </p>
+              )}
             </div>
-            <GrabReadinessChecklist />
-          </fieldset>
+            <div>
+              <label
+                htmlFor="media-post-processing-settings-body-episode-template"
+                className={LABEL_CLASS}
+              >
+                {t("settings.mediaLibrary.episodeTemplate")}
+              </label>
+              <textarea
+                id="media-post-processing-settings-body-episode-template"
+                {...register("episodeTemplate")}
+                rows={2}
+                className="focus-ring w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm font-mono text-neutral-100"
+              />
+              {errors.episodeTemplate && (
+                <p className="mt-1 text-sm text-red-400">
+                  {errors.episodeTemplate.message}
+                </p>
+              )}
+            </div>
+          </AdvancedDisclosure>
+        </CardSection>
 
+        {/* ── Defaults ───────────────────────────────────────────────── */}
+        <CardSection
+          id="library-defaults"
+          title={t("settings.library.defaults.title")}
+          description={t("settings.library.defaults.description")}
+        >
+          <ProfileSelect
+            id="media-post-processing-settings-body-default-movie-quality-profile-id"
+            label={t("settings.mediaLibrary.defaultMovieQualityProfile")}
+            noneLabel={t(
+              "settings.mediaLibrary.defaultMovieQualityProfileNone",
+            )}
+            hint={t("settings.mediaLibrary.defaultMovieQualityProfileHint")}
+            profiles={profilesData?.profiles ?? []}
+            error={errors.defaultMovieQualityProfileId?.message}
+            registration={register("defaultMovieQualityProfileId")}
+          />
+          <ProfileSelect
+            id="media-post-processing-settings-body-default-show-quality-profile-id"
+            label={t("settings.mediaLibrary.defaultShowQualityProfile")}
+            noneLabel={t("settings.mediaLibrary.defaultShowQualityProfileNone")}
+            hint={t("settings.mediaLibrary.defaultShowQualityProfileHint")}
+            profiles={profilesData?.profiles ?? []}
+            error={errors.defaultShowQualityProfileId?.message}
+            registration={register("defaultShowQualityProfileId")}
+          />
+          <ProfileSelect
+            id="media-post-processing-settings-body-default-book-quality-profile-id"
+            label={t("settings.books.files.defaultProfile")}
+            noneLabel={t("settings.books.files.noDefaultProfile")}
+            hint={t("settings.books.files.defaultProfileHint")}
+            profiles={bookProfilesData?.profiles ?? []}
+            error={errors.defaultBookQualityProfileId?.message}
+            registration={register("defaultBookQualityProfileId")}
+          />
+        </CardSection>
+
+        {/* ── Adding a title ─────────────────────────────────────────── */}
+        <CardSection title={t("settings.mediaLibrary.searchOnAdd.title")}>
+          <div className="space-y-2">
+            {(["on", "off"] as const).map((value) => (
+              <label
+                key={value}
+                className="flex items-start gap-2 text-sm text-neutral-200"
+              >
+                <input
+                  type="radio"
+                  value={value}
+                  {...register("searchOnAdd")}
+                  className="mt-0.5"
+                />
+                <span>
+                  {value === "on"
+                    ? t("settings.mediaLibrary.searchOnAdd.on")
+                    : t("settings.mediaLibrary.searchOnAdd.off")}
+                </span>
+              </label>
+            ))}
+          </div>
+        </CardSection>
+
+        {/* ── How often to check ─────────────────────────────────────── */}
+        <CardSection title={t("settings.library.schedule.title")}>
           <ReleaseCheckFieldset
             initialCron={settings.release_check_cron}
             onChange={setReleaseCheck}
           />
+        </CardSection>
 
-          <div className="pt-2 border-t border-neutral-700/60">
-            <Button
-              type="submit"
-              disabled={updateMut.isPending || !releaseCheck.valid}
-            >
-              {updateMut.isPending
-                ? t("settings.mediaLibrary.saving")
-                : t("settings.mediaLibrary.save")}
-            </Button>
-          </div>
-        </form>
-      </CardSection>
-
-      {/* ── Library scan ─────────────────────────────────────────────── */}
-      <CardSection
-        title={t("settings.mediaLibrary.scanTitle")}
-        description={t("settings.mediaLibrary.scanDescription")}
-      >
-        <FormInput
-          label={t("settings.mediaLibrary.scanPath")}
-          value={scanPath}
-          onChange={(e) => setScanPath(e.target.value)}
-          placeholder="/mnt/media/Movies"
-          className="font-mono text-xs"
-        />
         <div>
-          <label
-            htmlFor="media-post-processing-settings-body-scan-type"
-            className={LABEL_CLASS}
+          <Button
+            type="submit"
+            disabled={updateMut.isPending || !releaseCheck.valid}
           >
-            {t("settings.mediaLibrary.scanType")}
-          </label>
-          <select
-            id="media-post-processing-settings-body-scan-type"
-            value={scanType}
-            onChange={(e) =>
-              setScanType(e.target.value === "show" ? "show" : "movie")
-            }
-            className={SELECT_CLASS}
-          >
-            <option value="movie">
-              {t("settings.mediaLibrary.scanMovies")}
-            </option>
-            <option value="show">{t("settings.mediaLibrary.scanShows")}</option>
-          </select>
+            {updateMut.isPending
+              ? t("settings.mediaLibrary.saving")
+              : t("settings.mediaLibrary.save")}
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => void onScan()}
-          disabled={scanMut.isPending}
-        >
-          {scanMut.isPending
-            ? t("settings.mediaLibrary.scanRunning")
-            : t("settings.mediaLibrary.scanRun")}
-        </Button>
-        {lastScan && lastScan.unmatched.length > 0 && (
-          <div className="rounded-lg border border-neutral-700/60 bg-neutral-900/40 p-3 text-xs text-neutral-400">
-            <p className="font-medium text-neutral-200 mb-1.5">
-              {t("settings.mediaLibrary.scanUnmatched")} (
-              {lastScan.unmatched.length})
-            </p>
-            <ul className="list-disc pl-4 max-h-40 overflow-y-auto font-mono space-y-0.5">
-              {lastScan.unmatched.map((u) => (
-                <li key={u}>{u}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </CardSection>
+      </form>
 
-      {/* ── Reindex languages ────────────────────────────────────────── */}
-      <ReindexLanguagesSection />
+      <AdvancedDisclosure label={t("settings.library.maintenance")}>
+        {/* ── Library scan ─────────────────────────────────────────────── */}
+        <CardSection
+          title={t("settings.mediaLibrary.scanTitle")}
+          description={t("settings.mediaLibrary.scanDescription")}
+        >
+          <FormInput
+            label={t("settings.mediaLibrary.scanPath")}
+            value={scanPath}
+            onChange={(e) => setScanPath(e.target.value)}
+            placeholder="/mnt/media/Movies"
+            className="font-mono text-xs"
+          />
+          <div>
+            <label
+              htmlFor="media-post-processing-settings-body-scan-type"
+              className={LABEL_CLASS}
+            >
+              {t("settings.mediaLibrary.scanType")}
+            </label>
+            <select
+              id="media-post-processing-settings-body-scan-type"
+              value={scanType}
+              onChange={(e) =>
+                setScanType(e.target.value === "show" ? "show" : "movie")
+              }
+              className={SELECT_CLASS}
+            >
+              <option value="movie">
+                {t("settings.mediaLibrary.scanMovies")}
+              </option>
+              <option value="show">
+                {t("settings.mediaLibrary.scanShows")}
+              </option>
+            </select>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void onScan()}
+            disabled={scanMut.isPending}
+          >
+            {scanMut.isPending
+              ? t("settings.mediaLibrary.scanRunning")
+              : t("settings.mediaLibrary.scanRun")}
+          </Button>
+          {lastScan && lastScan.unmatched.length > 0 && (
+            <div className="rounded-lg border border-neutral-700/60 bg-neutral-900/40 p-3 text-xs text-neutral-400">
+              <p className="font-medium text-neutral-200 mb-1.5">
+                {t("settings.mediaLibrary.scanUnmatched")} (
+                {lastScan.unmatched.length})
+              </p>
+              <ul className="list-disc pl-4 max-h-40 overflow-y-auto font-mono space-y-0.5">
+                {lastScan.unmatched.map((u) => (
+                  <li key={u}>{u}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </CardSection>
+
+        {/* ── Reindex languages ────────────────────────────────────────── */}
+        <ReindexLanguagesSection />
+      </AdvancedDisclosure>
     </div>
   );
 }

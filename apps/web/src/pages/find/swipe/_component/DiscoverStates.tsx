@@ -53,8 +53,7 @@ export function DiscoverNotConfigured() {
         Discover needs TMDB enabled in Settings to recommend titles.
       </p>
       <Link
-        to="/settings"
-        search={{ tab: "profile" }}
+        to="/settings/connections"
         className="mt-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white"
       >
         Open Settings

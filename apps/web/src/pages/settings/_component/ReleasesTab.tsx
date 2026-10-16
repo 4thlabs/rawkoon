@@ -12,7 +12,6 @@ import {
   Package,
   RefreshCw,
   Tag,
-  Rocket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -146,9 +145,6 @@ export function ReleasesTab() {
   return (
     <div className="space-y-6">
       <SettingsPageHeader
-        icon={Rocket}
-        title={t("settings.releases.title")}
-        description={t("settings.releases.description")}
         actions={
           <Button
             onClick={handleRefresh}

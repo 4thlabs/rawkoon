@@ -464,10 +464,6 @@
   },
   "settings": {
     "title": "Settings",
-    "sections": {
-      "account": "Account",
-      "admin": "Admin"
-    },
     "general": {
       "title": "General",
       "description": "App-wide defaults used by background jobs and shared integrations.",
@@ -682,14 +678,8 @@
       "addedOn": "Added {{date}}"
     },
     "media": {
-      "title": "Media",
-      "description": "Configure quality profiles, library post-processing, media history, and import workflows.",
       "tabs": {
         "qualityProfiles": "Quality Profiles",
-        "librarySettings": "Library Settings",
-        "seeding": "Seeding",
-        "history": "History",
-        "import": "Import",
         "customFormats": "Custom Formats"
       }
     },
@@ -775,9 +765,6 @@
       "movieTemplate": "Movie filename template",
       "episodeTemplate": "Episode path template",
       "minSeedRatio": "Remove torrent from the download client when ratio reaches (0 = immediately after processing)",
-      "activeIndexerManager": "Indexer Manager",
-      "noIndexerConfigured": "No indexer manager configured. Enable Prowlarr or Jackett in Integrations settings.",
-      "noIndexerSelected": "None selected",
       "defaultMovieQualityProfile": "Default movie quality profile",
       "defaultMovieQualityProfileNone": "None (no profile assigned on add)",
       "defaultMovieQualityProfileHint": "Automatically assigned to new movies added to the library.",
@@ -1187,8 +1174,6 @@
     },
     "integrations": {
       "testConnection": "Test connection",
-      "title": "Integrations",
-      "description": "Connect third-party integrations used by the dashboard.",
       "indexers": "Indexers",
       "groups": {
         "media": "Media",
@@ -1439,7 +1424,8 @@
         "interactive": "Interactive search",
         "manual_search": "Manual search",
         "unknown": "Unknown"
-      }
+      },
+      "pricingAdvanced": "Pricing and daily budget"
     },
     "blocklist": {
       "title": "Blocklist",
@@ -1603,7 +1589,7 @@
       "statusOff": "Automatic stop seeding is off",
       "shared_one": "{{count}} torrent seeding",
       "shared_other": "{{count}} torrents seeding",
-      "description": "After import, Rawkoon keeps each torrent seeding until it reaches its ratio, then removes it from the client. Your library copy is a hardlink, so it stays.",
+      "description": "After import, Rawkoon keeps each torrent seeding until it reaches its ratio or time target, then removes it from the client. Your library copy is a hardlink, so it stays.",
       "enable": "Stop seeding when the target is met",
       "enableHint": "When off, a torrent is only removed at import if it already meets the public ratio.",
       "preview_one": "{{count}} torrent would stop seeding now, {{size}}.",
@@ -1617,9 +1603,9 @@
       "days_one": "{{count}} day",
       "days_other": "{{count}} days",
       "sentence": {
-        "both": "Stop seeding at ratio {{ratio}} or after {{time}} of seeding, whichever comes first.",
-        "ratio": "Stop seeding once it reaches ratio {{ratio}}.",
-        "time": "Stop seeding after {{time}} of seeding.",
+        "both": "Keep seeding until ratio {{ratio}} or {{time}}, whichever comes first.",
+        "ratio": "Keep seeding until it reaches ratio {{ratio}}.",
+        "time": "Keep seeding for {{time}}.",
         "none": "Stop seeding right after import. Nothing is seeded."
       },
       "unknownPrivate": "An indexer Rawkoon can't reach counts as private, so a torrent is never removed early by mistake.",
@@ -1638,15 +1624,22 @@
         "cancel": "Cancel",
         "empty": "No indexers found. Connect Prowlarr or Jackett first.",
         "heldCount_one": "{{count}} seeding",
-        "heldCount_other": "{{count}} seeding"
+        "heldCount_other": "{{count}} seeding",
+        "advanced": "Per-indexer overrides"
       },
       "save": "Save seeding rules",
       "saved": "Seeding rules saved.",
       "saveError": "Couldn't save seeding rules.",
       "label": {
         "ratio": "Ratio {{ratio}}",
-        "none": "Right after import"
-      }
+        "none": "Right after import",
+        "both": "Ratio {{ratio}} or {{time}}",
+        "time": "{{time}}"
+      },
+      "orAfter": "Or days",
+      "timeUnit": "Time unit",
+      "unitDays": "days",
+      "unitHours": "hours"
     },
     "downloadSafety": {
       "title": "Download safety",
@@ -1664,6 +1657,133 @@
     },
     "transcode": {
       "title": "Re-encode"
+    },
+    "pages": {
+      "profile": {
+        "title": "Profile",
+        "description": "Your name, email and photo."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Password, passkeys and your calendar link."
+      },
+      "alerts": {
+        "title": "Alerts",
+        "description": "Which notifications you get, and where they go."
+      },
+      "app": {
+        "title": "App",
+        "description": "Language and where the navigation sits."
+      },
+      "connections": {
+        "title": "Connections",
+        "description": "The services Rawkoon talks to: metadata, media server, indexers and the download client."
+      },
+      "library": {
+        "title": "Library",
+        "description": "Folders, defaults for new titles, and how often Rawkoon checks for releases."
+      },
+      "quality": {
+        "title": "Quality",
+        "description": "Quality profiles and custom formats."
+      },
+      "after-download": {
+        "title": "After download",
+        "description": "What happens to a torrent once it is imported, and the file safety rules."
+      },
+      "books": {
+        "title": "Books",
+        "description": "The book and audiobook library, its metadata provider, and where files are stored."
+      },
+      "people": {
+        "title": "People",
+        "description": "Users, invitations, single sign-on, API keys and sessions."
+      },
+      "general": {
+        "title": "General",
+        "description": "Country and upcoming releases."
+      },
+      "ai": {
+        "title": "AI",
+        "description": "Connect an OpenAI-compatible model to help pick releases."
+      },
+      "health": {
+        "title": "Health",
+        "description": "Can Rawkoon find, grab and import right now?"
+      },
+      "jobs": {
+        "title": "Jobs",
+        "description": "Scheduled jobs, queue health and recent history."
+      },
+      "reencode": {
+        "title": "Re-encode",
+        "description": "The re-encode queue, its history and run window."
+      },
+      "downloads": {
+        "title": "Downloads",
+        "description": "Staging, seeding, leftovers, download history and the Radarr and Sonarr import."
+      },
+      "blocklist": {
+        "title": "Blocklist",
+        "description": "Releases that are never grabbed automatically."
+      },
+      "ai-usage": {
+        "title": "AI usage",
+        "description": "What the AI provider costs and how well it performs."
+      },
+      "updates": {
+        "title": "App updates",
+        "description": "Public releases of Rawkoon, refreshed every 6 hours."
+      }
+    },
+    "groups": {
+      "you": "You",
+      "server": "Server",
+      "system": "System"
+    },
+    "search": {
+      "label": "Search settings",
+      "placeholder": "Search settings",
+      "empty": "No settings match your search."
+    },
+    "advanced": "Advanced",
+    "app": {
+      "languageHint": "The language used across the app. Titles follow it where a translation exists.",
+      "navigation": "Navigation",
+      "navigationHint": "Choose where the navigation rail appears on desktop."
+    },
+    "connections": {
+      "hookAdvanced": "Completion hook",
+      "indexers": {
+        "title": "Indexers",
+        "help": "Pick the indexer manager Rawkoon searches through.",
+        "switchLabel": "Indexer manager",
+        "switchError": "Could not switch the indexer manager."
+      }
+    },
+    "library": {
+      "folders": {
+        "title": "Folders",
+        "description": "Where Rawkoon looks for downloads and puts finished movies and shows.",
+        "templates": "Naming templates"
+      },
+      "defaults": {
+        "title": "Defaults",
+        "description": "The quality profile a new title gets until you change it."
+      },
+      "schedule": {
+        "title": "How often to check"
+      },
+      "maintenance": "Maintenance"
+    },
+    "afterDownload": {
+      "safety": "File safety"
+    },
+    "health": {
+      "allClear": "Rawkoon can find, grab and import right now.",
+      "needsAttention_one": "{{count}} thing needs attention before Rawkoon can run unattended.",
+      "needsAttention_other": "{{count}} things need attention before Rawkoon can run unattended.",
+      "library": "Library health"
     }
   },
   "medias": {
@@ -2673,12 +2793,12 @@
     }
   },
   "downloadsPage": {
-    "title": "Downloads",
-    "subtitle": "What's in your download client, and what Rawkoon still needs from it.",
     "tabs": {
       "import": "Import",
       "seeding": "Seeding",
-      "orphans": "Orphans"
+      "orphans": "Orphans",
+      "history": "History",
+      "arr": "Radarr & Sonarr"
     }
   },
   "seeding": {

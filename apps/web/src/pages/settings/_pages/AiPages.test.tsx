@@ -111,11 +111,20 @@ vi.mock(
   () => ({ AiProviderIntegrationSection: () => <div>provider-form</div> }),
 );
 
-const { AiSettingsTab } = await import(
-  "@/pages/settings/_component/AiSettingsTab"
-);
+const { AiPage } = await import("@/pages/settings/_pages/AiPage");
+const { AiUsagePage } = await import("@/pages/settings/_pages/AiUsagePage");
 
-describe("AiSettingsTab", () => {
+// Provider setup and usage are separate pages now; the assertions below cover both.
+function AiSettingsTab() {
+  return (
+    <>
+      <AiPage />
+      <AiUsagePage />
+    </>
+  );
+}
+
+describe("AI settings pages", () => {
   it("renders the provider form, stat tiles, tables and history", () => {
     statsData = stats;
     renderWithProviders(<AiSettingsTab />);

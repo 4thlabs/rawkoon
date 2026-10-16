@@ -18,7 +18,12 @@ import type { UpdateProfileRequest } from "@rawkoon/shared/types";
 const MAX_AVATAR_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const MAX_CROPPED_DIMENSION_PX = 1024;
 
-export function ProfileForm() {
+export function ProfileForm({
+  part = "both",
+}: {
+  /** The page shows account details and the password on separate pages. */
+  part?: "profile" | "password" | "both";
+}) {
   const { t } = useTranslation("common");
   const { data: currentUser } = useCurrentUser();
   const updateProfileMutation = useUpdateProfile();
@@ -236,6 +241,7 @@ export function ProfileForm() {
     <div className="space-y-8">
       {/* Profile Section */}
       <form
+        hidden={part === "password"}
         onSubmit={handleProfileSubmit(onProfileSubmit)}
         className="space-y-6"
       >
@@ -347,17 +353,18 @@ export function ProfileForm() {
         </Button>
       </form>
 
-      {/* Divider */}
-      <div className="border-t border-neutral-700" />
+      {part === "both" && <div className="border-t border-neutral-700" />}
 
       {/* Password Section */}
-      <PasswordSection
-        onSubmit={handlePasswordSubmit(onPasswordSubmit)}
-        registerPassword={registerPassword}
-        passwordErrors={passwordErrors}
-        newPassword={newPassword}
-        isPending={changePasswordMutation.isPending}
-      />
+      {part !== "profile" && (
+        <PasswordSection
+          onSubmit={handlePasswordSubmit(onPasswordSubmit)}
+          registerPassword={registerPassword}
+          passwordErrors={passwordErrors}
+          newPassword={newPassword}
+          isPending={changePasswordMutation.isPending}
+        />
+      )}
 
       <AvatarCropDialog
         selectedImageUrl={selectedImageUrl}

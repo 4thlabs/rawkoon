@@ -3,7 +3,6 @@ import { Loader } from "@/components/Loader";
 import { useMediaPostProcessingSettings } from "@/features/medias/hooks/useMediaPostProcessingSettings";
 import { useQualityProfilesList } from "@/pages/settings/useQualityProfiles";
 import { MediaPostProcessingSettingsBody } from "./MediaPostProcessingSettingsBody";
-import { DownloadSafetySection } from "./DownloadSafetySection";
 
 export function MediaPostProcessingTab() {
   const { t } = useTranslation("common");
@@ -37,16 +36,10 @@ export function MediaPostProcessingTab() {
   }
 
   return (
-    <div className="space-y-6">
-      <MediaPostProcessingSettingsBody
-        key={settings.updated_at}
-        settings={settings}
-        profilesData={profilesData}
-      />
-      <DownloadSafetySection
-        key={`safety-${settings.updated_at}`}
-        settings={settings}
-      />
-    </div>
+    <MediaPostProcessingSettingsBody
+      key={settings.updated_at}
+      settings={settings}
+      profilesData={profilesData}
+    />
   );
 }

@@ -2,7 +2,6 @@ import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Globe2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,6 @@ import {
   useUpdateAppSettings,
 } from "@/pages/settings/useAppSettings";
 import { getCountryOptions } from "@/lib/countriesDisplay";
-import { SettingsPageHeader } from "@/pages/settings/_component/SettingsPageHeader";
 
 const LANGUAGE_OPTIONS = [
   { code: "en", label: "English" },
@@ -151,12 +149,6 @@ export function GeneralSettingsTab() {
 
   return (
     <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
-      <SettingsPageHeader
-        icon={Globe2}
-        title={t("settings.general.title")}
-        description={t("settings.general.description")}
-      />
-
       {/* Region Settings */}
       <section className="space-y-4 rounded-xl border p-6 border-neutral-700 bg-neutral-800">
         <h3 className="text-sm font-semibold text-neutral-100">Region</h3>

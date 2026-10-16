@@ -111,8 +111,7 @@ export function AccountMenu({ variant, side = "top" }: AccountMenuProps) {
             {user.email}
           </div>
           <Link
-            to="/settings"
-            search={{ tab: "profile" }}
+            to="/settings/profile"
             onClick={() => setOpen(false)}
             className={cn(rowClass, onSettings && "bg-white/[0.06] text-white")}
           >

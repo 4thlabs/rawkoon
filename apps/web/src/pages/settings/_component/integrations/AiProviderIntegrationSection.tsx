@@ -7,6 +7,7 @@ import { useUpdateAiProviderIntegration } from "@/pages/settings/useUpdateAiProv
 import { IntegrationSectionCard } from "@/pages/settings/_component/integrations/IntegrationSectionCard";
 import { IntegrationUrlInput } from "@/pages/settings/_component/integrations/IntegrationUrlInput";
 import { Input } from "@/components/ui/input";
+import { AdvancedDisclosure } from "@/components/ui/advanced-disclosure";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -211,41 +212,43 @@ function AiProviderIntegrationSectionImpl({
             }
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <PriceInput
-            id="ai-provider-integration-section-input-price"
-            label={t("settings.ai.inputPrice")}
-            value={inputPrice}
-            onChange={setInputPrice}
-          />
-          <PriceInput
-            id="ai-provider-integration-section-output-price"
-            label={t("settings.ai.outputPrice")}
-            value={outputPrice}
-            onChange={setOutputPrice}
-          />
-          <p className="text-xs text-neutral-500 sm:col-span-2">
-            {t("settings.ai.priceHelp")}
-          </p>
-        </div>
-        <div className="space-y-1.5">
-          <PriceInput
-            id="ai-provider-integration-section-budget"
-            label={t("settings.ai.budget.label")}
-            value={budget}
-            onChange={setBudget}
-            placeholder={t("settings.ai.budget.placeholder")}
-          />
-          <p className="text-xs text-neutral-500">
-            {t("settings.ai.budget.help")}
-          </p>
-          {budgetWithoutPrices && (
-            <p className="flex items-center gap-1 text-xs text-yellow-400">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              {t("settings.ai.budget.needsPrices")}
+        <AdvancedDisclosure label={t("settings.ai.pricingAdvanced")}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <PriceInput
+              id="ai-provider-integration-section-input-price"
+              label={t("settings.ai.inputPrice")}
+              value={inputPrice}
+              onChange={setInputPrice}
+            />
+            <PriceInput
+              id="ai-provider-integration-section-output-price"
+              label={t("settings.ai.outputPrice")}
+              value={outputPrice}
+              onChange={setOutputPrice}
+            />
+            <p className="text-xs text-neutral-500 sm:col-span-2">
+              {t("settings.ai.priceHelp")}
             </p>
-          )}
-        </div>
+          </div>
+          <div className="space-y-1.5">
+            <PriceInput
+              id="ai-provider-integration-section-budget"
+              label={t("settings.ai.budget.label")}
+              value={budget}
+              onChange={setBudget}
+              placeholder={t("settings.ai.budget.placeholder")}
+            />
+            <p className="text-xs text-neutral-500">
+              {t("settings.ai.budget.help")}
+            </p>
+            {budgetWithoutPrices && (
+              <p className="flex items-center gap-1 text-xs text-yellow-400">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {t("settings.ai.budget.needsPrices")}
+              </p>
+            )}
+          </div>
+        </AdvancedDisclosure>
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium text-neutral-300">
             {t("settings.ai.featureToggles.title")}

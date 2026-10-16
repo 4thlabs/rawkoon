@@ -40,12 +40,6 @@ const ICONS: Record<
 const ACTION_CLASS =
   "focus-ring inline-flex h-8 items-center rounded-md border border-neutral-600 px-3 text-xs font-medium text-neutral-100 transition-colors hover:bg-neutral-700";
 
-function focusSelect(id: string) {
-  const el = document.getElementById(id);
-  el?.scrollIntoView({ behavior: "smooth", block: "center" });
-  el?.focus({ preventScroll: true });
-}
-
 function asString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
@@ -174,24 +168,18 @@ export function GrabReadinessChecklist() {
       check.id === "default_show_profile"
     ) {
       return (
-        <button
-          type="button"
+        <Link
+          to="/settings/library"
+          hash={SELECT_IDS[check.id as keyof typeof SELECT_IDS]}
           className={ACTION_CLASS}
-          onClick={() =>
-            focusSelect(SELECT_IDS[check.id as keyof typeof SELECT_IDS])
-          }
         >
           {t(`${prefix}.pickDefault`)}
-        </button>
+        </Link>
       );
     }
     if (check.id === "indexer_manager" || check.id === "download_client") {
       return (
-        <Link
-          to="/settings"
-          search={{ tab: "integrations" }}
-          className={ACTION_CLASS}
-        >
+        <Link to="/settings/connections" className={ACTION_CLASS}>
           {t(`${prefix}.openIntegrations`)}
         </Link>
       );
@@ -263,12 +251,8 @@ export function GrabReadinessChecklist() {
                     {profiles.map((profile) => (
                       <Link
                         key={profile.id}
-                        to="/settings"
-                        search={{
-                          tab: "media",
-                          subtab: "quality-profiles",
-                          edit: profile.id,
-                        }}
+                        to="/settings/quality"
+                        search={{ edit: profile.id }}
                         className={ACTION_CLASS}
                       >
                         {t(

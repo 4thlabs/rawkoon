@@ -47,7 +47,7 @@ export function SeedingTab() {
           </div>
         </div>
         <a
-          href="/library/downloads?view=seeding"
+          href="/settings/downloads?view=seeding"
           className="text-sm text-primary-400 underline underline-offset-2"
         >
           {t("settings.seeding.viewTorrents")}
