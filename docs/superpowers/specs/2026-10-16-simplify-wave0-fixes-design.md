@@ -32,6 +32,17 @@ the same things.
    full navigation.
 5. **Palette shortcut hint.** The quick-action palette shows an "R" shortcut
    on Refresh that has no key handler. Remove the hint.
+12. **Remove the habits and chores leftovers.** The code base started from a
+    household app, and its chores, habits and reminders traces are still
+    there: the `chores` and habits locale sections and nav keys in both
+    locales, the chore and habit service and type mappings in
+    `activityPresentation.ts`, job action labels for jobs that don't exist
+    (`checkReminders`, `checkAllDayEvents`, `refreshHabitsStreaks`), the
+    unused subdivision and coming-soon keys, the habits job id in
+    `apps/api/test/preload.ts`, and the `habits_streak` assertion in
+    `apps/api/test/dashboard.test.ts`. A key is removed only after a search
+    shows no code reads it. The listening streak in books stats is a real
+    feature and stays.
 
 ## iOS lane
 
