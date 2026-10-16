@@ -54,6 +54,7 @@ struct RootTabsView: View {
             case "reader": DebugEbookReader()
             case "settings": NavigationStack { SettingsView() }
             case "requests": NavigationStack { RequestsView() }
+            case "autoGrab": NavigationStack { AutoGrabSettingsView() }
             case "qualityProfiles": NavigationStack { QualityProfilesView() }
             case "qualityProfileEditor": NavigationStack { DebugFirstQualityProfile() }
             case "notifications": NavigationStack { NotificationsSettingsView() }
