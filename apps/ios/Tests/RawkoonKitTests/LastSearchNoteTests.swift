@@ -56,7 +56,7 @@ final class LastSearchNoteTests: XCTestCase {
             Row(id: 2, outcome: "delayed", time: "2026-10-16T12:00:00Z"),
             Row(id: 3, outcome: "no_match", time: "2026-10-16T11:00:00Z"),
             Row(id: 4, outcome: "error", time: nil),
-            Row(id: 5, outcome: nil, time: nil)
+            Row(id: 5, outcome: nil, time: nil),
         ]
         let all = LastSearchNote.recentMisses(rows, limit: 10) {
             LastSearchNote(status: "wanted", outcome: $0.outcome, at: $0.time, reason: nil)

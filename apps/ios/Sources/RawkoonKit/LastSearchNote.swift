@@ -10,7 +10,7 @@ public struct LastSearchNote: Equatable, Sendable {
     public init?(status: String, outcome: String?, at iso: String?, reason: String?) {
         guard status == "wanted", let outcome, let known = LiveSearchOutcome(rawValue: outcome) else { return nil }
         self.outcome = known
-        self.searchedAt = iso.flatMap(Self.parse)
+        searchedAt = iso.flatMap(Self.parse)
         let trimmed = reason?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.reason = trimmed?.isEmpty == false ? trimmed : nil
     }
