@@ -12,7 +12,7 @@
             .noMatch,
             .held(minutes: 30, targetKeys: ["k"]),
             .skipped(.settingOff),
-            .failed(reason: nil)
+            .failed(reason: nil),
         ]
 
         var body: some View {
