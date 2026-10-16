@@ -48,10 +48,12 @@ export function ReleaseCard({
   const [showBreakdown, setShowBreakdown] = useState(false);
   const grabDisabled =
     isBusy || (!release.download_url && !release.download_token);
+  // A language fallback is rejected for grabbing automatically, but offered here.
+  const showRejected = release.rejected && !release.language_fallback;
   return (
     <div
       className={`rounded-2xl border p-3 transition-colors ${
-        release.rejected
+        showRejected
           ? "border-amber-700/30 bg-amber-950/20"
           : "border-neutral-700/80 bg-neutral-900/60 hover:bg-neutral-900"
       }`}
@@ -88,6 +90,11 @@ export function ReleaseCard({
             {release.is_season_pack && !release.is_complete_series && (
               <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold bg-violet-500/15 text-violet-300">
                 Season pack
+              </span>
+            )}
+            {release.language_fallback_tag && (
+              <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold bg-violet-500/15 text-violet-300">
+                {release.language_fallback_tag}
               </span>
             )}
             {release.indexer && (
@@ -150,7 +157,7 @@ export function ReleaseCard({
             )}
           </div>
 
-          {release.rejected &&
+          {showRejected &&
             release.quality_rejection_reasons != null &&
             release.quality_rejection_reasons.length > 0 && (
               <div className="mt-2 rounded-md px-2 py-1 text-xs bg-amber-900/20 text-amber-400">

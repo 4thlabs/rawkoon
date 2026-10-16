@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   filterAndSortReleases,
   normalizeFilterKey,
+  splitLanguageFallback,
 } from "./interactive-search";
 import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
 
@@ -147,5 +148,63 @@ describe("filterAndSortReleases — filterQuery accent stripping", () => {
       },
     );
     expect(result).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// language fallback — hide-rejected exemption and grouping
+// ---------------------------------------------------------------------------
+
+describe("language fallback releases", () => {
+  const FILTER = { ...BASE_FILTER, isSearchMode: false, mediaTitle: null };
+  const fallback = (title: string, tag: string): InteractiveReleaseItem => ({
+    ...makeRelease(title),
+    rejected: true,
+    language_fallback: true,
+    language_fallback_tag: tag,
+  });
+
+  it("keeps fallback releases when rejected releases are hidden", () => {
+    const rejected = { ...makeRelease("Film.2020.WEB-GRP"), rejected: true };
+    const result = filterAndSortReleases(
+      [
+        makeRelease("Film.2020.MULTi.VFQ.WEB-GRP"),
+        fallback("Film.2020.MULTi.VFF.WEB-GRP", "VFF"),
+        rejected,
+      ],
+      FILTER,
+    );
+    expect(result.map((r) => r.title).sort()).toEqual([
+      "Film.2020.MULTi.VFF.WEB-GRP",
+      "Film.2020.MULTi.VFQ.WEB-GRP",
+    ]);
+  });
+
+  it("splits fallback releases out and counts them by tag", () => {
+    const groups = splitLanguageFallback([
+      makeRelease("Film.2020.MULTi.VFQ.WEB-GRP"),
+      fallback("A", "VFF"),
+      fallback("B", "VFF"),
+      fallback("C", "MULTi"),
+    ]);
+    expect(groups.primary).toHaveLength(1);
+    expect(groups.fallback).toHaveLength(3);
+    expect(groups.counts).toEqual([
+      ["VFF", 2],
+      ["MULTi", 1],
+    ]);
+    expect(groups.kind).toBe("french");
+  });
+
+  it("calls the group generic when a tag is not French", () => {
+    expect(
+      splitLanguageFallback([fallback("A", "VFF"), fallback("B", "DE")]).kind,
+    ).toBe("other");
+  });
+
+  it("returns an empty group when nothing is a fallback", () => {
+    const groups = splitLanguageFallback([makeRelease("A")]);
+    expect(groups.fallback).toEqual([]);
+    expect(groups.counts).toEqual([]);
   });
 });

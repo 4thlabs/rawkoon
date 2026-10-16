@@ -7,6 +7,7 @@ import { useUpdateLibraryQualityProfile } from "@/features/medias/hooks/useUpdat
 import { useSearchLibraryMovie } from "@/features/medias/hooks/useSearchLibraryMovie";
 import { useUpgradeLibraryMedia } from "@/features/medias/hooks/useUpgradeLibraryMedia";
 import { useQualityProfilesList } from "@/pages/settings/useQualityProfiles";
+import { toastSearchMiss } from "@/features/medias/lib/languageFallback";
 import { Button } from "@/components/ui/button";
 import { ManagementSection } from "./LibrarySharedUI";
 import { LibraryUpgradeModal } from "./LibraryUpgradeModal";
@@ -15,12 +16,15 @@ interface LibraryQualityProfileSectionProps {
   libraryId: number;
   item: LibraryMedia;
   onUpgradeManualSearch?: () => void;
+  /** Opens the item's release list (Search tab). */
+  onShowReleases?: () => void;
 }
 
 export function LibraryQualityProfileSection({
   libraryId,
   item,
   onUpgradeManualSearch,
+  onShowReleases,
 }: LibraryQualityProfileSectionProps) {
   const { t } = useTranslation("common");
   const { data: profilesData } = useQualityProfilesList({
@@ -62,7 +66,7 @@ export function LibraryQualityProfileSection({
             .mutateAsync({ id: libraryId })
             .then((r) => {
               if (r.grabbed) toast.success(t("library.management.grabbed"));
-              else toast.error(r.reason ?? t("library.management.grabFailed"));
+              else toastSearchMiss(t, r, () => onShowReleases?.());
             })
             .catch(() => toast.error(t("library.management.grabFailed")));
         }}

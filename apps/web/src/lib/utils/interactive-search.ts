@@ -1,4 +1,5 @@
 import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
+import { isFrenchFallbackTag } from "@rawkoon/shared/utils/languageFamily";
 
 export type InteractiveSortKey =
   | "seeders"
@@ -310,7 +311,8 @@ export function filterAndSortReleases(
 
   const filtered = rawReleases.filter((release) => {
     if (hideRejected) {
-      if (release.rejected) return false;
+      // Language fallbacks are shown in their own group, not hidden.
+      if (release.rejected && !release.language_fallback) return false;
       // Prowlarr results have no arr-side rejection — apply client-side title/year matching.
       if (isSearchMode && mediaTitle) {
         if (isClientRejected(release.title, mediaTitle, mediaYear))
@@ -370,4 +372,40 @@ export function filterAndSortReleases(
     if (cmp === 0) return a.title.localeCompare(b.title);
     return sortDir === "asc" ? cmp : -cmp;
   });
+}
+
+export interface LanguageFallbackGroups {
+  /** Releases for the main list. */
+  primary: InteractiveReleaseItem[];
+  /** Releases in another version of the preferred language, grabbable manually. */
+  fallback: InteractiveReleaseItem[];
+  /** Fallback releases per display tag, most common first. */
+  counts: [tag: string, count: number][];
+  /** "french" when every fallback release is a French version. */
+  kind: "french" | "other";
+}
+
+/** Splits language-fallback releases out of a filtered list. */
+export function splitLanguageFallback(
+  releases: InteractiveReleaseItem[],
+): LanguageFallbackGroups {
+  const primary: InteractiveReleaseItem[] = [];
+  const fallback: InteractiveReleaseItem[] = [];
+  const tally = new Map<string, number>();
+  for (const release of releases) {
+    if (!release.language_fallback) {
+      primary.push(release);
+      continue;
+    }
+    fallback.push(release);
+    const tag = release.language_fallback_tag ?? "?";
+    tally.set(tag, (tally.get(tag) ?? 0) + 1);
+  }
+  const counts = [...tally.entries()].sort(
+    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+  );
+  const kind = counts.every(([tag]) => isFrenchFallbackTag(tag))
+    ? "french"
+    : "other";
+  return { primary, fallback, counts, kind };
 }
