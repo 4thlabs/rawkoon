@@ -393,7 +393,9 @@ struct AutoGrabSettingsView: View {
             }
             loaded = Saved(searchOnAdd: searchOnAdd, cron: ReleaseCheckCron.normalize(cron) ?? cron)
         } catch {
-            if Task.isCancelled || error is CancellationError { return }
+            if Task.isCancelled || error is CancellationError {
+                return
+            }
             loadError = settingsErrorMessage(error)
         }
         loading = false
