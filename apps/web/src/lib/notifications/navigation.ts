@@ -29,5 +29,7 @@ export function openNotificationTarget(
     return;
   }
   // Imported lazily: the router module pulls in every page, which import this file.
-  void import("@/router").then(({ router }) => router.navigate({ href }));
+  void import("@/router")
+    .then(({ router }) => router.navigate({ href }))
+    .catch(() => window.location.assign(target));
 }

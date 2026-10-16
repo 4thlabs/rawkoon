@@ -159,9 +159,16 @@ export function useDiscoverDeck() {
           .then(() =>
             toast.success(t("requests.requestedToast", { title: item.title })),
           )
-          .catch(() =>
-            rollback(item, t("requests.requestFailed", { title: item.title })),
-          );
+          .catch((e) => {
+            // A pending request already exists, which is what the user wanted.
+            if ((e as { status?: number })?.status === 409) {
+              toast.success(
+                t("requests.requestedToast", { title: item.title }),
+              );
+              return;
+            }
+            rollback(item, t("requests.requestFailed", { title: item.title }));
+          });
         // A request can't be withdrawn from the deck, so it advances without undo.
         setLast(null);
         setQueue((q) => q.slice(1));

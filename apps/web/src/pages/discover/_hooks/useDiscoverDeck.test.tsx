@@ -3,12 +3,17 @@ import { describe, expect, it, vi } from "vitest";
 import type { Fetcher } from "@/lib/api/context";
 import { FetcherProvider } from "@/lib/api/context";
 import type { DiscoverDeckItem } from "@rawkoon/shared/types";
+import { toast } from "sonner";
 import { useDiscoverDeck } from "./useDiscoverDeck";
 
 const mutateAsync = vi.fn().mockResolvedValue({ item: { id: 1 } });
 const addMutateAsync = vi.fn().mockResolvedValue({ item: { id: 1 } });
 const requestMutateAsync = vi.fn().mockResolvedValue({ id: 9 });
 let isAdmin = true;
+
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
 
 vi.mock("@/lib/auth/useAuth", () => ({
   useCurrentUser: () => ({ data: { is_admin: isAdmin } }),
@@ -147,6 +152,37 @@ describe("useDiscoverDeck", () => {
       expect(addMutateAsync).not.toHaveBeenCalled();
       await waitFor(() => expect(result.current.current?.tmdb_id).toBe(2));
       expect(result.current.canUndo).toBe(false);
+      isAdmin = true;
+    });
+
+    it("keeps the card advanced when the request already exists", async () => {
+      isAdmin = false;
+      requestMutateAsync.mockRejectedValueOnce(
+        Object.assign(new Error("Already requested"), { status: 409 }),
+      );
+      const { result } = renderHook(() => useDiscoverDeck(), {
+        wrapper: wrapper(fetcher()),
+      });
+      await waitFor(() => expect(result.current.current?.tmdb_id).toBe(1));
+      act(() => result.current.addCurrent());
+      await waitFor(() => expect(toast.success).toHaveBeenCalled());
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(result.current.current?.tmdb_id).toBe(2);
+      isAdmin = true;
+    });
+
+    it("rolls the card back on other request errors", async () => {
+      isAdmin = false;
+      requestMutateAsync.mockRejectedValueOnce(
+        Object.assign(new Error("boom"), { status: 500 }),
+      );
+      const { result } = renderHook(() => useDiscoverDeck(), {
+        wrapper: wrapper(fetcher()),
+      });
+      await waitFor(() => expect(result.current.current?.tmdb_id).toBe(1));
+      act(() => result.current.addCurrent());
+      await waitFor(() => expect(toast.error).toHaveBeenCalled());
+      await waitFor(() => expect(result.current.current?.tmdb_id).toBe(1));
       isAdmin = true;
     });
   });
