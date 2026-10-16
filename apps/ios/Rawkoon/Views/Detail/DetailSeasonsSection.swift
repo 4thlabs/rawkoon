@@ -154,11 +154,15 @@ struct DetailSeasonsSection: View {
     }
 
     private func seasonState(_ episodes: [Episode], downloaded: Int, total: Int) -> (label: String, tint: Color)? {
-        if total > 0, downloaded == total { return (String(localized: "Complete"), Theme.seed) }
+        if total > 0, downloaded == total {
+            return (String(localized: "Complete"), Theme.seed)
+        }
         if episodes.contains(where: { $0.status == "downloading" || $0.status == "upgrading" }) {
             return (String(localized: "Downloading"), Theme.importing)
         }
-        if episodes.contains(where: { $0.status == "wanted" }) { return (String(localized: "Wanted"), Theme.apricotSoft) }
+        if episodes.contains(where: { $0.status == "wanted" }) {
+            return (String(localized: "Wanted"), Theme.apricotSoft)
+        }
         return nil
     }
 
