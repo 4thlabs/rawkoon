@@ -16,7 +16,7 @@ extension HomeView {
             if model.isAdmin, let reencodeSummary, reencodeSummary.show {
                 ReencodeHomeCard(summary: reencodeSummary)
             }
-            if !attention.isEmpty || !wantedMisses.isEmpty {
+            if !attention.isEmpty || !visibleMisses.isEmpty {
                 attentionWidget
             }
             if model.isAdmin, let rss {
@@ -153,10 +153,18 @@ extension HomeView {
     /// Reads the queue and the wanted list that feed the Downloads and Needs-attention cards.
     func loadQueueAndMisses() async {
         guard let client = model.api() else { return }
-        if model.isAdmin, let rows = try? await ActivityView.fetchQueueRows(client: client) {
-            downloadRows = rows
+        if model.isAdmin {
+            do {
+                downloadRows = try await ActivityView.fetchQueueRows(client: client)
+            } catch is CancellationError {
+                return
+            } catch {
+                // Stale progress would read as live, so a failed fetch empties the card.
+                downloadRows = []
+            }
         }
-        if let wanted = try? await client.libraryList(status: "wanted", limit: 100).items {
+        // Misses only change on a search, so a failed fetch keeps the last list.
+        if model.isAdmin, let wanted = try? await client.libraryList(status: "wanted", limit: 100).items {
             wantedMisses = LastSearchNote.recentMisses(wanted, limit: .max) { $0.lastSearchNote }
         }
     }
@@ -182,10 +190,10 @@ extension HomeView {
                 ForEach(attention.prefix(5)) { item in
                     attentionRow(item)
                 }
-                ForEach(wantedMisses.prefix(Self.missCap)) { item in
+                ForEach(visibleMisses.prefix(Self.missCap)) { item in
                     missRow(item)
                 }
-                if !wantedMisses.isEmpty {
+                if !visibleMisses.isEmpty {
                     NavigationLink {
                         MissingLibraryView()
                     } label: {
@@ -205,6 +213,13 @@ extension HomeView {
     }
 
     static let missCap = 3
+
+    /// Admin-only like the Downloads card, and never repeating a title the attention feed already lists.
+    private var visibleMisses: [LibraryMedia] {
+        guard model.isAdmin else { return [] }
+        let listed = Set(attention.compactMap(\.mediaId))
+        return wantedMisses.filter { !listed.contains($0.id) }
+    }
 
     /// A wanted title whose last search found nothing; tapping opens its page.
     private func missRow(_ item: LibraryMedia) -> some View {

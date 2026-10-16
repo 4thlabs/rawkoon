@@ -69,6 +69,7 @@ final class LibraryMediaModel {
             hasher.combine(item.isProvisional)
             hasher.combine(item.status)
             hasher.combine(item.lastSearchOutcome)
+            hasher.combine(item.lastSearchAt)
             hasher.combine(busyMediaIds.contains(item.id))
         }
         return hasher.finalize()

@@ -35,9 +35,15 @@ public struct LastSearchNote: Equatable, Sendable {
         return sorted.prefix(limit).map(\.element.0)
     }
 
+    private nonisolated(unsafe) static let withFraction: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private nonisolated(unsafe) static let plain = ISO8601DateFormatter()
+
     static func parse(_ iso: String) -> Date? {
-        let withFraction = ISO8601DateFormatter()
-        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return withFraction.date(from: iso) ?? ISO8601DateFormatter().date(from: iso)
+        withFraction.date(from: iso) ?? plain.date(from: iso)
     }
 }

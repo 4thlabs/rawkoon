@@ -299,6 +299,8 @@ extension ActivityView {
                 group.addTask {
                     do {
                         return try await (media.id, client.downloads(libraryId: media.id).items)
+                    } catch is CancellationError {
+                        throw CancellationError()
                     } catch {
                         return (media.id, Self.cachedDownloads(client: client, libraryId: media.id))
                     }
@@ -310,6 +312,7 @@ extension ActivityView {
             }
             return map
         }
+        try Task.checkCancellation()
         return queueRows(media: list.items, downloads: byId)
     }
 }
