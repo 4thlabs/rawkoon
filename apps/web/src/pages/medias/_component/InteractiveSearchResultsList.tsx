@@ -40,6 +40,8 @@ interface InteractiveSearchResultsListProps {
   /** Releases in the server's order, so best-match ties keep it. */
   serverOrder?: InteractiveReleaseItem[];
   isUpgradeMode?: boolean;
+  /** The item is downloading; each row offers Replace. */
+  replaceRunning?: boolean;
   /** Resolution of the file on disk, for upgrade mode. */
   currentResolution?: number | null;
 }
@@ -65,6 +67,7 @@ export function InteractiveSearchResultsList({
   profileName = null,
   serverOrder,
   isUpgradeMode = false,
+  replaceRunning = false,
   currentResolution = null,
 }: InteractiveSearchResultsListProps) {
   const { t } = useTranslation("common");
@@ -106,6 +109,7 @@ export function InteractiveSearchResultsList({
         }
         alreadyGrabbed={grabbedTitles.has(release.title.trim().toLowerCase())}
         isAiPick={aiPickKey != null && release.guid === aiPickKey}
+        replaceRunning={replaceRunning}
         variant={variant}
         profileName={profileName}
         t={t}

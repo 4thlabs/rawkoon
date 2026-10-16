@@ -6,6 +6,7 @@ import { badRequest, notFound, ok, serverError } from "@rawkoon/api/errors";
 import type { Env } from "@rawkoon/api/honoEnv";
 import { requireAdmin } from "@rawkoon/api/middleware/hono/auth";
 import { jsonV } from "@rawkoon/api/middleware/validate";
+import { cancelActiveMovieDownloads } from "@rawkoon/api/services/replaceActiveDownload";
 import { grabRelease } from "@rawkoon/api/services/mediaGrabberGrab";
 import { downloadedEpisodesFailingProfile } from "@rawkoon/api/services/upgradeTargets";
 import {
@@ -75,6 +76,7 @@ export const libraryGrabRoutes = new Hono<Env>()
         episode_id: z.union([z.number(), z.null()]).optional(),
         season: z.union([z.number(), z.null()]).optional(),
         is_upgrade: z.boolean().optional(),
+        replace: z.boolean().optional(),
       }),
     ),
     async (c) => {
@@ -84,8 +86,19 @@ export const libraryGrabRoutes = new Hono<Env>()
         const media = await prisma.libraryMedia.findUnique({ where: { id } });
         if (!media) return notFound("Library item not found");
         // For shows, episode-level status governs grabs — don't gate on media status
+        if (body.replace && media.type !== "movie") {
+          return badRequest("Replace is only available for movies");
+        }
+        const replacing =
+          body.replace === true &&
+          media.type === "movie" &&
+          media.status === "downloading";
         if (media.type === "movie" && media.status === "downloading") {
-          return badRequest("This item cannot be grabbed in its current state");
+          if (!replacing) {
+            return badRequest(
+              "This item cannot be grabbed in its current state",
+            );
+          }
         }
 
         let episodeId = body.episode_id ?? undefined;
@@ -129,6 +142,8 @@ export const libraryGrabRoutes = new Hono<Env>()
           episodeId = resolved.episodeId ?? undefined;
         }
 
+        if (replacing) await cancelActiveMovieDownloads(id);
+
         const result = await grabRelease({
           mediaId: id,
           episodeId,
@@ -145,7 +160,11 @@ export const libraryGrabRoutes = new Hono<Env>()
           return ok({ grabbed: true, release_title: result.releaseTitle });
         }
 
-        return ok({ grabbed: false, reason: result.reason });
+        return ok({
+          grabbed: false,
+          reason: result.reason,
+          ...(replacing ? { replaced_previous: true } : {}),
+        });
       } catch (err) {
         console.error("Library grab error:", err);
         return serverError("Grab failed");

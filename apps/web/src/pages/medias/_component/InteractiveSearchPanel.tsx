@@ -45,6 +45,8 @@ export interface InteractiveSearchPanelProps {
   currentResolution?: number | null;
   /** When true, grabs are sent with is_upgrade: true */
   isUpgradeMode?: boolean;
+  /** Movie is downloading: grabs send replace and stop the running download. */
+  replaceRunning?: boolean;
   onDownloadSuccess?: () => void;
 }
 
@@ -283,6 +285,7 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
           profileName={props.profileName ?? null}
           serverOrder={state.activeQuery.data?.releases}
           isUpgradeMode={props.isUpgradeMode}
+          replaceRunning={props.replaceRunning}
           currentResolution={props.currentResolution ?? null}
           aiPickKey={
             !aiDismissed && aiEnabled

@@ -29,6 +29,7 @@ export interface UseInteractiveSearchStateProps {
   episodeId?: number | null;
   defaultSeason?: number | "complete" | null;
   isUpgradeMode?: boolean;
+  replaceRunning?: boolean;
   onDownloadSuccess?: () => void;
 }
 
@@ -57,6 +58,7 @@ export function useInteractiveSearchState({
   episodeId = null,
   defaultSeason = null,
   isUpgradeMode = false,
+  replaceRunning = false,
   onDownloadSuccess,
 }: UseInteractiveSearchStateProps) {
   const { t } = useTranslation("common");
@@ -273,6 +275,7 @@ export function useInteractiveSearchState({
             ? { season: selectedSeason }
             : {}),
           ...(isUpgradeMode ? { is_upgrade: true } : {}),
+          ...(replaceRunning ? { replace: true } : {}),
         });
         if (!result.grabbed) {
           toast.error(result.reason ?? t("medias.interactive.downloadFailed"));

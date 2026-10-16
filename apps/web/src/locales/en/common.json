@@ -2019,6 +2019,8 @@
       "errorDescription": "Please try again in a moment.",
       "download": "Grab",
       "redownload": "Grab again",
+      "replace": "Replace",
+      "replaceConfirm": "Confirm replace",
       "downloading": "Starting...",
       "downloadStarted": "Release download started.",
       "downloadFailed": "Failed to start release download.",

@@ -132,3 +132,13 @@ describe("ReleaseCard actions", () => {
     ).toBeTruthy();
   });
 });
+
+describe("ReleaseCard replace", () => {
+  it("asks for a second tap before replacing a running download", () => {
+    const { onDownload } = renderCard(release(), { replaceRunning: true });
+    fireEvent.click(screen.getByText("medias.interactive.replace"));
+    expect(onDownload).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("medias.interactive.replaceConfirm"));
+    expect(onDownload).toHaveBeenCalledOnce();
+  });
+});

@@ -49,6 +49,7 @@ export function ReleaseCard({
   blocked = false,
   alreadyGrabbed = false,
   isAiPick = false,
+  replaceRunning = false,
   variant = "row",
   profileName = null,
   t,
@@ -62,12 +63,15 @@ export function ReleaseCard({
   blocked?: boolean;
   alreadyGrabbed?: boolean;
   isAiPick?: boolean;
+  /** A download is running: grabbing this release replaces it, after a confirm tap. */
+  replaceRunning?: boolean;
   /** "best" pins the release a profile search would pick, with the reasons it won. */
   variant?: "row" | "best";
   profileName?: string | null;
   t: (key: string, options?: Record<string, unknown>) => string;
 }) {
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [confirmingReplace, setConfirmingReplace] = useState(false);
   const grabDisabled =
     isBusy || (!release.download_url && !release.download_token);
   // A language fallback is rejected for grabbing automatically, but offered here.
@@ -247,7 +251,15 @@ export function ReleaseCard({
             type="button"
             size="sm"
             variant={isBest ? "default" : "secondary"}
-            onClick={onDownload}
+            onClick={() => {
+              if (replaceRunning && !confirmingReplace) {
+                setConfirmingReplace(true);
+                return;
+              }
+              setConfirmingReplace(false);
+              onDownload();
+            }}
+            onBlur={() => setConfirmingReplace(false)}
             disabled={grabDisabled}
             style={{ touchAction: "manipulation" }}
             className="flex-1 gap-1.5 sm:flex-none"
@@ -255,9 +267,15 @@ export function ReleaseCard({
             <Download size={11} strokeWidth={2.5} />
             {isDownloading
               ? t("medias.interactive.downloading")
-              : alreadyGrabbed
-                ? t("medias.interactive.redownload")
-                : t("medias.interactive.download")}
+              : replaceRunning
+                ? t(
+                    confirmingReplace
+                      ? "medias.interactive.replaceConfirm"
+                      : "medias.interactive.replace",
+                  )
+                : alreadyGrabbed
+                  ? t("medias.interactive.redownload")
+                  : t("medias.interactive.download")}
           </Button>
           {(onBlock || canShowBreakdown) && (
             <Popover open={menuOpen} onOpenChange={setMenuOpen}>
