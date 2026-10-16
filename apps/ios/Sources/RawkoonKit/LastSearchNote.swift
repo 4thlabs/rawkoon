@@ -1,0 +1,49 @@
+import Foundation
+
+/// What a wanted item's last search ended in, ready to show on its page, row and badge.
+public struct LastSearchNote: Equatable, Sendable {
+    public let outcome: LiveSearchOutcome
+    public let searchedAt: Date?
+    public let reason: String?
+
+    /// Nil unless the item is still wanted and the server recorded an outcome this build knows.
+    public init?(status: String, outcome: String?, at iso: String?, reason: String?) {
+        guard status == "wanted", let outcome, let known = LiveSearchOutcome(rawValue: outcome) else { return nil }
+        self.outcome = known
+        searchedAt = iso.flatMap(Self.parse)
+        let trimmed = reason?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.reason = trimmed?.isEmpty == false ? trimmed : nil
+    }
+
+    /// A search that ended without a release, so a person has to step in.
+    public var isMiss: Bool {
+        outcome == .noMatch || outcome == .error
+    }
+
+    /// The age wording is dropped when the time is unknown, and for "not released" where it adds nothing.
+    public var showsAge: Bool {
+        searchedAt != nil && outcome != .notReleased
+    }
+
+    /// Misses newest first, capped; a miss without a time sorts last.
+    public static func recentMisses<T>(_ items: [T], limit: Int, note: (T) -> LastSearchNote?) -> [T] {
+        let misses = items.compactMap { item in note(item).map { (item, $0) } }.filter(\.1.isMiss)
+        let sorted = misses.enumerated().sorted { lhs, rhs in
+            let (newer, older) = (lhs.element.1.searchedAt ?? .distantPast, rhs.element.1.searchedAt ?? .distantPast)
+            return newer == older ? lhs.offset < rhs.offset : newer > older
+        }
+        return sorted.prefix(limit).map(\.element.0)
+    }
+
+    private nonisolated(unsafe) static let withFraction: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private nonisolated(unsafe) static let plain = ISO8601DateFormatter()
+
+    static func parse(_ iso: String) -> Date? {
+        withFraction.date(from: iso) ?? plain.date(from: iso)
+    }
+}

@@ -39,10 +39,11 @@ extension MediaDetailView {
         autoSearching = true
         defer { autoSearching = false }
         let grabbed = await model.autoSearchMovie(libraryId: libraryId, title: title)
+        // A miss changes the stored outcome too, so the page refetches either way.
         if grabbed {
             store.invalidateLibraryRollup(itemID: libraryId)
-            await refreshManagementData()
         }
+        await refreshManagementData()
     }
 
     func applyQualityProfileChange(_ qualityProfileId: Int?) async {
