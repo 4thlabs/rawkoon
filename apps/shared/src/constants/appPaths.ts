@@ -10,9 +10,3 @@ export const APP_PATHS = {
   library: "/library",
   books: "/books",
 } as const;
-
-export function calendarPath(date?: string | null): string {
-  return date
-    ? `${APP_PATHS.activityCalendar}?date=${encodeURIComponent(date)}`
-    : APP_PATHS.activityCalendar;
-}

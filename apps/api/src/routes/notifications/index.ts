@@ -1,3 +1,4 @@
+import { getBaseUrl } from "@rawkoon/api/config";
 import { APP_PATHS } from "@rawkoon/shared/constants";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -191,7 +192,7 @@ export const notificationsRoutes = new Hono<Env>()
           type: n.type,
           read: n.read,
           read_at: n.readAt,
-          url: normalizeNotificationUrl(n.url),
+          url: normalizeNotificationUrl(n.url, getBaseUrl()),
           image_url: n.imageUrl,
           metadata: n.notificationMetadata,
           created_at: n.createdAt,

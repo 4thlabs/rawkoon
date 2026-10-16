@@ -34,8 +34,6 @@ describe("handleNotificationClick", () => {
 
     await clickWork;
 
-    expect(openWindow).toHaveBeenCalledWith(
-      "https://rawkoon.test/notifications",
-    );
+    expect(openWindow).toHaveBeenCalledWith("https://rawkoon.test/activity");
   });
 });

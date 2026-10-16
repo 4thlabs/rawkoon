@@ -33,7 +33,7 @@ describe("handlePush", () => {
     expect(showNotification).toHaveBeenCalledWith(
       "Rawkoon",
       expect.objectContaining({
-        data: expect.objectContaining({ url: "/notifications" }),
+        data: expect.objectContaining({ url: "/activity" }),
       }),
     );
   });

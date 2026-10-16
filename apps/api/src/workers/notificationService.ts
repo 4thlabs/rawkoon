@@ -2,6 +2,7 @@
  * Notification service for creating and enqueuing push notifications
  */
 
+import { getBaseUrl } from "@rawkoon/api/config";
 import { prisma } from "@rawkoon/api/db";
 import { nowUtc } from "@rawkoon/api/utils";
 import { addJob, QUEUE_NAMES } from "@rawkoon/api/services/queueService";
@@ -54,7 +55,7 @@ export async function createAndQueueNotification(
       }
     }
 
-    const normalizedUrl = normalizeNotificationUrl(url);
+    const normalizedUrl = normalizeNotificationUrl(url, getBaseUrl());
     const meta = metadata ? { ...metadata } : {};
     if (options?.groupKey) {
       meta.group_key = options.groupKey;

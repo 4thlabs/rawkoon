@@ -1,3 +1,4 @@
+import { APP_PATHS } from "@rawkoon/shared/constants/appPaths";
 import { sw } from "./sw";
 import { normalizeNotificationUrl } from "@rawkoon/shared/utils/notifications";
 import { handleAppUpdate } from "./app-update";
@@ -25,7 +26,9 @@ export function handlePush(event: PushEvent): void {
   const icon = data.icon || "/icon-192.png";
   const badge = data.badge || "/icon-32.png";
   const tag = data.tag || "notification";
-  const url = normalizeNotificationUrl(data.data?.url) || "/notifications";
+  const url =
+    normalizeNotificationUrl(data.data?.url, globalThis.location.origin) ||
+    APP_PATHS.activity;
 
   // `image` is a valid Notifications API option (a large hero image, e.g. a
   // poster) but is absent from lib.dom's NotificationOptions, so widen locally.

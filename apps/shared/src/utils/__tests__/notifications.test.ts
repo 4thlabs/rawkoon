@@ -1,14 +1,17 @@
 import { describe, expect, it } from "bun:test";
-import { APP_PATHS, calendarPath } from "../../constants";
+import { APP_PATHS } from "../../constants";
 import {
   buildNotificationUrl,
   normalizeNotificationUrl,
 } from "../notifications";
 
+const ORIGIN = "https://rawkoon.example";
+
 describe("normalizeNotificationUrl", () => {
   it("maps stored pre-restructure paths to the new ones", () => {
     expect(normalizeNotificationUrl("/requests")).toBe("/activity/requests");
     expect(normalizeNotificationUrl("/watchlist")).toBe("/find/watchlist");
+    expect(normalizeNotificationUrl("/notifications")).toBe("/activity");
     expect(normalizeNotificationUrl("/settings?tab=releases")).toBe(
       "/settings/updates",
     );
@@ -20,6 +23,16 @@ describe("normalizeNotificationUrl", () => {
     );
   });
 
+  it("handles a trailing slash, extra query params and a hash", () => {
+    expect(normalizeNotificationUrl("/requests/")).toBe("/activity/requests");
+    expect(normalizeNotificationUrl("/requests?x=1#top")).toBe(
+      "/activity/requests?x=1#top",
+    );
+    expect(normalizeNotificationUrl("/settings?tab=releases&x=1#h")).toBe(
+      "/settings/updates?x=1#h",
+    );
+  });
+
   it("leaves new paths and item links alone", () => {
     expect(normalizeNotificationUrl("/library/4?tab=management")).toBe(
       "/library/4?tab=management",
@@ -28,14 +41,22 @@ describe("normalizeNotificationUrl", () => {
       "/settings/alerts",
     );
   });
+
+  it("rewrites an absolute URL only on the app origin", () => {
+    expect(normalizeNotificationUrl(`${ORIGIN}/requests`, ORIGIN)).toBe(
+      `${ORIGIN}/activity/requests`,
+    );
+    expect(
+      normalizeNotificationUrl("https://other.example/requests", ORIGIN),
+    ).toBe("https://other.example/requests");
+    expect(normalizeNotificationUrl(`${ORIGIN}/requests`)).toBe(
+      `${ORIGIN}/requests`,
+    );
+  });
 });
 
 describe("app paths", () => {
-  it("builds calendar and watchlist links", () => {
-    expect(calendarPath("2026-01-02")).toBe(
-      "/activity/calendar?date=2026-01-02",
-    );
-    expect(calendarPath()).toBe("/activity/calendar");
+  it("builds watchlist and library links", () => {
     expect(buildNotificationUrl(APP_PATHS.findWatchlist)).toBe(
       "/find/watchlist",
     );
