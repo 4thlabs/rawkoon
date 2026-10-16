@@ -94,7 +94,7 @@ describe("live search toast", () => {
     };
     const preventDefault = vi.fn();
     options.action.onClick({ preventDefault });
-    expect(grabNow).toHaveBeenCalledWith("s:7:2");
+    expect(grabNow).toHaveBeenCalledWith(["s:7:2"]);
     // The new search reuses this toast, so sonner must not dismiss it.
     expect(preventDefault).toHaveBeenCalled();
   });

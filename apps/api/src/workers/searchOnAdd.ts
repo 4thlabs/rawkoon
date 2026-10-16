@@ -132,7 +132,10 @@ function summarize(
   const held = results
     .filter((r) => r.outcome === "delayed")
     .sort((a, b) => (a.delay_until ?? "").localeCompare(b.delay_until ?? ""));
-  if (held[0]) return withSeason(held[0]);
+  if (held[0]) {
+    const keys = held.flatMap((r) => (r.target_key ? [r.target_key] : []));
+    return withSeason({ ...held[0], target_keys: keys });
+  }
   const miss = results.find((r) => r.outcome === "no_match");
   if (miss) return withSeason(miss);
   const failed = results.find((r) => r.outcome === "error");

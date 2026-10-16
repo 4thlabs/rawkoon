@@ -387,6 +387,8 @@ export interface SearchResultPayload {
   delay_until?: string;
   /** For a held grab: the pending-release target, used to grab it early. */
   target_key?: string;
+  /** Every held target of this search (a show can hold several seasons or episodes). */
+  target_keys?: string[];
   reason?: string;
   language_fallback_summary?: LanguageFallbackSummary;
 }

@@ -72,6 +72,38 @@ describe("Grab now on a held search", () => {
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
   });
 
+  it("releases every held target of a show", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce({ grabbed: false, reason: "already_active" })
+      .mockResolvedValueOnce({ grabbed: true, reason: null });
+    const { result } = setup(fetcher as unknown as Fetcher);
+    act(() => {
+      result.current.announceSearch(search(true), async () => ({
+        grabbed: false,
+        search_result: {
+          media_id: 7,
+          outcome: "delayed" as const,
+          target_key: "s:7:1",
+          target_keys: ["s:7:1", "s:7:2"],
+        },
+      }));
+    });
+    await waitFor(() => expect(toast.info).toHaveBeenCalled());
+    const options = toast.info.mock.calls[0]![1] as {
+      action: { onClick: (e: { preventDefault: () => void }) => void };
+    };
+    act(() => options.action.onClick({ preventDefault: () => {} }));
+
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+    expect(fetcher).toHaveBeenNthCalledWith(
+      2,
+      "/api/downloads/pending-releases/grab-now",
+      { method: "POST", body: { target_key: "s:7:2" } },
+    );
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  });
+
   it("shows why nothing was grabbed", async () => {
     const fetcher = vi
       .fn()

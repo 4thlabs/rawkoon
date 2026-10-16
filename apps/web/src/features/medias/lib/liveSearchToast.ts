@@ -25,8 +25,8 @@ export interface LiveSearchContext {
   language: string;
   /** Opens the item page, on its release list when `releases` is set. */
   openItem: (releases: boolean) => void;
-  /** Grabs the held target early (`target_key` of a delayed result). */
-  grabNow: (targetKey: string) => void;
+  /** Grabs every held target of a delayed result early. */
+  grabNow: (targetKeys: string[]) => void;
 }
 
 interface Entry {
@@ -89,7 +89,7 @@ function scheduleCleanup(mediaId: number, entry: Entry) {
 function button(
   ctx: LiveSearchContext,
   action: SearchToastAction,
-  targetKey: string | undefined,
+  targetKeys: string[],
 ) {
   switch (action) {
     case "view":
@@ -108,16 +108,21 @@ function button(
         onClick: () => ctx.openItem(true),
       };
     case "grabNow":
-      if (!targetKey) return undefined;
+      if (!targetKeys.length) return undefined;
       return {
         label: ctx.t("medias.searchToast.grabNow"),
         // Keep the toast: sonner would otherwise dismiss the one the new search just reused.
         onClick: (event: { preventDefault: () => void }) => {
           event.preventDefault();
-          ctx.grabNow(targetKey);
+          ctx.grabNow(targetKeys);
         },
       };
   }
+}
+
+function heldKeys(result: SearchResultPayload): string[] {
+  if (result.target_keys?.length) return result.target_keys;
+  return result.target_key ? [result.target_key] : [];
 }
 
 /** Feeds a finished search into its toast; results for untracked items are ignored. */
@@ -133,8 +138,8 @@ export function applySearchResult(result: SearchResultPayload): void {
   const options = {
     id: toastIdFor(result.media_id),
     duration: RESULT_TOAST_MS,
-    action: first ? button(ctx, first, result.target_key) : undefined,
-    cancel: second ? button(ctx, second, result.target_key) : undefined,
+    action: first ? button(ctx, first, heldKeys(result)) : undefined,
+    cancel: second ? button(ctx, second, heldKeys(result)) : undefined,
   };
   if (view.variant === "error") toast.error(view.message, options);
   else if (view.variant === "success") toast.success(view.message, options);

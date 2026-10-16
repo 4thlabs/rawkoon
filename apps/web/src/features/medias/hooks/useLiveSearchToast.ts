@@ -50,12 +50,25 @@ export function useLiveSearchToast() {
             params: { libraryId: String(target.mediaId) },
             ...(releases ? { search: { tab: "search" as const } } : {}),
           }),
-        grabNow: (targetKey) => {
+        grabNow: (targetKeys) => {
           start(target);
-          fetcher<GrabPendingReleaseResponse>(
-            DOWNLOADS_ENDPOINTS.GRAB_PENDING_NOW,
-            { method: "POST", body: { target_key: targetKey } },
-          )
+          // A show can hold several seasons or episodes; release them all, one at a time.
+          const grabAll = async (): Promise<GrabPendingReleaseResponse> => {
+            const results: GrabPendingReleaseResponse[] = [];
+            for (const key of targetKeys) {
+              results.push(
+                await fetcher<GrabPendingReleaseResponse>(
+                  DOWNLOADS_ENDPOINTS.GRAB_PENDING_NOW,
+                  { method: "POST", body: { target_key: key } },
+                ),
+              );
+            }
+            return (
+              results.find((r) => r.grabbed) ??
+              results[0] ?? { grabbed: false, reason: null }
+            );
+          };
+          grabAll()
             .then((res) => {
               queryClient.invalidateQueries({
                 queryKey: queryKeys.downloads.all,
