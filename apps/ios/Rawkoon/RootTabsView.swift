@@ -70,13 +70,9 @@ struct RootTabsView: View {
         case .home: NavigationStack { HomeView() }
         case .library: NavigationStack { LibraryView(forcedSection: .media) }
         case .books: NavigationStack { LibraryView(forcedSection: .books) }
-        case .discover: NavigationStack { DiscoverView() }
-        case .explore: NavigationStack { ExploreView(embedded: true) }
-        case .notifications: NavigationStack { NotificationsListView() }
+        case .find: NavigationStack { ExploreView(embedded: true) }
         case .settings: NavigationStack { SettingsView(scope: compact ? .all : .personal) }
         case .activity: NavigationStack { ActivityView() }
-        case .requests: NavigationStack { RequestsView() }
-        case .watchlist: NavigationStack { WatchlistView() }
         case .server: NavigationStack { SettingsView(scope: .server) }
         }
     }
@@ -127,11 +123,14 @@ struct RootTabsView: View {
             guard let tab else { return }
             model.requestedRootTab = nil
             selection = tab
-            // Explore consumes the focus request on mount; drop it if nothing did.
+            // Find consumes the focus request on mount; drop it if nothing did.
             Task {
                 try? await Task.sleep(for: .seconds(2))
                 model.exploreSearchFocusRequest = false
             }
+        }
+        .task(id: [model.isAdmin ? 1 : 0, model.notificationChangeToken, model.reconnectToken]) {
+            await model.refreshPendingRequestCount()
         }
         .focusedSceneValue(\.rootTabSelection, validSelection)
         .focusedSceneValue(\.showPlayer) { showFullPlayer = true }
@@ -139,7 +138,7 @@ struct RootTabsView: View {
             guard url.scheme == "rawkoon" else { return }
             switch url.host {
             case "home": selection = .home
-            case "discover": selection = .discover
+            case "discover": selection = .find
             case "media":
                 guard let link = MediaLink(url: url) else { return }
                 selection = .home
@@ -213,9 +212,11 @@ struct RootTabsView: View {
         TabView(selection: selection) {
             Tab("Home", systemImage: "house", value: RootTab.home) { sidebarRoot(.home) }
                 .customizationID("tab.home")
-            Tab("Notifications", systemImage: "bell", value: RootTab.notifications) { sidebarRoot(.notifications) }
-                .badge(model.unreadNotificationCount)
-                .customizationID("tab.notifications")
+            Tab("Find", systemImage: "magnifyingglass", value: RootTab.find) { sidebarRoot(.find) }
+                .customizationID("tab.find")
+            Tab("Activity", systemImage: "tray.full", value: RootTab.activity) { sidebarRoot(.activity) }
+                .badge(model.activityBadgeCount)
+                .customizationID("tab.activity")
             TabSection("Library") {
                 Tab("Movies & Shows", systemImage: "film.stack", value: RootTab.library) { sidebarRoot(.library) }
                     .customizationID("tab.library")
@@ -223,20 +224,6 @@ struct RootTabsView: View {
                     Tab("Books", systemImage: "books.vertical", value: RootTab.books) { sidebarRoot(.books) }
                         .customizationID("tab.books")
                 }
-                Tab("Watchlist", systemImage: "bookmark", value: RootTab.watchlist) { sidebarRoot(.watchlist) }
-                    .customizationID("tab.watchlist")
-            }
-            TabSection("Discover") {
-                Tab("Discover", systemImage: "sparkles.rectangle.stack", value: RootTab.discover) { sidebarRoot(.discover) }
-                    .customizationID("tab.discover")
-                Tab("Explore", systemImage: "square.grid.2x2", value: RootTab.explore) { sidebarRoot(.explore) }
-                    .customizationID("tab.explore")
-            }
-            TabSection("Pipeline") {
-                Tab("Activity", systemImage: "arrow.down.circle", value: RootTab.activity) { sidebarRoot(.activity) }
-                    .customizationID("tab.activity")
-                Tab("Requests", systemImage: "tray.and.arrow.down", value: RootTab.requests) { sidebarRoot(.requests) }
-                    .customizationID("tab.requests")
             }
             TabSection("Settings") {
                 Tab("Preferences", systemImage: "gearshape", value: RootTab.settings) { sidebarRoot(.settings) }

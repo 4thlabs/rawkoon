@@ -54,8 +54,14 @@ struct NotificationDestinationView: View {
             }
         case .requests:
             RequestsView()
-        case .transcode:
+        case .reencode:
             ReencodeAdminView()
+        case .alerts:
+            SettingsAlertsView()
+        case .updates:
+            ReleasesAdminView()
+        case .calendar:
+            EmptyView()
         }
     }
 
@@ -120,7 +126,7 @@ struct NotificationDestinationView: View {
                 bookItem = model.library.first { $0.bookId == bookId }
                 unreachable = bookItem == nil && model.isOffline
             }
-        case .requests, .transcode:
+        case .requests, .calendar, .reencode, .alerts, .updates:
             break
         }
     }

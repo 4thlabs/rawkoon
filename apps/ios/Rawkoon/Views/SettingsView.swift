@@ -179,28 +179,6 @@ struct SettingsView: View {
             .pickerStyle(.menu)
         }
         .listRowBackground(Theme.raised)
-
-        // The sidebar has Activity, Requests and Watchlist tabs of its own; the phone reaches them only here.
-        if scope == .all {
-            Section("Activity") {
-                NavigationLink {
-                    ActivityView()
-                } label: {
-                    SettingsNavRow(title: "Activity", systemImage: "arrow.down.circle")
-                }
-                NavigationLink {
-                    RequestsView()
-                } label: {
-                    SettingsNavRow(title: "Requests", systemImage: "tray.and.arrow.down")
-                }
-                NavigationLink {
-                    WatchlistView()
-                } label: {
-                    SettingsNavRow(title: "Watchlist", systemImage: "bookmark")
-                }
-            }
-            .listRowBackground(Theme.raised)
-        }
     }
 
     private var aboutFooter: some View {

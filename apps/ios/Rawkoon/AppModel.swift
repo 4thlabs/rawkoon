@@ -82,10 +82,12 @@ final class AppModel {
     let liveSearch = LiveSearchCoordinator()
     /// Library id whose release sheet a toast action asked to open; the detail screen consumes it.
     var releaseSheetRequest: Int?
-    /// A tab another screen asked to open (Home's search button); the root consumes it.
+    /// A tab another screen asked to open (Home's search button, a calendar link); the root consumes it.
     var requestedRootTab: RootTab?
     /// Set when Explore should put its search field in focus; Explore clears it.
     var exploreSearchFocusRequest = false
+    /// Open requests awaiting an admin, for the Activity badge; zero for everyone else.
+    var pendingRequestCount = 0
 
     /// Set from a banner tap or a notification-list row tap (via
     /// `navigate(toNotificationUrl:)`); `RawkoonApp` presents it as a sheet

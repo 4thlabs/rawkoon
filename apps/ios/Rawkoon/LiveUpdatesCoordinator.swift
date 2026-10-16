@@ -325,6 +325,11 @@ final class LiveUpdatesCoordinator {
         if case .book = destination, appModel?.booksEnabled == false {
             return
         }
+        // The calendar is an Activity lane, not a pushed screen.
+        if case .calendar = destination {
+            appModel?.requestedRootTab = .activity
+            return
+        }
         appModel?.deepLinkTarget = destination
     }
 

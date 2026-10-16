@@ -34,3 +34,17 @@ final class NotificationBadgeTests: XCTestCase {
         XCTAssertEqual(NotificationBadge.label(forUnread: 5000), "9+")
     }
 }
+
+final class ActivityBadgeTests: XCTestCase {
+    func testAdminsCountPendingRequestsOnTopOfUnread() {
+        XCTAssertEqual(NotificationBadge.activityCount(unread: 3, pendingRequests: 2, isAdmin: true), 5)
+    }
+
+    func testMembersCountUnreadOnly() {
+        XCTAssertEqual(NotificationBadge.activityCount(unread: 3, pendingRequests: 2, isAdmin: false), 3)
+    }
+
+    func testNegativeInputsNeverSubtract() {
+        XCTAssertEqual(NotificationBadge.activityCount(unread: -1, pendingRequests: 4, isAdmin: true), 4)
+    }
+}

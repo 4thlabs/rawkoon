@@ -30,6 +30,22 @@ extension AppModel {
         liveUpdates.unreadNotificationCount
     }
 
+    /// The Activity tab's badge: unread inbox items, plus pending requests for admins.
+    var activityBadgeCount: Int {
+        NotificationBadge.activityCount(unread: unreadNotificationCount, pendingRequests: pendingRequestCount, isAdmin: isAdmin)
+    }
+
+    /// Best-effort refresh of the admin's pending-request count from the requests list.
+    func refreshPendingRequestCount() async {
+        guard isAdmin, !isOffline, let client = api() else {
+            pendingRequestCount = 0
+            return
+        }
+        if let response = try? await client.requestsList() {
+            pendingRequestCount = response.requests.count { $0.status == "pending" }
+        }
+    }
+
     var bannerNotification: StreamNotificationDTO? {
         liveUpdates.bannerNotification
     }

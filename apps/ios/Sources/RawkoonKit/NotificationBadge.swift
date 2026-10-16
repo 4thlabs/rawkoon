@@ -11,4 +11,9 @@ public enum NotificationBadge {
         guard unread > 0 else { return nil }
         return unread > 9 ? "9+" : String(unread)
     }
+
+    /// What the Activity tab counts: unread inbox items, plus pending requests for admins.
+    public static func activityCount(unread: Int, pendingRequests: Int, isAdmin: Bool) -> Int {
+        max(0, unread) + (isAdmin ? max(0, pendingRequests) : 0)
+    }
 }

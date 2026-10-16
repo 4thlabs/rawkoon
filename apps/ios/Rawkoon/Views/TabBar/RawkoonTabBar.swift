@@ -2,7 +2,7 @@ import RawkoonKit
 import SwiftUI
 
 /// The floating iPhone tab bar: icon-only slots, a grey pill behind the active
-/// tab, the bell's unread badge and the avatar. Collapsed, only the active tab
+/// tab, the Activity unread badge and the avatar. Collapsed, only the active tab
 /// remains and a tap expands it.
 struct RawkoonTabBar: View {
     let tabs: [RootTab]
@@ -75,7 +75,7 @@ struct RawkoonTabBar: View {
         .accessibilityShowsLargeContentViewer {
             Label(tab.title, systemImage: tab == .settings ? "gearshape" : tab.symbol)
         }
-        .accessibilityValue(tab == .notifications ? unreadValue : Text(verbatim: ""))
+        .accessibilityValue(tab == .activity ? unreadValue : Text(verbatim: ""))
         .accessibilityAddTraits(active ? .isSelected : [])
         .accessibilityHint(isCollapsed ? Text("Shows all tabs") : Text(verbatim: ""))
     }
@@ -97,7 +97,7 @@ struct RawkoonTabBar: View {
                 .overlay(alignment: .topTrailing) {
                     // The slot outlives the badge, so it pops in and out; a count change rolls and pulses it.
                     ZStack {
-                        if tab == .notifications, let unreadLabel {
+                        if tab == .activity, let unreadLabel {
                             Text(verbatim: unreadLabel)
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(.white)

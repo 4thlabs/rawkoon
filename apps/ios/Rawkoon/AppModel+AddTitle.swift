@@ -79,9 +79,9 @@ extension AppModel {
         return added
     }
 
-    /// Opens Explore with its search field focused, from anywhere.
+    /// Opens Find with its search field focused, from anywhere.
     func openExploreSearch() {
         exploreSearchFocusRequest = true
-        requestedRootTab = .explore
+        requestedRootTab = .find
     }
 }

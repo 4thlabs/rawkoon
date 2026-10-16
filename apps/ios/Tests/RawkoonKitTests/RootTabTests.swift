@@ -2,15 +2,12 @@
 import XCTest
 
 final class RootTabTests: XCTestCase {
-    func testPhoneBarHoldsSevenTabsInOrder() {
-        XCTAssertEqual(RootTab.phone, [.home, .library, .books, .discover, .explore, .notifications, .settings])
+    func testPhoneBarHoldsSixTabsInOrder() {
+        XCTAssertEqual(RootTab.phone, [.home, .library, .books, .find, .activity, .settings])
     }
 
-    func testSidebarOrderGroupsLibraryDiscoverAndPipeline() {
-        XCTAssertEqual(RootTab.sidebar, [
-            .home, .notifications, .library, .books, .watchlist, .discover, .explore,
-            .activity, .requests, .settings, .server,
-        ])
+    func testSidebarListsLooseTabsThenLibraryAndSettings() {
+        XCTAssertEqual(RootTab.sidebar, [.home, .find, .activity, .library, .books, .settings, .server])
     }
 
     func testServerIsAdminOnly() {
@@ -19,16 +16,14 @@ final class RootTabTests: XCTestCase {
         XCTAssertEqual(RootTab.visibleSidebar(isAdmin: false).count, RootTab.sidebar.count - 1)
     }
 
-    func testPhoneNeverShowsSidebarOnlyTabs() {
-        for tab in [RootTab.activity, .requests, .watchlist, .server] {
-            XCTAssertFalse(RootTab.phone.contains(tab))
-        }
+    func testPhoneNeverShowsServer() {
+        XCTAssertFalse(RootTab.phone.contains(.server))
     }
 
     func testStaleServerPickFallsBackToHomeForNonAdmins() {
         XCTAssertEqual(RootTab.validated("server", compact: false, isAdmin: false), .home)
         XCTAssertEqual(RootTab.validated("server", compact: false, isAdmin: true), .server)
-        XCTAssertEqual(RootTab.validated("watchlist", compact: true), .home)
+        XCTAssertEqual(RootTab.validated("server", compact: true), .home)
     }
 
     func testEveryPhoneTabSurvivesValidationOnPhone() {
@@ -51,8 +46,18 @@ final class RootTabTests: XCTestCase {
         XCTAssertEqual(RootTab.validated("library", compact: true, booksEnabled: false), .library)
     }
 
-    func testNotificationsIsInTheSidebar() {
-        XCTAssertEqual(RootTab.validated("notifications", compact: false), .notifications)
+    func testRetiredBrowseTabsLandOnFind() {
+        for raw in ["discover", "explore", "watchlist"] {
+            XCTAssertEqual(RootTab.validated(raw, compact: true), .find, raw)
+            XCTAssertEqual(RootTab.validated(raw, compact: false), .find, raw)
+        }
+    }
+
+    func testRetiredInboxTabsLandOnActivity() {
+        for raw in ["notifications", "requests"] {
+            XCTAssertEqual(RootTab.validated(raw, compact: true), .activity, raw)
+            XCTAssertEqual(RootTab.validated(raw, compact: false), .activity, raw)
+        }
     }
 
     /// Home is the landing tab, so every fallback lands there.
@@ -61,14 +66,16 @@ final class RootTabTests: XCTestCase {
         XCTAssertEqual(RootTab.validated("", compact: false), .home)
     }
 
-    func testDebugSelectionAcceptsTabNames() {
-        XCTAssertEqual(RootTab.debugSelection("notifications"), .notifications)
-        XCTAssertEqual(RootTab.debugSelection("explore"), .explore)
+    func testDebugSelectionAcceptsTabNamesIncludingRetiredOnes() {
+        XCTAssertEqual(RootTab.debugSelection("activity"), .activity)
+        XCTAssertEqual(RootTab.debugSelection("notifications"), .activity)
+        XCTAssertEqual(RootTab.debugSelection("explore"), .find)
     }
 
-    /// Existing screenshot scripts pass the old five-tab indices; they keep their meaning.
+    /// Existing screenshot scripts pass the old five-tab indices; Discover's slot now opens Find.
     func testDebugSelectionKeepsTheLegacyIndices() {
         XCTAssertEqual(RootTab.debugSelection("0"), .home)
+        XCTAssertEqual(RootTab.debugSelection("3"), .find)
         XCTAssertEqual(RootTab.debugSelection("4"), .settings)
         XCTAssertNil(RootTab.debugSelection("9"))
         XCTAssertNil(RootTab.debugSelection("bogus"))
