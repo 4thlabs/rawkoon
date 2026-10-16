@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type {
+  ActiveDownloadsResponse,
   DownloadProgressItem,
+  DownloadProgressSummaryResponse,
   LandedArrival,
   LibraryDownloadsResponse,
   SeedingResponse,
@@ -11,6 +13,10 @@ import type {
 import { mergeSeedState } from "@/features/seeding/lib/mergeSeedState";
 import { recordLanded } from "@/features/medias/hooks/useLandedArrivals";
 import { queryKeys } from "@/lib/queryKeys";
+import {
+  mergeActiveProgress,
+  mergeSummaryProgress,
+} from "../lib/activeDownloads";
 import { mergeDownloadProgress } from "../lib/mergeDownloadProgress";
 
 /**
@@ -26,6 +32,16 @@ export function useLibraryEvents() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // A grab starting, finishing or failing changes who is on the Home queue.
+    const invalidateQueue = () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.downloads.active() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.downloads.progress(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.downloads.pendingReleases(),
+      });
+    };
     const es = new EventSource("/api/library/events", {
       withCredentials: true,
     });
@@ -48,6 +64,7 @@ export function useLibraryEvents() {
         if (payload.connected) {
           queryClient.invalidateQueries({ queryKey: queryKeys.library.all });
           queryClient.invalidateQueries({ queryKey: queryKeys.books.all });
+          invalidateQueue();
           return;
         }
 
@@ -62,6 +79,14 @@ export function useLibraryEvents() {
           queryClient.setQueryData<LibraryDownloadsResponse>(
             queryKeys.library.downloads(payload.mediaId),
             (current) => mergeDownloadProgress(current, downloads),
+          );
+          queryClient.setQueryData<ActiveDownloadsResponse>(
+            queryKeys.downloads.active(),
+            (current) => mergeActiveProgress(current, downloads),
+          );
+          queryClient.setQueryData<DownloadProgressSummaryResponse>(
+            queryKeys.downloads.progress(),
+            (current) => mergeSummaryProgress(current, downloads),
           );
           return;
         }
@@ -92,6 +117,7 @@ export function useLibraryEvents() {
             recordLanded(queryClient, arrival as LandedArrival);
           }
           queryClient.invalidateQueries({ queryKey: queryKeys.library.all });
+          invalidateQueue();
           return;
         }
 
@@ -101,6 +127,7 @@ export function useLibraryEvents() {
         }
         // Untagged events are media events from an older server.
         queryClient.invalidateQueries({ queryKey: queryKeys.library.all });
+        invalidateQueue();
       } catch {
         // malformed event — ignore
       }

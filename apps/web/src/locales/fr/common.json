@@ -215,8 +215,25 @@
       "downloadsTitle": "Téléchargements",
       "transfer": "Transfert",
       "downloadClientNotConfigured": "Client de téléchargement non configuré",
-      "pendingDelay": "En attente (délai)",
-      "pendingGrabAt": "récupération à {{time}}",
+      "pendingDelay": "En attente de récupération",
+      "pendingGrabIn": "Récupération dans {{time}}",
+      "pendingGrabDue": "Récupération imminente",
+      "grabNow": "Récupérer maintenant",
+      "nothingDownloading": "Aucun téléchargement en cours",
+      "downloadClientUnreachable": "Client de téléchargement injoignable",
+      "etaLeft": "{{time}} restant",
+      "nothingGrabbed": "Rien n'a été récupéré",
+      "grabMiss": {
+        "not_wanted": "Le titre n'a plus besoin de cette version.",
+        "already_active": "Un téléchargement est déjà en cours.",
+        "no_space": "Il n'y a pas assez d'espace disque libre.",
+        "all_failed": "Toutes les versions en attente ont été bloquées ou ont échoué."
+      },
+      "downloadState": {
+        "stalled": "Bloqué",
+        "paused": "En pause",
+        "error": "Erreur"
+      },
       "pendingMore": "+{{count}} de plus",
       "upcomingEmpty": "Rien à venir"
     },
@@ -1707,6 +1724,9 @@
         "digital_release_date": "Sortie numérique",
         "file_size": "Taille"
       },
+      "itemStatusPercent": "{{label}} {{percent}} %",
+      "itemStatusEpisodes_one": "{{label}} {{count}} épisode",
+      "itemStatusEpisodes_other": "{{label}} {{count}} épisodes",
       "itemStatus": {
         "wanted": "Manquant",
         "downloading": "Téléchargement",
