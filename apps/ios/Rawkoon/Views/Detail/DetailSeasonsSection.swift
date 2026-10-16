@@ -18,7 +18,7 @@ struct DetailSeasonsSection: View {
     /// Manage-tab presentation: inline Search + monitor toggle + state per season.
     var manage = false
 
-    let onSeasonAutoSearch: (Int) -> Void
+    let onSeasonAutoSearch: (Int) async -> Void
     let onSeasonReleaseSearch: (Int) -> Void
     let onSeasonRetrySkipped: (Int) -> Void
     let onSeasonToggleMonitor: (Int, Bool) -> Void
@@ -36,6 +36,8 @@ struct DetailSeasonsSection: View {
     let onFileError: (String) -> Void
 
     @State private var expanded: Set<Int> = []
+    /// Seasons with an inline search in flight; blocks double taps.
+    @State private var searching: Set<Int> = []
 
     private var visibleSeasons: [SeasonSummary] {
         seasons
@@ -77,6 +79,8 @@ struct DetailSeasonsSection: View {
                         Text(season.name)
                             .font(.subheadline.weight(.medium))
                             .foregroundStyle(Theme.textStrong)
+                            .lineLimit(1)
+                            .layoutPriority(-1)
                         Spacer(minLength: 0)
                         Text(countLabel(downloaded: downloaded, total: total, season: season))
                             .font(.system(.caption, design: .monospaced))
@@ -87,14 +91,29 @@ struct DetailSeasonsSection: View {
                 .buttonStyle(.plain)
 
                 if canManage, manage {
+                    let isSearching = searching.contains(season.seasonNumber)
                     Button {
-                        onSeasonAutoSearch(season.seasonNumber)
+                        guard searching.insert(season.seasonNumber).inserted else { return }
+                        Task {
+                            await onSeasonAutoSearch(season.seasonNumber)
+                            searching.remove(season.seasonNumber)
+                        }
                     } label: {
-                        Label("Search", systemImage: "sparkle.magnifyingglass")
-                            .font(.caption.weight(.semibold))
+                        HStack(spacing: 4) {
+                            if isSearching {
+                                ProgressView().controlSize(.mini)
+                            } else {
+                                Image(systemName: "sparkle.magnifyingglass")
+                            }
+                            Text("Search")
+                        }
+                        .font(.caption.weight(.semibold))
+                        .fixedSize()
                     }
                     .buttonStyle(.bordered)
                     .tint(Theme.apricot)
+                    .disabled(isSearching)
+                    .accessibilityLabel(String(localized: "Search \(season.name)"))
                     .requiresConnection(model.isOffline)
                 }
                 if canManage {
@@ -141,11 +160,13 @@ struct DetailSeasonsSection: View {
                 Text("Monitored")
                     .font(.caption)
                     .foregroundStyle(Theme.muted)
+                    .accessibilityHidden(true)
                 Toggle("Monitored", isOn: Binding(
                     get: { monitored },
                     set: { onSeasonToggleMonitor(season.seasonNumber, $0) }
                 ))
                 .labelsHidden()
+                .accessibilityLabel(String(localized: "Monitor \(season.name)"))
                 .tint(Theme.terracotta)
                 .scaleEffect(0.8)
                 .requiresConnection(model.isOffline)
@@ -163,7 +184,8 @@ struct DetailSeasonsSection: View {
         if episodes.contains(where: { $0.status == "wanted" }) {
             return (String(localized: "Wanted"), Theme.apricotSoft)
         }
-        return nil
+        if downloaded > 0 { return (String(localized: "Partial"), Theme.muted) }
+        return episodes.isEmpty ? nil : (String(localized: "Unmonitored"), Theme.muted)
     }
 
     private func countLabel(downloaded: Int, total: Int, season: SeasonSummary) -> String {
@@ -174,7 +196,7 @@ struct DetailSeasonsSection: View {
         let monitored = !episodes.isEmpty && episodes.allSatisfy(\.monitored)
         return Menu {
             Button {
-                onSeasonAutoSearch(season.seasonNumber)
+                Task { await onSeasonAutoSearch(season.seasonNumber) }
             } label: {
                 Label("Auto search season", systemImage: "sparkle.magnifyingglass")
             }

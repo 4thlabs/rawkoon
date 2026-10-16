@@ -19,7 +19,7 @@ extension MediaDetailView {
     private var seasonsSummary: some View {
         let seasons = (details?.seasons ?? []).filter { $0.seasonNumber != 0 || ($0.episodeCount ?? 0) > 0 }
         if !seasons.isEmpty {
-            let all = episodesBySeason.values.flatMap { $0 }
+            let all = episodesBySeason.values.flatMap(\.self)
             let downloaded = all.filter { $0.status == "downloaded" }.count
             Button {
                 withRawkoonMotion(.easeInOut(duration: 0.15)) { detailTab = .manage }
@@ -60,7 +60,7 @@ extension MediaDetailView {
                 inLibrary: libraryId != nil,
                 isAdmin: model.isAdmin,
                 manage: manage,
-                onSeasonAutoSearch: { season in Task { await seasonAutoSearch(season) } },
+                onSeasonAutoSearch: { season in await seasonAutoSearch(season) },
                 onSeasonReleaseSearch: { season in
                     releaseSearchSeason = season
                     showingReleaseSearch = true

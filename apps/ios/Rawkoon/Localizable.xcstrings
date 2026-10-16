@@ -13250,6 +13250,39 @@
           }
         }
       }
+    },
+    "Search %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher %@"
+          }
+        }
+      }
+    },
+    "Monitor %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Surveiller %@"
+          }
+        }
+      }
+    },
+    "Partial": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partiel"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
