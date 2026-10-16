@@ -868,6 +868,62 @@
         "title": "When you add a movie or show",
         "on": "Search and grab it right away",
         "off": "Add it to the library only (waits for the scheduled check or Search now)"
+      },
+      "grabReadiness": {
+        "title": "Ready to grab",
+        "checking": "Checking…",
+        "allClear": "Everything automatic grabbing needs is in place.",
+        "summary_one": "{{count}} thing to fix",
+        "summary_other": "{{count}} things to fix",
+        "recheck": "Re-check",
+        "loadError": "Couldn't run the checks.",
+        "status": {
+          "ok": "OK",
+          "warn": "Needs attention",
+          "error": "Not working"
+        },
+        "fix": {
+          "watchAll_one": "Watch it",
+          "watchAll_other": "Watch all {{count}}",
+          "pickDefault": "Pick a default",
+          "setMaximum": "Set a maximum for {{name}}",
+          "openIntegrations": "Open Integrations"
+        },
+        "checks": {
+          "indexer_manager": {
+            "ok_one": "{{manager}} is connected with {{count}} indexer enabled.",
+            "ok_other": "{{manager}} is connected with {{count}} indexers enabled.",
+            "warn": "{{manager}} is connected but has no enabled indexers, so searches find nothing.",
+            "not_configured": "No indexer manager is set up, so nothing can be searched.",
+            "unreachable": "Can't reach {{manager}}, so searches and RSS checks fail."
+          },
+          "download_client": {
+            "ok": "{{client}} is connected.",
+            "not_configured": "No download client is set up, so releases have nowhere to go.",
+            "unreachable": "Can't reach {{client}}, so grabs fail."
+          },
+          "default_movie_profile": {
+            "ok": "New movies use the {{name}} quality profile.",
+            "warn": "No default movie quality profile: new movies accept any release."
+          },
+          "default_show_profile": {
+            "ok": "New shows use the {{name}} quality profile.",
+            "warn": "No default show quality profile: new shows accept any release."
+          },
+          "rss_indexers": {
+            "ok": "RSS checks watch {{watched}} of {{total}} indexers.",
+            "warn": "RSS checks watch no indexer, so new releases are never picked up on their own."
+          },
+          "profiles_without_maximum": {
+            "ok": "Every quality profile has a maximum resolution.",
+            "warn_one": "{{count}} quality profile has no maximum resolution, so a 1080p profile can still grab 4K.",
+            "warn_other": "{{count}} quality profiles have no maximum resolution, so a 1080p profile can still grab 4K."
+          },
+          "search_on_add": {
+            "on": "Search starts as soon as a movie or show is added.",
+            "off": "Search waits for the scheduled check after a movie or show is added."
+          }
+        }
       }
     },
     "arrImport": {
@@ -1679,6 +1735,10 @@
       "pageSubtitle": "Movies, shows and download tracking",
       "searchPlaceholder": "Search library…",
       "typeAll": "All",
+      "grabReadinessBanner_one": "Automatic grabs are limited: {{count}} thing to fix",
+      "grabReadinessBanner_other": "Automatic grabs are limited: {{count}} things to fix",
+      "grabReadinessReview": "Review",
+      "grabReadinessDismiss": "Dismiss",
       "moviesWithCount": "Movies ({{count}})",
       "showsWithCount": "Shows ({{count}})",
       "statusAll": "All",

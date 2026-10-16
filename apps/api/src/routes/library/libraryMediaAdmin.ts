@@ -9,6 +9,7 @@ import { badRequest, ok, serverError } from "@rawkoon/api/errors";
 import type { Env } from "@rawkoon/api/honoEnv";
 import { requireAdmin } from "@rawkoon/api/middleware/hono/auth";
 import { jsonV } from "@rawkoon/api/middleware/validate";
+import { getGrabReadiness } from "@rawkoon/api/services/grabReadiness";
 import { normalizeExtension } from "@rawkoon/api/services/seeding/seedPolicy";
 import { TMDB_LANGUAGE_LIBRARY_PERSISTENCE } from "@rawkoon/api/utils/medias/tmdbFetcherTypes";
 import { listVideoFilesUnder } from "@rawkoon/api/utils/medias/fileIdentifier";
@@ -101,6 +102,14 @@ export const libraryMediaAdminRoutes = new Hono<Env>()
       return ok({ settings: mapSettings(row) });
     } catch {
       return serverError("Failed to load media settings");
+    }
+  })
+  .get("/post-processing/grab-readiness", requireAdmin, async (c) => {
+    try {
+      const refresh = c.req.query("refresh") === "1";
+      return ok({ checks: await getGrabReadiness({ refresh }) });
+    } catch {
+      return serverError("Failed to check grab readiness");
     }
   })
   .patch(

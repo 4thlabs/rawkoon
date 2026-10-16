@@ -20,6 +20,7 @@ import { useSearchLibraryMovie } from "@/features/medias/hooks/useSearchLibraryM
 import { useLibraryEvents } from "@/features/medias/hooks/useLibraryEvents";
 import { useAuth } from "@/lib/auth/useAuth";
 import { type FilterType, type FilterStatus } from "@/utils/libraryUtils";
+import { GrabReadinessBanner } from "./GrabReadinessBanner";
 import { LibraryPageHeader } from "./LibraryPageHeader";
 import { LibraryMobileFilterSheet } from "./LibraryMobileFilterSheet";
 import { TmdbSearchModal } from "./TmdbSearchModal";
@@ -162,6 +163,8 @@ export function LibraryPage() {
         onAddClick={() => setAddModalOpen(true)}
         isAdmin={user?.is_admin ?? false}
       />
+
+      {user?.is_admin && <GrabReadinessBanner />}
 
       <div className="mt-3 space-y-4">
         <ManagementSection

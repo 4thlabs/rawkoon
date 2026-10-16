@@ -368,6 +368,13 @@ export const queryKeys = {
       [...queryKeys.library.all, "downloads", id] as const,
     downloadsImport: () =>
       [...queryKeys.library.all, "downloads-import"] as const,
+    // Nested under the settings key so a settings save also refreshes the checklist.
+    grabReadiness: () =>
+      [
+        ...queryKeys.library.all,
+        "post-processing-settings",
+        "grab-readiness",
+      ] as const,
     postProcessingSettings: () =>
       [...queryKeys.library.all, "post-processing-settings"] as const,
     languageTags: () => [...queryKeys.library.all, "language-tags"] as const,
