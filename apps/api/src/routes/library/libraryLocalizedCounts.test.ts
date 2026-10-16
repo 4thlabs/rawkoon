@@ -20,6 +20,7 @@ mock.module("@rawkoon/api/middleware/hono/auth", () => ({
 }));
 mock.module("./libraryHelpers", () => ({
   libraryMediaInclude: {},
+  adminView: () => ({ isAdmin: true }),
   mapLibraryMedia: (item: { id: number }) => ({
     id: item.id,
     title: "Le Parrain",
