@@ -264,7 +264,9 @@ final class AppModel {
         replacing id: UUID? = nil
     ) -> UUID {
         var next = Toast(message: message, style: style, action: action, showsProgress: showsProgress)
-        if let id, currentToast?.id == id { next.id = id }
+        if let id, currentToast?.id == id {
+            next.id = id
+        }
         currentToast = next
 
         switch style {

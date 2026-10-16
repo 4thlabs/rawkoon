@@ -171,7 +171,9 @@ public struct LiveSearchTracker: Equatable, Sendable {
     public mutating func apply(_ result: LiveSearchResult, now: Date) -> LiveSearchUpdate? {
         guard var entry = entries[result.mediaId] else { return nil }
         let rank = result.outcome.rank
-        if let settled = entry.settledRank, rank <= settled { return nil }
+        if let settled = entry.settledRank, rank <= settled {
+            return nil
+        }
         entry.settledRank = rank
         entry.settledAt = now
         entries[result.mediaId] = entry
@@ -238,7 +240,9 @@ public struct LiveSearchTracker: Equatable, Sendable {
     private static func parseISO(_ iso: String) -> Date? {
         let withFraction = ISO8601DateFormatter()
         withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = withFraction.date(from: iso) { return date }
+        if let date = withFraction.date(from: iso) {
+            return date
+        }
         return ISO8601DateFormatter().date(from: iso)
     }
 
@@ -264,8 +268,12 @@ public struct LiveSearchTracker: Equatable, Sendable {
 
     static func qualityLine(_ result: LiveSearchResult) -> String? {
         var parts: [String] = []
-        if let resolution = result.resolution { parts.append("\(resolution)p") }
-        if let source = result.source, !source.isEmpty { parts.append(source) }
+        if let resolution = result.resolution {
+            parts.append("\(resolution)p")
+        }
+        if let source = result.source, !source.isEmpty {
+            parts.append(source)
+        }
         if let size = result.sizeBytes, size > 0 {
             parts.append(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
         }

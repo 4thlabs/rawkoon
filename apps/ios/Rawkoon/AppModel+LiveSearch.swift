@@ -96,7 +96,9 @@ final class LiveSearchCoordinator {
     }
 
     private static func result(from response: LibrarySearchResponse, mediaId: Int) -> LiveSearchResult {
-        if let pushed = response.searchResult?.result { return pushed }
+        if let pushed = response.searchResult?.result {
+            return pushed
+        }
         if response.grabbed {
             return LiveSearchResult(mediaId: mediaId, outcome: .grabbed, releaseTitle: response.releaseTitle)
         }
@@ -299,7 +301,7 @@ extension AppModel {
 }
 
 /// Carries the add response out of the store's `@Sendable` request closure.
-private nonisolated final class CapturedAdd: @unchecked Sendable {
+private final nonisolated class CapturedAdd: @unchecked Sendable {
     private let lock = NSLock()
     private var stored: AddToLibraryResult?
 

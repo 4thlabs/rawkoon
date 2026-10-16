@@ -208,17 +208,25 @@ struct MediaDetailView: View {
         }
         .onAppear {
             isOnScreen = true
-            if let libraryId { model.liveSearch.detailAppeared(libraryId) }
+            if let libraryId {
+                model.liveSearch.detailAppeared(libraryId)
+            }
             hydrateFromCache()
         }
         .onDisappear {
             isOnScreen = false
-            if let libraryId { model.liveSearch.detailDisappeared(libraryId) }
+            if let libraryId {
+                model.liveSearch.detailDisappeared(libraryId)
+            }
         }
         .onChange(of: libraryId) { old, new in
             guard isOnScreen else { return }
-            if let old { model.liveSearch.detailDisappeared(old) }
-            if let new { model.liveSearch.detailAppeared(new) }
+            if let old {
+                model.liveSearch.detailDisappeared(old)
+            }
+            if let new {
+                model.liveSearch.detailAppeared(new)
+            }
         }
         .onChange(of: model.releaseSheetRequest) { openRequestedReleaseSheet() }
         .task {
