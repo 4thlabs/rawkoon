@@ -18,29 +18,45 @@ function Summary() {
 
   if (grab.isLoading || attention.isLoading || health.isLoading) return null;
 
-  const problems =
-    failingChecks(grab.data?.checks ?? []).length +
-    (attention.data?.items.length ?? 0) +
-    (health.data?.latest?.summary.total_issues ?? 0);
-  const ok = problems === 0;
-  const Icon = ok ? CheckCircle2 : AlertTriangle;
+  const readinessFailures = failingChecks(grab.data?.checks ?? []).length;
+  const alerts = attention.data?.items.length ?? 0;
+  const libraryIssues = health.data?.latest?.summary.total_issues ?? 0;
+  const ready = readinessFailures === 0;
+  const allClear = ready && alerts === 0 && libraryIssues === 0;
+  const Icon = ready ? CheckCircle2 : AlertTriangle;
 
   return (
     <div
       role="status"
       data-testid="health-summary"
       className={
-        ok
-          ? "flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-emerald-100"
-          : "flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-100"
+        ready
+          ? "flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-emerald-100"
+          : "flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-100"
       }
     >
-      <Icon className="h-5 w-5 shrink-0" aria-hidden />
-      <p className="text-sm">
-        {ok
-          ? t("settings.health.allClear")
-          : t("settings.health.needsAttention", { count: problems })}
-      </p>
+      <Icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+      <div className="space-y-0.5 text-sm">
+        <p>
+          {allClear
+            ? t("settings.health.allClear")
+            : ready
+              ? t("settings.health.readyToGrab")
+              : t("settings.health.needsAttention", {
+                  count: readinessFailures,
+                })}
+        </p>
+        {ready && libraryIssues > 0 && (
+          <p className="text-xs opacity-80">
+            {t("settings.health.libraryIssues", { count: libraryIssues })}
+          </p>
+        )}
+        {ready && alerts > 0 && (
+          <p className="text-xs opacity-80">
+            {t("settings.health.alertsOpen", { count: alerts })}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

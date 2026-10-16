@@ -1803,7 +1803,12 @@
       "allClear": "Rawkoon peut trouver, récupérer et importer en ce moment.",
       "needsAttention_one": "{{count}} point demande de l’attention avant que Rawkoon fonctionne seul.",
       "needsAttention_other": "{{count}} points demandent de l’attention avant que Rawkoon fonctionne seul.",
-      "library": "Santé de la bibliothèque"
+      "library": "Santé de la bibliothèque",
+      "readyToGrab": "Prêt à récupérer.",
+      "libraryIssues_one": "{{count}} problème de bibliothèque à examiner",
+      "libraryIssues_other": "{{count}} problèmes de bibliothèque à examiner",
+      "alertsOpen_one": "{{count}} alerte ouverte",
+      "alertsOpen_other": "{{count}} alertes ouvertes"
     }
   },
   "medias": {
