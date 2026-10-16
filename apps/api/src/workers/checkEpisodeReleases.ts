@@ -1,6 +1,7 @@
 import { prisma } from "@rawkoon/api/db";
 import { searchAndGrabWithTitleFallback } from "@rawkoon/api/services/mediaGrabberSearch";
 import { resolveSearchTitles } from "@rawkoon/api/utils/medias/resolveSearchTitles";
+import { mediaIdsWithActiveShowGrab } from "@rawkoon/api/services/activeShowGrab";
 import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 import { MAX_CRON_GRAB_ATTEMPTS } from "@rawkoon/api/constants/libraryGrab";
 import {
@@ -33,7 +34,7 @@ export async function checkEpisodeReleases(): Promise<void> {
     localDateYmd(APP_DISPLAY_TIMEZONE, nowMinusGrace),
   );
 
-  const episodes = await prisma.libraryEpisode.findMany({
+  const candidates = await prisma.libraryEpisode.findMany({
     where: {
       status: "wanted",
       monitored: true,
@@ -54,6 +55,12 @@ export async function checkEpisodeReleases(): Promise<void> {
       },
     },
   });
+
+  // Episodes stay "wanted" while a complete-series pack downloads; leave them to it.
+  const packed = await mediaIdsWithActiveShowGrab([
+    ...new Set(candidates.map((ep) => ep.mediaId)),
+  ]);
+  const episodes = candidates.filter((ep) => !packed.has(ep.mediaId));
 
   // Group episodes by mediaId:season to detect pack-eligible seasons.
   const seasonGroups = new Map<string, (typeof episodes)[number][]>();

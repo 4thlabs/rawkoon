@@ -6,6 +6,8 @@ import {
   pickReleaseWithAi,
 } from "@rawkoon/api/services/aiProvider/client";
 import { getActiveIndexerManager } from "@rawkoon/api/services/indexerManager";
+import { tieredSearch } from "@rawkoon/api/services/indexerManager/searchStrategy";
+import { releaseCoversSeasons } from "@rawkoon/api/utils/medias/completeSeries";
 import {
   parseReleaseSeasonEpisode,
   parseReleaseTitle,
@@ -50,6 +52,8 @@ export async function searchAndGrab(opts: {
   episodeId?: number;
   /** Set for season-pack searches — part of the grab target, see grabRelease. */
   season?: number | null;
+  /** Show-level search: only multi-season packs covering all of these seasons qualify. */
+  completeSeasons?: number[];
   mediaType: "tv" | "movie";
   searchQuery: string;
   qualityProfileId: number | null;
@@ -81,12 +85,28 @@ export async function searchAndGrab(opts: {
       return { grabbed: false, reason: "No indexer manager configured" };
     }
 
-    const { releases } = await adapter.search({
-      query: qTrim,
-      type: "freetext",
-      mediaType,
-      limit: 100,
-    });
+    const { completeSeasons } = opts;
+    const tmdbId = completeSeasons
+      ? ((
+          await prisma.libraryMedia.findUnique({
+            where: { id: mediaId },
+            select: { tmdbId: true },
+          })
+        )?.tmdbId ?? null)
+      : null;
+    const { releases } = completeSeasons
+      ? await tieredSearch(adapter, {
+          query: qTrim,
+          tmdbId,
+          complete: true,
+          mediaType: "tv",
+        })
+      : await adapter.search({
+          query: qTrim,
+          type: "freetext",
+          mediaType,
+          limit: 100,
+        });
 
     if (releases.length === 0) {
       return { grabbed: false, reason: NO_MATCH_REASON };
@@ -153,6 +173,11 @@ export async function searchAndGrab(opts: {
       // Reject releases whose title doesn't begin with an expected show/movie
       // title (freetext indexer results are noisy for short titles like "FROM").
       if (!releaseMatchesExpectedTitles(title, matchTitles)) continue;
+
+      // A complete-series pack must name every wanted season, or the rest stays unfetched.
+      if (completeSeasons && !releaseCoversSeasons(title, completeSeasons)) {
+        continue;
+      }
 
       // For episode grabs, require the release's SxxExx to match the episode.
       if (expectedSeason != null && expectedEpisode != null) {
@@ -382,6 +407,7 @@ export async function searchAndGrabWithTitleFallback(opts: {
   episodeId?: number;
   /** Set for season-pack searches — part of the grab target, see grabRelease. */
   season?: number | null;
+  completeSeasons?: number[];
   mediaType: "tv" | "movie";
   titleBaseQueries: string[];
   suffix: string;
@@ -400,6 +426,7 @@ export async function searchAndGrabWithTitleFallback(opts: {
       mediaId: opts.mediaId,
       episodeId: opts.episodeId,
       season: opts.season,
+      completeSeasons: opts.completeSeasons,
       mediaType: opts.mediaType,
       searchQuery: `${base}${opts.suffix}`,
       qualityProfileId: opts.qualityProfileId,

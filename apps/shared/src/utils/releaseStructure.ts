@@ -272,3 +272,37 @@ export function parseReleaseStructure(rawName: string): ReleaseStructure {
   const title = movie.title.replace(/\s+\.|\.\s+/g, " ").trim();
   return { ...empty(title), year: toYear(movie.year) };
 }
+
+const SEASON_WORDS = "(?:Seasons?|Saisons?|Stagione|Temporada|Staffel)";
+const SPAN_SEP = `${SEP}*(?:-|to|through|thru|and|&|à|et)${SEP}*`;
+// "Seasons 1-3", "Saisons 1 à 3".
+const WORD_SPAN = new RegExp(
+  `(?:^|${SEP})${SEASON_WORDS}${SEP}*(\\d{1,2})${SPAN_SEP}(\\d{1,2})(?=$|${SEP})`,
+  "i",
+);
+// "S01-S03", "S01-03", "S01.S02".
+const SXX_SPAN = new RegExp(
+  `(?:^|${SEP})S(\\d{1,2})(?:${SEP}*-${SEP}*S?|${SEP}+S)(\\d{1,2})(?=$|${SEP})`,
+  "i",
+);
+
+/**
+ * The first and last season a multi-season release names ("S01-S03",
+ * "Seasons 1-3"), or null for a single season, an episode or an unranged
+ * "complete series" label.
+ */
+export function parseReleaseSeasonSpan(
+  rawName: string,
+): { from: number; to: number } | null {
+  const name = normalizeMarkers(rawName.trim().slice(0, MAX_NAME_LENGTH));
+  if (SXXEYY.test(name)) return null;
+  const m = WORD_SPAN.exec(name) ?? SXX_SPAN.exec(name);
+  if (!m) return null;
+  // "S01.S02.S03" chains: the pair above is only its first two markers.
+  const chained = [
+    ...name.matchAll(new RegExp(`(?:^|${SEP})S(\\d{1,2})(?=$|${SEP})`, "gi")),
+  ].map((x) => Number(x[1]));
+  const from = Math.min(Number(m[1]), ...chained);
+  const to = Math.max(Number(m[2]), ...chained);
+  return to > from ? { from, to } : null;
+}

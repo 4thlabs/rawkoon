@@ -18,6 +18,10 @@ import {
 import { tryAdoptQbDuplicate } from "@rawkoon/api/services/mediaGrabberAdopt";
 import { checkFreeSpaceForGrab } from "@rawkoon/api/services/grabSpaceCheck";
 import { resolveGrabSeason } from "@rawkoon/api/services/grabEpisodeResolver";
+import {
+  hasActiveShowGrab,
+  SHOW_GRAB_ACTIVE_PREFIX,
+} from "@rawkoon/api/services/activeShowGrab";
 
 /**
  * Identifies what a grab is FOR. Movies are (media, null, null), single
@@ -149,6 +153,16 @@ export async function grabRelease(opts: {
       return {
         grabbed: false,
         reason: duplicateGrabReason(target, activeGrab.id),
+      };
+    }
+    // A complete-series pack already carries every episode and season of the show.
+    if (
+      (target.episodeId != null || target.season != null) &&
+      (await hasActiveShowGrab(mediaId))
+    ) {
+      return {
+        grabbed: false,
+        reason: `${SHOW_GRAB_ACTIVE_PREFIX} — cancel it before grabbing a single season or episode`,
       };
     }
 

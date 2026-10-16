@@ -40,6 +40,7 @@ import {
 import {
   mapSeasonPack,
   parsePartMarker,
+  splitUnknownSeasons,
 } from "@rawkoon/api/services/library/seasonPackMapping";
 import {
   mkvAppend,
@@ -171,7 +172,16 @@ export async function postProcessSeasonPack(
     ];
   });
 
-  const mapping = mapSeasonPack(parsedSources, episodes, dh.season);
+  // A show-level pack (no season) spans seasons; one the provider doesn't know must not sink the rest.
+  const { placeable, skipped: unknownSeasonFiles } =
+    dh.season == null
+      ? splitUnknownSeasons(parsedSources, episodes)
+      : { placeable: parsedSources, skipped: [] as string[] };
+  const mapping = mapSeasonPack(placeable, episodes, dh.season);
+  const skippedFiles = [
+    ...(mapping.ok ? (mapping.skipped ?? []) : []),
+    ...unknownSeasonFiles,
+  ];
 
   /**
    * Abandon the whole pack, keeping its data: a refusal is often our numbering
@@ -210,9 +220,9 @@ export async function postProcessSeasonPack(
       }`,
     );
   }
-  if (mapping.skipped?.length) {
+  if (skippedFiles.length) {
     console.warn(
-      `[postProcess/pack] ${dh.media.title}: ${mapping.skipped.length} file(s) without a season could not be placed and were not imported: ${mapping.skipped.join(", ")}`,
+      `[postProcess/pack] ${dh.media.title}: ${skippedFiles.length} file(s) could not be placed and were not imported: ${skippedFiles.join(", ")}`,
     );
   }
 
@@ -495,7 +505,7 @@ export async function postProcessSeasonPack(
       seedSweepEnabled: settings.seedSweepEnabled,
       // Failed episodes, skipped ones and files left out of the mapping still need their data.
       fullyImported:
-        errors.length === 0 && allPlaced && !mapping.skipped?.length,
+        errors.length === 0 && allPlaced && skippedFiles.length === 0,
     }),
     "postProcess/pack",
   );

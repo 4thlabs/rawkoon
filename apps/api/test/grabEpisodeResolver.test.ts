@@ -203,3 +203,20 @@ describe("resolveGrabSeason", () => {
     ).toBe(null);
   });
 });
+
+describe("resolveGrabSeason multi-season packs", () => {
+  it.each([
+    "Show.S01-S03.COMPLETE.1080p.WEB",
+    "Show.Seasons.1-3.1080p.WEB",
+    "Show.Integrale.MULTi.1080p.WEB",
+  ])("keeps %s show-level, not season 1", (releaseTitle) => {
+    expect(
+      resolveGrabSeason({
+        mediaType: "show",
+        episodeId: null,
+        season: null,
+        releaseTitle,
+      }),
+    ).toBeNull();
+  });
+});

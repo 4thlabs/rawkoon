@@ -266,6 +266,25 @@ export function renumberSources(
 }
 
 /**
+ * Set aside the files of seasons the provider lists no episodes for (extras,
+ * specials). Mapping refuses a pack outright on such a season, which would
+ * sink every real season of a multi-season pack along with it.
+ */
+export function splitUnknownSeasons(
+  sources: RawSourceFile[],
+  providerEpisodes: ProviderEpisode[],
+): { placeable: RawSourceFile[]; skipped: string[] } {
+  const known = new Set(providerEpisodes.map((e) => e.season));
+  const placeable: RawSourceFile[] = [];
+  const skipped: string[] = [];
+  for (const s of sources) {
+    if (s.season === null || known.has(s.season)) placeable.push(s);
+    else skipped.push(s.fileName);
+  }
+  return { placeable, skipped };
+}
+
+/**
  * Map a pack as named first; only when that refuses, retry with renumbered
  * files. The original refusal is kept when the retry fails too. A pack with
  * season-less files that can't all be placed still imports its named files,

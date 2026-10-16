@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it, mock } from "bun:test";
+import { SPACE_REFUSAL_PREFIX } from "@rawkoon/api/services/grabSpaceCheck";
 
 // Search-on-add reuses the scheduled grab path but must never record a miss.
 const realSearch = {
@@ -6,6 +7,9 @@ const realSearch = {
 };
 const realRefresh = {
   ...(await import("@rawkoon/api/services/libraryTmdbRefresh")),
+};
+const realSearchOnAddService = {
+  ...(await import("@rawkoon/api/services/searchOnAdd")),
 };
 
 type Ep = {
@@ -21,8 +25,15 @@ let media: Record<string, unknown> | null;
 let episodes: Ep[];
 let refreshedDate: Date | null;
 let packResult: { grabbed: boolean; reason: string; delayed?: true };
-const searches: Array<{ suffix: string; season?: number; episodeId?: number }> =
-  [];
+let seriesResult: { grabbed: boolean; reason: string; delayed?: true };
+let activeShowGrab = false;
+const searches: Array<{
+  suffix: string;
+  season?: number;
+  episodeId?: number;
+  completeSeasons?: number[];
+}> = [];
+const seasonJobs: number[] = [];
 const writes: unknown[] = [];
 
 mock.module("@rawkoon/api/services/mediaGrabberSearch", () => ({
@@ -31,17 +42,30 @@ mock.module("@rawkoon/api/services/mediaGrabberSearch", () => ({
     suffix: string;
     season?: number;
     episodeId?: number;
+    completeSeasons?: number[];
     trigger?: string;
   }) => {
-    searches.push({
-      suffix: o.suffix,
-      season: o.season,
-      episodeId: o.episodeId,
-    });
+    searches.push(
+      o.completeSeasons
+        ? {
+            suffix: o.suffix,
+            season: o.season,
+            episodeId: o.episodeId,
+            completeSeasons: o.completeSeasons,
+          }
+        : { suffix: o.suffix, season: o.season, episodeId: o.episodeId },
+    );
     expect(o.trigger).toBe("scheduled");
+    if (o.completeSeasons) return seriesResult;
     return o.episodeId == null && o.season != null
       ? packResult
       : { grabbed: false, reason: "No matching releases found" };
+  },
+}));
+mock.module("@rawkoon/api/services/searchOnAdd", () => ({
+  ...realSearchOnAddService,
+  enqueueSeasonSearches: async (mediaId: number) => {
+    seasonJobs.push(mediaId);
   },
 }));
 mock.module("@rawkoon/api/services/libraryTmdbRefresh", () => ({
@@ -50,6 +74,9 @@ mock.module("@rawkoon/api/services/libraryTmdbRefresh", () => ({
 }));
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
+    downloadHistory: {
+      findFirst: async () => (activeShowGrab ? { id: 1 } : null),
+    },
     libraryMedia: {
       findUnique: async () => media,
       update: async (a: unknown) => {
@@ -77,6 +104,10 @@ const { searchOnAdd } = await import("@rawkoon/api/workers/searchOnAdd");
 afterAll(() => {
   mock.module("@rawkoon/api/services/mediaGrabberSearch", () => realSearch);
   mock.module("@rawkoon/api/services/libraryTmdbRefresh", () => realRefresh);
+  mock.module(
+    "@rawkoon/api/services/searchOnAdd",
+    () => realSearchOnAddService,
+  );
 });
 
 const base = {
@@ -101,6 +132,9 @@ const ep = (season: number, episode: number, over: Partial<Ep> = {}): Ep => ({
 
 beforeEach(() => {
   searches.length = 0;
+  seasonJobs.length = 0;
+  activeShowGrab = false;
+  seriesResult = { grabbed: false, reason: "No matching releases found" };
   writes.length = 0;
   episodes = [];
   refreshedDate = null;
@@ -248,5 +282,89 @@ describe("searchOnAdd worker: shows", () => {
     ];
     await searchOnAdd(1);
     expect(searches.map((s) => s.suffix)).toEqual([" S01E02"]);
+  });
+});
+
+describe("searchOnAdd worker: complete-series first", () => {
+  beforeEach(() => {
+    media = { ...base, type: "show", status: "wanted", _count: { files: 0 } };
+    episodes = [ep(1, 1), ep(1, 2), ep(2, 1), ep(2, 2)];
+  });
+
+  it("looks for one pack covering every aired season, before any season", async () => {
+    seriesResult = { grabbed: true, reason: "" };
+    await searchOnAdd(1, "series");
+    expect(searches).toEqual([
+      {
+        suffix: "",
+        season: undefined,
+        episodeId: undefined,
+        completeSeasons: [1, 2],
+      },
+    ]);
+    expect(seasonJobs).toEqual([]);
+  });
+
+  it("queues the per-season jobs when no pack is found", async () => {
+    await searchOnAdd(1, "series");
+    expect(searches).toHaveLength(1);
+    expect(seasonJobs).toEqual([1]);
+  });
+
+  it("stops on a held pack and on a full disk", async () => {
+    seriesResult = { grabbed: false, reason: "Held", delayed: true };
+    await searchOnAdd(1, "series");
+    seriesResult = {
+      grabbed: false,
+      reason: `${SPACE_REFUSAL_PREFIX} for this release`,
+    };
+    await searchOnAdd(1, "series");
+    expect(seasonJobs).toEqual([]);
+  });
+
+  it("falls back to the seasons when the search throws", async () => {
+    seriesResult = undefined as never;
+    await searchOnAdd(1, "series");
+    expect(seasonJobs).toEqual([1]);
+  });
+
+  it("ignores a season with nothing aired yet", async () => {
+    episodes.push(ep(3, 1, { airDate: new Date("2999-01-01") }));
+    await searchOnAdd(1, "series");
+    expect(searches[0]?.completeSeasons).toEqual([1, 2]);
+  });
+
+  it.each([
+    [
+      "an episode already has a file",
+      () =>
+        (episodes[0] = ep(1, 1, {
+          status: "downloaded",
+          _count: { files: 1 },
+        })),
+    ],
+    [
+      "an episode is already grabbed",
+      () => (episodes[1] = ep(1, 2, { status: "downloading" })),
+    ],
+    [
+      "a season is only partly aired",
+      () => (episodes[3] = ep(2, 2, { airDate: new Date("2999-01-01") })),
+    ],
+    ["only one season has aired", () => (episodes = [ep(1, 1), ep(1, 2)])],
+  ])("skips the pack search when %s", async (_name, setup) => {
+    setup();
+    await searchOnAdd(1, "series");
+    expect(searches).toHaveLength(0);
+    expect(seasonJobs).toEqual([1]);
+  });
+
+  it("does nothing while a complete-series download is active", async () => {
+    activeShowGrab = true;
+    await searchOnAdd(1, "series");
+    await searchOnAdd(1, 1);
+    await searchOnAdd(1);
+    expect(searches).toHaveLength(0);
+    expect(seasonJobs).toEqual([]);
   });
 });

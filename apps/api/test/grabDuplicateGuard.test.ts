@@ -256,3 +256,72 @@ describe("grabRelease duplicate-grab guard", () => {
     expect(addedTorrents).toHaveLength(0);
   });
 });
+
+describe("grabRelease complete-series pack", () => {
+  beforeEach(() => {
+    mediaRow = { id: 500, type: "show", title: "Show" };
+  });
+
+  it.each([
+    "Show.S01-S03.COMPLETE.1080p.WEB",
+    "Show.Integrale.MULTi.1080p.WEB",
+  ])(
+    "records %s as a show-level target, not as season 1",
+    async (releaseTitle) => {
+      const result = await grabRelease({
+        mediaId: 500,
+        downloadUrl: MAGNET,
+        releaseTitle,
+      });
+
+      expect(result.grabbed).toBe(true);
+      expect(createCalls[0]).toMatchObject({
+        mediaId: 500,
+        episodeId: null,
+        season: null,
+      });
+    },
+  );
+
+  it("refuses a season pack or an episode while the complete pack is active", async () => {
+    await grabRelease({
+      mediaId: 500,
+      downloadUrl: MAGNET,
+      releaseTitle: "Show.S01-S03.COMPLETE.1080p.WEB",
+    });
+    const season = await grabRelease({
+      mediaId: 500,
+      downloadUrl: MAGNET,
+      releaseTitle: "Show.S02.1080p.WEB-DL",
+    });
+    const episode = await grabRelease({
+      mediaId: 500,
+      episodeId: 77,
+      downloadUrl: MAGNET,
+      releaseTitle: "Show.S02E03.1080p.WEB-DL",
+    });
+
+    for (const r of [season, episode]) {
+      expect(r.grabbed).toBe(false);
+      expect(r.grabbed === false && r.reason).toContain("complete-series");
+    }
+    expect(createCalls).toHaveLength(1);
+    expect(addedTorrents).toHaveLength(1);
+  });
+
+  it("refuses a second complete pack while the first is downloading", async () => {
+    const first = await grabRelease({
+      mediaId: 500,
+      downloadUrl: MAGNET,
+      releaseTitle: "Show.Integrale.MULTi.1080p.WEB",
+    });
+    const second = await grabRelease({
+      mediaId: 500,
+      downloadUrl: MAGNET,
+      releaseTitle: "Show.S01-S03.COMPLETE.720p.WEB",
+    });
+    expect(first.grabbed).toBe(true);
+    expect(second.grabbed).toBe(false);
+    expect(addedTorrents).toHaveLength(1);
+  });
+});

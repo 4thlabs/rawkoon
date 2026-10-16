@@ -114,11 +114,12 @@ export async function processScheduledJob(job: Job) {
       }
       case SCHEDULED_JOB_NAMES.SEARCH_ON_ADD: {
         const { searchOnAdd } = await import("../../workers/searchOnAdd");
-        const { mediaId, season } = job.data as {
+        const { mediaId, season, series } = job.data as {
           mediaId: number;
           season?: number;
+          series?: boolean;
         };
-        await searchOnAdd(mediaId, season);
+        await searchOnAdd(mediaId, series ? "series" : season);
         break;
       }
       case SCHEDULED_JOB_NAMES.REFRESH_GITHUB_RELEASES: {

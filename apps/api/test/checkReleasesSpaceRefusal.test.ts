@@ -15,6 +15,8 @@ const realRefresh = {
 // 1 = the lone wanted episode is a whole season (pack path); 2 = individual path.
 let monitoredTotal = 1;
 let grabResult: { grabbed: false; reason: string };
+let packedMediaIds: number[] = [];
+let searchCalls = 0;
 const mediaUpdates: Record<string, unknown>[] = [];
 const episodeUpdates: Record<string, unknown>[] = [];
 const notifications: unknown[] = [];
@@ -24,7 +26,10 @@ const SPACE =
 
 mock.module("@rawkoon/api/services/mediaGrabberSearch", () => ({
   ...realSearch,
-  searchAndGrabWithTitleFallback: async () => grabResult,
+  searchAndGrabWithTitleFallback: async () => {
+    searchCalls++;
+    return grabResult;
+  },
 }));
 mock.module("@rawkoon/api/workers/notifyLibraryGrabSkipped", () => ({
   ...realNotify,
@@ -38,6 +43,9 @@ mock.module("@rawkoon/api/services/libraryTmdbRefresh", () => ({
 }));
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
+    downloadHistory: {
+      findMany: async () => packedMediaIds.map((mediaId) => ({ mediaId })),
+    },
     libraryMedia: {
       findMany: async () => [
         {
@@ -101,6 +109,8 @@ afterAll(() => {
 });
 
 beforeEach(() => {
+  packedMediaIds = [];
+  searchCalls = 0;
   mediaUpdates.length = 0;
   episodeUpdates.length = 0;
   notifications.length = 0;
@@ -143,4 +153,24 @@ describe("cron release checks on a space refusal", () => {
       expect(notifications).toHaveLength(1);
     });
   }
+});
+
+describe("episode check while a complete-series pack downloads", () => {
+  it("leaves the show's wanted episodes alone, with no search and no miss", async () => {
+    packedMediaIds = [2];
+    monitoredTotal = 1;
+    grabResult = { grabbed: false, reason: "No matching releases found" };
+    await checkEpisodeReleases();
+    expect(searchCalls).toBe(0);
+    expect(episodeUpdates).toHaveLength(0);
+    expect(notifications).toHaveLength(0);
+  });
+
+  it("still searches shows without one", async () => {
+    packedMediaIds = [99];
+    monitoredTotal = 1;
+    grabResult = { grabbed: false, reason: "No matching releases found" };
+    await checkEpisodeReleases();
+    expect(searchCalls).toBe(1);
+  });
 });

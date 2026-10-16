@@ -50,9 +50,24 @@ mock.module("@rawkoon/api/middleware/hono/auth", () => ({
   requireAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
   ensureAdmin: () => null,
 }));
+const aired = (season: number, over: Record<string, unknown> = {}) => ({
+  season,
+  status: "wanted",
+  airDate: new Date("2020-01-01"),
+  _count: { files: 0 },
+  ...over,
+});
+let episodeRows: Record<string, unknown>[] = [];
+
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
-    libraryEpisode: { findMany: async () => [{ season: 1 }, { season: 2 }] },
+    downloadHistory: { findFirst: async () => null },
+    libraryEpisode: {
+      findMany: async (a: { where?: { status?: string } }) =>
+        a.where?.status
+          ? episodeRows.filter((r) => r.status === a.where?.status)
+          : episodeRows,
+    },
     mediaSettings: {
       findUnique: async () =>
         searchOnAddSetting === null
@@ -120,6 +135,7 @@ async function add(body: Record<string, unknown>) {
 const movie = { tmdb_id: 1, type: "movie" };
 
 beforeEach(() => {
+  episodeRows = [aired(1), aired(2)];
   jobs.length = 0;
   settingsUpdates.length = 0;
   searchOnAddSetting = true;
@@ -192,11 +208,21 @@ describe("POST /api/library search on add", () => {
       digitalReleaseDate: null,
     };
     expect((await add({ tmdb_id: 2, type: "show" })).search_queued).toBe(true);
-    // One job per aired season, not one long job for the whole show.
-    expect(jobs.map((j) => j.data)).toEqual([
-      { mediaId: 6, season: 1 },
-      { mediaId: 6, season: 2 },
-    ]);
+    // A clean-slate show starts with the complete-series job, which queues the seasons itself.
+    expect(jobs.map((j) => j.data)).toEqual([{ mediaId: 6, series: true }]);
+  });
+
+  it("queues one job per aired season for a show that is partly downloaded", async () => {
+    episodeRows = [aired(1, { status: "downloaded" }), aired(2)];
+    added = {
+      id: 6,
+      type: "show",
+      status: "wanted",
+      monitored: true,
+      digitalReleaseDate: null,
+    };
+    expect((await add({ tmdb_id: 2, type: "show" })).search_queued).toBe(true);
+    expect(jobs.map((j) => j.data)).toEqual([{ mediaId: 6, season: 2 }]);
   });
 
   it("does not queue an unmonitored title", async () => {
