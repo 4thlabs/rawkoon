@@ -1164,7 +1164,7 @@
           "description": "Récupérer les releases GitHub publiques, mettre à jour le cache Redis et notifier les admins pour les nouvelles versions."
         },
         "sweepSeedingTorrents": {
-          "label": "Libérer les torrents partagés",
+          "label": "Arrêter les torrents terminés",
           "description": "Retirer les torrents du client de téléchargement une fois leur objectif de partage atteint."
         }
       }
@@ -1725,15 +1725,15 @@
     "seeding": {
       "title": "Partage",
       "viewTorrents": "Voir les torrents en partage",
-      "statusOn": "La libération automatique est activée",
-      "statusOff": "La libération automatique est désactivée",
+      "statusOn": "L'arrêt automatique du partage est activé",
+      "statusOff": "L'arrêt automatique du partage est désactivé",
       "shared_one": "{{count}} torrent en partage",
       "shared_other": "{{count}} torrents en partage",
       "description": "Après l'import, Rawkoon garde chaque torrent en partage jusqu'à ce qu'il atteigne son ratio, puis le retire du client. La copie de votre bibliothèque est un lien physique, elle reste donc en place.",
-      "enable": "Libérer les torrents automatiquement",
+      "enable": "Arrêter le partage une fois l'objectif atteint",
       "enableHint": "Désactivé, un torrent n'est retiré à l'import que s'il atteint déjà le ratio public.",
-      "preview_one": "{{count}} torrent serait libéré maintenant, {{size}}.",
-      "preview_other": "{{count}} torrents seraient libérés maintenant, {{size}}.",
+      "preview_one": "{{count}} torrent arrêterait le partage maintenant, {{size}}.",
+      "preview_other": "{{count}} torrents arrêteraient le partage maintenant, {{size}}.",
       "publicTitle": "Trackers publics",
       "privateTitle": "Trackers privés",
       "ratio": "Ratio",
@@ -1743,13 +1743,13 @@
       "days_one": "{{count}} jour",
       "days_other": "{{count}} jours",
       "sentence": {
-        "both": "Libérer au ratio {{ratio}} ou après {{time}} de partage, selon ce qui arrive en premier.",
-        "ratio": "Libérer une fois le ratio {{ratio}} atteint.",
-        "time": "Libérer après {{time}} de partage.",
-        "none": "Libérer dès l'import. Rien n'est partagé."
+        "both": "Arrêter le partage au ratio {{ratio}} ou après {{time}} de partage, selon ce qui arrive en premier.",
+        "ratio": "Arrêter le partage une fois le ratio {{ratio}} atteint.",
+        "time": "Arrêter le partage après {{time}}.",
+        "none": "Arrêter le partage dès l'import. Rien n'est partagé."
       },
       "unknownPrivate": "Un indexeur que Rawkoon ne peut pas joindre est considéré comme privé, pour qu'aucun torrent ne soit retiré trop tôt par erreur.",
-      "moveMode": "Les imports déplacent les fichiers hors du client, donc les torrents sont libérés dès l'import. Passez aux liens physiques pour partager.",
+      "moveMode": "Les imports déplacent les fichiers hors du client, donc les torrents arrêtent le partage dès l'import. Passez aux liens physiques pour partager.",
       "invalid": "Entrez un nombre positif ou nul, ou laissez le champ vide.",
       "indexers": {
         "indexer": "Indexeur",
@@ -2809,7 +2809,7 @@
   "seeding": {
     "rulesLink": "Règles de partage",
     "summaryOwed": "{{count}} doivent encore partager sur des trackers privés.",
-    "summaryNext": "Le prochain sera libéré dans environ {{time}}.",
+    "summaryNext": "Le prochain arrêtera le partage dans environ {{time}}.",
     "live": "En direct",
     "filters": {
       "all": "Tous",
@@ -2828,7 +2828,7 @@
     "eta": {
       "met": "Objectif atteint. Retrait à la prochaine vérification.",
       "idle": "Aucun envoi, il ne peut donc pas atteindre son ratio.",
-      "ratio": "Libéré dans environ {{time}}, au ratio"
+      "ratio": "Arrêt du partage dans environ {{time}}, au ratio"
     },
     "idleHint": "Personne ne télécharge depuis ce torrent, il ne peut donc pas atteindre son ratio. Retirez-le si vous n'en avez plus besoin.",
     "removeNow": "Retirer maintenant",
@@ -2838,7 +2838,7 @@
     "confirmLabel": "Retirer maintenant",
     "removed": "{{title}} a été retiré du client de téléchargement.",
     "removeError": "Impossible de retirer le torrent.",
-    "releasedToday": "Libérés aujourd'hui : {{count}}",
+    "releasedToday": "Arrêtés aujourd'hui : {{count}}",
     "freed": "{{size}} retirés du client",
     "releasedReason": {
       "target_met": "Objectif atteint",
@@ -2850,7 +2850,7 @@
       "description": "Les torrents apparaissent ici après l'import, pendant qu'ils partagent vers leur objectif."
     },
     "disabled": {
-      "title": "La libération automatique est désactivée",
+      "title": "L'arrêt automatique du partage est désactivé",
       "action": "L'activer dans les réglages"
     },
     "unreachable": "Le client de téléchargement est injoignable, les données de partage ne peuvent pas être affichées.",

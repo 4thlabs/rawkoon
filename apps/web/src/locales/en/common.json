@@ -797,7 +797,7 @@
       "tabs": {
         "qualityProfiles": "Quality Profiles",
         "librarySettings": "Library Settings",
-        "seeding": "Sharing",
+        "seeding": "Seeding",
         "history": "History",
         "import": "Import",
         "customFormats": "Custom Formats"
@@ -1164,7 +1164,7 @@
           "description": "Fetch public GitHub releases, update the Redis cache, and notify admins for new app versions."
         },
         "sweepSeedingTorrents": {
-          "label": "Release seeded torrents",
+          "label": "Stop finished torrents",
           "description": "Remove torrents from the download client once their seed target is met."
         }
       }
@@ -1725,15 +1725,15 @@
     "seeding": {
       "title": "Seeding",
       "viewTorrents": "View seeding torrents",
-      "statusOn": "Automatic release is on",
-      "statusOff": "Automatic release is off",
-      "shared_one": "{{count}} torrent being shared",
-      "shared_other": "{{count}} torrents being shared",
+      "statusOn": "Automatic stop seeding is on",
+      "statusOff": "Automatic stop seeding is off",
+      "shared_one": "{{count}} torrent seeding",
+      "shared_other": "{{count}} torrents seeding",
       "description": "After import, Rawkoon keeps each torrent seeding until it reaches its ratio, then removes it from the client. Your library copy is a hardlink, so it stays.",
-      "enable": "Release torrents automatically",
+      "enable": "Stop seeding when the target is met",
       "enableHint": "When off, a torrent is only removed at import if it already meets the public ratio.",
-      "preview_one": "{{count}} torrent would be released now, {{size}}.",
-      "preview_other": "{{count}} torrents would be released now, {{size}}.",
+      "preview_one": "{{count}} torrent would stop seeding now, {{size}}.",
+      "preview_other": "{{count}} torrents would stop seeding now, {{size}}.",
       "publicTitle": "Public trackers",
       "privateTitle": "Private trackers",
       "ratio": "Ratio",
@@ -1743,13 +1743,13 @@
       "days_one": "{{count}} day",
       "days_other": "{{count}} days",
       "sentence": {
-        "both": "Release at ratio {{ratio}} or after {{time}} of seeding, whichever comes first.",
-        "ratio": "Release once it reaches ratio {{ratio}}.",
-        "time": "Release after {{time}} of seeding.",
-        "none": "Release right after import. Nothing is seeded."
+        "both": "Stop seeding at ratio {{ratio}} or after {{time}} of seeding, whichever comes first.",
+        "ratio": "Stop seeding once it reaches ratio {{ratio}}.",
+        "time": "Stop seeding after {{time}} of seeding.",
+        "none": "Stop seeding right after import. Nothing is seeded."
       },
       "unknownPrivate": "An indexer Rawkoon can't reach counts as private, so a torrent is never removed early by mistake.",
-      "moveMode": "Imports move files out of the client, so torrents are released right after import. Switch to hardlink to seed.",
+      "moveMode": "Imports move files out of the client, so torrents stop seeding right after import. Switch to hardlink to seed.",
       "invalid": "Use a number of zero or more, or leave the field empty.",
       "indexers": {
         "indexer": "Indexer",
@@ -2807,9 +2807,9 @@
     }
   },
   "seeding": {
-    "rulesLink": "Sharing rules",
+    "rulesLink": "Seeding rules",
     "summaryOwed": "{{count}} still owe seeding on private trackers.",
-    "summaryNext": "The next one releases in about {{time}}.",
+    "summaryNext": "The next one stops seeding in about {{time}}.",
     "live": "Live",
     "filters": {
       "all": "All",
@@ -2828,7 +2828,7 @@
     "eta": {
       "met": "Target met. Removing on the next check.",
       "idle": "Not uploading, so it can't reach its ratio.",
-      "ratio": "Releases in about {{time}}, on ratio"
+      "ratio": "Stops seeding in about {{time}}, on ratio"
     },
     "idleHint": "Nobody is downloading from it, so it can't reach its ratio. Remove it if you no longer need it.",
     "removeNow": "Remove now",
@@ -2838,7 +2838,7 @@
     "confirmLabel": "Remove now",
     "removed": "Removed {{title}} from the download client.",
     "removeError": "Couldn't remove the torrent.",
-    "releasedToday": "Released today: {{count}}",
+    "releasedToday": "Stopped today: {{count}}",
     "freed": "{{size}} removed from the client",
     "releasedReason": {
       "target_met": "Target met",
@@ -2850,7 +2850,7 @@
       "description": "Torrents appear here after import, while they seed toward their targets."
     },
     "disabled": {
-      "title": "Automatic release is off",
+      "title": "Automatic stop seeding is off",
       "action": "Turn it on in settings"
     },
     "unreachable": "The download client isn't reachable, so seeding numbers can't be shown.",
@@ -3026,7 +3026,7 @@
         "privateWarning_other": "{{count}} torrents on private trackers have not reached their seed target yet. Removing them now can cost ratio or count as a hit-and-run.",
         "button": "Free space",
         "title": "Free the space held by the old file?",
-        "description": "This removes the torrent for {{title}} from the download client and deletes the old file, so it stops sharing. The re-encoded copy in your library is not touched.",
+        "description": "This removes the torrent for {{title}} from the download client and deletes the old file, so it stops seeding. The re-encoded copy in your library is not touched.",
         "confirm": "Remove torrent and file",
         "done_one": "Removed {{count}} torrent, {{size}} freed.",
         "done_other": "Removed {{count}} torrents, {{size}} freed.",
