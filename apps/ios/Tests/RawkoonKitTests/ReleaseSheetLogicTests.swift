@@ -15,10 +15,10 @@ private struct Candidate: BestMatchCandidate {
 }
 
 final class ReleaseSheetLogicTests: XCTestCase {
-    typealias L = ReleaseSheetLogic
+    typealias Logic = ReleaseSheetLogic
 
-    private func tag(_ title: String, languages: [String] = []) -> L.LanguageTag? {
-        L.languageTag(title: title, languages: languages, isFallback: false, fallbackTag: nil)
+    private func tag(_ title: String, languages: [String] = []) -> Logic.LanguageTag? {
+        Logic.languageTag(title: title, languages: languages, isFallback: false, fallbackTag: nil)
     }
 
     func testMultiWithAVariantNamesBoth() {
@@ -71,47 +71,45 @@ final class ReleaseSheetLogicTests: XCTestCase {
 
     func testFallbackUsesTheServerTagAndNoMarkersMeansNoTag() {
         XCTAssertEqual(
-            L.languageTag(title: "x", languages: [], isFallback: true, fallbackTag: "VFF"),
+            Logic.languageTag(title: "x", languages: [], isFallback: true, fallbackTag: "VFF"),
             .init(label: "VFF", kind: .fallback)
         )
         XCTAssertNil(tag("Film.2024.1080p.WEB"))
     }
 
     func testFallbackSummaryOrdersByCountAndDetectsFrench() {
-        let summary = L.fallbackSummary(counts: ["VFI": 2, "VFF": 4, "MULTi": 1])
+        let summary = Logic.fallbackSummary(counts: ["VFI": 2, "VFF": 4, "MULTi": 1])
         XCTAssertEqual(summary.total, 7)
         XCTAssertTrue(summary.isFrench)
         XCTAssertEqual(summary.breakdown, "VFF (4), VFI (2), MULTi (1)")
-        XCTAssertFalse(L.fallbackSummary(counts: ["EN": 1]).isFrench)
+        XCTAssertFalse(Logic.fallbackSummary(counts: ["EN": 1]).isFrench)
     }
 
     func testJoinLanguages() {
-        XCTAssertEqual(L.joinLanguages(["VFQ"], or: "or"), "VFQ")
-        XCTAssertEqual(L.joinLanguages(["VFQ", "VF2"], or: "or"), "VFQ or VF2")
-        XCTAssertEqual(L.joinLanguages(["VFQ", "VF2", "VFI"], or: "or"), "VFQ, VF2 or VFI")
+        XCTAssertEqual(Logic.joinLanguages(["VFQ"], or: "or"), "VFQ")
+        XCTAssertEqual(Logic.joinLanguages(["VFQ", "VF2"], or: "or"), "VFQ or VF2")
+        XCTAssertEqual(Logic.joinLanguages(["VFQ", "VF2", "VFI"], or: "or"), "VFQ, VF2 or VFI")
     }
 
     func testBestMatchSkipsRejectedFallbackAndBlocked() {
-        let releases = [
-            Candidate(guidValue: "rejected", qualityScoreValue: 900, rejectedFlag: true),
-            Candidate(guidValue: "fallback", qualityScoreValue: 800, languageFallbackFlag: true),
-            Candidate(guidValue: "blocked", qualityScoreValue: 700),
-            Candidate(guidValue: "first", qualityScoreValue: 500),
-            Candidate(guidValue: "tie", qualityScoreValue: 500),
-        ]
-        let best = L.pickBestMatch(releases, aiPickKey: nil, blockedGuids: ["blocked"])
+        let rejected = Candidate(guidValue: "rejected", qualityScoreValue: 900, rejectedFlag: true)
+        let fallback = Candidate(guidValue: "fallback", qualityScoreValue: 800, languageFallbackFlag: true)
+        let blocked = Candidate(guidValue: "blocked", qualityScoreValue: 700)
+        let first = Candidate(guidValue: "first", qualityScoreValue: 500)
+        let tie = Candidate(guidValue: "tie", qualityScoreValue: 500)
+        let releases = [rejected, fallback, blocked, first, tie]
+        let best = Logic.pickBestMatch(releases, aiPickKey: nil, blockedGuids: ["blocked"])
         XCTAssertEqual(best?.guidValue, "first")
     }
 
     func testAiPickWinsOverScore() {
-        let releases = [
-            Candidate(guidValue: "top", qualityScoreValue: 900),
-            Candidate(guidValue: "ai", qualityScoreValue: 10),
-        ]
-        XCTAssertEqual(L.pickBestMatch(releases, aiPickKey: "ai", blockedGuids: [])?.guidValue, "ai")
+        let top = Candidate(guidValue: "top", qualityScoreValue: 900)
+        let aiPick = Candidate(guidValue: "ai", qualityScoreValue: 10)
+        let releases = [top, aiPick]
+        XCTAssertEqual(Logic.pickBestMatch(releases, aiPickKey: "ai", blockedGuids: [])?.guidValue, "ai")
     }
 
     func testNoScoredReleaseMeansNoBestMatch() {
-        XCTAssertNil(L.pickBestMatch([Candidate(guidValue: "a")], aiPickKey: nil, blockedGuids: []))
+        XCTAssertNil(Logic.pickBestMatch([Candidate(guidValue: "a")], aiPickKey: nil, blockedGuids: []))
     }
 }

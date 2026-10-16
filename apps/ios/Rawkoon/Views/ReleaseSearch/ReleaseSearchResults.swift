@@ -231,7 +231,9 @@ struct ReleaseSearchResults: View {
     @ViewBuilder
     private func fallbackSection(_ releases: [ReleaseItem], lead: Bool) -> some View {
         let summary = session.languageFallbackSummary.map { ReleaseSheetLogic.fallbackSummary(counts: $0.counts) }
-        let isFrench = summary?.isFrench ?? releases.allSatisfy { ReleaseSheetLogic.isFrenchTag($0.languageFallbackTag ?? "") }
+        let isFrench = summary?.isFrench ?? releases.allSatisfy {
+            ReleaseSheetLogic.isFrenchTag($0.languageFallbackTag ?? "")
+        }
         VStack(alignment: .leading, spacing: 10) {
             if lead, let missing = session.languageFallbackSummary?.missing, !missing.isEmpty {
                 fallbackBanner(missing: ReleaseSheetLogic.joinLanguages(missing, or: String(localized: "or")))
@@ -269,7 +271,10 @@ struct ReleaseSearchResults: View {
             Text("No \(missing) release yet")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Theme.textStrong)
-            Text("These are other versions of the language. They are never grabbed automatically; Rawkoon keeps checking for \(missing).")
+            Text(
+                "These are other versions of the language. They are never grabbed automatically; "
+                    + "Rawkoon keeps checking for \(missing)."
+            )
                 .font(.caption)
                 .foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -318,11 +323,12 @@ struct ReleaseSearchResults: View {
                 reasons.append(quality)
             }
         }
-        let matchedLanguage = release.scoreBreakdown?.components.contains { $0.code == "language_match" && $0.value > 0 } == true
+        let components = release.scoreBreakdown?.components ?? []
+        let matchedLanguage = components.contains { $0.code == "language_match" && $0.value > 0 }
         if matchedLanguage {
             reasons.append(String(localized: "preferred language"))
         }
-        if release.scoreBreakdown?.components.contains(where: { $0.code == "tracker_priority" && $0.value > 0 }) == true {
+        if components.contains(where: { $0.code == "tracker_priority" && $0.value > 0 }) {
             reasons.append(String(localized: "preferred tracker"))
         }
         if let seeders = release.seeders, seeders > 0 {

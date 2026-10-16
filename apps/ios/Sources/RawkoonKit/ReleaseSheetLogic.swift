@@ -1,5 +1,14 @@
 import Foundation
 
+public enum ReleaseLanguageKind: Equatable, Sendable {
+    /// Audio in a language the profile wants.
+    case audio
+    /// Audio in the same language family, but not the preferred version.
+    case fallback
+    /// French subtitles over foreign audio: not a match for a French-audio profile.
+    case subtitlesOnly
+}
+
 /// A release as the best-match picker sees it; `ReleaseItem` conforms in the app target.
 public protocol BestMatchCandidate: InteractiveSortable {
     var guidValue: String { get }
@@ -10,22 +19,11 @@ public protocol BestMatchCandidate: InteractiveSortable {
 /// Mirrors the web helpers `languageFallback.ts` and `bestMatch.ts`.
 public enum ReleaseSheetLogic {
     public struct LanguageTag: Equatable, Sendable {
-        public enum Kind: Equatable, Sendable {
-            /// Audio in a language the profile wants.
-            case audio
-            /// Audio in the same language family, but not the preferred version.
-            case fallback
-            /// French subtitles over foreign audio: not a match for a French-audio profile.
-            case subtitlesOnly
-        }
-
         public let label: String
-        public let kind: Kind
+        public let kind: ReleaseLanguageKind
     }
 
-    private static let frenchFlags: Set<String> = [
-        "vff", "vfq", "vfi", "vf2", "truefrench", "vf", "french", "fr",
-    ]
+    private static let frenchFlags: Set<String> = ["vff", "vfq", "vfi", "vf2", "truefrench", "vf", "french", "fr"]
 
     private static let variantOrder = ["VFF", "VFI", "VFQ", "VF2", "VF", "FRENCH"]
 
