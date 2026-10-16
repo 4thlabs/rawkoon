@@ -17,8 +17,12 @@ enum NotificationDestination: Identifiable, Equatable, Sendable {
     case book(bookId: Int)
     /// `/activity/requests`.
     case requests
+    /// `/activity`; opens the Activity tab rather than a sheet.
+    case inbox
     /// `/activity/calendar?date=`; opens the Activity tab rather than a sheet.
     case calendar(date: String?)
+    /// `/find/watchlist`; opens the Find tab rather than a sheet.
+    case watchlist
     /// `/settings/reencode` (re-encode finished / failed).
     case reencode
     /// `/settings/alerts` (notification preferences).
@@ -34,8 +38,12 @@ enum NotificationDestination: Identifiable, Equatable, Sendable {
             "book-\(bookId)"
         case .requests:
             "requests"
+        case .inbox:
+            "inbox"
         case let .calendar(date):
             "calendar-\(date ?? "-")"
+        case .watchlist:
+            "watchlist"
         case .reencode:
             "reencode"
         case .alerts:
@@ -55,11 +63,22 @@ enum NotificationDestination: Identifiable, Equatable, Sendable {
             .media(libraryId: libraryId, season: season, episode: episode, focusManagement: focusManagement)
         case let .book(bookId)?: .book(bookId: bookId)
         case .requests?: .requests
+        case .inbox?: .inbox
         case let .calendar(date)?: .calendar(date: date)
+        case .watchlist?: .watchlist
         case .reencode?: .reencode
         case .alerts?: .alerts
         case .updates?: .updates
         case nil: nil
+        }
+    }
+
+    /// The tab that hosts this destination, for the ones that are not a pushed screen.
+    var hostTab: RootTab? {
+        switch self {
+        case .inbox, .calendar: .activity
+        case .watchlist: .find
+        default: nil
         }
     }
 }

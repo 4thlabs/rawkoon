@@ -325,9 +325,9 @@ final class LiveUpdatesCoordinator {
         if case .book = destination, appModel?.booksEnabled == false {
             return
         }
-        // The calendar is an Activity lane, not a pushed screen.
-        if case .calendar = destination {
-            appModel?.requestedRootTab = .activity
+        // Inbox, calendar and watchlist are tab content, not pushed screens.
+        if let tab = destination.hostTab {
+            appModel?.requestedRootTab = tab
             return
         }
         appModel?.deepLinkTarget = destination

@@ -31,20 +31,31 @@ final class NotificationRouteTests: XCTestCase {
         XCTAssertEqual(NotificationRoute.parse("/settings/updates"), .updates)
     }
 
+    func testInboxAndWatchlistPaths() {
+        XCTAssertEqual(NotificationRoute.parse("/activity"), .inbox)
+        XCTAssertEqual(NotificationRoute.parse("/find/watchlist"), .watchlist)
+    }
+
     func testPagesWithoutAScreenStayUnrouted() {
-        XCTAssertNil(NotificationRoute.parse("/activity"))
         XCTAssertNil(NotificationRoute.parse("/activity/queue"))
         XCTAssertNil(NotificationRoute.parse("/settings"))
         XCTAssertNil(NotificationRoute.parse("/settings/users"))
+        XCTAssertNil(NotificationRoute.parse("/settings?tab=users"))
         XCTAssertNil(NotificationRoute.parse("/nope"))
         XCTAssertNil(NotificationRoute.parse(""))
         XCTAssertNil(NotificationRoute.parse(nil))
         XCTAssertNil(NotificationRoute.parse("/library/downloads"))
+        XCTAssertNil(NotificationRoute.parse("/books?search=dune"))
     }
 
-    func testRetiredPathsNoLongerResolve() {
-        XCTAssertNil(NotificationRoute.parse("/requests"))
-        XCTAssertNil(NotificationRoute.parse("/notifications"))
-        XCTAssertNil(NotificationRoute.parse("/settings?tab=transcode"))
+    func testLegacyPathsStillResolve() {
+        XCTAssertEqual(NotificationRoute.parse("/requests"), .requests)
+        XCTAssertEqual(NotificationRoute.parse("/notifications"), .inbox)
+        XCTAssertEqual(NotificationRoute.parse("/calendar?date=2026-10-16"), .calendar(date: "2026-10-16"))
+        XCTAssertEqual(NotificationRoute.parse("/calendar"), .calendar(date: nil))
+        XCTAssertEqual(NotificationRoute.parse("/watchlist"), .watchlist)
+        XCTAssertEqual(NotificationRoute.parse("/settings?tab=transcode"), .reencode)
+        XCTAssertEqual(NotificationRoute.parse("/settings?tab=notifications"), .alerts)
+        XCTAssertEqual(NotificationRoute.parse("/settings?tab=releases"), .updates)
     }
 }

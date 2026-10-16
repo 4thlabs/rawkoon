@@ -60,7 +60,7 @@ struct NotificationDestinationView: View {
             SettingsAlertsView()
         case .updates:
             ReleasesAdminView()
-        case .calendar:
+        case .inbox, .calendar, .watchlist:
             EmptyView()
         }
     }
@@ -126,7 +126,7 @@ struct NotificationDestinationView: View {
                 bookItem = model.library.first { $0.bookId == bookId }
                 unreachable = bookItem == nil && model.isOffline
             }
-        case .requests, .calendar, .reencode, .alerts, .updates:
+        case .requests, .inbox, .calendar, .watchlist, .reencode, .alerts, .updates:
             break
         }
     }
