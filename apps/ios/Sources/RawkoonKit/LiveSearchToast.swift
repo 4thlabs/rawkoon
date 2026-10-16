@@ -264,7 +264,9 @@ public struct LiveSearchTracker: Equatable, Sendable {
     /// Drops entries that can no longer suppress anything.
     public mutating func prune(now: Date) {
         entries = entries.filter { _, entry in
-            if let settledAt = entry.settledAt { return now.timeIntervalSince(settledAt) < Self.grace }
+            if let settledAt = entry.settledAt {
+                return now.timeIntervalSince(settledAt) < Self.grace
+            }
             return now.timeIntervalSince(entry.startedAt) < Self.stillSearchingAfter
         }
         dropStaleEarly(now: now)

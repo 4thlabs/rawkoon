@@ -55,7 +55,9 @@ final class LiveSearchCoordinator {
         let phase = LiveSearchTracker.phase(
             skipped: note.skippedReason, digitalReleaseDate: note.digitalReleaseDate
         )
-        if phase == .added, !note.confirmsPlainAdd { return }
+        if phase == .added, !note.confirmsPlainAdd {
+            return
+        }
         let now = Date()
         // A result that beat this response wins over the "not searched" note.
         if let early = tracker.watch(mediaId: mediaId, title: title, isShow: isShow, now: now) {
