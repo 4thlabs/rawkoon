@@ -9817,16 +9817,6 @@
         }
       }
     },
-    "Download complete": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Téléchargement terminé"
-          }
-        }
-      }
-    },
     "Download failed": {
       "localizations": {
         "fr": {
@@ -14086,7 +14076,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Arrêter le partage quand la cible est atteinte"
+            "value": "Arrêter le partage une fois l'objectif atteint"
           }
         }
       }
