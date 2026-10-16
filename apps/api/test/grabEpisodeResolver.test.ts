@@ -237,3 +237,27 @@ describe("resolveGrabSeason multi-season packs", () => {
     ).toBeNull();
   });
 });
+
+describe("resolveGrabSeason held multi-season packs", () => {
+  it("stays show-level when a season target replays a multi-season pack", () => {
+    expect(
+      resolveGrabSeason({
+        mediaType: "show",
+        episodeId: null,
+        season: 2,
+        releaseTitle: "Show.S01-S03.COMPLETE.1080p.WEB",
+      }),
+    ).toBeNull();
+  });
+
+  it("keeps the season for a single-season pack", () => {
+    expect(
+      resolveGrabSeason({
+        mediaType: "show",
+        episodeId: null,
+        season: 2,
+        releaseTitle: "Show.Integrale.Saison.2.FRENCH.1080p",
+      }),
+    ).toBe(2);
+  });
+});

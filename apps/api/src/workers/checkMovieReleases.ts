@@ -83,7 +83,12 @@ export async function checkMovieReleases(): Promise<void> {
       // A grab held by the profile's delay isn't a miss; don't burn an attempt.
       if (result.grabbed || result.delayed) continue;
       // A full disk is not the release's fault and clears on its own; keep the item wanted.
-      if (isNoMissRefusal(result.refusal)) continue;
+      // Another grab already running for it is not a miss either.
+      if (
+        isNoMissRefusal(result.refusal) ||
+        result.refusal === "already_active"
+      )
+        continue;
 
       await recordMovieMiss(m, result.reason);
     } catch (e) {

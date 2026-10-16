@@ -128,7 +128,11 @@ export async function checkEpisodeReleases(): Promise<void> {
       // A grab held by the profile's delay isn't a miss; don't burn an attempt.
       if (result.grabbed || result.delayed) continue;
       // A full disk is not the release's fault and clears on its own; keep them wanted.
-      if (isNoMissRefusal(result.refusal)) continue;
+      if (
+        isNoMissRefusal(result.refusal) ||
+        result.refusal === "already_active"
+      )
+        continue;
 
       await recordSeasonPackMiss(mediaId, season, groupEps, result.reason);
     } catch (e) {
@@ -162,7 +166,11 @@ export async function checkEpisodeReleases(): Promise<void> {
 
       // A grab held by the profile's delay isn't a miss; don't burn an attempt.
       if (result.grabbed || result.delayed) continue;
-      if (isNoMissRefusal(result.refusal)) continue;
+      if (
+        isNoMissRefusal(result.refusal) ||
+        result.refusal === "already_active"
+      )
+        continue;
 
       await recordEpisodeMiss(
         { id: ep.id, mediaId: ep.media.id, searchAttempts: ep.searchAttempts },

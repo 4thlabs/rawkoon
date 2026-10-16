@@ -2,7 +2,10 @@ import {
   parseReleaseSeasonSpan,
   parseReleaseStructure,
 } from "@rawkoon/shared/utils/releaseStructure";
-import { singleSeasonNamed } from "@rawkoon/api/utils/medias/completeSeries";
+import {
+  isMultiSeasonRelease,
+  singleSeasonNamed,
+} from "@rawkoon/api/utils/medias/completeSeries";
 import { parseReleaseSeasonEpisode } from "@rawkoon/api/utils/medias/filenameParser";
 
 export type GrabEpisodeRef = { id: number; season: number; episode: number };
@@ -89,6 +92,9 @@ export function resolveGrabSeason(opts: {
   releaseTitle: string;
 }): number | null {
   if (opts.episodeId != null) return null;
+  // A held pack replayed under its season's target must still record show-level and pass the show-wide guard.
+  if (opts.mediaType === "show" && isMultiSeasonRelease(opts.releaseTitle))
+    return null;
   if (opts.season != null) return opts.season;
   if (opts.mediaType !== "show") return null;
   // A multi-season pack is show-level, not season N's: it must not collide with S01's own pack.

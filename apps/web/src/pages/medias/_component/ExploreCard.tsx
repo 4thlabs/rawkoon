@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useAddUpcomingToLibrary } from "@/pages/_component/useDashboardUpcoming";
+import { useAddTitle } from "@/features/medias/hooks/useAddTitle";
 import { useFetcher } from "@/lib/api/context";
 import { queryKeys } from "@/lib/queryKeys";
 import { MEDIAS_ENDPOINTS } from "@/lib/endpoints";
@@ -11,7 +11,6 @@ import type {
 } from "@rawkoon/shared/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Check, Film } from "lucide-react";
-import { toast } from "sonner";
 import { ExploreCardDetailDialog } from "@/pages/medias/_component/ExploreCardDetailDialog";
 
 export function ExploreCard({
@@ -21,11 +20,11 @@ export function ExploreCard({
   item: TmdbMediaSearchItem;
   onAdded?: () => void;
 }) {
-  const { t, i18n } = useTranslation("common");
+  const { i18n } = useTranslation("common");
   const navigate = useNavigate();
   const [detailOpen, setDetailOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
-  const addUpcomingMutation = useAddUpcomingToLibrary();
+  const { addTitle, isAdding } = useAddTitle();
   const queryClient = useQueryClient();
   const fetcher = useFetcher();
 
@@ -64,22 +63,13 @@ export function ExploreCard({
     setDetailOpen(true);
   }, [navigate, navigateToLibraryItem, libraryRowId]);
 
+  // Same add as everywhere else, so search-on-add and the live toast apply here too.
   const handleAdd = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (addUpcomingMutation.isPending || item.already_exists || !item.can_add)
-      return;
-    try {
-      await addUpcomingMutation.mutateAsync({
-        media_type: item.media_type,
-        tmdb_id: item.tmdb_id,
-      });
-      toast.success(t("medias.addSuccess", { title: item.title }));
-    } catch {
-      toast.error(t("medias.addFailed"));
-    }
+    if (item.already_exists) return;
+    await addTitle(item);
   };
 
-  const isAdding = addUpcomingMutation.isPending;
   const showImage = Boolean(item.poster_url) && !imgError;
   const score = item.vote_average ? Math.round(item.vote_average * 10) : null;
   const scoreColor =
