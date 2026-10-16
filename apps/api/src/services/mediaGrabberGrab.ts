@@ -70,6 +70,8 @@ function duplicateGrabReason(target: GrabTarget, activeId?: number): string {
 export async function preflightGrab(opts: {
   downloadUrl: string;
   releaseTitle: string;
+  /** The URL already passed this check (it resolves DNS), so don't repeat it. */
+  skipUrlCheck?: boolean;
 }): Promise<
   | { refusal: GrabResult }
   | {
@@ -94,7 +96,10 @@ export async function preflightGrab(opts: {
   const isMagnet = downloadUrl.startsWith("magnet:");
   if (isMagnet) {
     if (downloadUrl.length > 16_384) return refuse("Magnet link too long");
-  } else if (!(await isServerTorrentFetchUrlAllowed(downloadUrl))) {
+  } else if (
+    !opts.skipUrlCheck &&
+    !(await isServerTorrentFetchUrlAllowed(downloadUrl))
+  ) {
     return refuse("Download URL is not allowed for server-side fetch");
   }
 
@@ -131,6 +136,8 @@ export async function grabRelease(opts: {
    * packs for different seasons of one show stay independent.
    */
   season?: number | null;
+  /** The caller already ran `preflightGrab`, so skip its DNS-resolving URL check. */
+  urlChecked?: boolean;
   /** Release size from the indexer; unknown (null/0) skips the free-space check. */
   sizeBytes?: number | null;
 }): Promise<GrabResult> {
@@ -148,6 +155,11 @@ export async function grabRelease(opts: {
       qualityParsed,
     } = opts;
 
+    if (!rawUrl.trim())
+      return { grabbed: false, reason: "Missing download URL" };
+    if (!rawTitle.trim())
+      return { grabbed: false, reason: "Missing release title" };
+
     const media = await prisma.libraryMedia.findUnique({
       where: { id: mediaId },
     });
@@ -156,6 +168,7 @@ export async function grabRelease(opts: {
     const pre = await preflightGrab({
       downloadUrl: rawUrl,
       releaseTitle: rawTitle,
+      skipUrlCheck: opts.urlChecked,
     });
     if ("refusal" in pre) return pre.refusal;
     const { downloadUrl, releaseTitle, isMagnet, active } = pre;

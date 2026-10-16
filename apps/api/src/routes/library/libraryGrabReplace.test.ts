@@ -9,7 +9,7 @@ const grabRelease = mock(async () => ({
 type Prep =
   | { status: "already_active" }
   | { status: "cancelled"; cancelled: number }
-  | { status: "refused"; reason: string };
+  | { status: "refused"; reason: string; stopped: number };
 const cancelActiveMovieDownloads = mock(
   async (..._args: unknown[]): Promise<Prep> => ({
     status: "cancelled",
@@ -141,6 +141,7 @@ describe("POST /:id/grab replace", () => {
     cancelActiveMovieDownloads.mockImplementation(async () => ({
       status: "refused",
       reason: "The download finished or changed while replacing it",
+      stopped: 0,
     }));
     const res = await grab({ replace: true });
     expect(await res.json()).toEqual({
@@ -159,6 +160,20 @@ describe("POST /:id/grab replace", () => {
     expect(await res.json()).toEqual({
       grabbed: false,
       reason: "Grab failed",
+      replaced_previous: true,
+    });
+  });
+
+  it("reports a partial stop when some torrents were already removed", async () => {
+    cancelActiveMovieDownloads.mockImplementation(async () => ({
+      status: "refused",
+      reason: "Could not stop the running download: client down",
+      stopped: 1,
+    }));
+    const res = await grab({ replace: true });
+    expect(await res.json()).toEqual({
+      grabbed: false,
+      reason: "Could not stop the running download: client down",
       replaced_previous: true,
     });
   });

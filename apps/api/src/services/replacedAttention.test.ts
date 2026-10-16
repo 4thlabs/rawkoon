@@ -42,6 +42,9 @@ describe("download_failed attention alerts", () => {
       true,
     );
   });
+  it("stay valid for a failed row with no recorded reason", () => {
+    expect(alertStillValidFromContext(alert, ctx(null))).toBe(true);
+  });
   it("resolve for a download stopped by a replace", () => {
     expect(alertStillValidFromContext(alert, ctx(REPLACED_FAIL_REASON))).toBe(
       false,

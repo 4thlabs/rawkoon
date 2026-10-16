@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { withKeyedLock } from "@rawkoon/api/utils/keyedLock";
 import { prisma } from "@rawkoon/api/db";
 import { badRequest, notFound, ok, serverError } from "@rawkoon/api/errors";
 import type { Env } from "@rawkoon/api/honoEnv";
@@ -145,62 +146,73 @@ export const libraryGrabRoutes = new Hono<Env>()
           episodeId = resolved.episodeId ?? undefined;
         }
 
-        if (replacing) {
-          // Refusals the grab would give anyway must not cost the running download.
-          const pre = await preflightGrab({
-            downloadUrl: body.download_url,
-            releaseTitle: body.release_title,
-          });
-          if ("refusal" in pre) {
+        const execute = async () => {
+          if (replacing) {
+            // Refusals the grab would give anyway must not cost the running download.
+            const pre = await preflightGrab({
+              downloadUrl: body.download_url,
+              releaseTitle: body.release_title,
+            });
+            if ("refusal" in pre) {
+              return ok({
+                grabbed: false,
+                reason: (pre.refusal as { reason: string }).reason,
+              });
+            }
+            const prep = await cancelActiveMovieDownloads(id, {
+              releaseTitle: body.release_title,
+              downloadUrl: body.download_url,
+            });
+            if (prep.status === "already_active") {
+              return ok({ grabbed: true, release_title: body.release_title });
+            }
+            if (prep.status === "refused") {
+              return ok({
+                grabbed: false,
+                reason: prep.reason,
+                ...(prep.stopped > 0 ? { replaced_previous: true } : {}),
+              });
+            }
+          }
+
+          let result: Awaited<ReturnType<typeof grabRelease>>;
+          try {
+            result = await grabRelease({
+              mediaId: id,
+              episodeId,
+              season: body.season ?? null,
+              downloadUrl: body.download_url,
+              releaseTitle: body.release_title,
+              indexer: body.indexer ?? null,
+              qualityParsed: body.quality_parsed,
+              isUpgrade: body.is_upgrade ?? false,
+              sizeBytes: body.size_bytes,
+              urlChecked: replacing,
+            });
+          } catch (err) {
+            if (!replacing) throw err;
+            console.error("Library replace grab error:", err);
             return ok({
               grabbed: false,
-              reason: (pre.refusal as { reason: string }).reason,
+              reason: "Grab failed",
+              replaced_previous: true,
             });
           }
-          const prep = await cancelActiveMovieDownloads(id, {
-            releaseTitle: body.release_title,
-            downloadUrl: body.download_url,
-          });
-          if (prep.status === "already_active") {
-            return ok({ grabbed: true, release_title: body.release_title });
-          }
-          if (prep.status === "refused") {
-            return ok({ grabbed: false, reason: prep.reason });
-          }
-        }
 
-        let result: Awaited<ReturnType<typeof grabRelease>>;
-        try {
-          result = await grabRelease({
-            mediaId: id,
-            episodeId,
-            season: body.season ?? null,
-            downloadUrl: body.download_url,
-            releaseTitle: body.release_title,
-            indexer: body.indexer ?? null,
-            qualityParsed: body.quality_parsed,
-            isUpgrade: body.is_upgrade ?? false,
-            sizeBytes: body.size_bytes,
-          });
-        } catch (err) {
-          if (!replacing) throw err;
-          console.error("Library replace grab error:", err);
+          if (result.grabbed) {
+            return ok({ grabbed: true, release_title: result.releaseTitle });
+          }
+
           return ok({
             grabbed: false,
-            reason: "Grab failed",
-            replaced_previous: true,
+            reason: result.reason,
+            ...(replacing ? { replaced_previous: true } : {}),
           });
-        }
-
-        if (result.grabbed) {
-          return ok({ grabbed: true, release_title: result.releaseTitle });
-        }
-
-        return ok({
-          grabbed: false,
-          reason: result.reason,
-          ...(replacing ? { replaced_previous: true } : {}),
-        });
+        };
+        // Serializes double-taps and retries on the same item.
+        return replacing
+          ? await withKeyedLock(`replace:${id}`, execute)
+          : await execute();
       } catch (err) {
         console.error("Library grab error:", err);
         return serverError("Grab failed");
