@@ -247,12 +247,19 @@ final class LiveUpdatesCoordinator {
         }
     }
 
-    /// The item's live search toast already reports its grab; the notification still lands in the list.
+    /// The item's live search toast already reports this very grab; the notification still lands in the list.
     private func isCoveredByLiveSearch(_ notification: StreamNotificationDTO) -> Bool {
         guard notification.type == "library_media_grabbed",
               let mediaId = LibraryNotification.mediaID(in: notification)
         else { return false }
-        return appModel?.liveSearch.suppressesGrabNotice(mediaId: mediaId) ?? false
+        var season: Int?
+        var episode: Int?
+        if case let .media(_, urlSeason, urlEpisode, _)? = NotificationDestination.resolve(url: notification.url) {
+            season = urlSeason
+            episode = urlEpisode
+        }
+        let notice = GrabNotice(mediaId: mediaId, season: season, episode: episode, body: notification.body)
+        return appModel?.liveSearch.suppressesGrabNotice(notice) ?? false
     }
 
     /// Shows the transient in-app banner for a live notification, replacing

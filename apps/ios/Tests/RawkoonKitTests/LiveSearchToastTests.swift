@@ -119,21 +119,84 @@ final class LiveSearchToastTests: XCTestCase {
         XCTAssertNotNil(tracker.apply(LiveSearchResult(mediaId: 7, outcome: .error), now: epoch))
     }
 
-    func testGrabNoticeSuppressedWhileSearchingAndForGraceAfterwards() {
-        var movie = tracker()
-        XCTAssertTrue(movie.suppressesGrabNotice(mediaId: 7, now: epoch.addingTimeInterval(60)))
-        XCTAssertFalse(movie.suppressesGrabNotice(mediaId: 7, now: epoch.addingTimeInterval(121)))
-        _ = movie.apply(LiveSearchResult(mediaId: 7, outcome: .grabbed), now: epoch.addingTimeInterval(5))
-        XCTAssertTrue(movie.suppressesGrabNotice(mediaId: 7, now: epoch.addingTimeInterval(20)))
-        XCTAssertFalse(movie.suppressesGrabNotice(mediaId: 7, now: epoch.addingTimeInterval(26)))
-        XCTAssertFalse(movie.suppressesGrabNotice(mediaId: 8, now: epoch))
+    private func notice(
+        season: Int? = nil, episode: Int? = nil, body: String = "Some.Movie.2024.1080p grabbed"
+    ) -> GrabNotice {
+        GrabNotice(mediaId: 7, season: season, episode: episode, body: body)
     }
 
-    func testShowGraceIsLonger() {
-        var show = tracker(isShow: true)
-        _ = show.apply(LiveSearchResult(mediaId: 7, outcome: .grabbed), now: epoch)
-        XCTAssertTrue(show.suppressesGrabNotice(mediaId: 7, now: epoch.addingTimeInterval(100)))
-        XCTAssertFalse(show.suppressesGrabNotice(mediaId: 7, now: epoch.addingTimeInterval(121)))
+    func testGrabNoticeSuppressedWhileSearching() {
+        let tracker = tracker()
+        XCTAssertTrue(tracker.suppressesGrabNotice(notice(episode: 3), now: epoch.addingTimeInterval(60)))
+        XCTAssertFalse(tracker.suppressesGrabNotice(notice(), now: epoch.addingTimeInterval(121)))
+        let other = GrabNotice(mediaId: 8, season: nil, episode: nil, body: "")
+        XCTAssertFalse(tracker.suppressesGrabNotice(other, now: epoch))
+    }
+
+    func testOnlyTheSettledGrabIsSuppressedAfterwards() {
+        var tracker = tracker()
+        let result = LiveSearchResult(mediaId: 7, outcome: .grabbed, releaseTitle: "Some.Movie.2024.1080p.WEB-DL")
+        _ = tracker.apply(result, now: epoch)
+        let soon = epoch.addingTimeInterval(10)
+        XCTAssertTrue(tracker.suppressesGrabNotice(notice(), now: soon))
+        // A different release, an episode grab, another season, or a late notice all still show.
+        XCTAssertFalse(tracker.suppressesGrabNotice(notice(body: "Other.Thing.2020 grabbed"), now: soon))
+        XCTAssertFalse(tracker.suppressesGrabNotice(notice(episode: 2), now: soon))
+        XCTAssertFalse(tracker.suppressesGrabNotice(notice(season: 2), now: soon))
+        XCTAssertFalse(tracker.suppressesGrabNotice(notice(), now: epoch.addingTimeInterval(21)))
+    }
+
+    func testEverySeasonGrabbedIsSuppressedEvenWhenTheToastIsNotUpdated() {
+        var tracker = tracker(isShow: true)
+        let first = LiveSearchResult(mediaId: 7, season: 1, outcome: .grabbed, releaseTitle: "Show.S01")
+        let second = LiveSearchResult(mediaId: 7, season: 2, outcome: .grabbed, releaseTitle: "Show.S02")
+        _ = tracker.apply(first, now: epoch)
+        XCTAssertNil(tracker.apply(second, now: epoch))
+        XCTAssertTrue(tracker.suppressesGrabNotice(notice(season: 1, body: "Show.S01 x"), now: epoch))
+        XCTAssertTrue(tracker.suppressesGrabNotice(notice(season: 2, body: "Show.S02 x"), now: epoch))
+    }
+
+    func testNothingIsSuppressedAfterAMissOrGivingUp() {
+        var missed = tracker()
+        _ = missed.apply(LiveSearchResult(mediaId: 7, outcome: .noMatch), now: epoch)
+        XCTAssertFalse(missed.suppressesGrabNotice(notice(), now: epoch))
+        var waiting = tracker()
+        _ = waiting.giveUpWaiting(mediaId: 7, now: epoch)
+        XCTAssertFalse(waiting.suppressesGrabNotice(notice(), now: epoch))
+    }
+
+    func testResultBeforeTrackingIsReplayedOnStart() {
+        var tracker = LiveSearchTracker()
+        XCTAssertNil(tracker.apply(LiveSearchResult(mediaId: 7, outcome: .noMatch), now: epoch))
+        let update = tracker.start(mediaId: 7, title: "Title", isShow: false, now: epoch.addingTimeInterval(2))
+        XCTAssertEqual(update.phase, .noMatch)
+        XCTAssertNil(tracker.giveUpWaiting(mediaId: 7, now: epoch.addingTimeInterval(130)))
+    }
+
+    func testEarlyResultsReplayBestOutcomeAndOnlyOnce() {
+        var tracker = LiveSearchTracker()
+        _ = tracker.apply(LiveSearchResult(mediaId: 7, season: 1, outcome: .noMatch), now: epoch)
+        _ = tracker.apply(LiveSearchResult(mediaId: 7, season: 2, outcome: .grabbed), now: epoch)
+        XCTAssertEqual(
+            tracker.start(mediaId: 7, title: "Title", isShow: true, now: epoch).phase,
+            .grabbed(release: nil, quality: nil)
+        )
+        XCTAssertEqual(tracker.start(mediaId: 7, title: "Title", isShow: true, now: epoch).phase, .searching)
+    }
+
+    func testEarlyResultIsReplayedOnWatchToo() {
+        var tracker = LiveSearchTracker()
+        _ = tracker.apply(LiveSearchResult(mediaId: 7, outcome: .error), now: epoch)
+        XCTAssertEqual(
+            tracker.watch(mediaId: 7, title: "Title", isShow: false, now: epoch)?.phase, .failed(reason: nil)
+        )
+    }
+
+    func testStaleEarlyResultIsDropped() {
+        var tracker = LiveSearchTracker()
+        _ = tracker.apply(LiveSearchResult(mediaId: 7, outcome: .noMatch), now: epoch)
+        let update = tracker.start(mediaId: 7, title: "Title", isShow: false, now: epoch.addingTimeInterval(16))
+        XCTAssertEqual(update.phase, .searching)
     }
 
     func testPruneDropsExpiredEntries() {

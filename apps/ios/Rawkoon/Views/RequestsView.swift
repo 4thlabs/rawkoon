@@ -393,22 +393,16 @@ struct RequestsView: View {
         busyRequestId = request.id
         defer { busyRequestId = nil }
         do {
-            try await client.approveRequest(id: request.id, qualityProfileId: profileId)
+            let approved = try await client.approveRequest(id: request.id, qualityProfileId: profileId)
+            if request.type != "book" {
+                model.liveSearch.announceApproved(approved, title: request.title, isShow: request.type == "show")
+            }
             await load()
-            watchSearch(afterApproving: request)
         } catch APIError.unauthorized {
             adminNote = String(localized: "Admin only.")
         } catch {
             adminNote = String(localized: "Couldn't approve that request.")
         }
-    }
-
-    /// The approve response carries no search fields, so follow the new item's search on the stream.
-    private func watchSearch(afterApproving request: MediaRequest) {
-        guard request.type != "book",
-              let mediaId = requests.first(where: { $0.id == request.id })?.libraryMediaId
-        else { return }
-        model.liveSearch.watchApproved(mediaId: mediaId, title: request.title, isShow: request.type == "show")
     }
 
     private func deny(request: MediaRequest) async {

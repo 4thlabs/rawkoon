@@ -24,8 +24,10 @@ struct Toast: Equatable, Identifiable {
     /// A spinner instead of the style icon, for work still in flight.
     var showsProgress = false
 
+    /// Content counts too, so a toast updated in place animates its change.
     static func == (lhs: Toast, rhs: Toast) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id && lhs.message == rhs.message && lhs.style == rhs.style
+            && lhs.showsProgress == rhs.showsProgress && lhs.action?.label == rhs.action?.label
     }
 }
 

@@ -75,6 +75,8 @@ public enum LiveSearchPhase: Equatable, Sendable {
     /// A plain confirmation for an add that had nothing to search.
     case added
     case grabNowMiss
+    /// Some held releases were grabbed and the rest could not be.
+    case grabNowPartial
     case failed(reason: String?)
 
     public enum Action: Equatable, Sendable {
@@ -106,6 +108,7 @@ public enum LiveSearchPhase: Equatable, Sendable {
         case .added: 3
         case .failed: 5
         case .notReleased: 6
+        case .grabNowPartial: 6
         case .noMatch, .grabNowMiss, .held, .skipped: action == .none ? 6 : 10
         }
     }
@@ -118,16 +121,38 @@ public struct LiveSearchUpdate: Equatable, Sendable {
     public let phase: LiveSearchPhase
 }
 
+/// A "grabbed" notification, reduced to what decides whether a live toast already said it.
+public struct GrabNotice: Equatable, Sendable {
+    public let mediaId: Int
+    public let season: Int?
+    public let episode: Int?
+    public let body: String
+
+    public init(mediaId: Int, season: Int?, episode: Int?, body: String) {
+        self.mediaId = mediaId
+        self.season = season
+        self.episode = episode
+        self.body = body
+    }
+}
+
 /// Follows one live toast per item from "Searching…" to its outcome, and says when
-/// the item's separate "grabbed" notification popup would only repeat it.
+/// a separate "grabbed" notification popup would only repeat it.
 /// Pure value logic, with time passed in, so it is tested without a UI.
 public struct LiveSearchTracker: Equatable, Sendable {
     /// A search that has not answered by now keeps going; the grab lands as a notification.
     public static let stillSearchingAfter: TimeInterval = 120
     /// A grab notification can trail the result a little; keep hiding its popup.
-    static let movieGrace: TimeInterval = 20
-    /// A show reports one season at a time, so later seasons may still upgrade the toast.
-    static let showGrace: TimeInterval = 120
+    static let grace: TimeInterval = 20
+    /// A result can beat the add response that starts tracking; hold it this long.
+    static let earlyResultWindow: TimeInterval = 15
+    /// How much of a release title a notification body must contain to count as the same grab.
+    static let releaseMatchLength = 12
+
+    struct GrabbedRelease: Equatable, Sendable {
+        var season: Int?
+        var title: String?
+    }
 
     struct Entry: Equatable, Sendable {
         var title: String
@@ -135,17 +160,26 @@ public struct LiveSearchTracker: Equatable, Sendable {
         var startedAt: Date
         var settledRank: Int?
         var settledAt: Date?
+        var grabs: [GrabbedRelease] = []
+    }
+
+    struct EarlyResult: Equatable, Sendable {
+        var result: LiveSearchResult
+        var receivedAt: Date
     }
 
     private(set) var entries: [Int: Entry] = [:]
+    private(set) var early: [Int: [EarlyResult]] = [:]
 
     public init() {}
 
-    /// Starts (or restarts) tracking an item whose search is running.
+    /// Starts (or restarts) tracking an item whose search is running. A result that already
+    /// arrived for it is shown instead of "Searching…".
     @discardableResult
     public mutating func start(mediaId: Int, title: String, isShow: Bool, now: Date) -> LiveSearchUpdate {
         entries[mediaId] = Entry(title: title, isShow: isShow, startedAt: now)
-        return LiveSearchUpdate(mediaId: mediaId, title: title, phase: .searching)
+        return replayEarly(mediaId: mediaId, now: now)
+            ?? LiveSearchUpdate(mediaId: mediaId, title: title, phase: .searching)
     }
 
     /// Starts a fresh search for an item already tracked, keeping its title.
@@ -159,19 +193,31 @@ public struct LiveSearchTracker: Equatable, Sendable {
     }
 
     /// Tracks an item without a "Searching…" toast, so only its outcome is shown.
-    public mutating func watch(mediaId: Int, title: String, isShow: Bool, now: Date) {
+    @discardableResult
+    public mutating func watch(mediaId: Int, title: String, isShow: Bool, now: Date) -> LiveSearchUpdate? {
         entries[mediaId] = Entry(title: title, isShow: isShow, startedAt: now)
+        return replayEarly(mediaId: mediaId, now: now)
     }
 
     public func isTracking(_ mediaId: Int) -> Bool {
         entries[mediaId] != nil
     }
 
-    /// Feeds a finished search in. Nil for an untracked item, or a result no better than what is shown.
+    /// Feeds a finished search in. Nil for an item not tracked yet (the result is held briefly
+    /// for when it is), or a result no better than what is shown.
     public mutating func apply(_ result: LiveSearchResult, now: Date) -> LiveSearchUpdate? {
-        guard var entry = entries[result.mediaId] else { return nil }
+        guard var entry = entries[result.mediaId] else {
+            early[result.mediaId, default: []].append(EarlyResult(result: result, receivedAt: now))
+            dropStaleEarly(now: now)
+            return nil
+        }
+        if result.outcome == .grabbed {
+            entry.grabs.append(GrabbedRelease(season: result.season, title: result.releaseTitle))
+            entry.settledAt = now
+        }
         let rank = result.outcome.rank
         if let settled = entry.settledRank, rank <= settled {
+            entries[result.mediaId] = entry
             return nil
         }
         entry.settledRank = rank
@@ -200,18 +246,45 @@ public struct LiveSearchTracker: Equatable, Sendable {
         return LiveSearchUpdate(mediaId: mediaId, title: entry.title, phase: .stillSearching)
     }
 
-    /// True while the item's live toast owns its grab news, so a notification popup stays quiet.
-    public func suppressesGrabNotice(mediaId: Int, now: Date) -> Bool {
-        guard let entry = entries[mediaId] else { return false }
+    /// True while the item's toast is still searching, or briefly after it reported this very grab,
+    /// so the notification popup would only repeat it. Other grabs of the item still show.
+    public func suppressesGrabNotice(_ notice: GrabNotice, now: Date) -> Bool {
+        guard let entry = entries[notice.mediaId] else { return false }
         guard let settledAt = entry.settledAt else {
             return now.timeIntervalSince(entry.startedAt) < Self.stillSearchingAfter
         }
-        return now.timeIntervalSince(settledAt) < (entry.isShow ? Self.showGrace : Self.movieGrace)
+        guard now.timeIntervalSince(settledAt) < Self.grace, notice.episode == nil else { return false }
+        return entry.grabs.contains { grab in
+            guard grab.season == notice.season else { return false }
+            guard let title = grab.title else { return true }
+            return notice.body.contains(String(title.prefix(Self.releaseMatchLength)))
+        }
     }
 
     /// Drops entries that can no longer suppress anything.
     public mutating func prune(now: Date) {
-        entries = entries.filter { suppressesGrabNotice(mediaId: $0.key, now: now) }
+        entries = entries.filter { _, entry in
+            if let settledAt = entry.settledAt { return now.timeIntervalSince(settledAt) < Self.grace }
+            return now.timeIntervalSince(entry.startedAt) < Self.stillSearchingAfter
+        }
+        dropStaleEarly(now: now)
+    }
+
+    private mutating func dropStaleEarly(now: Date) {
+        early = early.compactMapValues { list in
+            let fresh = list.filter { now.timeIntervalSince($0.receivedAt) < Self.earlyResultWindow }
+            return fresh.isEmpty ? nil : fresh
+        }
+    }
+
+    private mutating func replayEarly(mediaId: Int, now: Date) -> LiveSearchUpdate? {
+        dropStaleEarly(now: now)
+        guard let held = early.removeValue(forKey: mediaId) else { return nil }
+        var last: LiveSearchUpdate?
+        for item in held {
+            last = apply(item.result, now: now) ?? last
+        }
+        return last
     }
 
     // MARK: Presentation

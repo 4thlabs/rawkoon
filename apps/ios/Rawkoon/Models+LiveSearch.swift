@@ -61,3 +61,10 @@ nonisolated struct GrabPendingNowResponse: Decodable, Sendable {
     let grabbed: Bool
     let reason: String?
 }
+
+/// `POST /api/requests/:id/approve`: the library item the approval created and what was done about searching.
+nonisolated struct ApproveRequestResult: Decodable, Sendable {
+    let libraryMediaId: Int?
+    let searchQueued: Bool?
+    let searchSkippedReason: String?
+}

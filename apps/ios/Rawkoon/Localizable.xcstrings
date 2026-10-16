@@ -12965,28 +12965,6 @@
         }
       }
     },
-    "Held by the grab delay": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Retenu par le délai de téléchargement"
-          }
-        }
-      }
-    },
-    "Held for %lld min": {
-      "extractionState": "manual",
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Retenu pendant %lld min"
-          }
-        }
-      }
-    },
     "No match for %@": {
       "extractionState": "manual",
       "localizations": {
@@ -13126,6 +13104,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Télécharger maintenant"
+          }
+        }
+      }
+    },
+    "%@ held for %lld min": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ retenu pendant %lld min"
+          }
+        }
+      }
+    },
+    "%@ is held by the grab delay": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ est retenu par le délai de téléchargement"
+          }
+        }
+      }
+    },
+    "Grabbed some releases; others could not be": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certaines versions ont été récupérées, pas les autres"
           }
         }
       }

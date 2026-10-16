@@ -11,6 +11,7 @@ final class LiveSearchCoordinator {
     private var tracker = LiveSearchTracker()
     private var toastIds: [Int: UUID] = [:]
     private var waiters: [Int: Task<Void, Never>] = [:]
+    private var cleanups: [Int: Task<Void, Never>] = [:]
     private var chooseOverrides: [Int: () -> Void] = [:]
     private var onScreenDetails: Set<Int> = []
 
@@ -18,24 +19,40 @@ final class LiveSearchCoordinator {
 
     /// After an add: a live toast when the server queued a search, otherwise one that says why not.
     func announceAdd(_ added: AddToLibraryResult, title: String) {
-        let item = added.item
-        let isShow = item.type == "show"
-        if added.searchQueued == true {
-            track(mediaId: item.id, title: title, isShow: isShow)
-            return
-        }
-        let phase = LiveSearchTracker.phase(
-            skipped: added.searchSkippedReason, digitalReleaseDate: added.digitalReleaseDate
+        announce(
+            mediaId: added.item.id, title: title, isShow: added.item.type == "show",
+            queued: added.searchQueued == true, skippedReason: added.searchSkippedReason,
+            digitalReleaseDate: added.digitalReleaseDate, confirmsPlainAdd: true
         )
-        tracker.watch(mediaId: item.id, title: title, isShow: isShow, now: Date())
-        if let update = tracker.settle(mediaId: item.id, phase: phase, now: Date()) {
-            show(update)
-        }
     }
 
-    /// After approving a request: only the outcome is shown, since the response does not say a search was queued.
-    func watchApproved(mediaId: Int, title: String, isShow: Bool) {
-        tracker.watch(mediaId: mediaId, title: title, isShow: isShow, now: Date())
+    /// After approving a request: the same toasts, except an approval with nothing to say stays quiet.
+    func announceApproved(_ approved: ApproveRequestResult, title: String, isShow: Bool) {
+        guard let mediaId = approved.libraryMediaId else { return }
+        announce(
+            mediaId: mediaId, title: title, isShow: isShow, queued: approved.searchQueued == true,
+            skippedReason: approved.searchSkippedReason, digitalReleaseDate: nil, confirmsPlainAdd: false
+        )
+    }
+
+    private func announce(
+        mediaId: Int, title: String, isShow: Bool, queued: Bool, skippedReason: String?,
+        digitalReleaseDate: String?, confirmsPlainAdd: Bool
+    ) {
+        chooseOverrides[mediaId] = nil
+        if queued {
+            track(mediaId: mediaId, title: title, isShow: isShow)
+            return
+        }
+        let phase = LiveSearchTracker.phase(skipped: skippedReason, digitalReleaseDate: digitalReleaseDate)
+        if phase == .added, !confirmsPlainAdd { return }
+        let now = Date()
+        // A result that beat this response wins over the "not searched" note.
+        if let early = tracker.watch(mediaId: mediaId, title: title, isShow: isShow, now: now) {
+            show(early)
+        } else if let update = tracker.settle(mediaId: mediaId, phase: phase, now: now) {
+            show(update)
+        }
     }
 
     /// Runs a search call and feeds its answer into the item's toast. True when it grabbed.
@@ -45,8 +62,8 @@ final class LiveSearchCoordinator {
         mediaId: Int, title: String, isShow: Bool, onChoose: (() -> Void)? = nil,
         run: () async throws -> LibrarySearchResponse
     ) async -> Bool {
-        chooseOverrides[mediaId] = onChoose
         track(mediaId: mediaId, title: title, isShow: isShow)
+        chooseOverrides[mediaId] = onChoose
         do {
             let response = try await run()
             apply(Self.result(from: response, mediaId: mediaId))
@@ -65,9 +82,9 @@ final class LiveSearchCoordinator {
         show(update)
     }
 
-    func suppressesGrabNotice(mediaId: Int) -> Bool {
+    func suppressesGrabNotice(_ notice: GrabNotice) -> Bool {
         tracker.prune(now: Date())
-        return tracker.suppressesGrabNotice(mediaId: mediaId, now: Date())
+        return tracker.suppressesGrabNotice(notice, now: Date())
     }
 
     // MARK: Detail screen hooks
@@ -83,6 +100,7 @@ final class LiveSearchCoordinator {
     // MARK: Internals
 
     private func track(mediaId: Int, title: String, isShow: Bool) {
+        chooseOverrides[mediaId] = nil
         let update = tracker.start(mediaId: mediaId, title: title, isShow: isShow, now: Date())
         show(update)
         waiters[mediaId]?.cancel()
@@ -117,6 +135,23 @@ final class LiveSearchCoordinator {
             replacing: toastIds[update.mediaId]
         )
         toastIds[update.mediaId] = id
+        scheduleCleanup(mediaId: update.mediaId, after: update.phase.lifetime)
+    }
+
+    /// Forgets an item's toast bookkeeping once its settled toast is gone.
+    private func scheduleCleanup(mediaId: Int, after lifetime: TimeInterval?) {
+        cleanups[mediaId]?.cancel()
+        cleanups[mediaId] = nil
+        guard let lifetime else { return }
+        cleanups[mediaId] = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(lifetime + 1))
+            guard !Task.isCancelled, let self else { return }
+            toastIds[mediaId] = nil
+            chooseOverrides[mediaId] = nil
+            waiters[mediaId]?.cancel()
+            waiters[mediaId] = nil
+            cleanups[mediaId] = nil
+        }
     }
 
     private func toastAction(for update: LiveSearchUpdate) -> ToastAction? {
@@ -165,18 +200,26 @@ final class LiveSearchCoordinator {
         show(update)
         Task {
             var grabbed = false
-            do {
-                for key in targetKeys {
+            var failures = 0
+            for key in targetKeys {
+                do {
                     grabbed = try await client.grabPendingNow(targetKey: key).grabbed || grabbed
+                } catch {
+                    failures += 1
                 }
-            } catch {
-                apply(LiveSearchResult(mediaId: mediaId, outcome: .error))
-                return
             }
-            if grabbed {
+            if failures == targetKeys.count {
+                apply(LiveSearchResult(mediaId: mediaId, outcome: .error))
+            } else if grabbed {
                 apply(LiveSearchResult(mediaId: mediaId, outcome: .grabbed))
-            } else if let miss = tracker.settle(mediaId: mediaId, phase: .grabNowMiss, now: Date()) {
-                show(miss)
+                if failures > 0, let partial = tracker.settle(mediaId: mediaId, phase: .grabNowPartial, now: Date()) {
+                    show(partial)
+                }
+            } else {
+                let phase: LiveSearchPhase = failures > 0 ? .grabNowPartial : .grabNowMiss
+                if let update = tracker.settle(mediaId: mediaId, phase: phase, now: Date()) {
+                    show(update)
+                }
             }
         }
     }
@@ -210,7 +253,9 @@ enum LiveSearchCopy {
         case let .grabbed(release, quality):
             Rendered(message: grabbedMessage(release: release, quality: quality), style: .success)
         case let .held(minutes, _):
-            Rendered(message: heldMessage(minutes: minutes), style: .info)
+            Rendered(message: heldMessage(minutes: minutes, title: title), style: .info)
+        case .grabNowPartial:
+            Rendered(message: String(localized: "Grabbed some releases; others could not be"), style: .info)
         case .noMatch:
             Rendered(message: String(localized: "No match for \(title)"), style: .info)
         case let .notReleased(ymd):
@@ -232,9 +277,9 @@ enum LiveSearchCopy {
         return String(localized: "Grabbed \(release) · \(quality)")
     }
 
-    private static func heldMessage(minutes: Int?) -> String {
-        guard let minutes else { return String(localized: "Held by the grab delay") }
-        return String(localized: "Held for \(minutes) min")
+    private static func heldMessage(minutes: Int?, title: String) -> String {
+        guard let minutes else { return String(localized: "\(title) is held by the grab delay") }
+        return String(localized: "\(title) held for \(minutes) min")
     }
 
     private static func notReleasedMessage(ymd: String?) -> String {

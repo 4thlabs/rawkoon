@@ -197,8 +197,9 @@ final class LibraryMediaModel {
         guard !busyMediaIds.contains(media.id) else { return }
         busyMediaIds.insert(media.id)
         defer { busyMediaIds.remove(media.id) }
-        let grabbed = await model.autoSearchMovie(libraryId: media.id, title: media.title) {
-            self.releaseSearch = self.presentation(for: media)
+        let grabbed = await model.autoSearchMovie(libraryId: media.id, title: media.title) { [weak self] in
+            guard let self else { return }
+            releaseSearch = presentation(for: media)
         }
         if grabbed {
             await reloadLoadedWindow(model: model)
