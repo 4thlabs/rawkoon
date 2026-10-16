@@ -18,6 +18,12 @@ describe("parseAudioFlags French variants", () => {
     ]);
   });
 
+  it("MULTi.VOSTFR is not French audio", () => {
+    expect(
+      parseAudioFlags("Some.Film.2020.MULTi.VOSTFR.1080p.WEB-GRP"),
+    ).toEqual(["MULTI", "VOSTFR"]);
+  });
+
   it("MULTi with a French variant keeps its flags unchanged", () => {
     expect(parseAudioFlags("Some.Film.2020.MULTi.VFF.1080p.WEB-GRP")).toEqual([
       "MULTI",

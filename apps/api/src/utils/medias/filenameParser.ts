@@ -155,8 +155,11 @@ export function parseAudioFlags(filename: string): string[] {
     flags.push("FRENCH");
     flags.push("fr");
   }
-  // A bare MULTi names no French variant, but its audio set includes French.
-  if (hasMulti && !/\b(?:VF2|VFQ|VQC|VFF|VFI|TRUEFRENCH|VF|FRENCH)\b/.test(n))
+  // A bare MULTi names no French variant, but its audio set includes French; VOSTFR means French subtitles only.
+  if (
+    hasMulti &&
+    !/\b(?:VF2|VFQ|VQC|VFF|VFI|TRUEFRENCH|VF|FRENCH|VOSTFR|VFSTFR)\b/.test(n)
+  )
     flags.push("fr");
   if (/\bVOSTFR\b/.test(n)) flags.push("VOSTFR");
   if (/\bVFSTFR\b/.test(n)) flags.push("VFSTFR");
