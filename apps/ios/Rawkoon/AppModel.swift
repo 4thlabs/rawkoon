@@ -86,6 +86,10 @@ final class AppModel {
     var requestedRootTab: RootTab?
     /// Set when Explore should put its search field in focus; Explore clears it.
     var exploreSearchFocusRequest = false
+    /// Browse or Swipe, kept for the session so a rebuilt Find tab reopens where it was.
+    var findMode: FindMode = .browse
+    /// A Find shelf a deep link asked to open; Find consumes it.
+    var requestedFindShelf: FindShelf?
     /// Open requests awaiting an admin, for the Activity badge; zero for everyone else.
     var pendingRequestCount = 0
 

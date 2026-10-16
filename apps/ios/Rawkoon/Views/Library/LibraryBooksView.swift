@@ -16,15 +16,6 @@ struct LibraryBooksView: View {
             booksToolbar
             booksGrid
         }
-        .toolbar {
-            if model.booksEnabled {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink { BookDiscoveryView() } label: {
-                        Label("Explore books", systemImage: "trophy")
-                    }
-                }
-            }
-        }
         .onChange(of: model.bookChangeToken) { _, _ in
             bookReloadTask?.cancel()
             bookReloadTask = Task {

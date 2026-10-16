@@ -327,6 +327,9 @@ final class LiveUpdatesCoordinator {
         }
         // Inbox, calendar and watchlist are tab content, not pushed screens.
         if let tab = destination.hostTab {
+            if case .watchlist = destination {
+                appModel?.requestedFindShelf = .watchlist
+            }
             appModel?.requestedRootTab = tab
             return
         }

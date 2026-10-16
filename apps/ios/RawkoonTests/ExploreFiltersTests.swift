@@ -18,6 +18,13 @@ struct ExploreFiltersTests {
         #expect(!language.isDefault)
     }
 
+    @Test func hideOwnedIsClientSideOnly() {
+        var hiding = ExploreFilters()
+        hiding.hideOwned = true
+        #expect(!hiding.isDefault)
+        #expect(hiding.fetchSignature == ExploreFilters())
+    }
+
     @Test func kindMapsToApiValue() {
         #expect(ExploreFilters.Kind.movie.apiValue == "movie")
         #expect(ExploreFilters.Kind.tv.apiValue == "tv")

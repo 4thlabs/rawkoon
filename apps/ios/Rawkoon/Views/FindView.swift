@@ -1,0 +1,128 @@
+import RawkoonKit
+import SwiftUI
+
+/// The Find tab: one search field over the library, TMDB titles and books, a
+/// row of shelves, and a Browse | Swipe switch over today's Explore grid and
+/// Discover deck. A query of two or more characters replaces the switch with
+/// the three result groups.
+struct FindView: View {
+    @Environment(AppModel.self) private var model
+
+    @State private var query = ""
+    @FocusState private var searchFocused: Bool
+    /// Held here so Browse keeps its filters while the switch or a search swaps it out.
+    @State private var filters = ExploreFilters()
+    @State private var openShelf: FindShelf?
+
+    private var searching: Bool {
+        FindSearch.isActive(query)
+    }
+
+    private var mode: Binding<FindMode> {
+        Binding(get: { model.findMode }, set: { model.findMode = $0 })
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            MediaSearchField(query: $query, focus: $searchFocused)
+                .padding(.vertical, 8)
+            if searching {
+                ScrollView {
+                    FindSearchResults(query: query)
+                        .padding(.top, 4)
+                        .padding(.bottom, 32)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .reportsTabBarScroll()
+            } else {
+                shelvesRow
+                modePicker
+                Group {
+                    switch model.findMode {
+                    case .browse: ExploreView(embedded: true, filters: $filters)
+                    case .swipe: DiscoverView()
+                    }
+                }
+            }
+        }
+        .background(Theme.base)
+        .navigationTitle("Find")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(item: $openShelf) { shelf in
+            shelf.destination
+        }
+        // A re-tap of the Find tab and a deep link both ask for the field or a shelf.
+        .onChange(of: model.exploreSearchFocusRequest, initial: true) { _, requested in
+            guard requested else { return }
+            model.exploreSearchFocusRequest = false
+            Task {
+                try? await Task.sleep(for: .milliseconds(350))
+                searchFocused = true
+            }
+        }
+        .onChange(of: model.requestedFindShelf, initial: true) { _, shelf in
+            guard let shelf else { return }
+            model.requestedFindShelf = nil
+            openShelf = shelf
+        }
+        .rawkoonMotion(RawkoonMotion.snappy, value: searching)
+    }
+
+    private var shelvesRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(FindShelf.visible(booksEnabled: model.booksEnabled), id: \.self) { shelf in
+                    Button {
+                        openShelf = shelf
+                    } label: {
+                        Label(shelf.title, systemImage: shelf.symbol)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(Theme.textStrong)
+                            .padding(.horizontal, 14)
+                            .frame(minHeight: 44)
+                            .background(Theme.raised, in: Capsule())
+                            .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+                    }
+                    .buttonStyle(.rawkoonPressable)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+    }
+
+    private var modePicker: some View {
+        Picker("Mode", selection: mode) {
+            Text("Browse").tag(FindMode.browse)
+            Text("Swipe").tag(FindMode.swipe)
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+}
+
+extension FindShelf {
+    var title: LocalizedStringKey {
+        switch self {
+        case .watchlist: "Watchlist"
+        case .collections: "Collections"
+        case .bestsellers: "Bestsellers"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .watchlist: "bookmark"
+        case .collections: "rectangle.stack"
+        case .bestsellers: "trophy"
+        }
+    }
+
+    @ViewBuilder var destination: some View {
+        switch self {
+        case .watchlist: WatchlistView()
+        case .collections: CollectionsView()
+        case .bestsellers: BookDiscoveryView()
+        }
+    }
+}

@@ -11,6 +11,15 @@ extension APIClient {
         )
     }
 
+    /// Library titles and books matching `q`, for Find's first result group.
+    func quickSearch(q: String, limit: Int = 6) async throws -> QuickSearchResponse {
+        try await get("/api/search/quick", query: ["q": q, "limit": String(limit)])
+    }
+
+    func missingCollections() async throws -> MissingCollectionsResponse {
+        try await get(Endpoints.missingCollections)
+    }
+
     /// Discover deck (swipe)
     func discoverDeck(exclude: [Int], limit: Int = 20, language: String? = nil) async throws -> DiscoverDeckResponse {
         try await get(Endpoints.discoverDeck(exclude: exclude, limit: limit, language: language))

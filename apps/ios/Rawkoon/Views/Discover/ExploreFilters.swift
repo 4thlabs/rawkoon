@@ -30,6 +30,8 @@ struct ExploreFilters: Equatable {
     var genre: Genre?
     var sort: DiscoverSort = .popularityDesc
     var originalLanguageOnly = false
+    /// Client-side: drops titles already in the library from the grid.
+    var hideOwned = false
 
     init(kind: Kind = .movie) {
         self.kind = kind
@@ -38,6 +40,13 @@ struct ExploreFilters: Equatable {
     /// Whether every filter but `kind` is at its default — drives the sheet's
     /// Reset button and whether the chip row has anything to show.
     var isDefault: Bool {
-        provider == nil && genre == nil && sort == .popularityDesc && !originalLanguageOnly
+        provider == nil && genre == nil && sort == .popularityDesc && !originalLanguageOnly && !hideOwned
+    }
+
+    /// The filters that change what the server returns; `hideOwned` only filters what came back.
+    var fetchSignature: ExploreFilters {
+        var signature = self
+        signature.hideOwned = false
+        return signature
     }
 }

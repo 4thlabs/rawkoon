@@ -1,6 +1,166 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Search your library, movies, shows & books": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher dans votre bibliothèque, films, séries et livres"
+          }
+        }
+      }
+    },
+    "In your library": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans votre bibliothèque"
+          }
+        }
+      }
+    },
+    "Titles": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titres"
+          }
+        }
+      }
+    },
+    "You own everything here": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous possédez tout ici"
+          }
+        }
+      }
+    },
+    "Couldn't load collections": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de charger les collections"
+          }
+        }
+      }
+    },
+    "Your collections are complete": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos collections sont complètes"
+          }
+        }
+      }
+    },
+    "Every franchise in your library is fully collected.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque franchise de votre bibliothèque est complète."
+          }
+        }
+      }
+    },
+    "%lld of %lld owned": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld sur %2$lld possédés"
+          }
+        }
+      }
+    },
+    "Bestsellers": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palmarès"
+          }
+        }
+      }
+    },
+    "Browse": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parcourir"
+          }
+        }
+      }
+    },
+    "Swipe": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balayer"
+          }
+        }
+      }
+    },
+    "Collections": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collections"
+          }
+        }
+      }
+    },
+    "Hide what I own": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masquer ce que je possède"
+          }
+        }
+      }
+    },
+    "Leave out titles already in your library": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exclure les titres déjà dans votre bibliothèque"
+          }
+        }
+      }
+    },
+    "Hiding what I own": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sans ce que je possède"
+          }
+        }
+      }
+    },
+    "Turn off Hide what I own to see these titles again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactivez « Masquer ce que je possède » pour revoir ces titres."
+          }
+        }
+      }
+    },
     "Find": {
       "localizations": {
         "fr": {

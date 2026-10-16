@@ -1,8 +1,8 @@
 import RawkoonKit
 import SwiftUI
 
-/// Tab root. The swipe deck of personalized/trending picks; search and the
-/// paginated grid live on Explore. Tap → MediaDetailView.
+/// Swipe on the Find tab: the deck of personalized/trending picks. Search and
+/// the paginated grid live in Browse. Tap → MediaDetailView.
 struct DiscoverView: View {
     @Environment(AppModel.self) private var model
 
@@ -51,8 +51,6 @@ struct DiscoverView: View {
     var body: some View {
         phoneScroll
             .background(Theme.base)
-            .navigationTitle("Discover")
-            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(item: $openDeckItem) { item in
                 MediaDetailView(
                     tmdbId: item.tmdbId,
@@ -75,7 +73,7 @@ struct DiscoverView: View {
             }
     }
 
-    /// The swipe deck in one scrolling column; search lives on Explore.
+    /// The swipe deck in one scrolling column; search lives above it in Find.
     private var phoneScroll: some View {
         ScrollView {
             deckColumn

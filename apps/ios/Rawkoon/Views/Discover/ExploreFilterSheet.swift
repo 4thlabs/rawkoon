@@ -25,6 +25,7 @@ struct ExploreFilterControls: View {
             genreSection
             sortSection
             languageSection
+            ownedSection
             providerSection
         }
         .task {
@@ -200,6 +201,22 @@ struct ExploreFilterControls: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border, lineWidth: 1))
             }
         }
+    }
+
+    private var ownedSection: some View {
+        Toggle(isOn: $filters.hideOwned) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Hide what I own")
+                Text("Leave out titles already in your library")
+                    .font(.caption)
+                    .foregroundStyle(Theme.muted)
+            }
+        }
+        .tint(Theme.apricot)
+        .padding(.horizontal, 12)
+        .frame(minHeight: 44)
+        .background(Theme.inset, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border, lineWidth: 1))
     }
 
     private var languageSection: some View {
