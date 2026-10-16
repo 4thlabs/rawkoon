@@ -284,8 +284,12 @@ struct SettingsView: View {
     }
 
     private func loadHealth() async {
-        guard model.isAdmin, !model.isOffline, let client = model.api() else { return }
-        healthProblems = await SystemHealthProbe.problemCount(client: client)
+        // No badge beats a stale one: offline or unanswered, the count is hidden.
+        guard model.isAdmin, !model.isOffline, let client = model.api() else {
+            healthProblems = 0
+            return
+        }
+        healthProblems = await SystemHealthProbe.problemCount(client: client) ?? 0
     }
 
     private func loadVersion() async {

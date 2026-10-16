@@ -1,6 +1,36 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Active manager: %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestionnaire actif : %@"
+          }
+        }
+      }
+    },
+    "None selected": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun sélectionné"
+          }
+        }
+      }
+    },
+    "%@ isn't enabled yet. Save and enable its connection to make it the active manager.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ n'est pas encore activé. Enregistrez et activez sa connexion pour en faire le gestionnaire actif."
+          }
+        }
+      }
+    },
     "%lld more issues": {
       "localizations": {
         "fr": {

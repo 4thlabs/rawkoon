@@ -20,6 +20,12 @@ public enum OrderedListEdit {
         return items + [name]
     }
 
+    /// `items` with every comma or newline separated entry of `raw` appended in order, each trimmed
+    /// and skipped when blank or already present.
+    public static func appendedAll(_ items: [String], _ raw: String) -> [String] {
+        raw.split(whereSeparator: { $0 == "," || $0.isNewline }).reduce(items) { appended($0, String($1)) }
+    }
+
     public static func removed(_ items: [String], at index: Int) -> [String] {
         guard items.indices.contains(index) else { return items }
         var result = items
@@ -50,11 +56,25 @@ public enum SeedTimeDays {
         return minutes > 0 ? .minutes(minutes) : .none
     }
 
-    /// Prefill text for a stored target; empty when there is none.
+    /// Prefill text for a stored target; empty when there is none. Whole days read as an integer,
+    /// anything else as a decimal with enough places that parsing it gives the same minutes back.
     public static func text(forMinutes minutes: Int?) -> String {
         guard let minutes, minutes > 0 else { return "" }
-        let days = Double(minutes) / 1440
-        return days == days.rounded() ? String(Int(days)) : String(format: "%.1f", days)
+        if minutes % 1440 == 0 {
+            return String(minutes / 1440)
+        }
+        var text = String(format: "%.5f", Double(minutes) / 1440)
+        while text.hasSuffix("0") {
+            text.removeLast()
+        }
+        return text
+    }
+
+    /// The target to save for a field: the stored minutes untouched while the text still reads as it
+    /// was prefilled, otherwise whatever the edited text parses to.
+    public static func resolve(text: String, loadedText: String, loadedMinutes: Int?) -> ParsedSeedDays {
+        guard text == loadedText else { return parse(text) }
+        return loadedMinutes.flatMap { $0 > 0 ? ParsedSeedDays.minutes($0) : nil } ?? .none
     }
 }
 
@@ -79,6 +99,12 @@ public enum BlockedExtensions {
 
 /// How many things System › Health asks the admin to look at, for the badge on the System row.
 public enum SystemHealth {
+    /// A library health run counts its issues; one that failed outright counts as a problem even with none.
+    public static func libraryProblems(issueCount: Int, status: String?) -> Int {
+        let failed = status?.lowercased() == "failed"
+        return max(max(0, issueCount), failed ? 1 : 0)
+    }
+
     public static func problemCount(
         readinessProblems: Int, attentionItems: Int, libraryIssues: Int, rssFailed: Bool
     ) -> Int {

@@ -70,6 +70,8 @@ struct HealthSettingsView: View {
                 let problems = GrabReadiness.problemCount(checks)
                 if problems == 0 {
                     Text("Everything automatic grabbing needs is in place.")
+                } else if problems == 1 {
+                    Text("1 thing to fix")
                 } else {
                     Text("\(problems) things to fix")
                 }
@@ -305,16 +307,22 @@ struct HealthSettingsView: View {
 
 /// The count on the System row: everything Health would ask the admin to look at.
 enum SystemHealthProbe {
-    static func problemCount(client: APIClient) async -> Int {
+    /// Nil when none of the four sources answered, so a failed probe never shows a made-up count.
+    static func problemCount(client: APIClient) async -> Int? {
         async let checks = try? client.grabReadiness()
         async let health = try? client.libraryHealth()
         async let attention = try? client.libraryAttention()
         async let rss = try? client.rssStatus()
         let (readiness, library, alerts, feed) = await (checks, health, attention, rss)
+        if readiness == nil, library == nil, alerts == nil, feed == nil {
+            return nil
+        }
         return SystemHealth.problemCount(
             readinessProblems: GrabReadiness.problemCount(readiness ?? []),
             attentionItems: alerts?.items.count ?? 0,
-            libraryIssues: library?.latest?.issueCount ?? 0,
+            libraryIssues: SystemHealth.libraryProblems(
+                issueCount: library?.latest?.issueCount ?? 0, status: library?.latest?.status
+            ),
             rssFailed: SystemHealth.rssFailed(status: feed?.lastRun?.status)
         )
     }

@@ -12,11 +12,13 @@ struct SeedIndexerRuleRow: View {
     @State private var editing = false
     @State private var ratioText = ""
     @State private var daysText = ""
+    /// The text the days field was prefilled with and the minutes behind it; untouched, they are saved as stored.
+    @State private var storedDays = (text: "", minutes: Int?.none)
     @State private var busy = false
 
     private var parsed: SeedRule? {
         let minutes: Int?
-        switch SeedTimeDays.parse(daysText) {
+        switch SeedTimeDays.resolve(text: daysText, loadedText: storedDays.text, loadedMinutes: storedDays.minutes) {
         case .invalid: return nil
         case .none: minutes = nil
         case let .minutes(value): minutes = value
@@ -57,6 +59,7 @@ struct SeedIndexerRuleRow: View {
                         Button("Customize") {
                             ratioText = SeedRuleLogic.ratioText(row.effective.ratio)
                             daysText = SeedTimeDays.text(forMinutes: row.effective.seedTimeMins)
+                            storedDays = (daysText, row.effective.seedTimeMins)
                             editing = true
                         }
                     }

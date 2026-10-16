@@ -17,6 +17,10 @@ struct SeedingSettingsView: View {
     @State private var enabled = false
     @State private var publicRatio = ""
     @State private var publicDays = ""
+    /// What each days field was prefilled with and the minutes behind it, so an untouched field is
+    /// saved exactly as stored instead of being re-read from its rounded text.
+    @State private var storedPublicTime = StoredSeedTime(text: "", minutes: nil)
+    @State private var storedPrivateTime = StoredSeedTime(text: "", minutes: nil)
     @State private var privateRatio = ""
     @State private var privateDays = ""
     @State private var blockedText = ""
@@ -49,18 +53,23 @@ struct SeedingSettingsView: View {
         )
     }
 
+    private struct StoredSeedTime: Equatable {
+        let text: String
+        let minutes: Int?
+    }
+
     private var publicRule: SeedRule? {
-        rule(ratio: publicRatio, days: publicDays)
+        rule(ratio: publicRatio, days: publicDays, stored: storedPublicTime)
     }
 
     private var privateRule: SeedRule? {
-        rule(ratio: privateRatio, days: privateDays)
+        rule(ratio: privateRatio, days: privateDays, stored: storedPrivateTime)
     }
 
     /// A ratio and a day count make one rule; either one being unreadable makes the rule invalid.
-    private func rule(ratio: String, days: String) -> SeedRule? {
+    private func rule(ratio: String, days: String, stored: StoredSeedTime) -> SeedRule? {
         let minutes: Int?
-        switch SeedTimeDays.parse(days) {
+        switch SeedTimeDays.resolve(text: days, loadedText: stored.text, loadedMinutes: stored.minutes) {
         case .invalid: return nil
         case .none: minutes = nil
         case let .minutes(value): minutes = value
@@ -221,8 +230,10 @@ struct SeedingSettingsView: View {
             let minRatio = settings.minSeedRatio ?? 0
             publicRatio = SeedRuleLogic.ratioText(minRatio > 0 ? minRatio : nil)
             publicDays = SeedTimeDays.text(forMinutes: settings.publicSeedTimeMins)
+            storedPublicTime = StoredSeedTime(text: publicDays, minutes: settings.publicSeedTimeMins)
             privateRatio = SeedRuleLogic.ratioText(settings.privateSeedRatio)
             privateDays = SeedTimeDays.text(forMinutes: settings.privateSeedTimeMins)
+            storedPrivateTime = StoredSeedTime(text: privateDays, minutes: settings.privateSeedTimeMins)
             blockedText = BlockedExtensions.text(settings.blockedExtensions ?? [])
             minFreeSpaceGb = settings.minFreeSpaceGb ?? 10
             fileOperation = settings.fileOperation ?? "hardlink"

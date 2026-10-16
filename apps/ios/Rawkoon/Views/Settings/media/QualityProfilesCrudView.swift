@@ -282,8 +282,9 @@ private struct QualityProfileEditorView: View {
         }
     }
 
+    /// Adds what was typed; a pasted comma-separated list becomes separate entries.
     private func addTracker() {
-        trackers = OrderedListEdit.appended(trackers, newTracker)
+        trackers = OrderedListEdit.appendedAll(trackers, newTracker)
         newTracker = ""
     }
 
@@ -392,6 +393,8 @@ private struct QualityProfileEditorView: View {
 
     private func save() async {
         guard let client = model.api() else { return }
+        // A tracker typed but not added yet still counts.
+        addTracker()
         saving = true; saveError = nil
         do {
             if let profile {

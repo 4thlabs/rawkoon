@@ -11,6 +11,11 @@ enum IndexerManagerKind: CaseIterable, Hashable {
     var title: LocalizedStringKey {
         self == .prowlarr ? "Prowlarr" : "Jackett"
     }
+
+    /// The manager's name as plain text, for sentences.
+    var localizedName: LocalizedStringResource {
+        self == .prowlarr ? "Prowlarr" : "Jackett"
+    }
 }
 
 /// Prowlarr / Jackett integration (admin), shown under the switch on the Indexers screen. One view, two kinds. `GET/PUT
@@ -18,6 +23,8 @@ enum IndexerManagerKind: CaseIterable, Hashable {
 /// returns data only once the manager is enabled and saved).
 struct IndexerManagerIntegrationView<Extra: View>: View {
     let kind: IndexerManagerKind
+    /// Called after a successful save with whether the connection is enabled.
+    var onSaved: (Bool) -> Void = { _ in }
     /// More sections the host adds under the manager's own (the list of indexers it serves).
     @ViewBuilder var extraSections: () -> Extra
     @Environment(AppModel.self) private var model
@@ -146,6 +153,7 @@ struct IndexerManagerIntegrationView<Extra: View>: View {
             apiKeyInput = ""
             loaded = current
             await loadIndexerOptions()
+            onSaved(enabled)
         } catch {
             saveError = settingsErrorMessage(error)
         }

@@ -1,39 +1,28 @@
 import SwiftUI
 
-/// Indexers (admin): one screen for the indexer manager. A Prowlarr | Jackett switch sets the
-/// active manager and shows that manager's connection and RSS indexer picker, with the indexers it
-/// serves listed below.
+/// Indexers (admin): one screen for the indexer manager. A Prowlarr | Jackett switch picks the
+/// manager and shows its connection and RSS indexer picker. Choosing a connected manager makes it
+/// the active one; one that isn't enabled yet is shown with a note and becomes active once its
+/// connection is saved and enabled. The indexers the active manager serves are listed below.
 struct IndexersSettingsView: View {
     @Environment(AppModel.self) private var model
 
-    @State private var kind: IndexerManagerKind = .prowlarr
-    @State private var loaded = false
-    @State private var savingKind = false
+    /// The manager the server searches through; nil until one is chosen.
+    @State private var active: IndexerManagerKind?
+    /// The manager whose connection is on screen.
+    @State private var viewing: IndexerManagerKind = .prowlarr
+    @State private var phase: Phase = .loading
+    @State private var switching = false
+    @State private var notice: String?
+
+    private enum Phase: Equatable {
+        case loading, loaded, failed(String)
+    }
 
     var body: some View {
         Group {
             if model.isAdmin {
-                VStack(spacing: 0) {
-                    Picker("Indexer manager", selection: kindBinding) {
-                        ForEach(IndexerManagerKind.allCases, id: \.self) { kind in
-                            Text(kind.title).tag(kind)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .disabled(!loaded || savingKind)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    if loaded {
-                        // Keyed by kind, so switching loads the other manager's connection fresh.
-                        IndexerManagerIntegrationView(kind: kind) { IndexerListSection() }
-                            .id(kind)
-                    } else {
-                        Spacer()
-                        ProgressView().tint(Theme.apricot)
-                        Spacer()
-                    }
-                }
-                .background(Theme.base)
+                content
             } else {
                 ContentUnavailableView("Admin only", systemImage: "lock")
                     .rawkoonLivingSymbol(.empty)
@@ -44,35 +33,125 @@ struct IndexersSettingsView: View {
         .task { await loadActiveManager() }
     }
 
-    /// The switch writes through: choosing a manager makes it the active one.
-    private var kindBinding: Binding<IndexerManagerKind> {
-        Binding(get: { kind }, set: { newKind in
-            guard newKind != kind else { return }
-            let previous = kind
-            kind = newKind
-            Task { await setActive(newKind, previous: previous) }
-        })
+    @ViewBuilder
+    private var content: some View {
+        switch phase {
+        case .loading:
+            ProgressView().tint(Theme.apricot)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.base)
+        case let .failed(message):
+            VStack(spacing: 12) {
+                Text(message).foregroundStyle(Theme.terracotta)
+                Button("Retry") { Task { await loadActiveManager() } }.tint(Theme.apricot)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.base)
+        case .loaded:
+            VStack(spacing: 0) {
+                switcher
+                // Keyed by manager, so switching loads the other one's connection fresh.
+                IndexerManagerIntegrationView(kind: viewing, onSaved: { enabled in
+                    Task { await connectionSaved(enabled: enabled) }
+                }, extraSections: {
+                    if viewing == active {
+                        IndexerListSection().id(active)
+                    }
+                })
+                .id(viewing)
+            }
+            .background(Theme.base)
+        }
+    }
+
+    private var switcher: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Picker("Indexer manager", selection: pickerBinding) {
+                    ForEach(IndexerManagerKind.allCases, id: \.self) { kind in
+                        Text(kind.title).tag(kind)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .disabled(switching)
+                if switching {
+                    ProgressView().tint(Theme.apricot)
+                }
+            }
+            Group {
+                if let active {
+                    let name = String(localized: active.localizedName)
+                    Text("Active manager: \(name)")
+                } else {
+                    Text("None selected")
+                }
+            }
+            .font(.footnote)
+            .foregroundStyle(Theme.muted)
+            if let notice {
+                Text(verbatim: notice).font(.footnote).foregroundStyle(Theme.apricot)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private var pickerBinding: Binding<IndexerManagerKind> {
+        Binding(get: { viewing }, set: { newKind in Task { await choose(newKind) } })
+    }
+
+    /// Switching to a connected manager makes it active before the screen changes; one that isn't
+    /// enabled yet is shown so it can be set up, and is not made active.
+    private func choose(_ newKind: IndexerManagerKind) async {
+        guard newKind != viewing, !switching, let client = model.api() else { return }
+        notice = nil
+        if newKind == active {
+            viewing = newKind
+            return
+        }
+        switching = true
+        defer { switching = false }
+        let enabled = await (try? client.indexerManager(newKind.path).integration.enabled) ?? false
+        guard enabled else {
+            viewing = newKind
+            let name = String(localized: newKind.localizedName)
+            notice = String(localized: "\(name) isn't enabled yet. Save and enable its connection to make it the active manager.")
+            return
+        }
+        do {
+            try await client.setActiveIndexerManager(newKind.path)
+            active = newKind
+            viewing = newKind
+        } catch {
+            model.toast(settingsErrorMessage(error), style: .error)
+        }
+    }
+
+    /// Saving an enabled connection for a manager that isn't active yet activates it.
+    private func connectionSaved(enabled: Bool) async {
+        guard enabled, viewing != active, let client = model.api() else { return }
+        do {
+            try await client.setActiveIndexerManager(viewing.path)
+            active = viewing
+            notice = nil
+        } catch {
+            model.toast(settingsErrorMessage(error), style: .error)
+        }
     }
 
     private func loadActiveManager() async {
         guard let client = model.api() else {
-            loaded = true
+            phase = .failed(String(localized: "Not signed in."))
             return
         }
-        let active = try? await client.postProcessingSettings().settings.activeIndexerManager
-        kind = active == "jackett" ? .jackett : .prowlarr
-        loaded = true
-    }
-
-    private func setActive(_ newKind: IndexerManagerKind, previous: IndexerManagerKind) async {
-        guard let client = model.api() else { return }
-        savingKind = true
-        defer { savingKind = false }
+        phase = .loading
         do {
-            try await client.setActiveIndexerManager(newKind.path)
+            let value = try await client.postProcessingSettings().settings.activeIndexerManager
+            active = IndexerManagerKind.allCases.first { $0.path == value }
+            viewing = active ?? .prowlarr
+            phase = .loaded
         } catch {
-            kind = previous
-            model.toast(settingsErrorMessage(error), style: .error)
+            phase = .failed(settingsErrorMessage(error))
         }
     }
 }
@@ -141,21 +220,17 @@ struct IndexerListSection: View {
             .background(Theme.inset, in: Capsule())
     }
 
+    /// Always fetched fresh: a saved list may belong to the manager that was active before.
     private func load() async {
         guard let client = model.api() else {
             loading = false
             return
         }
-        if indexers.isEmpty, let cached = client.cached(Endpoints.indexers) {
-            indexers = cached.value.indexers
-        }
         do {
             indexers = try await client.indexers().indexers
             errorMessage = nil
         } catch {
-            if indexers.isEmpty {
-                errorMessage = settingsErrorMessage(error)
-            }
+            errorMessage = settingsErrorMessage(error)
         }
         loading = false
     }
