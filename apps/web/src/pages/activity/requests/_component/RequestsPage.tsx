@@ -190,6 +190,7 @@ export function RequestsPage() {
   return (
     <PageLayout className="max-w-4xl">
       <PageHeader
+        headingLevel="h2"
         icon={Inbox}
         iconColor="text-primary-400"
         title={t("requests.title")}

@@ -13,6 +13,8 @@ interface PageHeaderProps {
   isRefreshing?: boolean;
   className?: string;
   actions?: ReactNode;
+  /** h2 when a parent layout already owns the page h1. */
+  headingLevel?: "h1" | "h2";
 }
 
 export function PageHeader({
@@ -22,6 +24,7 @@ export function PageHeader({
   isRefreshing = false,
   className = "",
   actions,
+  headingLevel: Heading = "h1",
 }: PageHeaderProps) {
   const { t } = useTranslation("common");
   return (
@@ -30,9 +33,9 @@ export function PageHeader({
       <div className="flex flex-col gap-3 sm:hidden">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="font-display text-xl font-semibold tracking-tight text-neutral-50 truncate">
+            <Heading className="font-display text-xl font-semibold tracking-tight text-neutral-50 truncate">
               {title}
-            </h1>
+            </Heading>
             {subtitle && (
               <p className="mt-0.5 text-xs text-neutral-400 truncate">
                 {subtitle}
@@ -60,9 +63,9 @@ export function PageHeader({
       {/* Desktop layout: title | actions */}
       <div className="hidden sm:flex items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl font-semibold leading-none tracking-tight text-neutral-50">
+          <Heading className="font-display text-3xl font-semibold leading-none tracking-tight text-neutral-50">
             {title}
-          </h1>
+          </Heading>
           {subtitle && <p className="text-sm text-neutral-400">{subtitle}</p>}
         </div>
         <div className="flex items-center gap-2">

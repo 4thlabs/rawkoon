@@ -443,7 +443,8 @@
     "review": "Review",
     "searchAgainGrabbed": "Search started and a release was grabbed",
     "searchAgainNothing": "Search finished, nothing matched yet",
-    "searchAgainFailed": "Could not start the search"
+    "searchAgainFailed": "Could not start the search",
+    "searchAgainNothingTitle": "Searched the whole title, nothing matched yet"
   },
   "emotion": {
     "howDidYouFeel": "How did you feel?",
@@ -2976,9 +2977,10 @@
         "grabDue_one": "Ready to grab, {{count}} release collected",
         "grabDue_other": "Ready to grab, {{count}} releases collected",
         "paused": "Paused in the download client",
-        "importing": "Finished downloading, waiting to be imported",
+        "importing": "Finished downloading, waiting for import",
         "stalled": "No data is arriving from peers",
-        "failed": "The download client reported an error"
+        "failed": "The download client reported an error",
+        "importFailed": "Downloaded, but the import failed"
       }
     }
   },

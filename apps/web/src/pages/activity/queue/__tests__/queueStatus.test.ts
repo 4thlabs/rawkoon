@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type {
   ActiveDownloadItem,
+  LibraryAttentionItem,
   PendingReleaseItem,
 } from "@rawkoon/shared/types";
 import {
@@ -100,5 +101,79 @@ describe("buildQueueRows", () => {
       stalled: 1,
       failed: 0,
     });
+  });
+});
+
+const alert = (over: Partial<LibraryAttentionItem>): LibraryAttentionItem => ({
+  id: 5,
+  kind: "download_failed",
+  scope_type: "movie",
+  media_id: 20,
+  media_title: "Failed Title",
+  media_type: "movie",
+  episode_id: null,
+  season: null,
+  episode_number: null,
+  detail: "No space left",
+  search_attempts: null,
+  library_status: null,
+  download_history_id: 77,
+  grabbed_at: null,
+  updated_at: "2026-01-01T00:00:00Z",
+  ...over,
+});
+
+describe("attention alerts in the queue", () => {
+  it("turns failed and import-errored alerts into Failed rows with their detail", () => {
+    const rows = buildQueueRows([], [], 0, [
+      alert({}),
+      alert({ id: 6, kind: "post_process_error", detail: null }),
+    ]);
+    expect(rows.map((r) => r.status)).toEqual(["failed", "failed"]);
+    expect(rows[0].reason).toEqual({
+      kind: "alert",
+      alertKind: "download_failed",
+      detail: "No space left",
+    });
+    expect(rows[1].alert).toEqual({
+      id: 6,
+      kind: "post_process_error",
+      downloadHistoryId: 77,
+    });
+  });
+
+  it("shows a stuck alert as Stalled unless a live row already covers it", () => {
+    const stuck = alert({ id: 7, kind: "download_stuck", media_id: 10 });
+    expect(buildQueueRows([], [], 0, [stuck]).map((r) => r.status)).toEqual([
+      "stalled",
+    ]);
+    expect(
+      buildQueueRows([download({ media_id: 10 })], [], 0, [stuck]).map(
+        (r) => r.status,
+      ),
+    ).toEqual(["downloading"]);
+  });
+
+  it("matches the episode when deduping a stuck alert", () => {
+    const stuck = alert({
+      id: 8,
+      kind: "download_stuck",
+      media_id: 10,
+      season: 1,
+      episode_number: 2,
+    });
+    const rows = buildQueueRows(
+      [download({ media_id: 10, season: 1, episode: 3 })],
+      [],
+      0,
+      [stuck],
+    );
+    expect(rows.map((r) => r.status)).toEqual(["downloading", "stalled"]);
+  });
+
+  it("ignores alert kinds that are not downloads", () => {
+    expect(
+      buildQueueRows([], [], 0, [alert({ kind: "grab_skipped" })]),
+    ).toEqual([]);
   });
 });

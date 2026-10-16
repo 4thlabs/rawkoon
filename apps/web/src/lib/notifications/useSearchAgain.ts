@@ -39,11 +39,13 @@ export function useSearchAgain() {
       if (!target) throw new Error("Episode not found");
       return post(LIBRARY_ENDPOINTS.SEARCH_EPISODE(mediaId, target.id));
     },
-    onSuccess: (res) => {
+    onSuccess: (res, vars) => {
       toast(
         res.grabbed
           ? t("notifications.searchAgainGrabbed")
-          : t("notifications.searchAgainNothing"),
+          : vars.season == null
+            ? t("notifications.searchAgainNothingTitle")
+            : t("notifications.searchAgainNothing"),
       );
     },
     onError: () => toast.error(t("notifications.searchAgainFailed")),

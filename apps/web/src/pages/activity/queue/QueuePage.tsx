@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowDown, Clock, Film, Loader2 } from "lucide-react";
+import { ArrowDown, Clock, Film, Loader2, X } from "lucide-react";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { formatEtaSeconds } from "@rawkoon/shared/utils";
+import { useLibraryAttention } from "@/features/medias/hooks/useLibraryAttention";
+import { useDismissLibraryAttentionAlert } from "@/features/medias/hooks/useDismissLibraryAttentionAlert";
+import { useRetryLibraryPostProcess } from "@/features/medias/hooks/useRetryLibraryPostProcess";
 import { useActiveDownloads } from "@/features/medias/hooks/useActiveDownloads";
 import { useDownloadsSpeed } from "@/pages/_component/useDownloadsSpeed";
 import {
@@ -66,10 +70,72 @@ function useReasonText() {
         });
       case "grabDue":
         return t("activity.queue.reason.grabDue", { count: reason.candidates });
+      case "alert":
+        return (
+          reason.detail ??
+          t(
+            reason.alertKind === "post_process_error"
+              ? "activity.queue.reason.importFailed"
+              : reason.alertKind === "download_stuck"
+                ? "activity.queue.reason.stalled"
+                : "activity.queue.reason.failed",
+          )
+        );
       default:
         return t(`activity.queue.reason.${reason.kind}`);
     }
   };
+}
+
+function AlertActions({ row }: { row: QueueRow }) {
+  const { t } = useTranslation("common");
+  const retryPost = useRetryLibraryPostProcess();
+  const dismiss = useDismissLibraryAttentionAlert();
+  const alert = row.alert;
+  if (!alert) return null;
+  const canRetry =
+    alert.kind === "post_process_error" && alert.downloadHistoryId != null;
+
+  return (
+    <span className="flex shrink-0 items-center gap-1">
+      {canRetry && (
+        <button
+          type="button"
+          disabled={retryPost.isPending}
+          onClick={() =>
+            retryPost.mutate(alert.downloadHistoryId!, {
+              onSuccess: () =>
+                toast.success(t("dashboard.libraryAttention.toastPostQueued")),
+              onError: () =>
+                toast.error(t("dashboard.libraryAttention.toastPostFailed")),
+            })
+          }
+          className="inline-flex items-center gap-1 rounded-md border border-primary-600/60 bg-primary-600/15 px-2 py-1 text-[11px] font-semibold text-primary-400 hover:bg-primary-600/25 disabled:opacity-50"
+        >
+          {retryPost.isPending && (
+            <Loader2 size={11} className="animate-spin" />
+          )}
+          {t("dashboard.libraryAttention.retryPostProcess")}
+        </button>
+      )}
+      <button
+        type="button"
+        disabled={dismiss.isPending}
+        onClick={() =>
+          dismiss.mutate(alert.id, {
+            onSuccess: () =>
+              toast.success(t("dashboard.libraryAttention.toastDismissOk")),
+            onError: () =>
+              toast.error(t("dashboard.libraryAttention.toastDismissFail")),
+          })
+        }
+        aria-label={t("dashboard.libraryAttention.dismiss")}
+        className="inline-flex size-6 items-center justify-center rounded-md p-1 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 disabled:opacity-50"
+      >
+        <X size={14} />
+      </button>
+    </span>
+  );
 }
 
 function QueueRowItem({
@@ -121,9 +187,11 @@ function QueueRowItem({
             {t(`activity.queue.status.${row.status}`)}
           </span>
         </div>
-        <p className="truncate text-[11px] text-neutral-500">
-          {row.releaseTitle}
-        </p>
+        {row.releaseTitle && (
+          <p className="truncate text-[11px] text-neutral-500">
+            {row.releaseTitle}
+          </p>
+        )}
         {percent != null && (
           <div
             role="progressbar"
@@ -152,6 +220,7 @@ function QueueRowItem({
             )}
             <span className="truncate">{reasonText(row.reason)}</span>
           </p>
+          {row.alert && <AlertActions row={row} />}
           {row.targetKey && (
             <button
               type="button"
@@ -178,6 +247,7 @@ export function QueuePage() {
   const speed = useDownloadsSpeed();
   const active = useActiveDownloads();
   const pending = usePendingReleases(true);
+  const attention = useLibraryAttention();
   const grabNow = useGrabPendingNow();
   const [filter, setFilter] = useState<QueueFilter>("all");
   const [now, setNow] = useState(() => Date.now());
@@ -191,6 +261,7 @@ export function QueuePage() {
     active.data?.items ?? [],
     pending.data?.items ?? [],
     now,
+    attention.data?.items ?? [],
   );
   const counts = countByStatus(rows);
   const shown =
@@ -244,29 +315,40 @@ export function QueuePage() {
         <p className="py-8 text-center text-sm text-neutral-400">
           {t("common.loading")}
         </p>
-      ) : !enabled ? (
-        <p className="py-8 text-center text-sm text-neutral-400">
-          {t("dashboard.home.downloadClientNotConfigured")}
-        </p>
-      ) : !connected ? (
-        <p className="py-8 text-center text-sm text-amber-400">
-          {t("dashboard.home.downloadClientUnreachable")}
-        </p>
-      ) : shown.length === 0 ? (
-        <p className="py-8 text-center text-sm text-neutral-400">
-          {t("dashboard.home.nothingDownloading")}
-        </p>
       ) : (
-        <ul className="divide-y divide-neutral-800 rounded-xl border border-neutral-800 bg-neutral-900">
-          {shown.map((row) => (
-            <QueueRowItem
-              key={row.key}
-              row={row}
-              busy={grabNow.isPending && grabNow.variables === row.targetKey}
-              onGrabNow={(key) => grabNow.mutate(key)}
-            />
-          ))}
-        </ul>
+        <>
+          {!enabled && (
+            <p className="mb-3 text-center text-sm text-neutral-400">
+              {t("dashboard.home.downloadClientNotConfigured")}
+            </p>
+          )}
+          {enabled && !connected && (
+            <p className="mb-3 text-center text-sm text-amber-400">
+              {t("dashboard.home.downloadClientUnreachable")}
+            </p>
+          )}
+          {shown.length === 0 ? (
+            enabled &&
+            connected && (
+              <p className="py-8 text-center text-sm text-neutral-400">
+                {t("dashboard.home.nothingDownloading")}
+              </p>
+            )
+          ) : (
+            <ul className="divide-y divide-neutral-800 rounded-xl border border-neutral-800 bg-neutral-900">
+              {shown.map((row) => (
+                <QueueRowItem
+                  key={row.key}
+                  row={row}
+                  busy={
+                    grabNow.isPending && grabNow.variables === row.targetKey
+                  }
+                  onGrabNow={(key) => grabNow.mutate(key)}
+                />
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </div>
   );

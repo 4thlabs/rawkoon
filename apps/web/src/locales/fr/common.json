@@ -443,7 +443,8 @@
     "review": "Examiner",
     "searchAgainGrabbed": "Recherche lancée, une version a été récupérée",
     "searchAgainNothing": "Recherche terminée, rien ne correspond pour le moment",
-    "searchAgainFailed": "Impossible de lancer la recherche"
+    "searchAgainFailed": "Impossible de lancer la recherche",
+    "searchAgainNothingTitle": "Recherche sur tout le titre, rien ne correspond pour le moment"
   },
   "emotion": {
     "howDidYouFeel": "Comment vous êtes-vous senti ?",
@@ -2978,7 +2979,8 @@
         "paused": "En pause dans le client de téléchargement",
         "importing": "Téléchargement terminé, en attente d'importation",
         "stalled": "Aucune donnée ne provient des pairs",
-        "failed": "Le client de téléchargement a signalé une erreur"
+        "failed": "Le client de téléchargement a signalé une erreur",
+        "importFailed": "Téléchargé, mais l'importation a échoué"
       }
     }
   },

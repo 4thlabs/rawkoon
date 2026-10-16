@@ -1,5 +1,6 @@
 import type {
   ActiveDownloadItem,
+  LibraryAttentionItem,
   PendingReleaseItem,
 } from "@rawkoon/shared/types";
 
@@ -17,7 +18,20 @@ export type QueueReason =
   | { kind: "paused" }
   | { kind: "importing" }
   | { kind: "stalled" }
-  | { kind: "failed" };
+  | { kind: "failed" }
+  | { kind: "alert"; alertKind: AlertQueueKind; detail: string | null };
+
+export type AlertQueueKind =
+  | "download_failed"
+  | "post_process_error"
+  | "download_stuck";
+
+/** The library attention alert behind a row, with the ids its actions need. */
+export interface QueueAlert {
+  id: number;
+  kind: AlertQueueKind;
+  downloadHistoryId: number | null;
+}
 
 export interface QueueRow {
   key: string;
@@ -33,6 +47,8 @@ export interface QueueRow {
   progress: number | null;
   /** Set on held grabs, which can be pulled forward. */
   targetKey?: string;
+  /** Set on rows that come from a library attention alert instead of a live transfer. */
+  alert?: QueueAlert;
 }
 
 /** Maps the download client's state string onto one plain status; wave 4 moves this to the server. */
@@ -67,10 +83,59 @@ function reasonForDownload(
   }
 }
 
+const ALERT_KINDS = new Set<string>([
+  "download_failed",
+  "post_process_error",
+  "download_stuck",
+]);
+
+/**
+ * Failed and import-errored downloads are no longer live transfers, so they only
+ * exist as attention alerts. A stuck alert is dropped when a live row already covers it.
+ */
+function alertRows(
+  alerts: LibraryAttentionItem[],
+  active: ActiveDownloadItem[],
+): QueueRow[] {
+  return alerts
+    .filter((a) => ALERT_KINDS.has(a.kind))
+    .filter(
+      (a) =>
+        a.kind !== "download_stuck" ||
+        !active.some(
+          (d) =>
+            d.media_id === a.media_id &&
+            (d.season ?? null) === (a.season ?? null) &&
+            (d.episode ?? null) === (a.episode_number ?? null),
+        ),
+    )
+    .map<QueueRow>((a) => {
+      const kind = a.kind as AlertQueueKind;
+      return {
+        key: `alert-${a.id}`,
+        status: kind === "download_stuck" ? "stalled" : "failed",
+        reason: { kind: "alert", alertKind: kind, detail: a.detail },
+        mediaId: a.media_id,
+        title: a.media_title,
+        season: a.season,
+        episode: a.episode_number,
+        releaseTitle: "",
+        posterUrl: null,
+        progress: null,
+        alert: {
+          id: a.id,
+          kind,
+          downloadHistoryId: a.download_history_id,
+        },
+      };
+    });
+}
+
 export function buildQueueRows(
   active: ActiveDownloadItem[],
   pending: PendingReleaseItem[],
   now: number,
+  attention: LibraryAttentionItem[] = [],
 ): QueueRow[] {
   const downloads = active.map<QueueRow>((item) => {
     const status = statusForDownload(item);
@@ -110,7 +175,7 @@ export function buildQueueRows(
     };
   });
 
-  return [...downloads, ...held];
+  return [...downloads, ...alertRows(attention, active), ...held];
 }
 
 export type QueueFilter = "all" | QueueStatus;
