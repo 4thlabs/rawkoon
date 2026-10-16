@@ -11,6 +11,10 @@ import { useAddToWatchlist } from "@/features/medias/hooks/useAddToWatchlist";
 import { useMediaModalData } from "@/features/medias/hooks/useMediaModalData";
 import { useRemoveFromWatchlist } from "@/features/medias/hooks/useRemoveFromWatchlist";
 import { useCurrentUser } from "@/lib/auth/useAuth";
+import {
+  defaultItemTab,
+  type ItemPageTab,
+} from "@/features/medias/lib/itemPageActions";
 import { LibraryManagementPanel } from "./LibraryManagementPanel";
 import { SimilarMediasPanel } from "./SimilarMediasPanel";
 import { LibraryItemHero } from "./LibraryItemHero";
@@ -21,12 +25,12 @@ import {
 } from "./LibraryItemSearchTab";
 
 export type LibraryItemSearchParams = {
-  tab?: "info" | "similar" | "search" | "management";
+  tab?: ItemPageTab;
   season?: number;
   episode?: number;
 };
 
-type PageTab = "info" | "similar" | "search" | "management";
+type PageTab = ItemPageTab;
 
 export function LibraryItemPage() {
   const { libraryId } = useParams({ from: "/library/$libraryId" });
@@ -85,11 +89,11 @@ export function LibraryItemPage() {
         label: t("medias.detail.tabSimilar", "Similar"),
         icon: Sparkles,
       });
-    // Search + Management are admin-only surfaces (grab/search/delete/quality).
+    // Releases + Management are admin-only surfaces (grab/search/delete/quality).
     if (isAdmin) {
       result.push({
-        key: "search",
-        label: t("medias.detail.tabSearch", "Search"),
+        key: "releases",
+        label: t("medias.detail.tabReleases", "Releases"),
         icon: Search,
       });
       result.push({
@@ -104,15 +108,13 @@ export function LibraryItemPage() {
   const activeTab = useMemo((): PageTab => {
     if (search.tab && tabs.some((tab) => tab.key === search.tab))
       return search.tab as PageTab;
-    if (search.season != null || search.episode != null) return "management";
-    if (!item) return "info";
-    if (
-      isAdmin &&
-      (item.status === "downloaded" || item.status === "downloading")
-    )
-      return "management";
-    return "info";
-  }, [search.tab, search.season, search.episode, item, tabs, isAdmin]);
+    const fallback = defaultItemTab({
+      isAdmin,
+      status: item?.status,
+      focusedEpisode: search.season != null || search.episode != null,
+    });
+    return tabs.some((tab) => tab.key === fallback) ? fallback : "info";
+  }, [search.tab, search.season, search.episode, item?.status, tabs, isAdmin]);
 
   useEffect(() => {
     if (search.season == null && search.episode == null) return;
@@ -195,13 +197,20 @@ export function LibraryItemPage() {
           addToWatchlist.isPending || removeFromWatchlist.isPending
         }
         mediaType={mediaType}
+        isAdmin={isAdmin}
         onBack={() => goBack()}
         onWatchlistToggle={handleWatchlistToggle}
+        onChooseRelease={() => setActiveTab("releases")}
+        onUpgradeSearch={() => {
+          setUpgradeSearchMode(true);
+          setActiveTab("releases");
+        }}
       />
 
       {/* ── Body ──────────────────────────────────────────────────────────── */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
-        <LastSearchNote item={item} className="text-xs" />
+        {/* Admins read the same miss in the header's status line. */}
+        {!isAdmin && <LastSearchNote item={item} className="text-xs" />}
 
         {/* Overview */}
         {overview && (
@@ -252,7 +261,7 @@ export function LibraryItemPage() {
             </div>
           )}
 
-          {activeTab === "search" && (
+          {activeTab === "releases" && (
             <div className="min-h-[300px] pb-6 animate-in fade-in slide-in-from-bottom-1 duration-300 motion-reduce:animate-none">
               <LibraryItemSearchTab
                 item={item}
@@ -287,16 +296,16 @@ export function LibraryItemPage() {
                 onSearchEpisode={(ep) => {
                   setEpisodeSearchCtx(ep);
                   setSeasonSearchCtx(null);
-                  setActiveTab("search");
+                  setActiveTab("releases");
                 }}
                 onSearchSeason={(season) => {
                   setSeasonSearchCtx(season);
                   setEpisodeSearchCtx(null);
-                  setActiveTab("search");
+                  setActiveTab("releases");
                 }}
                 onUpgradeManualSearch={() => {
                   setUpgradeSearchMode(true);
-                  setActiveTab("search");
+                  setActiveTab("releases");
                 }}
                 tmdbOriginalTitle={detailsData?.original_title ?? null}
                 tmdbOriginalLanguage={detailsData?.original_language ?? null}

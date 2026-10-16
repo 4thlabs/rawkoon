@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { parseItemTab } from "@/features/medias/lib/itemPageActions";
 import { getCurrentUser } from "@/lib/auth";
 import {
   LibraryItemPage,
@@ -9,13 +10,7 @@ export const Route = createFileRoute("/library/$libraryId")({
   validateSearch: (
     search: Record<string, unknown>,
   ): LibraryItemSearchParams => ({
-    tab:
-      typeof search.tab === "string" &&
-      (
-        ["info", "similar", "search", "management"] as readonly string[]
-      ).includes(search.tab)
-        ? (search.tab as LibraryItemSearchParams["tab"])
-        : undefined,
+    tab: parseItemTab(search.tab),
     season:
       typeof search.season === "string" || typeof search.season === "number"
         ? Number(search.season)
