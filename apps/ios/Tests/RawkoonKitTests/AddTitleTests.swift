@@ -30,28 +30,28 @@ final class AddTitleTests: XCTestCase {
 
     func testHeroStaysPutUnderAFinger() {
         var gate = HeroInteractionGate()
-        let t0 = Date(timeIntervalSince1970: 1000)
-        XCTAssertEqual(gate.rotationDelay(at: t0), HeroRotation.rotateSeconds)
-        gate.touchBegan(at: t0)
-        XCTAssertNil(gate.rotationDelay(at: t0.addingTimeInterval(60)))
+        let start = Date(timeIntervalSince1970: 1000)
+        XCTAssertEqual(gate.rotationDelay(at: start), HeroRotation.rotateSeconds)
+        gate.touchBegan(at: start)
+        XCTAssertNil(gate.rotationDelay(at: start.addingTimeInterval(60)))
     }
 
     func testAStaleTouchCountsAsReleased() {
         var gate = HeroInteractionGate()
-        let t0 = Date(timeIntervalSince1970: 1000)
-        gate.touchBegan(at: t0)
-        XCTAssertTrue(gate.isTouching(at: t0.addingTimeInterval(HeroInteractionGate.touchTimeout - 1)))
-        let stale = t0.addingTimeInterval(HeroInteractionGate.touchTimeout + 1)
+        let start = Date(timeIntervalSince1970: 1000)
+        gate.touchBegan(at: start)
+        XCTAssertTrue(gate.isTouching(at: start.addingTimeInterval(HeroInteractionGate.touchTimeout - 1)))
+        let stale = start.addingTimeInterval(HeroInteractionGate.touchTimeout + 1)
         XCTAssertFalse(gate.isTouching(at: stale))
         XCTAssertNotNil(gate.rotationDelay(at: stale))
     }
 
     func testHeroWaitsAfterTheFingerLifts() {
         var gate = HeroInteractionGate()
-        let t0 = Date(timeIntervalSince1970: 1000)
-        gate.touchBegan(at: t0)
-        gate.touchEnded(at: t0.addingTimeInterval(2))
-        XCTAssertEqual(gate.rotationDelay(at: t0.addingTimeInterval(2)), HeroInteractionGate.resumeAfter)
-        XCTAssertEqual(gate.rotationDelay(at: t0.addingTimeInterval(12)), HeroRotation.rotateSeconds)
+        let start = Date(timeIntervalSince1970: 1000)
+        gate.touchBegan(at: start)
+        gate.touchEnded(at: start.addingTimeInterval(2))
+        XCTAssertEqual(gate.rotationDelay(at: start.addingTimeInterval(2)), HeroInteractionGate.resumeAfter)
+        XCTAssertEqual(gate.rotationDelay(at: start.addingTimeInterval(12)), HeroRotation.rotateSeconds)
     }
 }

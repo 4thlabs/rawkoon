@@ -52,6 +52,10 @@ struct HomeHero<Greeting: View>: View {
         var epoch: Int
     }
 
+    private var rotationKey: RotationKey {
+        RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab, epoch: gateEpoch)
+    }
+
     var body: some View {
         if items.indices.contains(index) {
             let item = items[index]
@@ -83,7 +87,6 @@ struct HomeHero<Greeting: View>: View {
                     DragGesture(minimumDistance: 0)
                         .updating($fingerDown) { _, state, _ in state = true }
                         .onEnded { value in
-                            guard abs(value.translation.width) >= 20 || abs(value.translation.height) >= 20 else { return }
                             if let target = HeroRotation.swipe(
                                 from: index, count: items.count,
                                 dx: value.translation.width, dy: value.translation.height
@@ -101,7 +104,7 @@ struct HomeHero<Greeting: View>: View {
                     }
                 }
                 .sensoryFeedback(RawkoonHaptics.feedback(for: .tap), trigger: swipes)
-                .task(id: RotationKey(index: index, count: items.count, paused: adding || !isActiveRootTab, epoch: gateEpoch)) {
+                .task(id: rotationKey) {
                     await rotate()
                 }
         }
