@@ -152,18 +152,21 @@ async function probeClient(): Promise<ClientProbe> {
   }
 }
 
-let probeCache: {
-  at: number;
-  value: { indexer: IndexerProbe; client: ClientProbe };
-} | null = null;
+type Probes = { indexer: IndexerProbe; client: ClientProbe };
 
-/** The probes call external services, so a page reload must not repeat them. */
-async function getProbes() {
+const REFRESH_MIN_INTERVAL_MS = 5_000;
+
+let probeCache: { at: number; value: Promise<Probes> } | null = null;
+
+/** The probes call external services, so concurrent and repeated loads share one run. */
+function getProbes(): Promise<Probes> {
   const now = Date.now();
   if (probeCache && now - probeCache.at < PROBE_TTL_MS) return probeCache.value;
-  const [indexer, client] = await Promise.all([probeIndexer(), probeClient()]);
-  probeCache = { at: now, value: { indexer, client } };
-  return probeCache.value;
+  const value = Promise.all([probeIndexer(), probeClient()]).then(
+    ([indexer, client]) => ({ indexer, client }),
+  );
+  probeCache = { at: now, value };
+  return value;
 }
 
 export function resetGrabReadinessProbeCache(): void {
@@ -173,7 +176,12 @@ export function resetGrabReadinessProbeCache(): void {
 export async function getGrabReadiness(
   options: { refresh?: boolean } = {},
 ): Promise<GrabReadinessCheck[]> {
-  if (options.refresh) resetGrabReadinessProbeCache();
+  // A refresh within a few seconds of the last probe reuses it, so a double-click doesn't probe twice.
+  if (
+    options.refresh &&
+    (!probeCache || Date.now() - probeCache.at > REFRESH_MIN_INTERVAL_MS)
+  )
+    resetGrabReadinessProbeCache();
   const [probes, settings, profiles] = await Promise.all([
     getProbes(),
     prisma.mediaSettings.findUnique({ where: { id: 1 } }),

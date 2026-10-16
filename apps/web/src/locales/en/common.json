@@ -880,7 +880,8 @@
           "error": "Not working"
         },
         "fix": {
-          "watchAll": "Watch all {{count}}",
+          "watchAll_one": "Watch it",
+          "watchAll_other": "Watch all {{count}}",
           "pickDefault": "Pick a default",
           "setMaximum": "Set a maximum for {{name}}",
           "openIntegrations": "Open Integrations"

@@ -880,7 +880,8 @@
           "error": "Ne fonctionne pas"
         },
         "fix": {
-          "watchAll": "Surveiller les {{count}}",
+          "watchAll_one": "Surveiller l’indexeur",
+          "watchAll_other": "Surveiller les {{count}}",
           "pickDefault": "Choisir un défaut",
           "setMaximum": "Fixer un maximum pour {{name}}",
           "openIntegrations": "Ouvrir les intégrations"
