@@ -22,6 +22,7 @@ interface LibraryManagementPanelProps {
   }) => void;
   onSearchSeason?: (season: number) => void;
   onUpgradeManualSearch?: () => void;
+  onShowReleases?: () => void;
   focusSeason?: number | null;
   focusEpisode?: number | null;
   tmdbOriginalTitle?: string | null;
@@ -40,6 +41,7 @@ export function LibraryManagementPanel({
   onSearchEpisode,
   onSearchSeason,
   onUpgradeManualSearch,
+  onShowReleases,
   focusSeason = null,
   focusEpisode = null,
   tmdbOriginalTitle = null,
@@ -54,6 +56,7 @@ export function LibraryManagementPanel({
         libraryId={libraryId}
         item={item}
         onUpgradeManualSearch={onUpgradeManualSearch}
+        onShowReleases={onShowReleases}
       />
       <LibrarySearchTitleSection
         libraryId={libraryId}
