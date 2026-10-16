@@ -296,8 +296,8 @@ struct ReleaseSearchResults: View {
             },
             onBlock: { await session.block(release, model: model) },
             languageTag: ReleaseSheetLogic.languageTag(
-                languages: release.languages, isFallback: release.languageFallback == true,
-                fallbackTag: release.languageFallbackTag
+                title: release.title, languages: release.languages,
+                isFallback: release.languageFallback == true, fallbackTag: release.languageFallbackTag
             ),
             isBest: isBest,
             bestReasons: isBest ? bestReasons(release) : nil,

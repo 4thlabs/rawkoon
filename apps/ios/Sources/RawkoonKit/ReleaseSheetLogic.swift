@@ -23,26 +23,55 @@ public enum ReleaseSheetLogic {
         public let kind: Kind
     }
 
-    private static let subtitleFlags: Set<String> = ["vostfr", "vfstfr"]
     private static let frenchFlags: Set<String> = [
         "vff", "vfq", "vfi", "vf2", "truefrench", "vf", "french", "fr",
     ]
 
-    /// The tag shown on a row, derived from the server's parsed language flags.
+    private static let variantOrder = ["VFF", "VFI", "VFQ", "VF2", "VF", "FRENCH"]
+
+    /// Audio and subtitle markers the indexer leaves in a release name. The search payload's own
+    /// `languages` list is empty for most indexers, so the title is the reliable source.
+    static func titleFlags(_ title: String) -> Set<String> {
+        let tokens = Set(
+            title.uppercased().split { !$0.isLetter && !$0.isNumber }.map(String.init)
+        )
+        var flags = Set<String>()
+        for token in tokens {
+            switch token {
+            case "TRUEFRENCH": flags.insert("VFF")
+            case "VQC": flags.insert("VFQ")
+            case "VFF", "VFQ", "VFI", "VF2", "VF", "FRENCH", "MULTI", "VOSTFR", "VFSTFR": flags.insert(token)
+            default: break
+            }
+        }
+        return flags
+    }
+
+    /// The tag shown on a row, from the server's fallback marker plus the language markers in the name.
     public static func languageTag(
-        languages: [String], isFallback: Bool, fallbackTag: String?
+        title: String, languages: [String], isFallback: Bool, fallbackTag: String?
     ) -> LanguageTag? {
         if isFallback {
             return LanguageTag(label: fallbackTag ?? "?", kind: .fallback)
         }
-        let flags = languages
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        let audio = flags.filter { !subtitleFlags.contains($0.lowercased()) }
-        if audio.isEmpty {
-            return flags.isEmpty ? nil : LanguageTag(label: "VOSTFR", kind: .subtitlesOnly)
+        var flags = titleFlags(title)
+        for language in languages {
+            flags.insert(language.trimmingCharacters(in: .whitespaces).uppercased())
         }
-        return LanguageTag(label: audio[0].uppercased(), kind: .audio)
+        flags.remove("")
+        let hasSubtitles = !flags.isDisjoint(with: ["VOSTFR", "VFSTFR"])
+        let variant = variantOrder.first { flags.contains($0) }
+        let isMulti = flags.contains("MULTI")
+        if let variant {
+            return LanguageTag(label: isMulti ? "MULTi \(variant)" : variant, kind: .audio)
+        }
+        if isMulti {
+            return LanguageTag(label: "MULTi", kind: .audio)
+        }
+        if hasSubtitles {
+            return LanguageTag(label: "VOSTFR", kind: .subtitlesOnly)
+        }
+        return nil
     }
 
     /// True for MULTi and every French variant tag.

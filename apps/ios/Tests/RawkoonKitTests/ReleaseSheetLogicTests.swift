@@ -17,27 +17,40 @@ private struct Candidate: BestMatchCandidate {
 final class ReleaseSheetLogicTests: XCTestCase {
     typealias L = ReleaseSheetLogic
 
-    func testAudioTagUsesTheFirstAudioFlag() {
-        let tag = L.languageTag(languages: ["VFQ", "MULTi"], isFallback: false, fallbackTag: nil)
-        XCTAssertEqual(tag, .init(label: "VFQ", kind: .audio))
+    private func tag(_ title: String, languages: [String] = []) -> L.LanguageTag? {
+        L.languageTag(title: title, languages: languages, isFallback: false, fallbackTag: nil)
+    }
+
+    func testMultiWithAVariantNamesBoth() {
+        XCTAssertEqual(tag("Film.2024.MULTi.VFQ.1080p.WEB"), .init(label: "MULTi VFQ", kind: .audio))
+    }
+
+    func testTrueFrenchReadsAsVff() {
+        XCTAssertEqual(tag("Film.2024.TRUEFRENCH.1080p"), .init(label: "VFF", kind: .audio))
+    }
+
+    func testBareMulti() {
+        XCTAssertEqual(tag("Film.2024.MULTi.1080p"), .init(label: "MULTi", kind: .audio))
     }
 
     func testSubtitleOnlyReleaseIsNotAnAudioMatch() {
-        let tag = L.languageTag(languages: ["VOSTFR"], isFallback: false, fallbackTag: nil)
-        XCTAssertEqual(tag, .init(label: "VOSTFR", kind: .subtitlesOnly))
+        XCTAssertEqual(tag("Film.2024.VOSTFR.1080p.WEB"), .init(label: "VOSTFR", kind: .subtitlesOnly))
     }
 
     func testSubtitlesPlusAudioReadsAsAudio() {
-        let tag = L.languageTag(languages: ["VOSTFR", "VFF"], isFallback: false, fallbackTag: nil)
-        XCTAssertEqual(tag?.kind, .audio)
+        XCTAssertEqual(tag("Film.2024.VFF.VOSTFR.1080p")?.kind, .audio)
     }
 
-    func testFallbackUsesTheServerTagAndNoFlagsMeansNoTag() {
+    func testPayloadLanguagesCountToo() {
+        XCTAssertEqual(tag("Film.2024.1080p", languages: ["vfq"]), .init(label: "VFQ", kind: .audio))
+    }
+
+    func testFallbackUsesTheServerTagAndNoMarkersMeansNoTag() {
         XCTAssertEqual(
-            L.languageTag(languages: [], isFallback: true, fallbackTag: "VFF"),
+            L.languageTag(title: "x", languages: [], isFallback: true, fallbackTag: "VFF"),
             .init(label: "VFF", kind: .fallback)
         )
-        XCTAssertNil(L.languageTag(languages: [], isFallback: false, fallbackTag: nil))
+        XCTAssertNil(tag("Film.2024.1080p.WEB"))
     }
 
     func testFallbackSummaryOrdersByCountAndDetectsFrench() {
