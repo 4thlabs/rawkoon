@@ -321,6 +321,10 @@ final class LiveUpdatesCoordinator {
     /// on the current screen is the safe fallback, not a web view or a crash.
     func navigate(toNotificationUrl url: String?) {
         guard let destination = NotificationDestination.resolve(url: url) else { return }
+        // A book link is unopenable while the books feature is off, same as an unresolvable URL.
+        if case .book = destination, appModel?.booksEnabled == false {
+            return
+        }
         appModel?.deepLinkTarget = destination
     }
 

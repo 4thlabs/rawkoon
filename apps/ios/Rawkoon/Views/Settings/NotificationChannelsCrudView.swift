@@ -209,7 +209,7 @@ private struct ChannelEditorView: View {
     }
 
     private func buildConfig() -> [String: JSONValue] {
-        var config: [String: JSONValue] = [:]
+        var config = NotificationChannelSchema.unknownEntries(channel?.config ?? [:], type: type)
         for field in fields {
             let raw = (values[field.key] ?? "").trimmingCharacters(in: .whitespaces)
             guard !raw.isEmpty else { continue }

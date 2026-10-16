@@ -8,7 +8,7 @@ final class NotificationChannelSchemaTests: XCTestCase {
         "telegram": ["bot_token", "chat_id"],
         "discord": ["webhook_url"],
         "gotify": ["url", "token", "priority"],
-        "pushover": ["token", "user"],
+        "pushover": ["token", "user", "priority"],
         "slack": ["webhook_url"],
         "webhook": ["url", "method", "body_template"],
     ]
@@ -33,6 +33,12 @@ final class NotificationChannelSchemaTests: XCTestCase {
             ["server_url": "g", "app_token": "k"], type: "gotify"
         )
         XCTAssertEqual(gotify, ["url": "g", "token": "k"])
+    }
+
+    func testUnknownServerKeysAreCarriedOver() {
+        let config: [String: Int] = ["url": 1, "token": 2, "server_url": 3, "future_field": 4]
+        XCTAssertEqual(NotificationChannelSchema.unknownEntries(config, type: "gotify"), ["future_field": 4])
+        XCTAssertEqual(NotificationChannelSchema.unknownEntries(["priority": 1], type: "telegram"), ["priority": 1])
     }
 
     func testCurrentKeysWinOverLegacyOnes() {

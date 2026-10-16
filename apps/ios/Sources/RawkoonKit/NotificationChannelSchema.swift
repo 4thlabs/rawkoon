@@ -32,7 +32,8 @@ public enum NotificationChannelSchema {
             [.init("url", "Server URL"), .init("token", "App token", secret: true),
              .init("priority", "Priority", numeric: true)]
         case "pushover":
-            [.init("token", "API token", secret: true), .init("user", "User key", secret: true)]
+            [.init("token", "API token", secret: true), .init("user", "User key", secret: true),
+             .init("priority", "Priority", numeric: true)]
         case "webhook":
             [.init("url", "URL"), .init("method", "Method (GET/POST)"), .init("body_template", "Body template")]
         default:
@@ -48,6 +49,13 @@ public enum NotificationChannelSchema {
         case "pushover": ["api_token": "token", "user_key": "user"]
         default: [:]
         }
+    }
+
+    /// Entries of an existing config the form has no field for (and that are not legacy
+    /// keys), so an edit can carry them over instead of dropping a field the server added.
+    public static func unknownEntries<Value>(_ config: [String: Value], type: String) -> [String: Value] {
+        let known = Set(fields(for: type).map(\.key)).union(legacyKeys(for: type).keys)
+        return config.filter { !known.contains($0.key) }
     }
 
     /// Moves legacy keys onto the current ones so re-saving an old channel repairs it.
