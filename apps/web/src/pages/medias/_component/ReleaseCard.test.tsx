@@ -142,3 +142,21 @@ describe("ReleaseCard replace", () => {
     expect(onDownload).toHaveBeenCalledOnce();
   });
 });
+
+describe("ReleaseCard replace without a URL", () => {
+  it("disables Replace and says why for a token-only release", () => {
+    const { onDownload } = renderCard(
+      release({ download_url: undefined, download_token: "tok" }),
+      { replaceRunning: true },
+    );
+    const button = screen.getByRole("button", {
+      name: "medias.interactive.replace",
+    });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      screen.getAllByText("medias.interactive.replaceUnavailable").length,
+    ).toBeGreaterThan(0);
+    fireEvent.click(button);
+    expect(onDownload).not.toHaveBeenCalled();
+  });
+});

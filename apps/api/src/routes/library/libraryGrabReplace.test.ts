@@ -6,7 +6,18 @@ const grabRelease = mock(async () => ({
   releaseTitle: "New.Release.2160p",
   reason: "",
 }));
-const cancelActiveMovieDownloads = mock(async () => ({ cancelled: 1 }));
+type Prep =
+  | { status: "already_active" }
+  | { status: "cancelled"; cancelled: number }
+  | { status: "refused"; reason: string };
+const cancelActiveMovieDownloads = mock(
+  async (..._args: unknown[]): Promise<Prep> => ({
+    status: "cancelled",
+    cancelled: 1,
+  }),
+);
+let preflight: { refusal: { grabbed: false; reason: string } } | object = {};
+const preflightGrab = mock(async (..._args: unknown[]) => preflight);
 
 mock.module("@rawkoon/api/db", () => ({
   prisma: {
@@ -17,7 +28,10 @@ mock.module("@rawkoon/api/db", () => ({
 mock.module("@rawkoon/api/middleware/hono/auth", () => ({
   requireAdmin: async (_c: unknown, next: () => Promise<void>) => next(),
 }));
-mock.module("@rawkoon/api/services/mediaGrabberGrab", () => ({ grabRelease }));
+mock.module("@rawkoon/api/services/mediaGrabberGrab", () => ({
+  grabRelease,
+  preflightGrab,
+}));
 mock.module("@rawkoon/api/services/replaceActiveDownload", () => ({
   cancelActiveMovieDownloads,
 }));
@@ -40,6 +54,12 @@ describe("POST /:id/grab replace", () => {
     media = { id: 1, type: "movie", status: "downloading" };
     grabRelease.mockClear();
     cancelActiveMovieDownloads.mockClear();
+    preflightGrab.mockClear();
+    preflight = {};
+    cancelActiveMovieDownloads.mockImplementation(async () => ({
+      status: "cancelled",
+      cancelled: 1,
+    }));
     grabRelease.mockImplementation(async () => ({
       grabbed: true,
       releaseTitle: "New.Release.2160p",
@@ -61,7 +81,7 @@ describe("POST /:id/grab replace", () => {
       grabbed: true,
       release_title: "New.Release.2160p",
     });
-    expect(cancelActiveMovieDownloads).toHaveBeenCalledWith(1);
+    expect(cancelActiveMovieDownloads).toHaveBeenCalledTimes(1);
     expect(grabRelease).toHaveBeenCalledTimes(1);
   });
 
@@ -90,5 +110,56 @@ describe("POST /:id/grab replace", () => {
     media = { id: 1, type: "show", status: "wanted" };
     const res = await grab({ replace: true });
     expect(res.status).toBe(400);
+  });
+
+  it("leaves the running download alone when preflight refuses", async () => {
+    preflight = {
+      refusal: { grabbed: false, reason: "Blocklisted: bad release" },
+    };
+    const res = await grab({ replace: true });
+    expect(await res.json()).toEqual({
+      grabbed: false,
+      reason: "Blocklisted: bad release",
+    });
+    expect(cancelActiveMovieDownloads).not.toHaveBeenCalled();
+    expect(grabRelease).not.toHaveBeenCalled();
+  });
+
+  it("succeeds without grabbing when the running download is that release", async () => {
+    cancelActiveMovieDownloads.mockImplementation(async () => ({
+      status: "already_active",
+    }));
+    const res = await grab({ replace: true });
+    expect(await res.json()).toEqual({
+      grabbed: true,
+      release_title: "New.Release.2160p",
+    });
+    expect(grabRelease).not.toHaveBeenCalled();
+  });
+
+  it("refuses without grabbing when the old download could not be stopped", async () => {
+    cancelActiveMovieDownloads.mockImplementation(async () => ({
+      status: "refused",
+      reason: "The download finished or changed while replacing it",
+    }));
+    const res = await grab({ replace: true });
+    expect(await res.json()).toEqual({
+      grabbed: false,
+      reason: "The download finished or changed while replacing it",
+    });
+    expect(grabRelease).not.toHaveBeenCalled();
+  });
+
+  it("still reports the old download gone when the grab throws", async () => {
+    grabRelease.mockImplementation(async () => {
+      throw new Error("boom");
+    });
+    const res = await grab({ replace: true });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      grabbed: false,
+      reason: "Grab failed",
+      replaced_previous: true,
+    });
   });
 });

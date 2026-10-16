@@ -72,8 +72,12 @@ export function ReleaseCard({
 }) {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [confirmingReplace, setConfirmingReplace] = useState(false);
+  // Replace rides the library grab, which needs a download URL; a token-only release can't.
+  const replaceUnavailable = replaceRunning && !release.download_url;
   const grabDisabled =
-    isBusy || (!release.download_url && !release.download_token);
+    isBusy ||
+    replaceUnavailable ||
+    (!release.download_url && !release.download_token);
   // A language fallback is rejected for grabbing automatically, but offered here.
   const showRejected = release.rejected && !release.language_fallback;
   const isBest = variant === "best";
@@ -261,6 +265,11 @@ export function ReleaseCard({
             }}
             onBlur={() => setConfirmingReplace(false)}
             disabled={grabDisabled}
+            title={
+              replaceUnavailable
+                ? t("medias.interactive.replaceUnavailable")
+                : undefined
+            }
             style={{ touchAction: "manipulation" }}
             className="flex-1 gap-1.5 sm:flex-none"
           >
@@ -277,6 +286,11 @@ export function ReleaseCard({
                   ? t("medias.interactive.redownload")
                   : t("medias.interactive.download")}
           </Button>
+          {replaceUnavailable && (
+            <p className="text-xs text-neutral-400">
+              {t("medias.interactive.replaceUnavailable")}
+            </p>
+          )}
           {(onBlock || canShowBreakdown) && (
             <Popover open={menuOpen} onOpenChange={setMenuOpen}>
               <PopoverTrigger asChild>

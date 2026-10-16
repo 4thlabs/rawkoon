@@ -29,20 +29,43 @@ public enum ReleaseSheetLogic {
 
     private static let variantOrder = ["VFF", "VFI", "VFQ", "VF2", "VF", "FRENCH"]
 
-    /// Audio and subtitle markers the indexer leaves in a release name. The search payload's own
-    /// `languages` list is empty for most indexers, so the title is the reliable source.
+    /// Audio and subtitle markers in a release name, following the server's `parseAudioFlags`:
+    /// VF2 stands alone, a bare VF or FRENCH only counts when no specific variant is named,
+    /// and TRUEFRENCH is the Parisian dub (VFF). The search payload's own `languages` list is
+    /// empty for most indexers, so the title is the reliable source.
     static func titleFlags(_ title: String) -> Set<String> {
         let tokens = Set(
             title.uppercased().split { !$0.isLetter && !$0.isNumber }.map(String.init)
         )
         var flags = Set<String>()
-        for token in tokens {
-            switch token {
-            case "TRUEFRENCH": flags.insert("VFF")
-            case "VQC": flags.insert("VFQ")
-            case "VFF", "VFQ", "VFI", "VF2", "VF", "FRENCH", "MULTI", "VOSTFR", "VFSTFR": flags.insert(token)
-            default: break
-            }
+        if tokens.contains("MULTI") {
+            flags.insert("MULTI")
+        }
+        if tokens.contains("VF2") {
+            flags.insert("VF2")
+            return flags
+        }
+        if tokens.contains("TRUEFRENCH") || tokens.contains("VFF") {
+            flags.insert("VFF")
+        }
+        if tokens.contains("VFQ") || tokens.contains("VQC") {
+            flags.insert("VFQ")
+        }
+        if tokens.contains("VFI") {
+            flags.insert("VFI")
+        }
+        let hasVariant = !flags.isDisjoint(with: ["VFF", "VFQ", "VFI"])
+        if tokens.contains("VF"), !hasVariant {
+            flags.insert("VF")
+        }
+        if tokens.contains("FRENCH"), flags.subtracting(["MULTI"]).isEmpty {
+            flags.insert("FRENCH")
+        }
+        if tokens.contains("VOSTFR") {
+            flags.insert("VOSTFR")
+        }
+        if tokens.contains("VFSTFR") {
+            flags.insert("VFSTFR")
         }
         return flags
     }
@@ -55,15 +78,17 @@ public enum ReleaseSheetLogic {
             return LanguageTag(label: fallbackTag ?? "?", kind: .fallback)
         }
         var flags = titleFlags(title)
-        for language in languages {
-            flags.insert(language.trimmingCharacters(in: .whitespaces).uppercased())
+        // A VF2 name already says both dubs; a payload flag must not add a second variant to it.
+        let payload = languages.map { $0.trimmingCharacters(in: .whitespaces).uppercased() }
+        if !flags.contains("VF2") {
+            flags.formUnion(payload.filter { !$0.isEmpty })
         }
-        flags.remove("")
         let hasSubtitles = !flags.isDisjoint(with: ["VOSTFR", "VFSTFR"])
-        let variant = variantOrder.first { flags.contains($0) }
+        let variants = variantOrder.filter { flags.contains($0) }
         let isMulti = flags.contains("MULTI")
-        if let variant {
-            return LanguageTag(label: isMulti ? "MULTi \(variant)" : variant, kind: .audio)
+        if !variants.isEmpty {
+            let names = variants.joined(separator: "/")
+            return LanguageTag(label: isMulti ? "MULTi \(names)" : names, kind: .audio)
         }
         if isMulti {
             return LanguageTag(label: "MULTi", kind: .audio)

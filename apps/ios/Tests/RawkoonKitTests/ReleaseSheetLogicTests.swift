@@ -41,6 +41,30 @@ final class ReleaseSheetLogicTests: XCTestCase {
         XCTAssertEqual(tag("Film.2024.VFF.VOSTFR.1080p")?.kind, .audio)
     }
 
+    func testVf2StandsAlone() {
+        XCTAssertEqual(tag("Film.2024.MULTi.VF2.1080p"), .init(label: "MULTi VF2", kind: .audio))
+        XCTAssertEqual(tag("Film.2024.VF2.VFQ.1080p")?.label, "VF2")
+    }
+
+    func testEveryNamedVariantIsShown() {
+        XCTAssertEqual(tag("Film.2024.VFQ.VFF.1080p")?.label, "VFF/VFQ")
+    }
+
+    func testFrenchOnlyCountsWithoutAnotherFlag() {
+        XCTAssertEqual(tag("Film.2024.FRENCH.1080p")?.label, "FRENCH")
+        XCTAssertEqual(tag("Film.2024.FRENCH.VFQ.1080p")?.label, "VFQ")
+        XCTAssertEqual(tag("Film.2024.MULTi.FRENCH.1080p")?.label, "MULTi FRENCH")
+    }
+
+    func testBareVfNeedsNoSpecificVariant() {
+        XCTAssertEqual(tag("Film.2024.VF.1080p")?.label, "VF")
+        XCTAssertEqual(tag("Film.2024.VF.VFF.1080p")?.label, "VFF")
+    }
+
+    func testVqcReadsAsVfq() {
+        XCTAssertEqual(tag("Film.2024.VQC.1080p")?.label, "VFQ")
+    }
+
     func testPayloadLanguagesCountToo() {
         XCTAssertEqual(tag("Film.2024.1080p", languages: ["vfq"]), .init(label: "VFQ", kind: .audio))
     }

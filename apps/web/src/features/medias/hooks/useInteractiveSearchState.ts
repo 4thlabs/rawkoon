@@ -278,7 +278,12 @@ export function useInteractiveSearchState({
           ...(replaceRunning ? { replace: true } : {}),
         });
         if (!result.grabbed) {
-          toast.error(result.reason ?? t("medias.interactive.downloadFailed"));
+          const base = result.reason ?? t("medias.interactive.downloadFailed");
+          toast.error(
+            result.replaced_previous
+              ? `${base} ${t("medias.interactive.replacedPrevious")}`
+              : base,
+          );
           return;
         }
       } else if (isSearchMode && release.download_token) {
