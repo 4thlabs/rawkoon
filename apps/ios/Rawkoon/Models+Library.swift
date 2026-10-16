@@ -1,4 +1,5 @@
 import Foundation
+import RawkoonKit
 
 // Library media, episodes, file metadata, and remux DTOs. Split out of Models.swift to stay under the file_length lint
 // threshold (spec §4.2). Pure data types, no behaviour.
