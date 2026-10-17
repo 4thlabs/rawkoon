@@ -96,7 +96,11 @@ export function FilterPanel({
 }: FilterPanelProps) {
   const { t } = useTranslation("common");
   const isDesktop = useIsDesktop();
-  const [open, setOpen] = useState(false);
+  // Remember which mode opened it: crossing 640px then reads as closed.
+  const [openedAsDesktop, setOpenedAsDesktop] = useState<boolean | null>(null);
+  const open = openedAsDesktop === isDesktop;
+  const setOpen = (next: boolean) =>
+    setOpenedAsDesktop(next ? isDesktop : null);
 
   const close = () => {
     setOpen(false);

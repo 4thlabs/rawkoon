@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useUrlState } from "@/lib/app/useUrlState";
 import type {
   FilterType,
@@ -36,5 +37,22 @@ export function useLibraryPageState(searchParams: LibraryPageSearchParams) {
     isNonDefaultSort(state.sortBy, state.sortDir),
   ].filter(Boolean).length;
 
-  return { state, setState, activeFilterCount };
+  // One navigation each: two setState calls in a row would overwrite each other.
+  const setSort = useCallback(
+    (sortBy: SortKey, sortDir: SortDir) => setState({ sortBy, sortDir }),
+    [setState],
+  );
+  const resetFilters = useCallback(
+    () =>
+      setState({
+        type: LIBRARY_DEFAULTS.type,
+        status: LIBRARY_DEFAULTS.status,
+        language: LIBRARY_DEFAULTS.language,
+        sortBy: LIBRARY_DEFAULTS.sortBy,
+        sortDir: LIBRARY_DEFAULTS.sortDir,
+      }),
+    [setState],
+  );
+
+  return { state, setState, setSort, resetFilters, activeFilterCount };
 }

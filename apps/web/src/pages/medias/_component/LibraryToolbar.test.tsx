@@ -25,8 +25,7 @@ const handlers = () => ({
   onTypeChange: vi.fn(),
   onStatusChange: vi.fn(),
   onLanguageChange: vi.fn(),
-  onSortByChange: vi.fn(),
-  onSortDirChange: vi.fn(),
+  onSortChange: vi.fn(),
   onViewModeChange: vi.fn(),
   onReset: vi.fn(),
 });
@@ -88,8 +87,7 @@ describe("LibraryToolbar", () => {
     expect(h.onTypeChange).toHaveBeenCalledWith("all");
 
     fireEvent.click(screen.getByRole("button", { name: /sortChip/ }));
-    expect(h.onSortByChange).toHaveBeenCalledWith("added_at");
-    expect(h.onSortDirChange).toHaveBeenCalledWith("desc");
+    expect(h.onSortChange).toHaveBeenCalledWith("added_at", "desc");
 
     fireEvent.click(screen.getByRole("button", { name: "filters.clearAll" }));
     expect(h.onReset).toHaveBeenCalledOnce();

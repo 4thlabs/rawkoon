@@ -26,15 +26,19 @@ export function MobileBottomSheet({
   children,
 }: MobileBottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (open) {
+      returnFocusRef.current = document.activeElement as HTMLElement | null;
       document.body.style.overflow = "hidden";
       const focusable =
         sheetRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
       focusable?.[0]?.focus();
     } else {
       document.body.style.overflow = "";
+      returnFocusRef.current?.focus();
+      returnFocusRef.current = null;
     }
     return () => {
       document.body.style.overflow = "";
@@ -42,6 +46,9 @@ export function MobileBottomSheet({
   }, [open]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Portaled children (an open Radix Select) bubble here through React; they own their keys.
+    if (e.defaultPrevented || !sheetRef.current?.contains(e.target as Node))
+      return;
     if (e.key === "Escape") {
       onClose();
       return;
