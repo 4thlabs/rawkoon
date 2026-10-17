@@ -163,27 +163,35 @@ export interface DashboardPipelineDownloadItem {
   eta_seconds: number | null;
 }
 
+/**
+ * Every block carries `available`: false means its source failed and the other
+ * fields are placeholders, so clients show "Couldn't check", not an idle row.
+ */
 export interface DashboardPipeline {
   downloading: {
+    available: boolean;
     count: number;
     speed_bytes_per_sec: number;
     /** The first three in-flight grabs, oldest first. */
     items: DashboardPipelineDownloadItem[];
   };
   /** Titles whose grab is waiting out the grab delay. */
-  delayed: { count: number };
+  delayed: { available: boolean; count: number };
   attention: {
+    available: boolean;
     /** alerts + gave_up */
     count: number;
+    /** Open attention alerts (a true count). */
     alerts: number;
     /** Wanted titles whose last search found nothing or errored, not already in an alert. */
     gave_up: number;
   };
   rss: {
+    available: boolean;
     last_run_at: string | null;
     ok: boolean | null;
     releases_found: number | null;
     next_run_at: string | null;
   };
-  reencode: { active: number; queued: number };
+  reencode: { available: boolean; active: number; queued: number };
 }

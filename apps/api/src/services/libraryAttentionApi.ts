@@ -6,6 +6,10 @@ import {
   type LibraryAttentionScopeType,
 } from "@rawkoon/api/services/libraryAttentionTypes";
 
+export function countOpenLibraryAttention(): Promise<number> {
+  return prisma.libraryAttentionAlert.count({ where: { status: "open" } });
+}
+
 export async function listOpenLibraryAttentionForApi(): Promise<{
   items: Array<{
     id: number;

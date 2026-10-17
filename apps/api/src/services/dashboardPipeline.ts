@@ -8,10 +8,12 @@ import {
   type ActiveBookGrabRow,
   type ActiveGrabRow,
 } from "@rawkoon/api/services/downloads/activeDownloads";
-import { listOpenLibraryAttentionForApi } from "@rawkoon/api/services/libraryAttentionApi";
+import {
+  countOpenLibraryAttention,
+  listOpenLibraryAttentionForApi,
+} from "@rawkoon/api/services/libraryAttentionApi";
 import { getNextRssRunAt } from "@rawkoon/api/services/rssNextRun";
 import { getLastRssRun } from "@rawkoon/api/services/rssRunStatus";
-import { buildSummary } from "@rawkoon/api/services/transcode/queueApi";
 import type {
   DashboardPipeline,
   DashboardPipelineDownloadItem,
@@ -24,11 +26,12 @@ export interface PipelineSources {
   loadMediaRows: () => Promise<ActiveGrabRow[]>;
   loadBookRows: () => Promise<ActiveBookGrabRow[]>;
   countDelayedTargets: () => Promise<number>;
+  countOpenAlerts: () => Promise<number>;
   openAlertMediaIds: () => Promise<number[]>;
   countWantedMisses: (excludeMediaIds: number[]) => Promise<number>;
   lastRssRun: typeof getLastRssRun;
   nextRssRunAt: () => Promise<string>;
-  reencodeSummary: () => Promise<{ running: boolean; queued: number }>;
+  countReencode: () => Promise<{ running: number; queued: number }>;
 }
 
 export const defaultPipelineSources: PipelineSources = {
@@ -39,12 +42,8 @@ export const defaultPipelineSources: PipelineSources = {
   loadMediaRows: loadActiveGrabRows,
   loadBookRows: loadActiveBookGrabRows,
   countDelayedTargets: async () =>
-    (
-      await prisma.pendingRelease.findMany({
-        distinct: ["targetKey"],
-        select: { targetKey: true },
-      })
-    ).length,
+    (await prisma.pendingRelease.groupBy({ by: ["targetKey"] })).length,
+  countOpenAlerts: countOpenLibraryAttention,
   openAlertMediaIds: async () => {
     const { items } = await listOpenLibraryAttentionForApi();
     return items.map((i) => i.media_id);
@@ -60,9 +59,13 @@ export const defaultPipelineSources: PipelineSources = {
     }),
   lastRssRun: getLastRssRun,
   nextRssRunAt: getNextRssRunAt,
-  reencodeSummary: async () => {
-    const s = await buildSummary();
-    return { running: s.current != null, queued: s.queued_count };
+  // Plain counts: buildSummary also purges history, which a polled GET must not do.
+  countReencode: async () => {
+    const [running, queued] = await Promise.all([
+      prisma.transcodeJob.count({ where: { status: "running" } }),
+      prisma.transcodeJob.count({ where: { status: "queued" } }),
+    ]);
+    return { running, queued };
   },
 };
 
@@ -83,7 +86,8 @@ async function readDownloading(
   s: PipelineSources,
 ): Promise<DashboardPipeline["downloading"]> {
   const torrents = await s.listTorrents();
-  if (!torrents) return { count: 0, speed_bytes_per_sec: 0, items: [] };
+  if (!torrents)
+    return { available: true, count: 0, speed_bytes_per_sec: 0, items: [] };
   const [mediaRows, bookRows] = await Promise.all([
     s.loadMediaRows(),
     s.loadBookRows(),
@@ -116,6 +120,7 @@ async function readDownloading(
   }
   items.sort((a, b) => a.id - b.id);
   return {
+    available: true,
     count: items.length,
     speed_bytes_per_sec: torrents.reduce(
       (total, t) => total + Math.max(0, t.dlSpeed),
@@ -128,17 +133,13 @@ async function readDownloading(
 async function readAttention(
   s: PipelineSources,
 ): Promise<DashboardPipeline["attention"]> {
-  const mediaIds = await s.openAlertMediaIds();
-  const gaveUp = await settle(
-    "attention.gave_up",
-    () => s.countWantedMisses(mediaIds),
-    0,
-  );
-  return {
-    count: mediaIds.length + gaveUp,
-    alerts: mediaIds.length,
-    gave_up: gaveUp,
-  };
+  const [alerts, mediaIds] = await Promise.all([
+    s.countOpenAlerts(),
+    // A failed id list only loses the duplicate exclusion, not the whole block.
+    settle("attention.alert_ids", s.openAlertMediaIds, [] as number[]),
+  ]);
+  const gaveUp = await s.countWantedMisses(mediaIds);
+  return { available: true, count: alerts + gaveUp, alerts, gave_up: gaveUp };
 }
 
 async function readRss(s: PipelineSources): Promise<DashboardPipeline["rss"]> {
@@ -147,6 +148,7 @@ async function readRss(s: PipelineSources): Promise<DashboardPipeline["rss"]> {
     settle("rss.next_run", s.nextRssRunAt, null),
   ]);
   return {
+    available: true,
     last_run_at: last?.completed_at ?? null,
     ok: last ? last.status === "success" : null,
     releases_found: last?.releases_found ?? null,
@@ -154,25 +156,30 @@ async function readRss(s: PipelineSources): Promise<DashboardPipeline["rss"]> {
   };
 }
 
-/** One failing source zeroes its own block and is logged; the rest still answer. */
+/** One failing source marks its own block unavailable and is logged; the rest still answer. */
 export async function buildDashboardPipeline(
   s: PipelineSources = defaultPipelineSources,
 ): Promise<DashboardPipeline> {
   const [downloading, delayed, attention, rss, reencode] = await Promise.all([
     settle("downloading", () => readDownloading(s), {
+      available: false,
       count: 0,
       speed_bytes_per_sec: 0,
       items: [],
     }),
-    settle("delayed", async () => ({ count: await s.countDelayedTargets() }), {
-      count: 0,
-    }),
+    settle(
+      "delayed",
+      async () => ({ available: true, count: await s.countDelayedTargets() }),
+      { available: false, count: 0 },
+    ),
     settle("attention", () => readAttention(s), {
+      available: false,
       count: 0,
       alerts: 0,
       gave_up: 0,
     }),
     settle("rss", () => readRss(s), {
+      available: false,
       last_run_at: null,
       ok: null,
       releases_found: null,
@@ -181,10 +188,10 @@ export async function buildDashboardPipeline(
     settle(
       "reencode",
       async () => {
-        const r = await s.reencodeSummary();
-        return { active: r.running ? 1 : 0, queued: r.queued };
+        const r = await s.countReencode();
+        return { available: true, active: r.running, queued: r.queued };
       },
-      { active: 0, queued: 0 },
+      { available: false, active: 0, queued: 0 },
     ),
   ]);
   return { downloading, delayed, attention, rss, reencode };
