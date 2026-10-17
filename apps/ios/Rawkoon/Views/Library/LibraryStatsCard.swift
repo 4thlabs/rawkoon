@@ -1,39 +1,44 @@
 import RawkoonKit
 import SwiftUI
 
-extension HomeView {
-    // MARK: Library stats widget (admin)
+struct LibraryStatsCard: View {
+    let stats: LibraryStats
 
-    func libraryStatsWidget(_ s: LibraryStats) -> some View {
-        widgetCard("Library", systemImage: "internaldrive") {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 18) {
-                    statFigure(s.totalMovies, "Movies")
-                    statFigure(s.totalShows, "Shows")
-                    statFigure(s.downloaded, "Downloaded")
-                    if s.wanted > 0 {
-                        statFigure(s.wanted, "Wanted")
-                    }
-                    if s.returningSeries > 0 {
-                        statFigure(s.returningSeries, "Returning")
-                    }
-                    Spacer(minLength: 0)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("Library", systemImage: "internaldrive")
+                .font(.display(16))
+                .foregroundStyle(Theme.textStrong)
+            HStack(alignment: .top, spacing: 18) {
+                statFigure(stats.totalMovies, "Movies")
+                statFigure(stats.totalShows, "Shows")
+                statFigure(stats.downloaded, "Downloaded")
+                if stats.wanted > 0 {
+                    statFigure(stats.wanted, "Wanted")
                 }
-                HStack(spacing: 6) {
-                    Text("Storage").font(.caption2).foregroundStyle(Theme.faint)
-                    Text(byteString(s.storageUsedBytes))
-                        .font(.system(.subheadline, design: .monospaced)).foregroundStyle(Theme.text)
-                        .rawkoonNumeric(Double(s.storageUsedBytes))
+                if stats.returningSeries > 0 {
+                    statFigure(stats.returningSeries, "Returning")
                 }
-                let bars = orderedStorageBars(s.storageByResolution)
-                if !bars.isEmpty {
-                    storageBars(bars, total: s.storageUsedBytes)
-                }
-                if let total = s.diskTotalBytes, let free = s.diskFreeBytes, total > 0 {
-                    diskGauge(total: total, free: free)
-                }
+                Spacer(minLength: 0)
+            }
+            HStack(spacing: 6) {
+                Text("Storage").font(.caption2).foregroundStyle(Theme.faint)
+                Text(byteString(stats.storageUsedBytes))
+                    .font(.system(.subheadline, design: .monospaced)).foregroundStyle(Theme.text)
+                    .rawkoonNumeric(Double(stats.storageUsedBytes))
+            }
+            let bars = orderedStorageBars(stats.storageByResolution)
+            if !bars.isEmpty {
+                storageBars(bars, total: stats.storageUsedBytes)
+            }
+            if let total = stats.diskTotalBytes, let free = stats.diskFreeBytes, total > 0 {
+                diskGauge(total: total, free: free)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Theme.raised, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border, lineWidth: 1))
     }
 
     private func statFigure(_ value: Int, _ label: LocalizedStringKey) -> some View {
@@ -45,13 +50,10 @@ extension HomeView {
         }
     }
 
-    /// Storage rows with a value, ordered low→high resolution with unknown last.
     func orderedStorageBars(_ rows: [StorageByResolution]) -> [StorageByResolution] {
         rows.filter { $0.sizeBytes > 0 }.sorted { resolutionRank($0.resolution) < resolutionRank($1.resolution) }
     }
 
-    /// Bars are each resolution's share of total library storage, so their
-    /// widths sum to the whole rather than the largest bucket always filling.
     private func storageBars(_ rows: [StorageByResolution], total: Int) -> some View {
         let denom = max(total, 1)
         return VStack(spacing: 8) {
@@ -76,7 +78,6 @@ extension HomeView {
         }
     }
 
-    /// Volume capacity: used fill over the whole disk, with a "free of total" label.
     private func diskGauge(total: Int, free: Int) -> some View {
         let used = max(min(total - free, total), 0)
         let fraction = CGFloat(used) / CGFloat(max(total, 1))
@@ -98,8 +99,8 @@ extension HomeView {
         }
     }
 
-    func resolutionRank(_ r: String) -> Int {
-        switch r {
+    func resolutionRank(_ resolution: String) -> Int {
+        switch resolution {
         case "480p": 0
         case "720p": 1
         case "1080p": 2
@@ -108,11 +109,11 @@ extension HomeView {
         }
     }
 
-    func resolutionLabel(_ r: String) -> String {
-        switch r {
+    func resolutionLabel(_ resolution: String) -> String {
+        switch resolution {
         case "4k": "4K"
         case "unknown": String(localized: "SD / unknown")
-        default: r
+        default: resolution
         }
     }
 

@@ -50,6 +50,10 @@ extension APIClient {
         try await get(Endpoints.upcoming)
     }
 
+    func dashboardPipeline() async throws -> DashboardPipeline {
+        try await get(Endpoints.dashboardPipeline)
+    }
+
     func dashboardHero() async throws -> DashboardHeroResponse {
         try await get(Endpoints.dashboardHero())
     }

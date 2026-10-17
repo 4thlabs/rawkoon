@@ -51,7 +51,21 @@ extension HomeView {
     /// The detail view needs the TMDB id the arrival doesn't carry, so take it from the fetched item when present.
     func openLanded(_ arrival: LandedArrival) {
         guard let item = recent.first(where: { $0.id == arrival.mediaId }) else {
-            openAttention(mediaId: arrival.mediaId)
+            guard let client = model.api() else { return }
+            Task {
+                do {
+                    let item = try await client.libraryItem(id: arrival.mediaId)
+                    attentionTarget = AttentionRoute(
+                        id: item.id,
+                        tmdbId: item.tmdbId,
+                        mediaType: item.type == "show" ? "tv" : "movie",
+                        title: item.title,
+                        posterUrl: item.posterUrl
+                    )
+                } catch {
+                    model.toast(String(localized: "Couldn't open that item."), style: .error)
+                }
+            }
             return
         }
         attentionTarget = AttentionRoute(

@@ -1,6 +1,49 @@
 import RawkoonKit
 import SwiftUI
 
+struct ListeningStatsDestination: View {
+    @Environment(AppModel.self) private var model
+    @State private var stats: ListeningStats?
+    @State private var failed = false
+
+    var body: some View {
+        Group {
+            if let stats {
+                ListeningStatsView(stats: stats)
+            } else if failed {
+                ContentUnavailableView {
+                    Label("Couldn't load listening stats.", systemImage: "exclamationmark.triangle")
+                } actions: {
+                    Button("Try again") { Task { await load() } }
+                }
+            } else {
+                ProgressView()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Theme.base)
+        .navigationTitle("Listening")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await load() }
+    }
+
+    private func load() async {
+        guard let client = model.api() else {
+            failed = true
+            return
+        }
+        if stats == nil {
+            stats = client.cached(Endpoints.listeningStats)?.value
+        }
+        if let fresh = try? await client.listeningStats() {
+            stats = fresh
+            failed = false
+        } else if stats == nil {
+            failed = true
+        }
+    }
+}
+
 struct ListeningStatsView: View {
     let stats: ListeningStats
     @ScaledMetric(relativeTo: .caption2) private var weekdaySize: CGFloat = 10

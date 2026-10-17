@@ -4,21 +4,23 @@ import Testing
 
 @MainActor
 struct HomeViewSplitRegressionTests {
+    private let card = LibraryStatsCard(stats: LibraryStats(
+        totalMovies: 0, totalShows: 0, downloaded: 0, wanted: 0, returningSeries: 0,
+        storageUsedBytes: 0, diskTotalBytes: nil, diskFreeBytes: nil, storageByResolution: []
+    ))
+
     @Test func resolutionRankOrdersLowToHighWithUnknownLast() {
-        let view = HomeView()
-        #expect(["unknown", "4k", "480p", "1080p", "720p"].sorted { view.resolutionRank($0) < view.resolutionRank($1) }
+        #expect(["unknown", "4k", "480p", "1080p", "720p"].sorted { card.resolutionRank($0) < card.resolutionRank($1) }
             == ["480p", "720p", "1080p", "4k", "unknown"])
     }
 
     @Test func resolutionLabelFormatsKnownBuckets() {
-        let view = HomeView()
-        #expect(view.resolutionLabel("4k") == "4K")
-        #expect(view.resolutionLabel("1080p") == "1080p")
+        #expect(card.resolutionLabel("4k") == "4K")
+        #expect(card.resolutionLabel("1080p") == "1080p")
     }
 
     @Test func byteStringClampsNegativeValues() {
-        let view = HomeView()
-        #expect(view.byteString(-5) == view.byteString(0))
+        #expect(card.byteString(-5) == card.byteString(0))
     }
 
     @Test func storageBarsDropEmptyRowsAndSortByResolution() throws {
@@ -26,6 +28,6 @@ struct HomeViewSplitRegressionTests {
         [{"resolution":"4k","sizeBytes":10},{"resolution":"720p","sizeBytes":0},{"resolution":"480p","sizeBytes":3}]
         """#
         let rows = try JSONDecoder().decode([StorageByResolution].self, from: Data(json.utf8))
-        #expect(HomeView().orderedStorageBars(rows).map(\.resolution) == ["480p", "4k"])
+        #expect(card.orderedStorageBars(rows).map(\.resolution) == ["480p", "4k"])
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import RawkoonKit
 
 /// A GET described once, so the live fetch and the cached read of the same
 /// screen always agree on the cache key.
@@ -23,6 +24,7 @@ nonisolated enum Endpoints {
     static let currentUser = Endpoint<SessionResponse>(path: "/api/auth/me")
     static let upcoming = Endpoint<UpcomingResponse>(path: "/api/dashboard/upcoming")
     static let libraryAttention = Endpoint<LibraryAttentionResponse>(path: "/api/library/attention")
+    static let dashboardPipeline = Endpoint<DashboardPipeline>(path: "/api/dashboard/pipeline")
     static let rssStatus = Endpoint<RssStatusResponse>(path: "/api/library/rss-status")
     static let systemVersion = Endpoint<SystemVersion>(path: "/api/system/version")
     static let listeningStats = Endpoint<ListeningStats>(path: "/api/books/listening-stats")
