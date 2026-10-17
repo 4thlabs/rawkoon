@@ -32,7 +32,7 @@
   },
   "calendar": {
     "title": "Calendrier",
-    "subtitle": "Événements du foyer et sorties média à venir au même endroit",
+    "subtitle": "Les sorties de films et de séries à venir au même endroit",
     "sunday": "Dim",
     "monday": "Lun",
     "tuesday": "Mar",
@@ -140,7 +140,7 @@
     },
     "activityPage": {
       "title": "Activité récente",
-      "subtitle": "Parcourez l’activité du foyer avec des filtres par service et par type.",
+      "subtitle": "Tout ce que Rawkoon a fait, filtrable par service et par type.",
       "serviceFilter": "Service",
       "typeFilter": "Type",
       "allServices": "Tous les services",
@@ -149,7 +149,7 @@
       "clearFilters": "Effacer les filtres",
       "loadMore": "Voir plus",
       "emptyTitle": "Aucune activité trouvée",
-      "emptyDescription": "La nouvelle activité du foyer apparaîtra ici au fil du temps.",
+      "emptyDescription": "La nouvelle activité apparaîtra ici au fil du temps.",
       "emptyFilteredDescription": "Essayez un autre service ou un autre type d’activité.",
       "services": {
         "calendar": "Calendrier",
