@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useCurrentUser } from "@/lib/auth/useAuth";
@@ -15,7 +16,15 @@ const LANES = [
 export function ActivityLanes() {
   const { t } = useTranslation("common");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navRef = useRef<HTMLElement>(null);
   const isAdmin = useCurrentUser().data?.is_admin === true;
+
+  // On a phone the row scrolls sideways; keep the current lane in view.
+  useEffect(() => {
+    navRef.current
+      ?.querySelector<HTMLElement>('[aria-current="page"]')
+      ?.scrollIntoView?.({ inline: "center", block: "nearest" });
+  });
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 pt-6">
@@ -23,6 +32,7 @@ export function ActivityLanes() {
         {t("nav.activity")}
       </h1>
       <nav
+        ref={navRef}
         aria-label={t("activity.lanes.label")}
         className="flex gap-1 overflow-x-auto"
       >
@@ -38,7 +48,7 @@ export function ActivityLanes() {
                 to={lane.to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "focus-ring shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                  "focus-ring shrink-0 rounded-full px-3 py-1.5 text-sm sm:px-4 font-medium transition-colors",
                   active
                     ? "bg-white/[0.1] text-white"
                     : "text-neutral-400 hover:bg-white/[0.05] hover:text-neutral-200",

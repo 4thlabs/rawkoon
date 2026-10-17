@@ -58,14 +58,29 @@ describe("HealthPage", () => {
     expect(screen.getByText("settings.health.allClear")).toBeTruthy();
   });
 
-  it("counts failing checks, attention alerts and library issues together", () => {
+  it("leads with Ready to grab when every readiness check is ok, issues as a second line", () => {
+    checks = [{ id: "a", status: "ok" }];
+    attentionItems = [{}, {}];
+    issues = 3;
+    render(<HealthPage />);
+    const summary = screen.getByTestId("health-summary");
+    expect(summary.textContent).toContain("settings.health.readyToGrab");
+    expect(summary.textContent).toContain("settings.health.libraryIssues:3");
+    expect(summary.textContent).toContain("settings.health.alertsOpen:2");
+    expect(summary.textContent).not.toContain("needsAttention");
+    expect(summary.className).toContain("emerald");
+  });
+
+  it("uses the warning wording only when a readiness check fails", () => {
     checks = [
       { id: "a", status: "error" },
       { id: "b", status: "ok" },
     ];
-    attentionItems = [{}, {}];
+    attentionItems = [{}];
     issues = 3;
     render(<HealthPage />);
-    expect(screen.getByText("settings.health.needsAttention:6")).toBeTruthy();
+    const summary = screen.getByTestId("health-summary");
+    expect(summary.textContent).toContain("settings.health.needsAttention:1");
+    expect(summary.className).toContain("amber");
   });
 });

@@ -1803,7 +1803,12 @@
       "allClear": "Rawkoon can find, grab and import right now.",
       "needsAttention_one": "{{count}} thing needs attention before Rawkoon can run unattended.",
       "needsAttention_other": "{{count}} things need attention before Rawkoon can run unattended.",
-      "library": "Library health"
+      "library": "Library health",
+      "readyToGrab": "Ready to grab.",
+      "libraryIssues_one": "{{count}} library issue to review",
+      "libraryIssues_other": "{{count}} library issues to review",
+      "alertsOpen_one": "{{count}} alert open",
+      "alertsOpen_other": "{{count}} alerts open"
     }
   },
   "medias": {
