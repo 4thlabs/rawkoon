@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
-import { LibraryMediaSection } from "./LibraryMediaSection";
+import { LibraryFilesTab } from "./LibraryFilesTab";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -17,14 +17,14 @@ const LIBRARY_ID = 1;
  * past episodes with wanted future-air-date rows hard-crashed Chromium via an
  * SPA render loop.
  *
- * Mounts `LibraryMediaSection` rather than `MergedEpisodeRow` directly: the row
+ * Mounts `LibraryFilesTab` rather than `MergedEpisodeRow` directly: the row
  * is a leaf whose only state is its own `expanded` flag, so rendering two of
  * them side by side cannot reproduce a loop no matter what the data looks like.
  * The season grouping and the `s.episodes.map(...)` that owns the mixed-status
  * shape live in the section, so that is what has to be mounted and expanded for
  * this test to be able to fail.
  */
-describe("LibraryMediaSection mixed-status season", () => {
+describe("LibraryFilesTab mixed-status season", () => {
   const episodes = [
     {
       id: 1,
@@ -59,7 +59,7 @@ describe("LibraryMediaSection mixed-status season", () => {
       }
       return Promise.resolve({});
     });
-    return renderWithProviders(<LibraryMediaSection libraryId={LIBRARY_ID} />, {
+    return renderWithProviders(<LibraryFilesTab libraryId={LIBRARY_ID} />, {
       fetcher,
     });
   }

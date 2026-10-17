@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { APP_PATHS } from "../../constants";
 import {
+  buildLibraryNotificationUrl,
   buildNotificationUrl,
   normalizeNotificationUrl,
 } from "../notifications";
@@ -34,8 +35,8 @@ describe("normalizeNotificationUrl", () => {
   });
 
   it("leaves new paths and item links alone", () => {
-    expect(normalizeNotificationUrl("/library/4?tab=management")).toBe(
-      "/library/4?tab=management",
+    expect(normalizeNotificationUrl("/library/4?tab=files")).toBe(
+      "/library/4?tab=files",
     );
     expect(normalizeNotificationUrl(APP_PATHS.settingsAlerts)).toBe(
       "/settings/alerts",
@@ -59,6 +60,15 @@ describe("app paths", () => {
   it("builds watchlist and library links", () => {
     expect(buildNotificationUrl(APP_PATHS.findWatchlist)).toBe(
       "/find/watchlist",
+    );
+  });
+});
+
+describe("buildLibraryNotificationUrl", () => {
+  it("opens the Files tab, optionally on a season and episode", () => {
+    expect(buildLibraryNotificationUrl(7)).toBe("/library/7?tab=files");
+    expect(buildLibraryNotificationUrl(7, { season: 2, episode: 5 })).toBe(
+      "/library/7?tab=files&season=2&episode=5",
     );
   });
 });

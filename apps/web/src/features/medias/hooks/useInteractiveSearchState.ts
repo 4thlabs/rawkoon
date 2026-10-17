@@ -36,7 +36,6 @@ export interface UseInteractiveSearchStateProps {
 export interface FilterState {
   filterQuery: string;
   searchApiQuery: string;
-  showFilters: boolean;
   hideRejected: boolean;
   sortBy: InteractiveSortKey;
   sortDir: InteractiveSortDir;
@@ -75,7 +74,6 @@ export function useInteractiveSearchState({
   const buildInitialFilters = (): FilterState => ({
     filterQuery: "",
     searchApiQuery: localizedQuery,
-    showFilters: false,
     hideRejected: true,
     sortBy: libId ? "quality" : "seeders",
     sortDir: "desc",
@@ -92,12 +90,10 @@ export function useInteractiveSearchState({
   );
   const [indexerWarningsDismissed, setIndexerWarningsDismissed] =
     useState(false);
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const {
     filterQuery,
     searchApiQuery,
-    showFilters,
     hideRejected,
     sortBy,
     sortDir,
@@ -329,10 +325,6 @@ export function useInteractiveSearchState({
     if (isFetchingActive) setIndexerWarningsDismissed(false);
   }
 
-  const hasAdvancedFilters =
-    includedTrackers.length > 0 ||
-    excludedTrackers.length > 0 ||
-    includedLanguages.length > 0;
   const totalActiveFilters =
     includedTrackers.length +
     excludedTrackers.length +
@@ -348,6 +340,17 @@ export function useInteractiveSearchState({
     setFilters((prev) => ({
       ...prev,
       hideRejected: false,
+      includedTrackers: [],
+      excludedTrackers: [],
+      includedLanguages: [],
+    }));
+  };
+
+  const resetFilters = () => {
+    setFilters((prev) => ({
+      ...prev,
+      hideRejected: true,
+      showPacksOnly: false,
       includedTrackers: [],
       excludedTrackers: [],
       includedLanguages: [],
@@ -382,7 +385,6 @@ export function useInteractiveSearchState({
     setFilters,
     filterQuery,
     searchApiQuery,
-    showFilters,
     hideRejected,
     sortBy,
     sortDir,
@@ -391,9 +393,6 @@ export function useInteractiveSearchState({
     includedLanguages,
     selectedSeason,
     showPacksOnly,
-    // drawer
-    mobileDrawerOpen,
-    setMobileDrawerOpen,
     // dismissal
     indexerWarningsDismissed,
     setIndexerWarningsDismissed,
@@ -412,8 +411,6 @@ export function useInteractiveSearchState({
     totalReleases,
     indexerWarnings,
     languageFallbackSummary,
-    hasAdvancedFilters,
-    totalActiveFilters,
     hasViewOverrides,
     visibleCount,
     hiddenCount,
@@ -427,6 +424,7 @@ export function useInteractiveSearchState({
     selectSearchTitle,
     downloadRelease,
     resetView,
+    resetFilters,
     handleIncludedTrackersChange,
     handleExcludedTrackersChange,
   };

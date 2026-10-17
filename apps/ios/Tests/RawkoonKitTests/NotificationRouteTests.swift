@@ -8,6 +8,10 @@ final class NotificationRouteTests: XCTestCase {
             .media(libraryId: 42, season: 2, episode: 5, focusManagement: true)
         )
         XCTAssertEqual(
+            NotificationRoute.parse("/library/42?season=2&episode=5&tab=files"),
+            .media(libraryId: 42, season: 2, episode: 5, focusManagement: true)
+        )
+        XCTAssertEqual(
             NotificationRoute.parse("/library/7"),
             .media(libraryId: 7, season: nil, episode: nil, focusManagement: false)
         )

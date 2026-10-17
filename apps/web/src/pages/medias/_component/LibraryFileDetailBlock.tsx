@@ -26,10 +26,11 @@ import { RemuxPanel } from "./LibraryRemuxPanel";
 
 export function FileDetailBlock({
   file,
-  mediaId: _mediaId,
+  showActions = true,
 }: {
   file: LibraryFileInfo;
-  mediaId?: number;
+  /** Off where the caller already offers re-encode and remux for the file. */
+  showActions?: boolean;
 }) {
   const { t } = useTranslation("common");
   const [showRemux, setShowRemux] = useState(false);
@@ -200,36 +201,40 @@ export function FileDetailBlock({
           <Clock size={9} className="inline mr-1" />
           {t("library.fileDetail.scanned", { date: scannedDate })}
         </span>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setShowReencode(true)}
-            className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition-colors"
-          >
-            <Gauge size={10} />
-            {t("transcode.openButton")}
-          </button>
-          {isMkv && audioTracks.length > 1 && !showRemux && (
+        {showActions && (
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setShowRemux(true)}
+              onClick={() => setShowReencode(true)}
               className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition-colors"
             >
-              <Shuffle size={10} />
-              {t("library.fileDetail.remux.openButton")}
+              <Gauge size={10} />
+              {t("transcode.openButton")}
             </button>
-          )}
-        </div>
+            {isMkv && audioTracks.length > 1 && !showRemux && (
+              <button
+                type="button"
+                onClick={() => setShowRemux(true)}
+                className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition-colors"
+              >
+                <Shuffle size={10} />
+                {t("library.fileDetail.remux.openButton")}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      <ReencodeModal
-        isOpen={showReencode}
-        onClose={() => setShowReencode(false)}
-        selection={{ file_ids: [file.id] }}
-        subtitle={file.file_name}
-      />
+      {showActions && (
+        <ReencodeModal
+          isOpen={showReencode}
+          onClose={() => setShowReencode(false)}
+          selection={{ file_ids: [file.id] }}
+          subtitle={file.file_name}
+        />
+      )}
 
-      {showRemux && (
+      {showActions && showRemux && (
         <RemuxPanel file={file} onClose={() => setShowRemux(false)} />
       )}
     </div>

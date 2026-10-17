@@ -1,12 +1,14 @@
 import type { InteractiveReleaseItem } from "@rawkoon/shared/types";
 import { isFrenchFallbackTag } from "@rawkoon/shared/utils/languageFamily";
 
-export type InteractiveSortKey =
-  | "seeders"
-  | "age"
-  | "size"
-  | "title"
-  | "quality";
+export const INTERACTIVE_SORT_KEYS = [
+  "quality",
+  "seeders",
+  "age",
+  "size",
+  "title",
+] as const;
+export type InteractiveSortKey = (typeof INTERACTIVE_SORT_KEYS)[number];
 export type InteractiveSortDir = "asc" | "desc";
 
 export const UNKNOWN_TRACKER_KEY = "__unknown_tracker__";

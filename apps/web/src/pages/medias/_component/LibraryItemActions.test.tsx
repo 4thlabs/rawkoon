@@ -18,6 +18,14 @@ vi.mock("@/features/medias/hooks/useLiveSearchToast", () => ({
 vi.mock("@/features/medias/hooks/useSearchLibraryMovie", () => ({
   useSearchLibraryMovie: () => ({ isPending: false, mutateAsync: vi.fn() }),
 }));
+const retryMutateAsync = vi.fn(async () => ({}));
+vi.mock("@/features/medias/hooks/useRetrySkippedMedia", () => ({
+  useRetrySkippedMedia: () => ({
+    isPending: false,
+    mutateAsync: retryMutateAsync,
+  }),
+}));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/features/medias/hooks/useActiveDownloads", () => ({
   useDownloadProgress: () => ({ percent: 42, count: 1 }),
   useDownloadEta: () => 780,
@@ -99,6 +107,18 @@ describe("LibraryItemActions", () => {
     );
     fireEvent.click(screen.getByText("library.itemActions.searchUpgrade"));
     expect(h.onUpgradeSearch).toHaveBeenCalledOnce();
+  });
+
+  it("offers Search again once the search gave up and re-queues it", () => {
+    render(
+      <LibraryItemActions
+        item={item({ status: "skipped" })}
+        isAdmin
+        {...handlers()}
+      />,
+    );
+    fireEvent.click(screen.getByText("library.itemActions.searchAgain"));
+    expect(retryMutateAsync).toHaveBeenCalledWith({ mediaId: 7 });
   });
 
   it("adds nothing for non-admins", () => {

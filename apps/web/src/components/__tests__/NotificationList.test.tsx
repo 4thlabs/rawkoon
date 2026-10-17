@@ -46,7 +46,7 @@ const note = (over: Partial<Notification>): Notification => ({
   type: "library_grab_skipped",
   read: false,
   read_at: null,
-  url: "/library/7?tab=management&season=2&episode=5",
+  url: "/library/7?tab=files&season=2&episode=5",
   image_url: null,
   metadata: null,
   created_at: "2026-01-01T00:00:00Z",

@@ -10,12 +10,6 @@ vi.mock("@/features/medias/hooks/useRemoveFromLibrary", () => ({
     isPending: false,
   }),
 }));
-vi.mock("@/features/medias/hooks/useRetrySkippedMedia", () => ({
-  useRetrySkippedMedia: () => ({ mutateAsync: vi.fn(), isPending: false }),
-}));
-vi.mock("@/features/medias/hooks/useToggleMediaMonitored", () => ({
-  useToggleMediaMonitored: () => ({ mutateAsync: vi.fn(), isPending: false }),
-}));
 vi.mock("@/features/medias/hooks/useLibraryDownloads", () => ({
   useLibraryDownloads: () => downloadsMock(),
 }));
@@ -23,7 +17,7 @@ vi.mock("@/features/seeding/hooks/useSeeding", () => ({
   useSeeding: () => seedingMock(),
 }));
 
-import { LibraryActionsSection } from "./LibraryActionsSection";
+import { LibraryRemoveDialog } from "./LibraryRemoveDialog";
 
 const HELD = {
   items: [
@@ -40,9 +34,10 @@ const HELD = {
   ],
 };
 
-describe("LibraryActionsSection remove", () => {
+describe("LibraryRemoveDialog", () => {
   beforeEach(() => {
     removeMutateAsync.mockClear();
+    onRemoved.mockClear();
     seedingMock.mockReturnValue({
       data: {
         torrents: [
@@ -59,24 +54,28 @@ describe("LibraryActionsSection remove", () => {
     });
   });
 
-  const openConfirm = () =>
-    fireEvent.click(
-      screen.getByRole("button", { name: "library.management.delete" }),
+  const onRemoved = vi.fn();
+  const mount = () =>
+    render(
+      <LibraryRemoveDialog
+        open
+        libraryId={5}
+        title="Film"
+        onClose={vi.fn()}
+        onRemoved={onRemoved}
+      />,
     );
 
   it("offers keep-seeding vs remove-now when torrents are held, warning about a hit-and-run", async () => {
     downloadsMock.mockReturnValue({ data: HELD });
-    render(<LibraryActionsSection libraryId={5} />);
-    openConfirm();
+    mount();
     expect(
-      screen.getByText(/^library\.management\.seedingTitle/),
+      screen.getByText(/^library\.remove\.seedingTitle/),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText("library.management.releaseNow"));
-    expect(
-      screen.getByText("library.management.hnrWarning"),
-    ).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("library.remove.releaseNow"));
+    expect(screen.getByText("library.remove.hnrWarning")).toBeInTheDocument();
     fireEvent.click(
-      screen.getByRole("button", { name: /library.management.deleteConfirm/ }),
+      screen.getByRole("button", { name: /library.remove.confirm/ }),
     );
     await waitFor(() =>
       expect(removeMutateAsync).toHaveBeenCalledWith({
@@ -85,26 +84,25 @@ describe("LibraryActionsSection remove", () => {
         releaseTorrents: true,
       }),
     );
+    await waitFor(() => expect(onRemoved).toHaveBeenCalledOnce());
   });
 
   it("shows no seeding choice when nothing is held", () => {
     downloadsMock.mockReturnValue({ data: { items: [] } });
-    render(<LibraryActionsSection libraryId={5} />);
-    openConfirm();
-    expect(screen.queryByText(/^library\.management\.seedingTitle/)).toBeNull();
+    mount();
+    expect(screen.queryByText(/^library\.remove\.seedingTitle/)).toBeNull();
   });
 
   it("says what is still owed and how much space removing frees", () => {
     downloadsMock.mockReturnValue({ data: HELD });
-    render(<LibraryActionsSection libraryId={5} />);
-    openConfirm();
+    mount();
     expect(
       screen.getByText(
-        /^library\.management\.keepSeedingHintRatio ratio:0\.40 target:10\.0/,
+        /^library\.remove\.keepSeedingHintRatio ratio:0\.40 target:10\.0/,
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/^library\.management\.releaseNowHintSize size:2/),
+      screen.getByText(/^library\.remove\.releaseNowHintSize size:2/),
     ).toBeInTheDocument();
   });
 });

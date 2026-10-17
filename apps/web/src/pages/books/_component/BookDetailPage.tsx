@@ -1,20 +1,29 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import {
+  ArrowLeft,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { providerHtmlParagraphs, type BookEditionKind } from "@rawkoon/shared";
 import { useLibraryEvents } from "@/features/medias/hooks/useLibraryEvents";
 import { PageLayout } from "@/components/PageLayout";
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/lib/auth/useAuth";
 import { MarkBookReadAction, BookReadBadge } from "./BookReadActions";
 import { toast } from "sonner";
 import { useAddEdition, useBook } from "../_hooks/useBooks";
 import { useRefreshBookMetadata } from "../_hooks/useRefreshBookMetadata";
-import { BookInfoOverridesSection } from "./BookInfoOverridesSection";
+import { BookEditDetailsPanel } from "./BookEditDetailsPanel";
 import { BookCover } from "./BookCover";
 import { EditionPanel } from "./EditionPanel";
 import { MetaField } from "./MetaField";
-import { RemoveBookAction } from "./RemoveBookAction";
+import { RemoveBookDialog } from "./RemoveBookDialog";
 
 /**
  * Book detail.
@@ -38,6 +47,8 @@ export function BookDetailPage({ bookId }: { bookId: number }) {
   const { data, isLoading } = useBook(bookId);
   const refreshMetadata = useRefreshBookMetadata(bookId);
   const addEdition = useAddEdition(bookId);
+  const [editOpen, setEditOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
   // Grabbing, editing and removing are admin-only; members read and listen.
   const isAdmin = useCurrentUser().data?.is_admin ?? false;
 
@@ -61,6 +72,34 @@ export function BookDetailPage({ bookId }: { bookId: number }) {
       </PageLayout>
     );
   }
+
+  const refresh = () => {
+    refreshMetadata.mutate(undefined, {
+      onSuccess: (res) => {
+        // Naming a failed source matters: an Audnexus outage would
+        // otherwise be indistinguishable from "this book has no narrators".
+        if (res.failed_sources.length > 0) {
+          toast.warning(
+            t("books.detail.metadata.refreshedWithFailures", {
+              count: res.changed_fields.length,
+              sources: res.failed_sources.join(", "),
+            }),
+          );
+          return;
+        }
+        if (res.changed_fields.length === 0) {
+          toast.info(t("books.detail.metadata.refreshedNoChange"));
+          return;
+        }
+        toast.success(
+          t("books.detail.metadata.refreshed", {
+            count: res.changed_fields.length,
+          }),
+        );
+      },
+      onError: () => toast.error(t("books.detail.metadata.refreshFailed")),
+    });
+  };
 
   const existingKinds = new Set(book.editions.map((e) => e.kind));
   const missingKinds = (["ebook", "audiobook"] as BookEditionKind[]).filter(
@@ -223,67 +262,47 @@ export function BookDetailPage({ bookId }: { bookId: number }) {
         {/* Actions sit at the top right rather than under the metadata, which
             left the whole right half of the header empty and put a destructive
             button in the middle of the reading path. */}
-        <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-end">
-          {isAdmin &&
-            missingKinds.map((kind) => (
-              <Button
-                key={kind}
-                size="sm"
-                variant="secondary"
-                disabled={addEdition.isPending}
-                onClick={() => addEdition.mutate({ kind })}
-              >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                {t("books.detail.addEdition", {
-                  kind: t(
-                    `books.kind${kind === "audiobook" ? "Audiobook" : "Ebook"}`,
-                  ),
-                })}
-              </Button>
-            ))}
-          {isAdmin && (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={refreshMetadata.isPending}
-              onClick={() => {
-                refreshMetadata.mutate(undefined, {
-                  onSuccess: (res) => {
-                    // Naming a failed source matters: an Audnexus outage would
-                    // otherwise be indistinguishable from "this book has no
-                    // narrators".
-                    if (res.failed_sources.length > 0) {
-                      toast.warning(
-                        t("books.detail.metadata.refreshedWithFailures", {
-                          count: res.changed_fields.length,
-                          sources: res.failed_sources.join(", "),
-                        }),
-                      );
-                      return;
-                    }
-                    if (res.changed_fields.length === 0) {
-                      toast.info(t("books.detail.metadata.refreshedNoChange"));
-                      return;
-                    }
-                    toast.success(
-                      t("books.detail.metadata.refreshed", {
-                        count: res.changed_fields.length,
-                      }),
-                    );
-                  },
-                  onError: () =>
-                    toast.error(t("books.detail.metadata.refreshFailed")),
-                });
-              }}
-            >
-              {refreshMetadata.isPending && (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              )}
-              {t("books.detail.metadata.refresh")}
-            </Button>
-          )}
+        <div className="flex shrink-0 items-start gap-2">
           <MarkBookReadAction book={book} />
-          {isAdmin && <RemoveBookAction bookId={book.id} title={book.title} />}
+          {isAdmin && (
+            <ActionMenu
+              label={t("books.detail.moreActions")}
+              items={[
+                {
+                  id: "edit",
+                  label: t("library.strip.editDetails"),
+                  icon: <SlidersHorizontal size={15} />,
+                  onSelect: () => setEditOpen(true),
+                },
+                {
+                  id: "refresh",
+                  label: t("books.detail.metadata.refresh"),
+                  icon: <RefreshCw size={15} />,
+                  disabled: refreshMetadata.isPending,
+                  onSelect: refresh,
+                },
+                "separator",
+                {
+                  id: "remove",
+                  label: t("books.detail.remove"),
+                  icon: <X size={15} />,
+                  destructive: true,
+                  onSelect: () => setRemoveOpen(true),
+                },
+              ]}
+              trigger={
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  aria-label={t("books.detail.moreActions")}
+                  className="w-9 px-0"
+                >
+                  <MoreHorizontal className="h-4 w-4" aria-hidden />
+                </Button>
+              }
+            />
+          )}
         </div>
       </div>
 
@@ -305,17 +324,6 @@ export function BookDetailPage({ bookId }: { bookId: number }) {
         </div>
       )}
 
-      {isAdmin && (
-        <details className="mt-10 rounded-xl border border-neutral-800 bg-neutral-900/40">
-          <summary className="cursor-pointer px-4 py-3 text-xs font-medium uppercase tracking-[0.2em] text-neutral-400 hover:text-neutral-200">
-            {t("books.detail.overrides.heading")}
-          </summary>
-          <div className="border-t border-neutral-800 p-4">
-            <BookInfoOverridesSection book={book} />
-          </div>
-        </details>
-      )}
-
       <div className="mt-12">
         <h2 className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
           {t("books.detail.editionsHeading")}
@@ -331,8 +339,52 @@ export function BookDetailPage({ bookId }: { bookId: number }) {
               isAdmin={isAdmin}
             />
           ))}
+          {isAdmin &&
+            missingKinds.map((kind) => (
+              <div
+                key={kind}
+                className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-neutral-700 px-4 py-3"
+              >
+                <p className="text-sm text-neutral-400">
+                  {t("books.detail.noEdition", {
+                    kind: t(
+                      `books.kind${kind === "audiobook" ? "Audiobook" : "Ebook"}`,
+                    ),
+                  })}
+                </p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={addEdition.isPending}
+                  onClick={() => addEdition.mutate({ kind })}
+                >
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  {t("books.detail.addEdition", {
+                    kind: t(
+                      `books.kind${kind === "audiobook" ? "Audiobook" : "Ebook"}`,
+                    ),
+                  })}
+                </Button>
+              </div>
+            ))}
         </div>
       </div>
+
+      {isAdmin && (
+        <>
+          <BookEditDetailsPanel
+            open={editOpen}
+            onClose={() => setEditOpen(false)}
+            book={book}
+          />
+          <RemoveBookDialog
+            open={removeOpen}
+            onClose={() => setRemoveOpen(false)}
+            bookId={book.id}
+            title={book.title}
+          />
+        </>
+      )}
     </PageLayout>
   );
 }

@@ -1,5 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { ArrowUpCircle, ListChecks, Loader2, Search } from "lucide-react";
+import {
+  ArrowUpCircle,
+  ListChecks,
+  Loader2,
+  RefreshCw,
+  Search,
+} from "lucide-react";
+import { toast } from "sonner";
 import type { LibraryMedia } from "@rawkoon/shared/types";
 import { formatEtaSeconds } from "@rawkoon/shared/utils";
 import { cn } from "@/lib/utils";
@@ -10,13 +17,14 @@ import {
   useDownloadProgress,
 } from "@/features/medias/hooks/useActiveDownloads";
 import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
+import { useRetrySkippedMedia } from "@/features/medias/hooks/useRetrySkippedMedia";
 import { useSearchLibraryMovie } from "@/features/medias/hooks/useSearchLibraryMovie";
 
 const PRIMARY =
   "bg-primary-600 text-neutral-950 hover:bg-primary-500 disabled:opacity-50";
 const SECONDARY = "bg-white/10 text-neutral-100 hover:bg-white/15";
 const BUTTON =
-  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors";
+  "focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:opacity-50";
 
 type Props = {
   item: LibraryMedia;
@@ -44,11 +52,38 @@ export function LibraryItemActions({
         onClick={onUpgradeSearch}
         className={cn(BUTTON, SECONDARY)}
       >
-        <ArrowUpCircle size={12} />
+        <ArrowUpCircle size={14} />
         {t("library.itemActions.searchUpgrade")}
       </button>
     );
+  if (kind === "skipped") return <RetrySearch item={item} />;
   return null;
+}
+
+function RetrySearch({ item }: { item: LibraryMedia }) {
+  const { t } = useTranslation("common");
+  const retry = useRetrySkippedMedia();
+  return (
+    <button
+      type="button"
+      title={t("library.management.retrySearchTitle")}
+      disabled={retry.isPending}
+      onClick={() => {
+        void retry
+          .mutateAsync({ mediaId: item.id })
+          .then(() => toast.success(t("library.management.retrySearchQueued")))
+          .catch(() => toast.error(t("library.itemActions.searchAgainFailed")));
+      }}
+      className={cn(BUTTON, PRIMARY)}
+    >
+      {retry.isPending ? (
+        <Loader2 size={14} className="animate-spin" />
+      ) : (
+        <RefreshCw size={14} />
+      )}
+      {t("library.itemActions.searchAgain")}
+    </button>
+  );
 }
 
 function MissingActions({
@@ -82,9 +117,9 @@ function MissingActions({
           className={cn(BUTTON, PRIMARY)}
         >
           {searchMovie.isPending ? (
-            <Loader2 size={12} className="animate-spin" />
+            <Loader2 size={14} className="animate-spin" />
           ) : (
-            <Search size={12} />
+            <Search size={14} />
           )}
           {t("library.management.searchNow")}
         </button>
@@ -94,7 +129,7 @@ function MissingActions({
         onClick={onChooseRelease}
         className={cn(BUTTON, SECONDARY)}
       >
-        <ListChecks size={12} />
+        <ListChecks size={14} />
         {t("library.itemActions.chooseRelease")}
       </button>
     </>
@@ -120,7 +155,7 @@ function DownloadProgress({ item }: { item: LibraryMedia }) {
         {t(libraryStatusPresentation(item.status).labelKey)}
       </span>
       <p className="flex items-center gap-1.5 text-xs font-medium text-primary-200">
-        <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+        <Loader2 size={14} className="animate-spin" aria-hidden="true" />
         {label}
         {eta && (
           <span className="font-normal text-white/60">

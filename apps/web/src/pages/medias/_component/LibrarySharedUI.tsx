@@ -1,5 +1,4 @@
-import { AlertCircle, CheckCircle2, ChevronDown, Circle } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle, CheckCircle2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Row({
@@ -115,79 +114,5 @@ export function Eyebrow({
       {Icon ? <Icon size={11} className="shrink-0" /> : null}
       {children}
     </p>
-  );
-}
-
-// NOTE: When `collapsible` is true, the `right` slot is rendered INSIDE the
-// toggle <button>, so consumers must NOT pass interactive elements (e.g.
-// buttons) there — nesting a button inside a button is invalid. Put any
-// interactive controls in the body (children) instead.
-export function ManagementSection({
-  icon: Icon,
-  title,
-  count,
-  right,
-  collapsible = false,
-  defaultOpen = true,
-  children,
-}: {
-  icon?: React.ElementType;
-  title: string;
-  count?: number;
-  right?: React.ReactNode;
-  collapsible?: boolean;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  const header = (
-    <div className="flex items-center gap-2 min-w-0">
-      {Icon ? <Icon size={13} className="shrink-0 text-neutral-400" /> : null}
-      <span className="text-xs font-semibold text-neutral-200 truncate">
-        {title}
-      </span>
-      {count != null && count > 0 ? (
-        <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-neutral-700 px-1 text-[9px] font-bold text-neutral-300 tabular-nums">
-          {count}
-        </span>
-      ) : null}
-    </div>
-  );
-  return (
-    <Card>
-      {collapsible ? (
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left transition-colors hover:bg-neutral-800/40"
-        >
-          {header}
-          <div className="flex items-center gap-2 shrink-0">
-            {right}
-            <ChevronDown
-              size={13}
-              className={cn(
-                "text-neutral-400 transition-transform duration-200",
-                open && "rotate-180",
-              )}
-            />
-          </div>
-        </button>
-      ) : (
-        <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border">
-          {header}
-          {right ? <div className="shrink-0">{right}</div> : null}
-        </div>
-      )}
-      {!collapsible || open ? (
-        <div
-          className={
-            collapsible ? "border-t border-border px-4 pb-4 pt-3" : "px-4 py-3"
-          }
-        >
-          {children}
-        </div>
-      ) : null}
-    </Card>
   );
 }

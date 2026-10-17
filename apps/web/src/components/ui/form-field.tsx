@@ -15,7 +15,7 @@ interface FormFieldProps {
   children: React.ReactNode;
 }
 
-function FormField({
+export function FormField({
   label,
   error,
   required,
