@@ -130,8 +130,8 @@ extension MediaDetailView {
         (LocalizedStatus.text(item.status).foregroundStyle(Theme.muted)
             + Text(verbatim: " · ").foregroundStyle(Theme.faint)
             + Text("Status is controlled by grabs and scans, not edited manually.").foregroundStyle(Theme.faint))
-        .font(.caption2)
-        .frame(maxWidth: .infinity, alignment: .leading)
+            .font(.caption2)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Movies split the lamp: tap auto-searches, the chevron opens the interactive
