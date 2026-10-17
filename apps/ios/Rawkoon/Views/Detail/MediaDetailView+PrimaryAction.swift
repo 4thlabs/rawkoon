@@ -50,7 +50,7 @@ extension MediaDetailView {
                         }
                     }
                 } else if requested {
-                    Text("We'll notify you when this is in the library. See Requests in Library.")
+                    Text("We'll notify you when this is in the library. See Requests in Activity.")
                         .font(.footnote)
                         .foregroundStyle(Theme.muted)
                 }

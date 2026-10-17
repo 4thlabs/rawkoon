@@ -23,7 +23,7 @@ enum MediaTypeFilter: String, CaseIterable, Identifiable {
         rawValue
     }
 
-    var title: LocalizedStringKey {
+    var title: LocalizedStringResource {
         switch self {
         case .all: "All"
         case .movie: "Movies"
@@ -37,17 +37,18 @@ enum MediaTypeFilter: String, CaseIterable, Identifiable {
 }
 
 enum MediaStatusFilter: String, CaseIterable, Identifiable {
-    case all, downloaded, wanted, downloading
+    case all, downloaded, wanted, downloading, skipped
     var id: String {
         rawValue
     }
 
-    var title: LocalizedStringKey {
+    var title: LocalizedStringResource {
         switch self {
         case .all: "All"
         case .downloaded: "Downloaded"
         case .wanted: "Missing"
         case .downloading: "Downloading"
+        case .skipped: "Gave up"
         }
     }
 
@@ -82,7 +83,7 @@ enum MediaSort: String, CaseIterable, Identifiable {
         rawValue
     }
 
-    var title: LocalizedStringKey {
+    var title: LocalizedStringResource {
         switch self {
         case .added_at: "Date added"
         case .last_grabbed_at: "Last download"
@@ -101,7 +102,7 @@ enum BookKindFilter: String, CaseIterable, Identifiable {
         rawValue
     }
 
-    var title: LocalizedStringKey {
+    var title: LocalizedStringResource {
         switch self {
         case .all: "All"
         case .audiobook: "Audiobook"
