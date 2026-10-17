@@ -40,6 +40,8 @@ interface RowSpec {
   /** The Downloading lamp is the only one that breathes, and only while active. */
   breathing?: boolean;
   muted: boolean;
+  /** Counts and speeds read in the mono face; a relative time does not. */
+  mono?: boolean;
   unavailable: boolean;
   extra?: ReactNode;
 }
@@ -66,12 +68,12 @@ function Row({ row, hiddenOnPhone }: { row: RowSpec; hiddenOnPhone: boolean }) {
         row.unavailable ? "unavailable" : row.muted ? "idle" : "active"
       }
       className={cn(
-        "focus-ring flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-800/40",
-        hiddenOnPhone && "hidden md:flex",
+        "focus-ring grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 px-4 py-3 transition-colors hover:bg-neutral-800/40",
+        hiddenOnPhone && "hidden md:grid",
       )}
     >
       <Lamp tone={row.tone} breathing={row.breathing} />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <p
           className={cn(
             "text-sm font-medium",
@@ -88,16 +90,17 @@ function Row({ row, hiddenOnPhone }: { row: RowSpec; hiddenOnPhone: boolean }) {
         >
           {row.subtitle}
         </p>
-        {row.extra}
       </div>
       <span
         className={cn(
-          "shrink-0 font-mono text-sm tabular-nums",
+          "text-right text-sm tabular-nums",
+          row.mono && "font-mono",
           row.muted ? "text-neutral-500" : "text-neutral-100",
         )}
       >
         {row.value}
       </span>
+      {row.extra && <div className="col-span-2 col-start-2">{row.extra}</div>}
     </Link>
   );
 }
@@ -164,6 +167,7 @@ function buildRows(
     value: "",
     tone: "idle",
     muted: true,
+    mono: true,
     unavailable: !downloading.available,
   };
   if (!downloading.available) {
@@ -191,6 +195,7 @@ function buildRows(
     value: "",
     tone: "idle",
     muted: true,
+    mono: true,
     unavailable: !delayed.available,
   };
   if (!delayed.available) {
@@ -216,6 +221,7 @@ function buildRows(
     value: "",
     tone: "idle",
     muted: true,
+    mono: true,
     unavailable: !attention.available,
   };
   if (!attention.available) {
@@ -277,6 +283,7 @@ function buildRows(
     value: "",
     tone: "idle",
     muted: true,
+    mono: true,
     unavailable: !reencode.available,
   };
   if (!reencode.available) {
