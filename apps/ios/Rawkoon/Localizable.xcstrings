@@ -7503,16 +7503,6 @@
         }
       }
     },
-    "We'll notify you when this is in the library. See Requests in Library.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "On te préviendra lorsque ce sera en bibliothèque. Voir les Demandes dans Bibliothèque."
-          }
-        }
-      }
-    },
     "Web browsers": {
       "localizations": {
         "fr": {
@@ -14886,6 +14876,216 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld en partage"
+          }
+        }
+      }
+    },
+    "We'll notify you when this is in the library. See Requests in Activity.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On te préviendra lorsque ce sera en bibliothèque. Voir les Demandes dans Activité."
+          }
+        }
+      }
+    },
+    "Gave up": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abandonné"
+          }
+        }
+      }
+    },
+    "Sort by": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trier par"
+          }
+        }
+      }
+    },
+    "Direction": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direction"
+          }
+        }
+      }
+    },
+    "this month": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ce mois-ci"
+          }
+        }
+      }
+    },
+    "Filters: %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtres : %@"
+          }
+        }
+      }
+    },
+    "Library growth, %@ this month": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Croissance de la bibliothèque, %@ ce mois-ci"
+          }
+        }
+      }
+    },
+    "Expanded": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplié"
+          }
+        }
+      }
+    },
+    "Collapsed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replié"
+          }
+        }
+      }
+    },
+    "Oldest first": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus anciens d'abord"
+          }
+        }
+      }
+    },
+    "Oldest download": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement le plus ancien"
+          }
+        }
+      }
+    },
+    "A–Z": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A–Z"
+          }
+        }
+      }
+    },
+    "Z–A": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z–A"
+          }
+        }
+      }
+    },
+    "Oldest year": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Année la plus ancienne"
+          }
+        }
+      }
+    },
+    "Newest year": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Année la plus récente"
+          }
+        }
+      }
+    },
+    "Status A–Z": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statut A–Z"
+          }
+        }
+      }
+    },
+    "Status Z–A": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statut Z–A"
+          }
+        }
+      }
+    },
+    "Oldest release": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortie la plus ancienne"
+          }
+        }
+      }
+    },
+    "Newest release": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortie la plus récente"
+          }
+        }
+      }
+    },
+    "Smallest first": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus petits d'abord"
+          }
+        }
+      }
+    },
+    "Largest first": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus gros d'abord"
           }
         }
       }

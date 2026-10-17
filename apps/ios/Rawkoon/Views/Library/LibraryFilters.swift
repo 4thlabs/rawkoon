@@ -23,7 +23,7 @@ enum MediaTypeFilter: String, CaseIterable, Identifiable {
         rawValue
     }
 
-    var title: LocalizedStringKey {
+    var title: LocalizedStringResource {
         switch self {
         case .all: "All"
         case .movie: "Movies"
@@ -37,17 +37,18 @@ enum MediaTypeFilter: String, CaseIterable, Identifiable {
 }
 
 enum MediaStatusFilter: String, CaseIterable, Identifiable {
-    case all, downloaded, wanted, downloading
+    case all, downloaded, wanted, downloading, skipped
     var id: String {
         rawValue
     }
 
-    var title: LocalizedStringKey {
+    var title: LocalizedStringResource {
         switch self {
         case .all: "All"
         case .downloaded: "Downloaded"
         case .wanted: "Missing"
         case .downloading: "Downloading"
+        case .skipped: "Gave up"
         }
     }
 
@@ -82,7 +83,7 @@ enum MediaSort: String, CaseIterable, Identifiable {
         rawValue
     }
 
-    var title: LocalizedStringKey {
+    var title: LocalizedStringResource {
         switch self {
         case .added_at: "Date added"
         case .last_grabbed_at: "Last download"
@@ -95,13 +96,28 @@ enum MediaSort: String, CaseIterable, Identifiable {
     }
 }
 
+extension MediaSort {
+    /// Short wording for a non-default order, nil for the default (newest added first).
+    func summary(ascending: Bool) -> String? {
+        switch self {
+        case .added_at: ascending ? String(localized: "Oldest first") : nil
+        case .last_grabbed_at: ascending ? String(localized: "Oldest download") : String(localized: "Last download")
+        case .title: ascending ? String(localized: "A–Z") : String(localized: "Z–A")
+        case .year: ascending ? String(localized: "Oldest year") : String(localized: "Newest year")
+        case .status: ascending ? String(localized: "Status A–Z") : String(localized: "Status Z–A")
+        case .digital_release_date: ascending ? String(localized: "Oldest release") : String(localized: "Newest release")
+        case .file_size: ascending ? String(localized: "Smallest first") : String(localized: "Largest first")
+        }
+    }
+}
+
 enum BookKindFilter: String, CaseIterable, Identifiable {
     case all, audiobook, ebook
     var id: String {
         rawValue
     }
 
-    var title: LocalizedStringKey {
+    var title: LocalizedStringResource {
         switch self {
         case .all: "All"
         case .audiobook: "Audiobook"

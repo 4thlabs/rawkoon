@@ -41,36 +41,21 @@ struct LibraryBooksView: View {
         VStack(spacing: 8) {
             searchField("Search books", text: $state.bookSearch)
                 .padding(.horizontal, 16)
-            GlassEffectContainer(spacing: 8) {
-                HStack(spacing: 8) {
-                    filterMenu(title: state.bookKind.title, systemImage: "books.vertical") {
-                        ForEach(BookKindFilter.allCases) { kind in
-                            Button(kind.title) { state.bookKind = kind }
-                        }
+            HStack {
+                LibraryFilterChip(
+                    activeLabels: state.bookKind == .all ? [] : [String(localized: state.bookKind.title)]
+                ) {
+                    state.bookKind = .all
+                } content: {
+                    Picker("Kind", selection: $state.bookKind) {
+                        ForEach(BookKindFilter.allCases) { Text($0.title).tag($0) }
                     }
-                    Spacer()
+                    .pickerStyle(.inline)
                 }
+                Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
-        }
-    }
-
-    private func filterMenu(
-        title: LocalizedStringKey, systemImage: String,
-        @ViewBuilder content: () -> some View
-    ) -> some View {
-        Menu {
-            content()
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: systemImage).font(.caption2)
-                Text(title).font(.subheadline.weight(.medium))
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
-            }
-            .foregroundStyle(Theme.textStrong)
-            .padding(.horizontal, 12).padding(.vertical, 10)
-            .glassEffect(.regular.interactive(), in: .capsule)
         }
     }
 

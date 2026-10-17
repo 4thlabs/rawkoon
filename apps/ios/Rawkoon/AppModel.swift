@@ -22,6 +22,10 @@ final class AppModel {
     var isAdmin = false
     /// Mirrors the server's books feature flag; stays on until the server says otherwise.
     var booksEnabled = true
+    var libraryGrowth: LibraryGrowth?
+    var libraryGrowthFetchedAt: Date?
+    /// True once a fetch failed with nothing cached, so the Library strip hides instead of waiting.
+    var libraryGrowthFailed = false
     var userFirstName: String?
     var userInitials: String?
     var ssoProviders: [SsoProvider] = []
