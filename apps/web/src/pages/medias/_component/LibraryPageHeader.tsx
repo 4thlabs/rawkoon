@@ -1,13 +1,10 @@
-import { Plus, RefreshCw, Download } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
-import { cn } from "@/lib/utils";
 
 interface LibraryPageHeaderProps {
   movieCount: number;
   showCount: number;
-  isLoading: boolean;
-  onRefresh: () => void;
   onAddClick: () => void;
   isAdmin: boolean;
 }
@@ -15,8 +12,6 @@ interface LibraryPageHeaderProps {
 export function LibraryPageHeader({
   movieCount,
   showCount,
-  isLoading,
-  onRefresh,
   onAddClick,
   isAdmin,
 }: LibraryPageHeaderProps) {
@@ -68,20 +63,6 @@ export function LibraryPageHeader({
             </span>
           </button>
         )}
-
-        {/* Refresh — calm secondary icon button */}
-        <button
-          type="button"
-          onClick={onRefresh}
-          title={t("medias.library.pageTitle")}
-          disabled={isLoading}
-          className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-800/60 text-neutral-400 transition-colors hover:text-neutral-100",
-            isLoading && "animate-spin pointer-events-none text-neutral-500",
-          )}
-        >
-          <RefreshCw size={14} />
-        </button>
       </div>
     </div>
   );

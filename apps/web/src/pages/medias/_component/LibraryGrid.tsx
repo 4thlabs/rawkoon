@@ -42,6 +42,8 @@ interface LibraryGridProps {
   items: LibraryMedia[];
   isLoading: boolean;
   viewMode: ViewMode;
+  /** A search or filter is narrowing the list, so empty means no match. */
+  filtered?: boolean;
   onMovieSearch: (id: number) => void;
   movieSearchPending: boolean;
   movieSearchId: number | null;
@@ -54,6 +56,7 @@ export function LibraryGrid({
   items,
   isLoading,
   viewMode,
+  filtered = false,
   onMovieSearch,
   movieSearchPending,
   movieSearchId,
@@ -98,8 +101,16 @@ export function LibraryGrid({
       <div className="animate-in fade-in duration-300">
         <EmptyState
           icon={Clapperboard}
-          title={t("medias.library.emptyTitle")}
-          description={t("medias.library.emptyDescription")}
+          title={t(
+            filtered
+              ? "medias.library.noMatchTitle"
+              : "medias.library.emptyTitle",
+          )}
+          description={t(
+            filtered
+              ? "medias.library.noMatchDescription"
+              : "medias.library.emptyDescription",
+          )}
         />
       </div>
     );

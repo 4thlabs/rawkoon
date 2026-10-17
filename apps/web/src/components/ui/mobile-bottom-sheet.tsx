@@ -26,15 +26,19 @@ export function MobileBottomSheet({
   children,
 }: MobileBottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (open) {
+      returnFocusRef.current = document.activeElement as HTMLElement | null;
       document.body.style.overflow = "hidden";
       const focusable =
         sheetRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
       focusable?.[0]?.focus();
     } else {
       document.body.style.overflow = "";
+      returnFocusRef.current?.focus();
+      returnFocusRef.current = null;
     }
     return () => {
       document.body.style.overflow = "";
@@ -42,6 +46,9 @@ export function MobileBottomSheet({
   }, [open]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Portaled children (an open Radix Select) bubble here through React; they own their keys.
+    if (e.defaultPrevented || !sheetRef.current?.contains(e.target as Node))
+      return;
     if (e.key === "Escape") {
       onClose();
       return;
@@ -78,7 +85,7 @@ export function MobileBottomSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[var(--z-modal-backdrop)] bg-black/40 backdrop-blur-[2px]"
             onClick={onClose}
           />
 
@@ -98,7 +105,7 @@ export function MobileBottomSheet({
               stiffness: 380,
               mass: 0.9,
             }}
-            className="fixed bottom-0 left-0 right-0 z-50 flex max-h-[88dvh] flex-col rounded-t-2xl bg-neutral-900 shadow-2xl"
+            className="fixed bottom-0 left-0 right-0 z-[var(--z-modal)] flex max-h-[88dvh] flex-col rounded-t-2xl bg-neutral-900 shadow-2xl"
           >
             <div className="flex shrink-0 justify-center pb-1 pt-3">
               <div className="h-1 w-10 rounded-full bg-neutral-700" />

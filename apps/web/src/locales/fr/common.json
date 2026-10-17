@@ -1881,12 +1881,9 @@
         "autoSearchStarted": "Recherche de mise à niveau lancée",
         "autoSearchFailed": "Échec de la recherche de mise à niveau"
       },
-      "filtersTitle": "Filtres & Tri",
-      "filtersButton": "Filtres",
       "typeSection": "Type",
       "statusSection": "Statut",
       "sortSection": "Trier par",
-      "languageOptionAll": "Toutes",
       "done": "Terminé",
       "typeMovie": "Film",
       "typeShow": "Série",
@@ -1897,7 +1894,47 @@
       "downloadsImport": "Importer des téléchargements",
       "switchLabel": "Sections de la bibliothèque",
       "switchMedia": "Films et séries",
-      "switchBooks": "Livres"
+      "switchBooks": "Livres",
+      "typeMovies": "Films",
+      "typeShows": "Séries",
+      "statusSkipped": "Abandonné",
+      "languageSection": "Langue",
+      "sortChip": "{{sort}} : {{direction}}",
+      "sortDirection": "Sens du tri",
+      "resultCount_one": "{{count}} titre",
+      "resultCount_other": "{{count}} titres",
+      "sortDir": {
+        "added_at": {
+          "desc": "Plus récent",
+          "asc": "Plus ancien"
+        },
+        "last_grabbed_at": {
+          "desc": "Plus récent",
+          "asc": "Plus ancien"
+        },
+        "title": {
+          "asc": "A–Z",
+          "desc": "Z–A"
+        },
+        "year": {
+          "desc": "Plus récent",
+          "asc": "Plus ancien"
+        },
+        "status": {
+          "asc": "A–Z",
+          "desc": "Z–A"
+        },
+        "digital_release_date": {
+          "desc": "Plus récent",
+          "asc": "Plus ancien"
+        },
+        "file_size": {
+          "desc": "Plus grand",
+          "asc": "Plus petit"
+        }
+      },
+      "noMatchTitle": "Aucun titre ne correspond",
+      "noMatchDescription": "Essayez de retirer un filtre ou d’effacer la recherche."
     },
     "watchlist": {
       "pageTitle": "Liste de visionnage",
@@ -2573,7 +2610,19 @@
     "thisWeek": "Cette semaine",
     "upgrades_one": "{{count}} mise à niveau",
     "upgrades_other": "{{count}} mises à niveau",
-    "since": "Depuis le {{date}}"
+    "since": "Depuis le {{date}}",
+    "strip": {
+      "allStats": "Toutes les stats",
+      "added": "ajoutés en {{month}}",
+      "sparkline": "Ajouts par semaine sur les douze dernières semaines",
+      "movies_one": "film",
+      "movies_other": "films",
+      "episodes_one": "épisode",
+      "episodes_other": "épisodes",
+      "books_one": "livre",
+      "books_other": "livres",
+      "thisMonth": "ce mois-ci"
+    }
   },
   "listening": {
     "title": "Écoute",
@@ -2618,15 +2667,8 @@
       "retry": "Réessayer",
       "close": "Fermer"
     },
-    "filterPlaceholder": "Filtrer par titre",
-    "search": "Rechercher",
-    "kindAll": "tous",
     "kindEbook": "numérique",
     "kindAudiobook": "audio",
-    "view": {
-      "grid": "Grille",
-      "list": "Liste"
-    },
     "loading": "Chargement…",
     "noneMatch": "Aucun livre ne correspond à ce filtre.",
     "noneYet": "Aucun livre pour le moment.",
@@ -2815,7 +2857,16 @@
       "theme_light": "Clair",
       "theme_sepia": "Sépia",
       "theme_dark": "Sombre"
-    }
+    },
+    "searchPlaceholder": "Rechercher un livre",
+    "kindSection": "Type",
+    "kindOptions": {
+      "all": "Tous",
+      "audiobook": "Livre audio",
+      "ebook": "Livre numérique"
+    },
+    "resultCount_one": "{{count}} livre",
+    "resultCount_other": "{{count}} livres"
   },
   "downloadsPage": {
     "tabs": {
@@ -3157,5 +3208,20 @@
     "allOwnedOnPage": "Tout ce qui figure sur cette page est déjà dans votre bibliothèque.",
     "nextPage": "Page suivante",
     "searchingBooks": "Recherche de livres..."
+  },
+  "filters": {
+    "button": "Filtres",
+    "title": "Filtres",
+    "reset": "Effacer",
+    "done": "Terminé",
+    "active": "Filtres actifs",
+    "remove": "Retirer le filtre : {{label}}",
+    "clearAll": "Tout effacer",
+    "view": {
+      "label": "Affichage",
+      "grid": "Grille",
+      "compact": "Compact",
+      "list": "Liste"
+    }
   }
 }

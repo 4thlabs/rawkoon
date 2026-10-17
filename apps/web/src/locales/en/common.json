@@ -1881,12 +1881,9 @@
         "autoSearchStarted": "Upgrade search started",
         "autoSearchFailed": "Upgrade search failed"
       },
-      "filtersTitle": "Filters & Sort",
-      "filtersButton": "Filters",
       "typeSection": "Type",
       "statusSection": "Status",
       "sortSection": "Sort by",
-      "languageOptionAll": "All",
       "done": "Done",
       "typeMovie": "Movie",
       "typeShow": "Show",
@@ -1897,7 +1894,47 @@
       "downloadsImport": "Import downloads",
       "switchLabel": "Library sections",
       "switchMedia": "Movies & Shows",
-      "switchBooks": "Books"
+      "switchBooks": "Books",
+      "typeMovies": "Movies",
+      "typeShows": "Shows",
+      "statusSkipped": "Gave up",
+      "languageSection": "Language",
+      "sortChip": "{{sort}}: {{direction}}",
+      "sortDirection": "Sort direction",
+      "resultCount_one": "{{count}} title",
+      "resultCount_other": "{{count}} titles",
+      "sortDir": {
+        "added_at": {
+          "desc": "Newest",
+          "asc": "Oldest"
+        },
+        "last_grabbed_at": {
+          "desc": "Newest",
+          "asc": "Oldest"
+        },
+        "title": {
+          "asc": "A–Z",
+          "desc": "Z–A"
+        },
+        "year": {
+          "desc": "Newest",
+          "asc": "Oldest"
+        },
+        "status": {
+          "asc": "A–Z",
+          "desc": "Z–A"
+        },
+        "digital_release_date": {
+          "desc": "Newest",
+          "asc": "Oldest"
+        },
+        "file_size": {
+          "desc": "Largest",
+          "asc": "Smallest"
+        }
+      },
+      "noMatchTitle": "No titles match",
+      "noMatchDescription": "Try removing a filter or clearing the search."
     },
     "watchlist": {
       "pageTitle": "Watchlist",
@@ -2573,7 +2610,19 @@
     "thisWeek": "This week",
     "upgrades_one": "{{count}} upgrade",
     "upgrades_other": "{{count}} upgrades",
-    "since": "Since {{date}}"
+    "since": "Since {{date}}",
+    "strip": {
+      "allStats": "All stats",
+      "added": "added in {{month}}",
+      "sparkline": "Weekly additions over the last twelve weeks",
+      "movies_one": "movie",
+      "movies_other": "movies",
+      "episodes_one": "episode",
+      "episodes_other": "episodes",
+      "books_one": "book",
+      "books_other": "books",
+      "thisMonth": "this month"
+    }
   },
   "listening": {
     "title": "Listening",
@@ -2618,15 +2667,8 @@
       "retry": "Try again",
       "close": "Close"
     },
-    "filterPlaceholder": "Filter by title",
-    "search": "Search",
-    "kindAll": "all",
     "kindEbook": "ebook",
     "kindAudiobook": "audiobook",
-    "view": {
-      "grid": "Grid",
-      "list": "List"
-    },
     "loading": "Loading…",
     "noneMatch": "No books match that filter.",
     "noneYet": "No books yet.",
@@ -2815,7 +2857,16 @@
       "theme_light": "Light",
       "theme_sepia": "Sepia",
       "theme_dark": "Dark"
-    }
+    },
+    "searchPlaceholder": "Search books",
+    "kindSection": "Kind",
+    "kindOptions": {
+      "all": "All",
+      "audiobook": "Audiobook",
+      "ebook": "Ebook"
+    },
+    "resultCount_one": "{{count}} book",
+    "resultCount_other": "{{count}} books"
   },
   "downloadsPage": {
     "tabs": {
@@ -3157,5 +3208,20 @@
     "allOwnedOnPage": "Everything on this page is already in your library.",
     "nextPage": "Next page",
     "searchingBooks": "Searching books..."
+  },
+  "filters": {
+    "button": "Filters",
+    "title": "Filters",
+    "reset": "Clear",
+    "done": "Done",
+    "active": "Active filters",
+    "remove": "Remove filter: {{label}}",
+    "clearAll": "Clear all",
+    "view": {
+      "label": "View",
+      "grid": "Grid",
+      "compact": "Compact",
+      "list": "List"
+    }
   }
 }
