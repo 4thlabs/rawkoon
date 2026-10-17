@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var hero: DashboardHeroResponse?
     @State var nowPlaying: NowPlayingResponse?
     @State var pipeline: DashboardPipeline?
+    @State private var homeVisible = false
     @State private var loading = true
     @State private var measuredTopInset: CGFloat = 0
     /// When the last full refresh finished, so switching back to Home within a
@@ -51,7 +52,7 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 if showsHero {
-                    HomeHero(hero: hero ?? DashboardHeroResponse(items: []), nowPlaying: nowPlaying?.sessions?.first, topInset: heroTopInset) { greeting(onHero: true) }
+                    HomeHero(hero: hero ?? DashboardHeroResponse(items: []), nowPlaying: nowPlaying?.sessions ?? [], topInset: heroTopInset) { greeting(onHero: true) }
                 } else {
                     greeting(onHero: false)
                 }
@@ -109,7 +110,11 @@ struct HomeView: View {
         .sensoryFeedback(RawkoonHaptics.feedback(for: .success), trigger: landedBannerCount)
         .onChange(of: model.recentArrivals.first) { _, arrival in landedArrived(arrival) }
         .task(id: landedBanner?.ts) { await autoDismissLandedBanner() }
-        .onAppear(perform: hydrateFromCache)
+        .onAppear {
+            homeVisible = true
+            hydrateFromCache()
+        }
+        .onDisappear { homeVisible = false }
         .task { await load() }
         // Kept-alive iPhone tabs never re-appear, so a revisit refreshes like the old TabView did.
         .onChange(of: isActiveRootTab) { _, active in
@@ -118,8 +123,8 @@ struct HomeView: View {
             }
         }
         .task { await model.refreshUnreadNotificationCount() }
-        .task(id: [isActiveRootTab, model.isAdmin, model.isOffline]) {
-            guard model.isAdmin, isActiveRootTab, !model.isOffline else { return }
+        .task(id: [homeVisible, isActiveRootTab, model.isAdmin, model.isOffline]) {
+            guard model.isAdmin, homeVisible, isActiveRootTab, !model.isOffline else { return }
             while !Task.isCancelled {
                 if let client = model.api() {
                     pipeline = try? await client.dashboardPipeline()

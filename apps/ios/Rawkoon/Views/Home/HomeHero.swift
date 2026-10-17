@@ -12,13 +12,14 @@ struct HomeHero<Greeting: View>: View {
     @Environment(\.isActiveRootTab) private var isActiveRootTab
 
     let hero: DashboardHeroResponse
-    let nowPlaying: NowPlayingSession?
+    let nowPlaying: [NowPlayingSession]
     /// Status-bar height: Home scrolls under it while the hero shows, so the text moves down by this much.
     let topInset: CGFloat
     let greeting: () -> Greeting
 
     @State private var storedIndex = 0
     @State private var selectedID: String?
+    @State private var manuallySelected = false
     /// Bumped per swipe so the haptic fires on a swipe, not on auto-rotation.
     @State private var swipes = 0
     @State private var added: Set<Int> = []
@@ -33,7 +34,7 @@ struct HomeHero<Greeting: View>: View {
 
     private let height: CGFloat = 460
 
-    init(hero: DashboardHeroResponse, nowPlaying: NowPlayingSession?, topInset: CGFloat, @ViewBuilder greeting: @escaping () -> Greeting) {
+    init(hero: DashboardHeroResponse, nowPlaying: [NowPlayingSession], topInset: CGFloat, @ViewBuilder greeting: @escaping () -> Greeting) {
         self.hero = hero
         self.nowPlaying = nowPlaying
         self.topInset = topInset
@@ -60,7 +61,7 @@ struct HomeHero<Greeting: View>: View {
     }
 
     private var items: [Slide] {
-        (nowPlaying.map { [Slide.watching($0)] } ?? []) + hero.items.map(Slide.film)
+        nowPlaying.map(Slide.watching) + hero.items.map(Slide.film)
     }
 
     private var index: Int {
@@ -128,7 +129,10 @@ struct HomeHero<Greeting: View>: View {
                 }
                 .sensoryFeedback(RawkoonHaptics.feedback(for: .tap), trigger: swipes)
                 .onChange(of: items.map(\.id)) { old, new in
-                    if let selectedID, !new.contains(selectedID) {
+                    if !manuallySelected, let first = new.first, first.hasPrefix("watching-"), !old.contains(first) {
+                        storedIndex = 0
+                        selectedID = first
+                    } else if let selectedID, !new.contains(selectedID) {
                         self.selectedID = old.first(where: { new.contains($0) }) ?? new.first
                     } else if selectedID == nil {
                         selectedID = old.first(where: { new.contains($0) }) ?? new.first
@@ -163,6 +167,7 @@ struct HomeHero<Greeting: View>: View {
 
     private func select(_ newIndex: Int) {
         pressedItemId = nil
+        manuallySelected = true
         withRawkoonMotion(.easeInOut(duration: 0.9)) {
             storedIndex = newIndex
             selectedID = items[newIndex].id

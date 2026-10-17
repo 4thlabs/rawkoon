@@ -10,7 +10,7 @@ struct LibraryGrowthStrip: View {
         // A container, not a bare `if`: an empty conditional never runs the task that fills it.
         VStack(spacing: 0) {
             if let growth = model.libraryGrowth {
-                if !growth.isEmpty {
+                if !growth.isEmpty || model.isAdmin {
                     LibraryGrowthStripBody(growth: growth, isAdmin: model.isAdmin, showBooks: model.booksEnabled)
                 }
             } else if !model.libraryGrowthFailed {
@@ -26,10 +26,12 @@ struct LibraryGrowthStrip: View {
 }
 
 private struct LibraryGrowthStripBody: View {
+    @Environment(AppModel.self) private var model
     static let rowHeight: CGFloat = 38
     let growth: LibraryGrowth
     let isAdmin: Bool
     let showBooks: Bool
+    @State private var libraryStats: LibraryStats?
     @State private var expanded: Bool = {
         #if DEBUG
             ProcessInfo.processInfo.environment["RAWKOON_GROWTH_OPEN"] != nil
@@ -78,6 +80,19 @@ private struct LibraryGrowthStripBody: View {
             if expanded {
                 LibraryGrowthCard(growth: growth, isAdmin: isAdmin, showBooks: showBooks)
                     .transition(.rawkoonSwap)
+                if isAdmin, let libraryStats {
+                    LibraryStatsCard(stats: libraryStats)
+                        .transition(.rawkoonSwap)
+                }
+            }
+        }
+        .task(id: expanded) {
+            guard expanded, isAdmin, let client = model.api() else { return }
+            if libraryStats == nil {
+                libraryStats = client.cachedLibraryStats()
+            }
+            if let fresh = try? await client.libraryStats() {
+                libraryStats = fresh
             }
         }
     }
