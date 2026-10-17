@@ -78,7 +78,14 @@ jobs:
         run: |
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           echo "/home/linuxbrew/.linuxbrew/bin" >> "$GITHUB_PATH"
-      - run: brew install swiftlint swiftformat
+      - run: brew install swiftlint
+      # Pinned: an unpinned install picks up new default rules on release day and fails lint on unchanged code.
+      - name: Install SwiftFormat 0.63.0
+        run: |
+          curl -sSfL -o /tmp/swiftformat.zip https://github.com/nicklockwood/SwiftFormat/releases/download/0.63.0/swiftformat_linux.zip
+          unzip -q /tmp/swiftformat.zip -d /tmp/swiftformat
+          install -m 0755 /tmp/swiftformat/swiftformat_linux /usr/local/bin/swiftformat
+          swiftformat --version
       - run: python3 scripts/check-l10n.py
         working-directory: apps/ios
       - run: python3 scripts/check-env-inject.py
