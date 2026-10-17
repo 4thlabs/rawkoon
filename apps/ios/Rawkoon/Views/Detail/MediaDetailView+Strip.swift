@@ -127,13 +127,11 @@ extension MediaDetailView {
 
     /// The status and why it can't be edited, kept as a quiet line under the chips.
     private func statusCaption(_ item: LibraryMedia) -> some View {
-        HStack(spacing: 4) {
-            LocalizedStatus.text(item.status)
-                .foregroundStyle(Theme.muted)
-            Text("Status is controlled by grabs and scans, not edited manually.")
-                .foregroundStyle(Theme.faint)
-        }
+        (LocalizedStatus.text(item.status).foregroundStyle(Theme.muted)
+            + Text(verbatim: " · ").foregroundStyle(Theme.faint)
+            + Text("Status is controlled by grabs and scans, not edited manually.").foregroundStyle(Theme.faint))
         .font(.caption2)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Movies split the lamp: tap auto-searches, the chevron opens the interactive
