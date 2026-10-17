@@ -5,30 +5,28 @@ import SwiftUI
 /// Loads its own data; shows nothing until there is something to say.
 struct LibraryGrowthStrip: View {
     @Environment(AppModel.self) private var model
-    @State private var growth: LibraryGrowth?
 
     var body: some View {
         // A container, not a bare `if`: an empty conditional never runs the task that fills it.
         VStack(spacing: 0) {
-            if let growth, !growth.isEmpty {
-                LibraryGrowthStripBody(growth: growth, isAdmin: model.isAdmin, showBooks: model.booksEnabled)
-                    .transition(.rawkoonSwap)
+            if let growth = model.libraryGrowth {
+                if !growth.isEmpty {
+                    LibraryGrowthStripBody(growth: growth, isAdmin: model.isAdmin, showBooks: model.booksEnabled)
+                }
+            } else if !model.libraryGrowthFailed {
+                // Holds the strip's height so the search field doesn't jump when the first load lands.
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Theme.border.opacity(0.5), lineWidth: 1)
+                    .frame(height: LibraryGrowthStripBody.rowHeight)
+                    .accessibilityHidden(true)
             }
         }
-        .task {
-            if growth == nil, let cached = model.api()?.cached(Endpoints.libraryGrowth),
-               GrowthDates.isCurrentMonth(start: cached.value.growth.month.start, timezone: cached.value.growth.timezone)
-            {
-                growth = cached.value.growth
-            }
-            if let fresh = try? await model.api()?.libraryGrowth() {
-                withRawkoonMotion(RawkoonMotion.spring) { growth = fresh }
-            }
-        }
+        .task { await model.refreshLibraryGrowth() }
     }
 }
 
 private struct LibraryGrowthStripBody: View {
+    static let rowHeight: CGFloat = 38
     let growth: LibraryGrowth
     let isAdmin: Bool
     let showBooks: Bool
@@ -67,7 +65,8 @@ private struct LibraryGrowthStripBody: View {
                         .font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.faint)
                         .rotationEffect(.degrees(expanded ? 180 : 0))
                 }
-                .padding(.horizontal, 12).padding(.vertical, 9)
+                .padding(.horizontal, 12)
+                .frame(height: Self.rowHeight)
                 .background(Theme.raised, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border, lineWidth: 1))
                 .contentShape(Rectangle())
