@@ -2,12 +2,16 @@ import { motion, type Variants } from "motion/react";
 import { useLibraryEvents } from "@/features/medias/hooks/useLibraryEvents";
 import { PageLayout } from "@/components/PageLayout";
 import { CardErrorBoundary } from "@/components/ErrorBoundary";
+import { cn } from "@/lib/utils";
+import { useFeatures } from "@/lib/routing/useFeatures";
 import { useCurrentUser } from "@/lib/auth/useAuth";
 import { getUserFirstName } from "@/lib/utils/format";
 import { HomeHero } from "@/pages/_component/HomeHero";
 import { RecentlyAddedRail } from "@/pages/_component/RecentlyAddedRail";
 import { UpcomingRail } from "@/pages/_component/UpcomingRail";
-import { WidgetGrid } from "@/pages/_component/WidgetGrid";
+import { PipelineCard } from "@/pages/_component/PipelineCard";
+import { ContinueListeningWidget } from "@/features/continue/ContinueListeningWidget";
+import { BooksCard } from "@/features/listening/BooksCard";
 
 // ─── Motion variants ──────────────────────────────────────────────────────────
 
@@ -28,12 +32,16 @@ const sectionVariants: Variants = {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 /**
- * Home is a fixed media composition: greeting, two full-width poster rails,
- * then a responsive widget grid — in a stable order. No configurable layout,
- * edit mode, or persistence.
+ * Home is a fixed composition: the hero, Continue beside the pipeline and
+ * books cards (stacked under it on phones), then two full-width poster rails.
+ * No configurable layout, edit mode, or persistence.
  */
 export function HomePage() {
   const { data: user } = useCurrentUser();
+  const features = useFeatures();
+  // A member with books off has no side column, so the left one takes the width.
+  const showSide =
+    user?.is_admin !== false || features.data?.books_enabled !== false;
   useLibraryEvents();
 
   return (
@@ -45,18 +53,36 @@ export function HomePage() {
         initial="hidden"
         animate="show"
       >
-        <motion.div variants={sectionVariants}>
-          <CardErrorBoundary>
-            <RecentlyAddedRail />
-          </CardErrorBoundary>
-        </motion.div>
-        <motion.div variants={sectionVariants}>
-          <CardErrorBoundary>
-            <UpcomingRail />
-          </CardErrorBoundary>
-        </motion.div>
-        <motion.div variants={sectionVariants}>
-          <WidgetGrid />
+        <motion.div
+          variants={sectionVariants}
+          className={cn(
+            "grid items-start gap-x-6 gap-y-8",
+            showSide && "lg:grid-cols-[minmax(0,1fr)_20.5rem]",
+          )}
+        >
+          <div className="min-w-0 space-y-8">
+            <CardErrorBoundary>
+              <ContinueListeningWidget />
+            </CardErrorBoundary>
+          </div>
+          {showSide && (
+            <div className="space-y-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+              <CardErrorBoundary>
+                <PipelineCard />
+              </CardErrorBoundary>
+              <CardErrorBoundary>
+                <BooksCard />
+              </CardErrorBoundary>
+            </div>
+          )}
+          <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-2">
+            <CardErrorBoundary>
+              <RecentlyAddedRail />
+            </CardErrorBoundary>
+            <CardErrorBoundary>
+              <UpcomingRail />
+            </CardErrorBoundary>
+          </div>
         </motion.div>
       </motion.div>
     </PageLayout>

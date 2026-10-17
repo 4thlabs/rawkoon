@@ -81,17 +81,20 @@ struct LibraryMediaView: View {
                     Label("Layout", systemImage: density == .grid ? "square.grid.2x2" : "list.bullet")
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink { RequestsView() } label: {
-                    Label("Requests", systemImage: "tray.and.arrow.down")
-                }
-            }
         }
         .task {
             #if DEBUG
                 let preset = ProcessInfo.processInfo.environment["RAWKOON_LIBRARY_SEARCH"]
                 if let preset, state.mediaSearch.isEmpty {
                     state.mediaSearch = preset
+                }
+                if ProcessInfo.processInfo.environment["RAWKOON_LIBRARY_FILTERED"] != nil {
+                    state.mediaType = .show
+                    state.mediaStatus = .wanted
+                }
+                if ProcessInfo.processInfo.environment["RAWKOON_LIBRARY_SORT_ASC"] != nil {
+                    state.sort = .title
+                    state.sortAscending = true
                 }
             #endif
             state.hydrateFromCache(model: model)
@@ -153,58 +156,57 @@ struct LibraryMediaView: View {
         }
     }
 
-    private var mediaToolbar: some View {
-        VStack(spacing: 8) {
-            searchField("Search titles", text: $state.mediaSearch)
-                .padding(.horizontal, 16)
-            ScrollView(.horizontal, showsIndicators: false) {
-                GlassEffectContainer(spacing: 8) {
-                    HStack(spacing: 8) {
-                        filterMenu(title: state.mediaType.title, systemImage: "film") {
-                            ForEach(MediaTypeFilter.allCases) { mediaType in
-                                Button(mediaType.title) { state.mediaType = mediaType }
-                            }
-                        }
-                        filterMenu(title: state.mediaStatus.title, systemImage: "line.3.horizontal.decrease") {
-                            ForEach(MediaStatusFilter.allCases) { status in
-                                Button(status.title) { state.mediaStatus = status }
-                            }
-                        }
-                        filterMenu(
-                            title: state.sort.title,
-                            systemImage: state.sortAscending ? "arrow.up" : "arrow.down"
-                        ) {
-                            ForEach(MediaSort.allCases) { ordering in
-                                Button(ordering.title) { state.sort = ordering }
-                            }
-                            Divider()
-                            Button(LocalizedStringKey(state.sortAscending ? "Descending" : "Ascending")) {
-                                state.sortAscending.toggle()
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8)
-            }
+    private var activeFilterLabels: [String] {
+        var labels: [String] = []
+        if state.mediaType != .all {
+            labels.append(String(localized: state.mediaType.title))
         }
+        if state.mediaStatus != .all {
+            labels.append(String(localized: state.mediaStatus.title))
+        }
+        if let order = state.sort.summary(ascending: state.sortAscending) {
+            labels.append(order)
+        }
+        return labels
     }
 
-    private func filterMenu(
-        title: LocalizedStringKey, systemImage: String,
-        @ViewBuilder content: () -> some View
-    ) -> some View {
-        Menu {
-            content()
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: systemImage).font(.caption2)
-                Text(title).font(.subheadline.weight(.medium))
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
+    private var mediaToolbar: some View {
+        VStack(spacing: 8) {
+            LibraryGrowthStrip()
+                .padding(.horizontal, 16)
+            searchField("Search titles", text: $state.mediaSearch)
+                .padding(.horizontal, 16)
+            HStack {
+                LibraryFilterChip(activeLabels: activeFilterLabels) {
+                    state.mediaType = .all
+                    state.mediaStatus = .all
+                    state.sort = .added_at
+                    state.sortAscending = false
+                } content: {
+                    Picker("Type", selection: $state.mediaType) {
+                        ForEach(MediaTypeFilter.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.inline)
+                    Picker("Status", selection: $state.mediaStatus) {
+                        ForEach(MediaStatusFilter.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.inline)
+                    Menu("Sort by") {
+                        Picker("Sort by", selection: $state.sort) {
+                            ForEach(MediaSort.allCases) { Text($0.title).tag($0) }
+                        }
+                        .pickerStyle(.inline)
+                        Picker("Direction", selection: $state.sortAscending) {
+                            Text("Descending").tag(false)
+                            Text("Ascending").tag(true)
+                        }
+                        .pickerStyle(.inline)
+                    }
+                }
+                Spacer(minLength: 0)
             }
-            .foregroundStyle(Theme.textStrong)
-            .padding(.horizontal, 12).padding(.vertical, 10)
-            .glassEffect(.regular.interactive(), in: .capsule)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
         }
     }
 

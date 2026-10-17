@@ -41,7 +41,7 @@ function EditionPip({ kind, status }: { kind: string; status: string }) {
   );
 }
 
-function BookTile({ book }: { book: Book }) {
+function BookTile({ book, compact }: { book: Book; compact: boolean }) {
   const { t } = useTranslation("common");
   const state = aggregateState(book.editions);
   const rail = state ? stateTokens(state).rail : "bg-neutral-700";
@@ -91,7 +91,7 @@ function BookTile({ book }: { book: Book }) {
         />
       </div>
 
-      <div className="min-w-0">
+      <div className={compact ? "sr-only" : "min-w-0"}>
         <p className="truncate font-display text-sm leading-snug text-neutral-100">
           {book.title}
         </p>
@@ -106,13 +106,25 @@ function BookTile({ book }: { book: Book }) {
   );
 }
 
-export function BookGrid({ books }: { books: Book[] }) {
+export function BookGrid({
+  books,
+  compact = false,
+}: {
+  books: Book[];
+  compact?: boolean;
+}) {
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+    <ul
+      className={
+        compact
+          ? "grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10"
+          : "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+      }
+    >
       {books.map((b) => (
         <li key={b.id}>
           <BookReadContextMenu book={b}>
-            <BookTile book={b} />
+            <BookTile book={b} compact={compact} />
           </BookReadContextMenu>
         </li>
       ))}

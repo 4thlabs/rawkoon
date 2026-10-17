@@ -8,7 +8,12 @@ struct ActivityView: View {
     /// One page of history rows; the limit grows by this as the list is scrolled.
     static let historyPageSize = 50
 
-    @State private var lane: ActivityLane = .inbox
+    @State private var lane: ActivityLane
+
+    init(initialLane: ActivityLane = .inbox) {
+        _lane = State(initialValue: initialLane)
+    }
+
     /// The side the next lane enters from, set before the lane changes so the insertion reads it fresh.
     @State private var laneEdge: Edge = .trailing
     /// In-flight live-event reload, cancelled before the next starts so a burst

@@ -50,6 +50,17 @@ struct LibraryView: View {
         .background(Theme.base)
         .navigationTitle(navigationTitleKey)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if section == .books {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        ListeningStatsDestination()
+                    } label: {
+                        Label("Listening", systemImage: "headphones")
+                    }
+                }
+            }
+        }
         .task {
             if model.needsLibraryRefresh {
                 await booksState.loadBooks(model: model)

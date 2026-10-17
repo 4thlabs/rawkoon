@@ -8,14 +8,12 @@ extension HomeView {
         case library(LibraryMedia)
         case landed(LandedArrival)
         case upcoming(UpcomingItem)
-        case discover(DiscoverDeckItem)
         var id: String {
             switch self {
             case let .library(m): "l\(m.id)"
             // Same id as the library card, so expiry swaps in place without replaying the entrance.
             case let .landed(a): "l\(a.mediaId)"
             case let .upcoming(u): "u\(u.id)"
-            case let .discover(d): "d\(d.id)"
             }
         }
     }
@@ -82,18 +80,6 @@ extension HomeView {
             }
             .buttonStyle(.rawkoonPressable)
             .disabled(u.tmdbId == nil && u.libraryId == nil)
-        case let .discover(d):
-            let zoomID = RawkoonZoom.media(tmdbId: d.tmdbId, mediaType: d.mediaType)
-            NavigationLink {
-                MediaDetailView(tmdbId: d.tmdbId, mediaType: d.mediaType,
-                                title: d.title, posterPath: d.posterUrl, libraryId: nil)
-                    .rawkoonZoomDestination(zoomID)
-            } label: {
-                MediaPosterCard(title: d.title, posterURL: model.absoluteURL(d.posterUrl),
-                                width: RailPoster.width, corner: RailPoster.corner)
-                    .rawkoonZoomSource(zoomID)
-            }
-            .buttonStyle(.rawkoonPressable)
         }
     }
 

@@ -2,13 +2,12 @@ import type { LibraryMedia, LibraryMediaStatus } from "@rawkoon/shared/types";
 import type { TFunction } from "i18next";
 import { formatRelativeTime } from "@/lib/utils/relativeTime";
 
-export type ItemPageTab = "info" | "similar" | "releases" | "management";
+export type ItemPageTab = "info" | "similar" | "files" | "releases";
 
-const TABS: readonly string[] = ["info", "similar", "releases", "management"];
+const TABS: readonly string[] = ["info", "similar", "files", "releases"];
 
-/** Reads `?tab=`; "search" is what the release list was called before it became "releases". */
+/** Reads `?tab=`; anything that is not a current tab is dropped. */
 export function parseItemTab(raw: unknown): ItemPageTab | undefined {
-  if (raw === "search") return "releases";
   return typeof raw === "string" && TABS.includes(raw)
     ? (raw as ItemPageTab)
     : undefined;
@@ -20,12 +19,17 @@ export function defaultItemTab(opts: {
   status: LibraryMediaStatus | undefined;
   focusedEpisode: boolean;
 }): ItemPageTab {
-  if (opts.focusedEpisode) return "management";
+  if (opts.focusedEpisode) return "files";
   if (opts.isAdmin && opts.status === "wanted") return "releases";
   return "info";
 }
 
-export type HeaderActionKind = "missing" | "downloading" | "downloaded" | null;
+export type HeaderActionKind =
+  | "missing"
+  | "downloading"
+  | "downloaded"
+  | "skipped"
+  | null;
 
 /** Which action set the item header shows; non-admins get none. */
 export function headerActionKind(
@@ -36,6 +40,7 @@ export function headerActionKind(
   if (status === "wanted") return "missing";
   if (status === "downloading" || status === "upgrading") return "downloading";
   if (status === "downloaded") return "downloaded";
+  if (status === "skipped") return "skipped";
   return null;
 }
 

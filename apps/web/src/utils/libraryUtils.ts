@@ -18,6 +18,16 @@ export type FilterStatus =
   | "downloaded"
   | "skipped";
 
+const FILTER_TYPES: readonly FilterType[] = ["all", "movie", "show"];
+const FILTER_STATUSES: readonly FilterStatus[] = [
+  "all",
+  "wanted",
+  "downloading",
+  "downloaded",
+  "skipped",
+];
+export const VIEW_MODES: readonly ViewMode[] = ["grid", "compact", "list"];
+
 export const LIBRARY_SORT_KEYS: readonly SortKey[] = [
   "added_at",
   "last_grabbed_at",
@@ -27,6 +37,21 @@ export const LIBRARY_SORT_KEYS: readonly SortKey[] = [
   "digital_release_date",
   "file_size",
 ] as const;
+
+const oneOf = <T extends string>(
+  allowed: readonly T[],
+  value: unknown,
+): T | undefined =>
+  typeof value === "string" && (allowed as readonly string[]).includes(value)
+    ? (value as T)
+    : undefined;
+
+/** URL values that are not a known option fall back to the default (undefined). */
+export const parseFilterType = (v: unknown) => oneOf(FILTER_TYPES, v);
+export const parseFilterStatus = (v: unknown) => oneOf(FILTER_STATUSES, v);
+export const parseSortKey = (v: unknown) => oneOf(LIBRARY_SORT_KEYS, v);
+export const parseSortDir = (v: unknown) => oneOf(["asc", "desc"] as const, v);
+export const parseViewMode = (v: unknown) => oneOf(VIEW_MODES, v);
 
 export function sortItems(
   items: LibraryMedia[],

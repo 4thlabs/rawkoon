@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useUrlState } from "@/lib/app/useUrlState";
 import type {
   FilterType,
@@ -14,8 +15,11 @@ export const LIBRARY_DEFAULTS = {
   search: "" as string,
   sortBy: "added_at" as SortKey,
   sortDir: "desc" as SortDir,
-  viewMode: "grid" as ViewMode,
+  view: "grid" as ViewMode,
 };
+
+export const isNonDefaultSort = (sortBy: SortKey, sortDir: SortDir) =>
+  sortBy !== LIBRARY_DEFAULTS.sortBy || sortDir !== LIBRARY_DEFAULTS.sortDir;
 
 export type LibraryPageSearchParams = Partial<typeof LIBRARY_DEFAULTS>;
 
@@ -30,7 +34,25 @@ export function useLibraryPageState(searchParams: LibraryPageSearchParams) {
     state.type !== "all",
     state.status !== "all",
     state.language !== "all",
+    isNonDefaultSort(state.sortBy, state.sortDir),
   ].filter(Boolean).length;
 
-  return { state, setState, activeFilterCount };
+  // One navigation each: two setState calls in a row would overwrite each other.
+  const setSort = useCallback(
+    (sortBy: SortKey, sortDir: SortDir) => setState({ sortBy, sortDir }),
+    [setState],
+  );
+  const resetFilters = useCallback(
+    () =>
+      setState({
+        type: LIBRARY_DEFAULTS.type,
+        status: LIBRARY_DEFAULTS.status,
+        language: LIBRARY_DEFAULTS.language,
+        sortBy: LIBRARY_DEFAULTS.sortBy,
+        sortDir: LIBRARY_DEFAULTS.sortDir,
+      }),
+    [setState],
+  );
+
+  return { state, setState, setSort, resetFilters, activeFilterCount };
 }

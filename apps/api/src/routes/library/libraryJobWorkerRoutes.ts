@@ -7,9 +7,8 @@ import {
   libraryMigrateQueue,
   libraryReindexLanguagesQueue,
   libraryRemuxQueue,
-  scheduledTasksQueue,
-  SCHEDULED_JOB_NAMES,
 } from "@rawkoon/api/services/queueService";
+import { getNextRssRunAt } from "@rawkoon/api/services/rssNextRun";
 import { createContractSseResponse } from "@rawkoon/api/utils/sse";
 import {
   assertSseContractIDs,
@@ -274,34 +273,11 @@ export const libraryJobWorkerRoutes = new Hono<Env>()
 
   .get("/rss-status", requireUser, async () => {
     try {
-      const [lastRun, history, repeatableJobs] = await Promise.all([
+      const [lastRun, history, nextRunAt] = await Promise.all([
         getLastRssRun(),
         getRssRunHistory(),
-        scheduledTasksQueue.getJobSchedulers(),
+        getNextRssRunAt(),
       ]);
-      const rssJob = repeatableJobs.find(
-        (j) => j.name === SCHEDULED_JOB_NAMES.POLL_INDEXER_RSS,
-      );
-      const bullNext = rssJob?.next ? new Date(rssJob.next) : null;
-      const now = new Date();
-      const nextRunAt =
-        bullNext && bullNext > now
-          ? bullNext.toISOString()
-          : (() => {
-              const mins = now.getUTCMinutes();
-              const nextMins = Math.ceil((mins + 1) / 15) * 15;
-              return new Date(
-                Date.UTC(
-                  now.getUTCFullYear(),
-                  now.getUTCMonth(),
-                  now.getUTCDate(),
-                  now.getUTCHours() + Math.floor(nextMins / 60),
-                  nextMins % 60,
-                  0,
-                  0,
-                ),
-              ).toISOString();
-            })();
       return ok({
         server_time: new Date().toISOString(),
         last_run: lastRun,

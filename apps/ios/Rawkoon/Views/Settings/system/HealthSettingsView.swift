@@ -14,6 +14,8 @@ struct HealthSettingsView: View {
     @State private var healthFailed = false
     @State private var attention: [AttentionItem]?
     @State private var attentionFailed = false
+    @State private var missingSearchCount: Int?
+    @State private var missingSearchesFailed = false
     @State private var rss: RssStatusResponse?
     @State private var rssFailed = false
 
@@ -159,6 +161,21 @@ struct HealthSettingsView: View {
 
     private var attentionSection: some View {
         Section {
+            NavigationLink {
+                MissingLibraryView()
+            } label: {
+                HStack {
+                    Label("Searches that found nothing", systemImage: "magnifyingglass")
+                    Spacer()
+                    if let missingSearchCount {
+                        Text("\(missingSearchCount)").foregroundStyle(Theme.muted)
+                    } else if missingSearchesFailed {
+                        Image(systemName: "exclamationmark.circle").foregroundStyle(Theme.terracotta)
+                    } else {
+                        ProgressView()
+                    }
+                }
+            }
             if let attention {
                 if attention.isEmpty {
                     Label("Nothing needs attention", systemImage: "checkmark.circle.fill")
@@ -263,8 +280,9 @@ struct HealthSettingsView: View {
         async let readiness: Void = loadChecks(client)
         async let library: Void = loadHealth(client)
         async let alerts: Void = loadAttention(client)
+        async let misses: Void = loadMissingSearches(client)
         async let feed: Void = loadRss(client)
-        _ = await (readiness, library, alerts, feed)
+        _ = await (readiness, library, alerts, misses, feed)
     }
 
     private func loadChecks(_ client: APIClient) async {
@@ -292,6 +310,15 @@ struct HealthSettingsView: View {
             attentionFailed = false
         } catch {
             attentionFailed = attention == nil
+        }
+    }
+
+    private func loadMissingSearches(_ client: APIClient) async {
+        do {
+            missingSearchCount = try await MissingLibrarySearches.load(client: client).count
+            missingSearchesFailed = false
+        } catch {
+            missingSearchesFailed = missingSearchCount == nil
         }
     }
 

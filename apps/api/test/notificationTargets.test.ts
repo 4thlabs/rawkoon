@@ -84,7 +84,7 @@ describe("library notification targets", () => {
       {
         title: "Movie downloaded",
         body: "Dune (2021) is now in your library.",
-        url: "/library/42?tab=management",
+        url: "/library/42?tab=files",
       },
     ]);
   });
@@ -105,7 +105,7 @@ describe("library notification targets", () => {
       {
         title: "S01E03 downloaded",
         body: "La maison des vilains (2026) — S01E03 is now in your library.",
-        url: "/library/2497?tab=management&season=1&episode=3",
+        url: "/library/2497?tab=files&season=1&episode=3",
       },
     ]);
   });
@@ -127,9 +127,7 @@ describe("library notification targets", () => {
 
     expect(state.notifications[0]?.title).toBe("S01 downloaded");
     expect(state.notifications[0]?.body).toContain("9 episodes");
-    expect(state.notifications[0]?.url).toBe(
-      "/library/10?tab=management&season=1",
-    );
+    expect(state.notifications[0]?.url).toBe("/library/10?tab=files&season=1");
   });
 
   it("includes a non-generic episode title in the body", async () => {
@@ -148,7 +146,7 @@ describe("library notification targets", () => {
       {
         title: "S01E01 downloaded",
         body: 'Severance (2022) — S01E01 "Good News About Hell" is now in your library.',
-        url: "/library/10?tab=management&season=1&episode=1",
+        url: "/library/10?tab=files&season=1&episode=1",
       },
     ]);
   });
@@ -167,7 +165,7 @@ describe("library notification targets", () => {
       scope: "movie",
     });
 
-    expect(state.notifications[0]?.url).toBe("/library/42?tab=management");
+    expect(state.notifications[0]?.url).toBe("/library/42?tab=files");
   });
 
   it("opens the media detail page when post-processing fails", async () => {
@@ -180,6 +178,6 @@ describe("library notification targets", () => {
     };
     await notifyAdminsPostProcessFailed(7, "Permission denied", 42);
 
-    expect(state.notifications[0]?.url).toBe("/library/42?tab=management");
+    expect(state.notifications[0]?.url).toBe("/library/42?tab=files");
   });
 });

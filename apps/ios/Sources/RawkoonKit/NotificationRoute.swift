@@ -6,7 +6,8 @@ import Foundation
 /// from before the restructure still resolve, so already-delivered pushes and
 /// an older server keep working.
 public enum NotificationRoute: Equatable, Sendable {
-    /// `/library/{id}`, optionally `?season=&episode=&tab=management`.
+    /// `/library/{id}`, optionally `?season=&episode=&tab=files` (the web's Files tab).
+    /// `tab=management` from older pushes still counts.
     case media(libraryId: Int, season: Int?, episode: Int?, focusManagement: Bool)
     /// `/books/{id}`.
     case book(bookId: Int)
@@ -36,10 +37,11 @@ public enum NotificationRoute: Equatable, Sendable {
 
         switch (head, segments.dropFirst().first) {
         case let ("library", id?):
+            let focusFiles = query("tab").map { ["files", "management"].contains($0) } ?? false
             return Int(id).map {
                 .media(
                     libraryId: $0, season: query("season").flatMap(Int.init),
-                    episode: query("episode").flatMap(Int.init), focusManagement: query("tab") == "management"
+                    episode: query("episode").flatMap(Int.init), focusManagement: focusFiles
                 )
             }
         case let ("books", id?):

@@ -2,7 +2,7 @@ import type { ElementType, ReactElement, ReactNode } from "react";
 import { isValidElement, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
-export interface SegmentedTabItem<T extends string> {
+interface SegmentedTabItem<T extends string> {
   id: T;
   label: string;
   icon?: ElementType<{ size?: number; className?: string }> | ReactElement;

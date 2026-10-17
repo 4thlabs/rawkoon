@@ -23,7 +23,7 @@ extension MediaDetailView {
     }
 
     /// The add/request lamp for titles not yet in the library. In-library
-    /// "Search releases" is no longer here — it moved into the Management card.
+    /// "Search releases" is no longer here — it moved into the control strip.
     @ViewBuilder
     var primaryAction: some View {
         if libraryId == nil {
@@ -50,7 +50,7 @@ extension MediaDetailView {
                         }
                     }
                 } else if requested {
-                    Text("We'll notify you when this is in the library. See Requests in Library.")
+                    Text("We'll notify you when this is in the library. See Requests in Activity.")
                         .font(.footnote)
                         .foregroundStyle(Theme.muted)
                 }

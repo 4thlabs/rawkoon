@@ -1,12 +1,31 @@
 import RawkoonKit
 import SwiftUI
 
+/// The one sheet the title page can present at a time.
+enum MediaDetailSheet: Identifiable {
+    case overrides(LibraryMedia)
+    case artwork(LibraryMedia)
+    case reencode(ReencodeTarget)
+    case release
+    case menuRelease(ReleaseSearchPresentation)
+
+    var id: String {
+        switch self {
+        case .overrides: "overrides"
+        case .artwork: "artwork"
+        case let .reencode(target): "reencode-\(target.id)"
+        case .release: "release"
+        case let .menuRelease(target): "menu-\(target.id)"
+        }
+    }
+}
+
 /// Pushed from Discover and Library. `mediaType` is TMDB-style ("movie"/"tv").
 /// `libraryId` is non-nil when the title is already in the library.
 ///
-/// A hero over an in-content segmented control (Info / Similar / Manage) that
+/// A hero over an in-content segmented control (Info / Similar / Files) that
 /// mirrors the web app's detail tabs, so one section shows at a time instead of
-/// one very long page. Manage (controls, files, downloads, overrides, artwork)
+/// one very long page. Files (seasons or the file card, then download history)
 /// shows only for admins on in-library titles, because the server routes it
 /// drives are admin-only.
 struct MediaDetailView: View {
@@ -26,7 +45,7 @@ struct MediaDetailView: View {
     /// in place — seeded from init, then set to the created item's id on add.
     @State var libraryId: Int?
     /// Set when opened via a notification's `?tab=management` deep link (spec T6)
-    /// — selects the Manage segment once it's available.
+    /// — selects the Files segment once it's available.
     let focusManagement: Bool
 
     init(
@@ -105,10 +124,10 @@ struct MediaDetailView: View {
     /// The detail page's own sections, shown in an in-content segmented control
     /// under the hero (see `detailTabBar`). Mirrors the web app splitting detail
     /// into tabs, so only one section shows at a time instead of one very long
-    /// page. Release search stays a sheet (the "Search releases" lamp in Manage),
+    /// page. Release search stays a sheet (the strip's search button and lamp),
     /// matching web.
     enum DetailTab: String, CaseIterable, Identifiable {
-        case info, similar, manage
+        case info, similar, files
         var id: String {
             rawValue
         }
@@ -117,7 +136,7 @@ struct MediaDetailView: View {
             switch self {
             case .info: "Info"
             case .similar: "Similar"
-            case .manage: "Manage"
+            case .files: "Files"
             }
         }
 
@@ -125,18 +144,18 @@ struct MediaDetailView: View {
             switch self {
             case .info: "info.circle"
             case .similar: "rectangle.stack"
-            case .manage: "slider.horizontal.3"
+            case .files: "doc.on.doc"
             }
         }
     }
 
-    /// Manage only exists for admins on in-library titles (same gate as the old
+    /// Files only exists for admins on in-library titles (same gate as the old
     /// inline management sections).
     var availableTabs: [DetailTab] {
-        showManagement ? [.info, .similar, .manage] : [.info, .similar]
+        showManagement ? [.info, .similar, .files] : [.info, .similar]
     }
 
-    /// Guards against a stale `.manage` selection after an admin/library change
+    /// Guards against a stale `.files` selection after an admin/library change
     /// removes that tab mid-view.
     var activeTab: DetailTab {
         availableTabs.contains(detailTab) ? detailTab : .info
@@ -164,6 +183,11 @@ struct MediaDetailView: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                if showManagement {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        actionsMenu
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         Task { await toggleWatchlist() }
@@ -245,7 +269,7 @@ struct MediaDetailView: View {
             // Deep link "?tab=management" now selects the Manage segment instead
             // of scrolling a single long page to it.
             if focusManagement, showManagement {
-                detailTab = .manage
+                detailTab = .files
             }
             openRequestedReleaseSheet()
         }
@@ -253,45 +277,103 @@ struct MediaDetailView: View {
 
     func attachSheets(_ base: some View) -> some View {
         base
-            .sheet(isPresented: $showingReleaseSearch, onDismiss: {
-                releaseSearchSeason = nil
-                releaseSearchEpisode = nil
-                releaseSearchUpgrade = false
-            }) {
-                ReleaseSearchView(
-                    query: title,
-                    libraryMediaId: libraryId,
-                    tmdbId: tmdbId,
-                    mediaType: mediaType,
-                    availableSeasons: releaseSearchSeason.map { [$0] } ?? (details?.seasons?.map(\.seasonNumber) ?? []),
-                    mediaYear: yearValue,
-                    originalTitle: details?.originalTitle,
-                    originalLanguage: details?.originalLanguage,
-                    titleTranslations: details?.titleTranslations ?? [],
-                    targetSeason: releaseSearchSeason,
-                    targetEpisode: releaseSearchEpisode,
-                    isUpgrade: releaseSearchUpgrade,
-                    onGrabbed: { Task { await refreshManagementData() } }
-                )
-                .environment(model)
+            .sheet(item: activeSheetBinding) { sheet in
+                sheetContent(sheet)
             }
-            .sheet(item: $menuReleaseSearch) { target in
-                ReleaseSearchView(
-                    query: target.query,
-                    libraryMediaId: target.libraryMediaId,
-                    tmdbId: target.tmdbId,
-                    mediaType: target.mediaType,
-                    availableSeasons: [],
-                    onGrabbed: { Task { await refreshManagementData() } }
-                )
-                .environment(model)
+    }
+
+    /// One sheet at a time: the request flags stay set while another sheet is up, so a second request waits its turn.
+    var activeSheet: MediaDetailSheet? {
+        if showingOverridesEditor, let item = managementItem {
+            return .overrides(item)
+        }
+        if showingArtworkPicker, let item = managementItem {
+            return .artwork(item)
+        }
+        if let reencodeTarget {
+            return .reencode(reencodeTarget)
+        }
+        if showingReleaseSearch {
+            return .release
+        }
+        if let menuReleaseSearch {
+            return .menuRelease(menuReleaseSearch)
+        }
+        return nil
+    }
+
+    var activeSheetBinding: Binding<MediaDetailSheet?> {
+        Binding(
+            get: { activeSheet },
+            set: { newValue in
+                guard newValue == nil, let current = activeSheet else { return }
+                switch current {
+                case .overrides: showingOverridesEditor = false
+                case .artwork: showingArtworkPicker = false
+                case .reencode: reencodeTarget = nil
+                case .release:
+                    showingReleaseSearch = false
+                    releaseSearchSeason = nil
+                    releaseSearchEpisode = nil
+                    releaseSearchUpgrade = false
+                case .menuRelease: menuReleaseSearch = nil
+                }
             }
-            .sheet(item: $reencodeTarget) { target in
-                ReencodeSheet(target: target) { count in
-                    model.toast(String(localized: "\(count) files added to the re-encode queue"), style: .success)
+        )
+    }
+
+    @ViewBuilder
+    func sheetContent(_ sheet: MediaDetailSheet) -> some View {
+        switch sheet {
+        case let .overrides(item):
+            NavigationStack {
+                LibraryOverridesEditorView(item: item) { updated in
+                    managementItem = updated
+                    managementNotice = String(localized: "Details updated.")
                 }
                 .environment(model)
             }
+        case let .artwork(item):
+            NavigationStack {
+                LibraryArtworkPickerView(item: item) { updated in
+                    managementItem = updated
+                    managementNotice = String(localized: "Artwork updated.")
+                }
+                .environment(model)
+            }
+        case let .reencode(target):
+            ReencodeSheet(target: target) { count in
+                model.toast(String(localized: "\(count) files added to the re-encode queue"), style: .success)
+            }
+            .environment(model)
+        case .release:
+            ReleaseSearchView(
+                query: title,
+                libraryMediaId: libraryId,
+                tmdbId: tmdbId,
+                mediaType: mediaType,
+                availableSeasons: releaseSearchSeason.map { [$0] } ?? (details?.seasons?.map(\.seasonNumber) ?? []),
+                mediaYear: yearValue,
+                originalTitle: details?.originalTitle,
+                originalLanguage: details?.originalLanguage,
+                titleTranslations: details?.titleTranslations ?? [],
+                targetSeason: releaseSearchSeason,
+                targetEpisode: releaseSearchEpisode,
+                isUpgrade: releaseSearchUpgrade,
+                onGrabbed: { Task { await refreshManagementData() } }
+            )
+            .environment(model)
+        case let .menuRelease(target):
+            ReleaseSearchView(
+                query: target.query,
+                libraryMediaId: target.libraryMediaId,
+                tmdbId: target.tmdbId,
+                mediaType: target.mediaType,
+                availableSeasons: [],
+                onGrabbed: { Task { await refreshManagementData() } }
+            )
+            .environment(model)
+        }
     }
 
     func attachDialogs(_ base: some View) -> some View {

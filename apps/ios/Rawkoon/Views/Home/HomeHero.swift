@@ -12,11 +12,14 @@ struct HomeHero<Greeting: View>: View {
     @Environment(\.isActiveRootTab) private var isActiveRootTab
 
     let hero: DashboardHeroResponse
+    let nowPlaying: [NowPlayingSession]
     /// Status-bar height: Home scrolls under it while the hero shows, so the text moves down by this much.
     let topInset: CGFloat
     let greeting: () -> Greeting
 
     @State private var storedIndex = 0
+    @State private var selectedID: String?
+    @State private var manuallySelected = false
     /// Bumped per swipe so the haptic fires on a swipe, not on auto-rotation.
     @State private var swipes = 0
     @State private var added: Set<Int> = []
@@ -31,18 +34,39 @@ struct HomeHero<Greeting: View>: View {
 
     private let height: CGFloat = 460
 
-    init(hero: DashboardHeroResponse, topInset: CGFloat, @ViewBuilder greeting: @escaping () -> Greeting) {
+    init(hero: DashboardHeroResponse, nowPlaying: [NowPlayingSession], topInset: CGFloat, @ViewBuilder greeting: @escaping () -> Greeting) {
         self.hero = hero
+        self.nowPlaying = nowPlaying
         self.topInset = topInset
         self.greeting = greeting
     }
 
-    private var items: [DashboardHeroItem] {
-        hero.items
+    private enum Slide {
+        case watching(NowPlayingSession)
+        case film(DashboardHeroItem)
+
+        var id: String {
+            switch self {
+            case let .watching(session): "watching-\(session.id)"
+            case let .film(item): item.id
+            }
+        }
+
+        var backdropURL: String? {
+            switch self {
+            case let .watching(session): session.posterUrl
+            case let .film(item): item.backdropUrl
+            }
+        }
+    }
+
+    private var items: [Slide] {
+        nowPlaying.map(Slide.watching) + hero.items.map(Slide.film)
     }
 
     private var index: Int {
-        HeroRotation.clamp(storedIndex, count: items.count)
+        selectedID.flatMap { id in items.firstIndex { $0.id == id } }
+            ?? HeroRotation.clamp(storedIndex, count: items.count)
     }
 
     private struct RotationKey: Hashable {
@@ -104,6 +128,16 @@ struct HomeHero<Greeting: View>: View {
                     }
                 }
                 .sensoryFeedback(RawkoonHaptics.feedback(for: .tap), trigger: swipes)
+                .onChange(of: items.map(\.id)) { old, new in
+                    if !manuallySelected, let first = new.first, first.hasPrefix("watching-"), !old.contains(first) {
+                        storedIndex = 0
+                        selectedID = first
+                    } else if let selectedID, !new.contains(selectedID) {
+                        self.selectedID = old.first(where: { new.contains($0) }) ?? new.first
+                    } else if selectedID == nil {
+                        selectedID = old.first(where: { new.contains($0) }) ?? new.first
+                    }
+                }
                 .task(id: rotationKey) {
                     await rotate()
                 }
@@ -125,13 +159,19 @@ struct HomeHero<Greeting: View>: View {
         guard !Task.isCancelled, gate.rotationDelay(at: Date()) != nil else { return }
         pressedItemId = nil
         withRawkoonMotion(.easeInOut(duration: 0.9)) {
-            storedIndex = HeroRotation.next(after: index, count: items.count)
+            let next = HeroRotation.next(after: index, count: items.count)
+            storedIndex = next
+            selectedID = items[next].id
         }
     }
 
     private func select(_ newIndex: Int) {
         pressedItemId = nil
-        withRawkoonMotion(.easeInOut(duration: 0.9)) { storedIndex = newIndex }
+        manuallySelected = true
+        withRawkoonMotion(.easeInOut(duration: 0.9)) {
+            storedIndex = newIndex
+            selectedID = items[newIndex].id
+        }
     }
 
     private func touchBegan() {
@@ -150,42 +190,65 @@ struct HomeHero<Greeting: View>: View {
 
     // MARK: Layers
 
-    private func backdrop(_ item: DashboardHeroItem) -> some View {
+    private func backdrop(_ item: Slide) -> some View {
         // An aspect-filled image reports its own (wider) size; as an overlay it can't widen the hero.
         Color.clear
             .overlay {
-                KenBurnsBackdrop(url: model.absoluteURL(item.backdropUrl), animates: !reduceMotion && isActiveRootTab)
+                KenBurnsBackdrop(url: model.absoluteURL(item.backdropURL), animates: !reduceMotion && isActiveRootTab)
             }
             .clipped()
     }
 
-    private func content(_ item: DashboardHeroItem) -> some View {
+    private func content(_ item: Slide) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             greeting()
             Spacer(minLength: 24)
             VStack(alignment: .leading, spacing: 6) {
-                Text(kicker(item))
-                    .font(.caption.weight(.semibold))
-                    .textCase(.uppercase)
-                    .tracking(1.6)
-                    .foregroundStyle(Theme.apricotSoft)
-                Text(verbatim: item.title)
-                    .font(.display(34))
-                    .foregroundStyle(Theme.textStrong)
-                    .lineLimit(2)
-                if let meta = metaLine(item) {
-                    Text(verbatim: meta)
+                switch item {
+                case let .watching(session):
+                    Text("Now watching")
+                        .font(.caption.weight(.semibold))
+                        .textCase(.uppercase)
+                        .tracking(1.6)
+                        .foregroundStyle(Theme.apricotSoft)
+                    Text(session.title ?? String(localized: "Playing"))
+                        .font(.display(34))
+                        .foregroundStyle(Theme.textStrong)
+                        .lineLimit(2)
+                    Text(session.user ?? "")
                         .font(.subheadline)
                         .foregroundStyle(Theme.text)
+                    if let percent = session.progressPct {
+                        Text("\(Int(percent))%")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(Theme.muted)
+                    }
+                case let .film(film):
+                    Text(kicker(film))
+                        .font(.caption.weight(.semibold))
+                        .textCase(.uppercase)
+                        .tracking(1.6)
+                        .foregroundStyle(Theme.apricotSoft)
+                    Text(verbatim: film.title)
+                        .font(.display(34))
+                        .foregroundStyle(Theme.textStrong)
+                        .lineLimit(2)
+                    if let meta = metaLine(film) {
+                        Text(verbatim: meta)
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.text)
+                    }
                 }
             }
             .id(item.id)
             // Two titles fading through each other read as a smear; the old one leaves at once.
             .transition(.asymmetric(insertion: .opacity, removal: .identity))
             // Same swap as the title: a slide's buttons never morph into the next slide's.
-            buttons(item)
-                .id(item.id)
-                .transition(.asymmetric(insertion: .opacity, removal: .identity))
+            if case let .film(film) = item {
+                buttons(film)
+                    .id(item.id)
+                    .transition(.asymmetric(insertion: .opacity, removal: .identity))
+            }
             dots
         }
         .padding(.horizontal, 16)
@@ -245,7 +308,7 @@ struct HomeHero<Greeting: View>: View {
         } else {
             Button {
                 // The slide the finger landed on, even if the hero moved on before it lifted.
-                add(items.first { $0.id == pressedItemId } ?? item)
+                add(hero.items.first { $0.id == pressedItemId } ?? item)
             } label: {
                 pill(model.isAdmin ? "Add" : "Request", primary: true)
             }
@@ -278,6 +341,13 @@ struct HomeHero<Greeting: View>: View {
         }
     }
 
+    private func slideTitle(_ item: Slide) -> String {
+        switch item {
+        case let .watching(session): session.title ?? String(localized: "Now watching")
+        case let .film(film): film.title
+        }
+    }
+
     // MARK: Dots
 
     @ViewBuilder
@@ -295,7 +365,7 @@ struct HomeHero<Greeting: View>: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Show \(item.title)"))
+                    .accessibilityLabel(Text("Show \(slideTitle(item))"))
                     .accessibilityAddTraits(i == index ? .isSelected : [])
                 }
             }

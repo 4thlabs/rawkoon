@@ -4,7 +4,6 @@ import SwiftUI
 /// a release — mirrors the web book-detail flow. Presented as a sheet.
 struct BookReleaseSearchView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
 
     let bookId: Int
     let kind: String // "audiobook" | "ebook"
@@ -19,45 +18,20 @@ struct BookReleaseSearchView: View {
     @State private var showRejected = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Capsule().fill(Theme.apricotSoft.opacity(0.35))
-                .frame(width: 38, height: 5)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 10).padding(.bottom, 12)
-
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(kind == "audiobook" ? LocalizedStringKey("Add audiobook") : LocalizedStringKey("Add ebook"))
-                        .font(.display(20)).foregroundStyle(Theme.textStrong)
-                    Text(title)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(Theme.faint)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                // Catalyst sheets don't swipe-to-dismiss — and size class is compact
-                // inside a sheet even on Mac, so gate on the platform, not the width.
-                #if targetEnvironment(macCatalyst)
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(Theme.muted)
-                            .symbolRenderingMode(.hierarchical)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Close")
-                #endif
-            }
-            .padding(.bottom, 12)
+        VStack(spacing: 0) {
+            ReleaseSheetHeader(
+                title: kind == "audiobook" ? "Add audiobook" : "Add ebook",
+                subtitle: title
+            )
 
             // One slot, so the outgoing state never stacks above the incoming one.
             ZStack(alignment: .top) {
                 content
             }
         }
-        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Theme.base)
+        .presentationDetents([.large])
         .rawkoonMotion(RawkoonMotion.spring, value: phase)
         .rawkoonMotion(RawkoonMotion.spring, value: grabError)
         // One success tap per confirmed grab.
@@ -72,34 +46,20 @@ struct BookReleaseSearchView: View {
     @ViewBuilder
     private var content: some View {
         if loading {
-            centered { ProgressView().tint(Theme.apricot); Text("Searching…").foregroundStyle(Theme.muted) }
-                .transition(.rawkoonSwap)
+            ReleaseSheetStateView(kind: .searching)
         } else if model.isOffline, releases.isEmpty {
-            centered {
-                ContentUnavailableView("Offline", systemImage: "wifi.slash",
-                                       description: Text("Release search needs a connection."))
-                    .rawkoonLivingSymbol(.error)
-            }
-            .transition(.rawkoonSwap)
+            ReleaseSheetStateView(kind: .offline)
         } else if let errorMessage, releases.isEmpty {
-            centered {
-                ContentUnavailableView("Search failed", systemImage: "wifi.slash", description: Text(errorMessage))
-                    .rawkoonLivingSymbol(.error)
-            }
-            .transition(.rawkoonSwap)
+            ReleaseSheetStateView(kind: .failed(errorMessage))
         } else if visibleReleases.isEmpty {
-            centered {
-                ContentUnavailableView("No releases", systemImage: "magnifyingglass",
-                                       description: Text("Nothing grabbable found for this book."))
-                    .rawkoonLivingSymbol(.empty)
-            }
-            .transition(.rawkoonSwap)
+            ReleaseSheetStateView(kind: .empty(String(localized: "Nothing grabbable found for this book.")))
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 if let grabError {
                     Text(grabError)
                         .font(.subheadline)
                         .foregroundStyle(Theme.terracotta)
+                        .padding(.horizontal, 16)
                         .padding(.bottom, 8)
                         .transition(.rawkoonReveal)
                 }
@@ -110,13 +70,10 @@ struct BookReleaseSearchView: View {
                                 .rawkoonEntrance(id: release.guid)
                         }
                         if hasRejected {
-                            Button(LocalizedStringKey(showRejected ? "Hide rejected" : "Show rejected")) {
-                                withRawkoonMotion(RawkoonMotion.spring) { showRejected.toggle() }
-                            }
-                            .font(.subheadline).foregroundStyle(Theme.muted)
-                            .padding(.vertical, 8)
+                            ReleaseRejectedToggle(isShown: $showRejected)
                         }
                     }
+                    .padding(.horizontal, 16)
                     .padding(.bottom, 24)
                     .rawkoonEntranceScope()
                 }
@@ -159,7 +116,7 @@ struct BookReleaseSearchView: View {
                 .lineLimit(2)
             HStack(spacing: 8) {
                 if let format = release.format {
-                    chip(format.uppercased())
+                    BadgeChip(text: format.uppercased(), fg: Theme.apricotSoft, bg: Theme.apricot.opacity(0.12))
                 }
                 Text(sizeText(release.sizeBytes)).font(.system(.caption2, design: .monospaced)).foregroundStyle(Theme.muted)
                 Label("\(release.seeders ?? 0)", systemImage: "arrow.up")
@@ -179,13 +136,11 @@ struct BookReleaseSearchView: View {
                 Text(reason).font(.caption2).foregroundStyle(Theme.terracotta).lineLimit(1)
             }
         }
-        .padding(11)
-        .background(Theme.raised, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border, lineWidth: 1))
+        .releaseCard()
         // `grabbed` gains a guid only after the grab call succeeds; the sheet plays the haptic.
         .rawkoonCelebrate(
             trigger: grabbed.contains(release.guid),
-            ring: .roundedRect(cornerRadius: 12),
+            ring: .roundedRect(cornerRadius: 14),
             haptic: nil,
             when: { !$0 && $1 }
         )
@@ -209,18 +164,6 @@ struct BookReleaseSearchView: View {
                 .requiresConnection(model.isOffline)
                 .transition(.rawkoonSwap)
         }
-    }
-
-    private func chip(_ text: String) -> some View {
-        Text(text)
-            .font(.system(.caption2, design: .monospaced))
-            .foregroundStyle(Theme.apricotSoft)
-            .padding(.horizontal, 7).padding(.vertical, 3)
-            .background(Theme.apricot.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
-    }
-
-    private func centered(@ViewBuilder _ c: () -> some View) -> some View {
-        VStack(spacing: 10) { c() }.frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func sizeText(_ bytes: Int?) -> String {

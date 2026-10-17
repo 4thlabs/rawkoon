@@ -133,11 +133,7 @@ export interface TranscodeQueueSettings {
   cpu_threads: number | null;
 }
 
-export type TranscodeQueueState =
-  | "running"
-  | "paused"
-  | "waiting_window"
-  | "idle";
+type TranscodeQueueState = "running" | "paused" | "waiting_window" | "idle";
 
 export interface TranscodeSummary {
   show: boolean;

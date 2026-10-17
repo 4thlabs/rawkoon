@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type {
+  DashboardPipeline,
   ActiveDownloadItem,
   ActiveDownloadsResponse,
 } from "@rawkoon/shared/types";
@@ -7,6 +8,7 @@ import {
   downloadProgressForMedia,
   etaForMedia,
   mergeActiveProgress,
+  mergePipelineProgress,
   mergeSummaryProgress,
 } from "./activeDownloads";
 
@@ -126,5 +128,56 @@ describe("downloadProgressForMedia", () => {
   it("is null when the title has no active grab", () => {
     expect(downloadProgressForMedia(summary(0.5), 5)).toBeNull();
     expect(downloadProgressForMedia(undefined, 10)).toBeNull();
+  });
+});
+
+describe("mergePipelineProgress", () => {
+  const base = {
+    downloading: {
+      available: true,
+      count: 2,
+      speed_bytes_per_sec: 10,
+      items: [
+        {
+          id: 1,
+          library_media_id: 1,
+          book_id: null,
+          title: "A",
+          progress: 0.1,
+          eta_seconds: 90,
+        },
+        {
+          id: 2,
+          library_media_id: 2,
+          book_id: null,
+          title: "B",
+          progress: 0.5,
+          eta_seconds: 30,
+        },
+      ],
+    },
+  } as unknown as DashboardPipeline;
+
+  it("patches progress and ETA by id and leaves the rest", () => {
+    const next = mergePipelineProgress(base, [
+      {
+        id: 2,
+        progress: 0.8,
+        state: "downloading",
+        downloadSpeed: 1,
+        etaSeconds: 12,
+      },
+    ]);
+    expect(next?.downloading.items[0].progress).toBe(0.1);
+    expect(next?.downloading.items[1]).toMatchObject({
+      progress: 0.8,
+      eta_seconds: 12,
+    });
+    expect(next?.downloading.speed_bytes_per_sec).toBe(10);
+  });
+
+  it("returns the cache untouched with no data or no events", () => {
+    expect(mergePipelineProgress(undefined, [])).toBeUndefined();
+    expect(mergePipelineProgress(base, [])).toBe(base);
   });
 });

@@ -7,10 +7,14 @@ import {
 } from "./itemPageActions";
 
 describe("parseItemTab", () => {
-  it("accepts the old search value as releases", () => {
-    expect(parseItemTab("search")).toBe("releases");
-    expect(parseItemTab("releases")).toBe("releases");
-    expect(parseItemTab("management")).toBe("management");
+  it("accepts the four tabs", () => {
+    for (const tab of ["info", "similar", "files", "releases"])
+      expect(parseItemTab(tab)).toBe(tab);
+  });
+
+  it("drops the retired management and search values", () => {
+    expect(parseItemTab("management")).toBeUndefined();
+    expect(parseItemTab("search")).toBeUndefined();
   });
 
   it("drops anything it does not know", () => {
@@ -44,10 +48,10 @@ describe("defaultItemTab", () => {
       ).toBe("info");
   });
 
-  it("keeps a season or episode link on Management", () => {
+  it("opens a season or episode link on Files", () => {
     expect(
       defaultItemTab({ isAdmin: true, status: "wanted", focusedEpisode: true }),
-    ).toBe("management");
+    ).toBe("files");
   });
 });
 
@@ -57,6 +61,7 @@ describe("headerActionKind", () => {
     expect(headerActionKind("downloading", true)).toBe("downloading");
     expect(headerActionKind("upgrading", true)).toBe("downloading");
     expect(headerActionKind("downloaded", true)).toBe("downloaded");
+    expect(headerActionKind("skipped", true)).toBe("skipped");
     expect(headerActionKind("returning", true)).toBeNull();
   });
 

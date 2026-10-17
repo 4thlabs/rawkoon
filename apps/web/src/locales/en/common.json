@@ -118,14 +118,16 @@
       "kicker": {
         "arrivals": "Just arrived",
         "forYou": "For you",
-        "trending": "Trending"
+        "trending": "Trending",
+        "nowWatching": "Now watching"
       },
       "arrived": "arrived {{relative}}",
       "details": "Details",
       "add": "Add",
       "added": "Added",
       "addFailed": "Couldn't add \"{{title}}\"",
-      "goTo": "Show {{title}}"
+      "goTo": "Show {{title}}",
+      "watchingOn": "{{user}} on {{device}}"
     },
     "greetingSubtitle": {
       "night": "One more episode? We won't tell.",
@@ -199,17 +201,11 @@
     "home": {
       "recentlyAdded": "Recently added",
       "recentlyAddedEmpty": "Nothing added yet",
-      "nowWatching": "Now watching",
-      "nowWatchingEmpty": "Nobody's watching right now",
       "continue": "Continue",
       "paused": "Paused",
       "upcoming": "Upcoming releases",
-      "downloadsTitle": "Downloads",
       "transfer": "Transfer",
       "downloadClientNotConfigured": "Download client not configured",
-      "pendingDelay": "Waiting to grab",
-      "pendingGrabIn": "Grabs in {{time}}",
-      "pendingGrabDue": "Grabbing shortly",
       "grabNow": "Grab now",
       "nothingDownloading": "Nothing downloading",
       "downloadClientUnreachable": "Download client unreachable",
@@ -221,13 +217,9 @@
         "no_space": "There is not enough free disk space.",
         "all_failed": "Every held release was blocked or failed."
       },
-      "downloadState": {
-        "stalled": "Stalled",
-        "paused": "Paused",
-        "error": "Error"
-      },
-      "pendingMore": "+{{count}} more",
-      "upcomingEmpty": "Nothing upcoming"
+      "upcomingEmpty": "Nothing upcoming",
+      "books": "Books",
+      "seeAll": "See all"
     },
     "libraryAttention": {
       "title": "Library attention",
@@ -272,6 +264,36 @@
       "toastFound_other": "RSS: {{count}} releases found",
       "toastNone": "RSS: no new releases",
       "openLibraryLink": "Open media library"
+    },
+    "pipeline": {
+      "title": "Pipeline",
+      "unavailable": "Couldn't check",
+      "loadError": "Couldn't load the pipeline.",
+      "downloading": "Downloading",
+      "nothingDownloading": "Nothing downloading",
+      "downloadingCount_one": "{{count}} download in progress",
+      "downloadingCount_other": "{{count}} downloads in progress",
+      "etaLeft": "{{time}} left",
+      "delayed": "Delayed grabs",
+      "noDelayed": "Nothing waiting",
+      "delayedWaiting_one": "{{count}} title waiting out the delay",
+      "delayedWaiting_other": "{{count}} titles waiting out the delay",
+      "attention": "Needs attention",
+      "allClear": "All clear",
+      "attentionSplit": "{{alerts}} alerts, {{gaveUp}} gave up",
+      "rss": "Last RSS run",
+      "rssNever": "Hasn't run yet",
+      "rssNeverNext": "Hasn't run yet, next {{next}}",
+      "rssFailed": "The last run failed",
+      "rssOk_one": "{{count}} release found",
+      "rssOk_other": "{{count}} releases found",
+      "rssOkNext_one": "{{count}} release found, next {{next}}",
+      "rssOkNext_other": "{{count}} releases found, next {{next}}",
+      "reencode": "Re-encoding",
+      "nothingReencoding": "Nothing re-encoding",
+      "reencodeCounts": "{{active}} active, {{queued}} queued",
+      "more_one": "{{count}} more",
+      "more_other": "{{count}} more"
     }
   },
   "device": {
@@ -1881,12 +1903,9 @@
         "autoSearchStarted": "Upgrade search started",
         "autoSearchFailed": "Upgrade search failed"
       },
-      "filtersTitle": "Filters & Sort",
-      "filtersButton": "Filters",
       "typeSection": "Type",
       "statusSection": "Status",
       "sortSection": "Sort by",
-      "languageOptionAll": "All",
       "done": "Done",
       "typeMovie": "Movie",
       "typeShow": "Show",
@@ -1897,7 +1916,47 @@
       "downloadsImport": "Import downloads",
       "switchLabel": "Library sections",
       "switchMedia": "Movies & Shows",
-      "switchBooks": "Books"
+      "switchBooks": "Books",
+      "typeMovies": "Movies",
+      "typeShows": "Shows",
+      "statusSkipped": "Gave up",
+      "languageSection": "Language",
+      "sortChip": "{{sort}}: {{direction}}",
+      "sortDirection": "Sort direction",
+      "resultCount_one": "{{count}} title",
+      "resultCount_other": "{{count}} titles",
+      "sortDir": {
+        "added_at": {
+          "desc": "Newest",
+          "asc": "Oldest"
+        },
+        "last_grabbed_at": {
+          "desc": "Newest",
+          "asc": "Oldest"
+        },
+        "title": {
+          "asc": "A–Z",
+          "desc": "Z–A"
+        },
+        "year": {
+          "desc": "Newest",
+          "asc": "Oldest"
+        },
+        "status": {
+          "asc": "A–Z",
+          "desc": "Z–A"
+        },
+        "digital_release_date": {
+          "desc": "Newest",
+          "asc": "Oldest"
+        },
+        "file_size": {
+          "desc": "Largest",
+          "asc": "Smallest"
+        }
+      },
+      "noMatchTitle": "No titles match",
+      "noMatchDescription": "Try removing a filter or clearing the search."
     },
     "watchlist": {
       "pageTitle": "Watchlist",
@@ -1969,7 +2028,6 @@
       "watchTrailer": "Watch Trailer",
       "tabInfo": "Info",
       "tabSimilar": "Similar",
-      "tabManagement": "Management",
       "releaseDate": "Release:",
       "firstAir": "First aired:",
       "lastAir": "Last aired:",
@@ -2002,7 +2060,8 @@
       "searchingEpisode": "Searching for",
       "searchingSeasonPack": "Searching season pack",
       "upgradeMode": "Upgrade mode — grab will replace the existing file",
-      "tabReleases": "Releases"
+      "tabReleases": "Releases",
+      "tabFiles": "Files"
     },
     "addSuccess": "Added {{title}} to library.",
     "addFailed": "Failed to add media to library.",
@@ -2031,14 +2090,9 @@
         "collapsedOther_one": "{{count}} release in other languages",
         "collapsedOther_other": "{{count}} releases in other languages"
       },
-      "filtersTitle": "Filters",
-      "filtersButton": "Advanced filters",
-      "clearFilters": "Clear",
-      "clearSearch": "Clear search",
       "hideRejected": "Hide rejected releases",
       "trackersInclude": "Include trackers",
       "trackersExclude": "Exclude trackers",
-      "languagesInclude": "Include languages",
       "noTrackers": "No trackers available",
       "noLanguages": "No languages available",
       "minQuery": "Type at least 2 characters to search Prowlarr.",
@@ -2112,7 +2166,14 @@
         "reasonSize": "{{size}}",
         "titleAi": "AI pick for {{profile}}",
         "titleAiNoProfile": "AI pick"
-      }
+      },
+      "audioLanguages": "Audio languages",
+      "excludedTracker": "Not {{name}}",
+      "seasonPacksOnly": "Season packs only",
+      "showGroup": "Show",
+      "showingRejected": "Showing rejected",
+      "sortDirection": "Sort direction",
+      "trackers": "Trackers"
     },
     "tmdb": {
       "title": "Search and add from TMDB",
@@ -2256,7 +2317,6 @@
       "loadingEpisodes": "Loading episodes…",
       "noFileMetadata": "No file metadata found for this item.",
       "season": "Season",
-      "fileLabel": "File",
       "filesCount_one": "{{count}} file",
       "filesCount_other": "{{count}} files",
       "deleteFileOnDisk": "Delete file on disk too?",
@@ -2269,18 +2329,8 @@
       "episodeDeleted": "Episode deleted"
     },
     "management": {
-      "qualityProfile": "Quality profile",
-      "qualityProfileNone": "None",
-      "qualityProfileUpdated": "Quality profile updated",
-      "qualityProfileUpdateFailed": "Failed to update quality profile",
-      "searchTitle": "Search title",
-      "searchTitleLoading": "Loading titles…",
-      "searchTitleUnavailable": "TMDB titles unavailable",
-      "searchTitleUpdated": "Search title updated",
-      "searchTitleUpdateFailed": "Failed to update search title",
       "downloads": "Download history",
       "noDownloads": "No grabs yet for this title.",
-      "searchNow": "Search now",
       "searching": "Searching…",
       "episodeSearch": "Grab episode",
       "grabbed": "Added to download client",
@@ -2288,25 +2338,15 @@
       "languageFallbackMissFrench": "No {{languages}} release yet; {{count}} in other French versions ({{breakdown}})",
       "languageFallbackMissOther": "No {{languages}} release yet; {{count}} in other languages ({{breakdown}})",
       "seeReleases": "See them",
-      "delete": "Delete media",
-      "deleteConfirmTitle": "Delete this media?",
-      "deleteFilesLabel": "Also delete hardlinked files from disk",
-      "deleteConfirm": "Delete",
-      "deleting": "Deleting…",
       "refreshStatus": "Sync status",
       "refreshingStatus": "Syncing…",
       "refreshStatusTitle": "Check download client & disk: re-run post-processing if needed, or revert to wanted",
-      "retrySearch": "Retry search",
-      "retrySearchTitle": "Reset attempts and re-queue for automatic search",
-      "retrySearchQueued": "Re-queued for search",
       "retrySkippedSeasonTitle": "Retry {{count}} skipped episode(s) in this season",
       "retrySkippedSeasonQueued": "{{count}} episode(s) re-queued for search",
       "searchSeasonPack": "Auto-grab season pack",
       "searchSeasonManual": "Browse torrents for this season",
       "seasonPackGrabbed": "Season pack grabbed!",
       "seasonPackNotFound": "No season pack found — episodes will be searched individually.",
-      "monitor": "Monitor",
-      "unmonitor": "Unmonitor",
       "monitorSeason": "Monitor season",
       "unmonitorSeason": "Unmonitor season",
       "clearFailedDownloads": "Clear failures",
@@ -2317,27 +2357,11 @@
       "removeDownload": "Remove download",
       "removeDownloadConfirm": "Remove this download? The torrent will be removed from the download client.",
       "removeDownloadFiles": "Also delete downloaded files from disk",
-      "artwork": "Artwork",
-      "artworkPoster": "Poster",
-      "artworkBackdrop": "Backdrop",
-      "artworkAllLanguages": "All languages",
-      "artworkNoLanguage": "No text",
-      "artworkLoading": "Loading artwork…",
-      "artworkEmpty": "No artwork available for this title",
-      "artworkReset": "Use default",
-      "artworkUpdated": "Artwork updated",
-      "artworkUpdateFailed": "Couldn't change the artwork",
-      "artworkLanguage": "Language",
-      "artworkNoneInLanguage": "No artwork in that language",
-      "seedingTitle_one": "1 torrent is still seeding",
-      "seedingTitle_other": "{{count}} torrents are still seeding",
-      "keepSeeding": "Keep seeding until its target is met",
-      "keepSeedingHint": "Rawkoon removes it from the client once its seed target is met.",
-      "releaseNow": "Remove the torrent now",
-      "releaseNowHint": "Frees the space right away.",
-      "hnrWarning": "A private tracker still expects seed time for this torrent. Removing it now can count as a hit-and-run.",
-      "keepSeedingHintRatio": "It still needs ratio {{target}} (now {{ratio}}); Rawkoon removes it from the client once reached.",
-      "releaseNowHintSize": "Removes {{size}} from the client right away."
+      "searchNow": "Search now",
+      "retrySearchTitle": "Reset attempts and re-queue for automatic search",
+      "retrySearchQueued": "Re-queued for search",
+      "monitor": "Monitor",
+      "unmonitor": "Unmonitor"
     },
     "stats": {
       "title": "Library stats",
@@ -2362,7 +2386,9 @@
       "downloadingEpisodes_one": "Downloading {{count}} episode",
       "downloadingEpisodes_other": "Downloading {{count}} episodes",
       "eta": "ETA {{eta}}",
-      "paused": "Paused"
+      "paused": "Paused",
+      "searchAgain": "Search again",
+      "searchAgainFailed": "Couldn’t queue the search"
     },
     "statusLine": {
       "profile": "Profile {{name}}",
@@ -2374,6 +2400,79 @@
         "not_released": "not released yet",
         "error": "search failed"
       }
+    },
+    "edit": {
+      "title": "Edit details",
+      "description": "Changes here override TMDB for this title only.",
+      "details": "Details",
+      "overriddenCount_one": "{{count}} overridden",
+      "overriddenCount_other": "{{count}} overridden",
+      "fieldTitle": "Title",
+      "fieldSortTitle": "Sort title",
+      "fieldYear": "Year",
+      "fieldOverview": "Overview",
+      "resetToTmdb": "Reset to TMDB",
+      "searchTitle": "Search title",
+      "searchTitleHint": "The title Rawkoon sends to your indexers.",
+      "searchTitleLoading": "Loading titles…",
+      "searchTitleUnavailable": "TMDB titles are unavailable.",
+      "artwork": "Artwork",
+      "pasteImageUrl": "Paste an image URL",
+      "imageUrlInvalid": "Enter a full web address starting with http:// or https://",
+      "save": "Save changes",
+      "saved": "Details saved",
+      "artworkPoster": "Poster",
+      "artworkBackdrop": "Backdrop",
+      "artworkLanguage": "Language",
+      "artworkAllLanguages": "All languages",
+      "artworkNoLanguage": "No text",
+      "artworkLoading": "Loading artwork…",
+      "artworkEmpty": "No artwork available for this title",
+      "artworkNoneInLanguage": "No artwork in that language",
+      "artworkReset": "Use default",
+      "saveFailedPart": "{{failed}} couldn’t be saved.",
+      "saveFailedAfter": "{{failed}} couldn’t be saved. Saved: {{saved}}."
+    },
+    "files": {
+      "file": "File",
+      "seasons": "Seasons",
+      "mediaDetails": "Media details",
+      "subtitleCount_one": "{{count}} subtitle track",
+      "subtitleCount_other": "{{count}} subtitle tracks",
+      "tracks": "Audio and subtitle tracks"
+    },
+    "remove": {
+      "title": "Remove from library",
+      "description": "This removes “{{title}}” and its grab history from Rawkoon.",
+      "confirm": "Remove",
+      "removing": "Removing…",
+      "deleteFilesLabel": "Also delete hardlinked files from disk",
+      "seedingTitle_one": "1 torrent is still seeding",
+      "seedingTitle_other": "{{count}} torrents are still seeding",
+      "keepSeeding": "Keep seeding until its target is met",
+      "keepSeedingHint": "Rawkoon removes it from the client once its seed target is met.",
+      "keepSeedingHintRatio": "It still needs ratio {{target}} (now {{ratio}}); Rawkoon removes it from the client once reached.",
+      "releaseNow": "Remove the torrent now",
+      "releaseNowHint": "Frees the space right away.",
+      "releaseNowHintSize": "Removes {{size}} from the client right away.",
+      "hnrWarning": "A private tracker still expects seed time for this torrent. Removing it now can count as a hit-and-run."
+    },
+    "strip": {
+      "editDetails": "Edit details…",
+      "rescan": "Rescan files",
+      "rescanDone_one": "Rescanned {{count}} file",
+      "rescanDone_other": "Rescanned {{count}} files",
+      "rescanFailed": "Couldn’t rescan the files",
+      "reencode": "Re-encode…",
+      "searchReleases": "Search releases",
+      "remove": "Remove from library…",
+      "moreActions": "More actions",
+      "monitored": "Monitored",
+      "monitorFailed": "Couldn’t change monitoring",
+      "profile": "Profile",
+      "profileNone": "No profile",
+      "profileUpdated": "Quality profile updated",
+      "profileUpdateFailed": "Failed to update quality profile"
     }
   },
   "downloadsImport": {
@@ -2573,17 +2672,27 @@
     "thisWeek": "This week",
     "upgrades_one": "{{count}} upgrade",
     "upgrades_other": "{{count}} upgrades",
-    "since": "Since {{date}}"
+    "since": "Since {{date}}",
+    "strip": {
+      "allStats": "All stats",
+      "added": "added in {{month}}",
+      "sparkline": "Weekly additions over the last twelve weeks",
+      "movies_one": "movie",
+      "movies_other": "movies",
+      "episodes_one": "episode",
+      "episodes_other": "episodes",
+      "books_one": "book",
+      "books_other": "books",
+      "thisMonth": "this month"
+    }
   },
   "listening": {
     "title": "Listening",
     "streak_one": "1 day streak",
     "streak_other": "{{count}} day streak",
-    "hoursHint": "Hours start now — listen and they'll add up.",
     "emptySeries": "No series in the library yet.",
     "thisWeek": "This week",
     "series": "Series",
-    "seriesLine": "{{name}} · {{percent}}%",
     "booksOf": "{{count}} of {{total}}",
     "loadError": "Couldn't load listening stats."
   },
@@ -2618,15 +2727,8 @@
       "retry": "Try again",
       "close": "Close"
     },
-    "filterPlaceholder": "Filter by title",
-    "search": "Search",
-    "kindAll": "all",
     "kindEbook": "ebook",
     "kindAudiobook": "audiobook",
-    "view": {
-      "grid": "Grid",
-      "list": "List"
-    },
     "loading": "Loading…",
     "noneMatch": "No books match that filter.",
     "noneYet": "No books yet.",
@@ -2661,7 +2763,7 @@
       "coverAlt": "Cover of {{title}}",
       "isbn": "ISBN {{value}}",
       "addEdition": "Add {{kind}}",
-      "remove": "Remove",
+      "remove": "Remove book…",
       "removeConfirm": "Remove “{{title}}” from the library? Files on disk are kept.",
       "removeConfirmAction": "Remove book",
       "removing": "Removing…",
@@ -2695,19 +2797,23 @@
         "ratingCountLabel": "Ratings"
       },
       "overrides": {
-        "heading": "Edit metadata",
         "hint": "Your edits always win over every source. Clearing a field hands it back to the sources.",
         "listHint": "Separate with commas",
-        "edited": "edited",
-        "save": "Save",
         "revert": "Revert",
-        "revertHint": "Clear your edit and use the metadata sources again",
-        "saved": "Saved",
-        "reverted": "Reverted to the metadata sources",
         "failed": "Could not save that change",
         "authorsNote": "Authors are managed from the author pages, not here.",
-        "invalidNumber": "That needs to be a number"
-      }
+        "invalidNumber": "That needs to be a number",
+        "revertsOnSave": "Goes back to the source value when you save",
+        "group": {
+          "details": "Details",
+          "publication": "Series and publication",
+          "rating": "Rating",
+          "cover": "Cover"
+        }
+      },
+      "moreActions": "More actions",
+      "noEdition": "No {{kind}} edition yet.",
+      "removeTitle": "Remove book"
     },
     "track": {
       "label": "Acquisition progress",
@@ -2815,7 +2921,17 @@
       "theme_light": "Light",
       "theme_sepia": "Sepia",
       "theme_dark": "Dark"
-    }
+    },
+    "searchPlaceholder": "Search books",
+    "kindSection": "Kind",
+    "kindOptions": {
+      "all": "All",
+      "audiobook": "Audiobook",
+      "ebook": "Ebook"
+    },
+    "resultCount_one": "{{count}} book",
+    "resultCount_other": "{{count}} books",
+    "listeningLink": "Listening"
   },
   "downloadsPage": {
     "tabs": {
@@ -2998,21 +3114,6 @@
     "queueFailed": "Could not add to the queue",
     "refineFailed": "Could not refine the estimate",
     "dvNote": "Dolby Vision → HDR10",
-    "widget": {
-      "title": "Re-encode",
-      "running": "Running",
-      "paused": "Paused",
-      "waits": "Waits for {{time}}",
-      "idle": "Idle",
-      "left": "~{{time}} left",
-      "more": "+ {{count}} more",
-      "total": "~{{time}} total",
-      "saved": "−{{size}} saved · {{count}} done",
-      "failed_one": "{{count}} failed",
-      "failed_other": "{{count}} failed",
-      "manage": "Manage →",
-      "queued": "{{count}} queued"
-    },
     "admin": {
       "runWindow": "Run window",
       "pause": "Pause queue",
@@ -3157,5 +3258,23 @@
     "allOwnedOnPage": "Everything on this page is already in your library.",
     "nextPage": "Next page",
     "searchingBooks": "Searching books..."
+  },
+  "filters": {
+    "button": "Filters",
+    "title": "Filters",
+    "reset": "Clear",
+    "done": "Done",
+    "active": "Active filters",
+    "remove": "Remove filter: {{label}}",
+    "clearAll": "Clear all",
+    "view": {
+      "label": "View",
+      "grid": "Grid",
+      "compact": "Compact",
+      "list": "List"
+    }
+  },
+  "editPanel": {
+    "overridden": "Overridden"
   }
 }

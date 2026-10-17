@@ -1,8 +1,8 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useLibraryNavigation } from "@/features/medias/context/LibraryNavigationContext";
 import { useTranslation } from "react-i18next";
-import { Info, Search, Settings2, Sparkles } from "lucide-react";
+import { FolderOpen, Info, Search, Sparkles } from "lucide-react";
 import { LastSearchNote } from "@/features/medias/components/LastSearchNote";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { useLibraryItem } from "@/features/medias/hooks/useLibraryItem";
@@ -15,7 +15,8 @@ import {
   defaultItemTab,
   type ItemPageTab,
 } from "@/features/medias/lib/itemPageActions";
-import { LibraryManagementPanel } from "./LibraryManagementPanel";
+import { LibraryEditDetailsPanel } from "./LibraryEditDetailsPanel";
+import { LibraryFilesTab } from "./LibraryFilesTab";
 import { SimilarMediasPanel } from "./SimilarMediasPanel";
 import { useReleaseSearchContext } from "./useReleaseSearchContext";
 import { LibraryItemHero } from "./LibraryItemHero";
@@ -59,6 +60,7 @@ export function LibraryItemPage() {
     i18n.language,
   );
 
+  const [editOpen, setEditOpen] = useState(false);
   const addToWatchlist = useAddToWatchlist();
   const removeFromWatchlist = useRemoveFromWatchlist();
 
@@ -93,17 +95,17 @@ export function LibraryItemPage() {
         label: t("medias.detail.tabSimilar", "Similar"),
         icon: Sparkles,
       });
-    // Releases + Management are admin-only surfaces (grab/search/delete/quality).
+    // Files and Releases are admin-only surfaces (grab/search/delete/quality).
     if (isAdmin) {
+      result.push({
+        key: "files",
+        label: t("medias.detail.tabFiles", "Files"),
+        icon: FolderOpen,
+      });
       result.push({
         key: "releases",
         label: t("medias.detail.tabReleases", "Releases"),
         icon: Search,
-      });
-      result.push({
-        key: "management",
-        label: t("medias.detail.tabManagement", "Management"),
-        icon: Settings2,
       });
     }
     return result;
@@ -120,20 +122,15 @@ export function LibraryItemPage() {
     return tabs.some((tab) => tab.key === fallback) ? fallback : "info";
   }, [search.tab, search.season, search.episode, item?.status, tabs, isAdmin]);
 
-  useEffect(() => {
-    if (search.season == null && search.episode == null) return;
-    if (activeTab !== "management") {
-      navigate({
-        search: (prev: LibraryItemSearchParams) => ({
-          ...prev,
-          tab: "management",
-        }),
-      });
-    }
-  }, [search.season, search.episode, activeTab, navigate]);
-
   const setActiveTab = (tab: PageTab) =>
-    navigate({ search: (prev: LibraryItemSearchParams) => ({ ...prev, tab }) });
+    navigate({
+      search: (prev: LibraryItemSearchParams) => ({
+        ...prev,
+        tab,
+        // A focused season belongs to the Files tab only.
+        ...(tab === "files" ? {} : { season: undefined, episode: undefined }),
+      }),
+    });
 
   const handleWatchlistToggle = async () => {
     if (!item) return;
@@ -206,7 +203,46 @@ export function LibraryItemPage() {
         onWatchlistToggle={handleWatchlistToggle}
         onChooseRelease={chooseRelease}
         onUpgradeSearch={searchUpgrade}
+        onEditDetails={() => setEditOpen(true)}
+        onSearchReleases={() => setActiveTab("releases")}
+        onUpgradeManualSearch={() => {
+          setUpgradeSearchMode(true);
+          setActiveTab("releases");
+        }}
+        onRemoved={() => goBack()}
       />
+      {isAdmin && (
+        <LibraryEditDetailsPanel
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          item={item}
+          defaultBackdropUrl={
+            detailsData?.primary_backdrop_url ??
+            detailsData?.media_stills?.backdrops?.[0]?.url ??
+            null
+          }
+          tmdb={{
+            title:
+              detailsData?.title_translations?.find(
+                (tr) => tr.language_code === "en",
+              )?.title ?? null,
+            overview: detailsData?.overview ?? null,
+            year:
+              parseInt(
+                (
+                  detailsData?.release_date ??
+                  detailsData?.first_air_date ??
+                  ""
+                ).slice(0, 4),
+                10,
+              ) || null,
+          }}
+          tmdbOriginalTitle={detailsData?.original_title ?? null}
+          tmdbOriginalLanguage={detailsData?.original_language ?? null}
+          tmdbTitleTranslations={detailsData?.title_translations ?? []}
+          tmdbPending={modalPending}
+        />
+      )}
 
       {/* ── Body ──────────────────────────────────────────────────────────── */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
@@ -279,21 +315,12 @@ export function LibraryItemPage() {
             </div>
           )}
 
-          {activeTab === "management" && (
+          {activeTab === "files" && (
             <div className="animate-in fade-in slide-in-from-bottom-1 duration-300 motion-reduce:animate-none">
-              <LibraryManagementPanel
+              <LibraryFilesTab
                 libraryId={item.id}
-                item={item}
-                defaultBackdropUrl={
-                  detailsData?.primary_backdrop_url ??
-                  detailsData?.media_stills?.backdrops?.[0]?.url ??
-                  null
-                }
-                itemStatus={item.status}
-                itemMonitored={item.monitored}
                 focusSeason={search.season ?? null}
                 focusEpisode={search.episode ?? null}
-                onDeleted={() => goBack()}
                 onSearchEpisode={(ep) => {
                   setEpisodeSearchCtx(ep);
                   setSeasonSearchCtx(null);
@@ -304,14 +331,6 @@ export function LibraryItemPage() {
                   setEpisodeSearchCtx(null);
                   setActiveTab("releases");
                 }}
-                onUpgradeManualSearch={() => {
-                  setUpgradeSearchMode(true);
-                  setActiveTab("releases");
-                }}
-                tmdbOriginalTitle={detailsData?.original_title ?? null}
-                tmdbOriginalLanguage={detailsData?.original_language ?? null}
-                tmdbTitleTranslations={detailsData?.title_translations ?? []}
-                tmdbPending={modalPending}
               />
             </div>
           )}

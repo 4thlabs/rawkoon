@@ -56,12 +56,7 @@ struct ReleaseRow: View {
                 actionsRow
             }
         }
-        .padding(12)
-        .background(Theme.raised, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(cardBorder, lineWidth: 1)
-        )
+        .releaseCard(border: cardBorder)
         // The row's own states come from the sheet unanimated, so the row animates them itself.
         .rawkoonMotion(RawkoonMotion.snappy, value: [isAiPick, isBlocking, isBlocked, isGrabbing, isGrabbed])
         // `isGrabbed` turns true only after the server confirms the grab; the sheet plays the haptic.

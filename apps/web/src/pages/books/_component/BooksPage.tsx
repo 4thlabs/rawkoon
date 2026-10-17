@@ -1,16 +1,13 @@
 import { formatBytes } from "@/lib/utils/format";
 import { useCurrentUser } from "@/lib/auth/useAuth";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import {
   BookOpen,
   Headphones,
-  LayoutGrid,
   Library,
-  List,
   Plus,
-  Search,
   Trophy,
   UserRound,
 } from "lucide-react";
@@ -30,7 +27,15 @@ import { PageLayout } from "@/components/PageLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { LibrarySwitch } from "@/pages/medias/_component/LibrarySwitch";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  ActiveFilterChips,
+  FilterButton,
+  FilterGroup,
+  FilterPanel,
+  FilterSegmented,
+  ToolbarSearch,
+} from "@/components/ui/filter-panel";
+import { ViewToggle } from "@/components/ui/view-toggle";
 import { useBooks } from "../_hooks/useBooks";
 import { AddBookDialog } from "./AddBookDialog";
 import { BookCover } from "./BookCover";
@@ -170,7 +175,10 @@ function BookRow({ book }: { book: Book }) {
   );
 }
 
-type BooksViewMode = "grid" | "list";
+type BooksViewMode = "grid" | "compact" | "list";
+
+const BOOK_VIEW_MODES = ["grid", "compact", "list"] as const;
+const SEARCH_DEBOUNCE_MS = 250;
 
 const VIEW_STORAGE_KEY = "rawkoon.books.viewMode";
 
@@ -183,7 +191,8 @@ const VIEW_STORAGE_KEY = "rawkoon.books.viewMode";
  */
 const readStoredView = (): BooksViewMode => {
   try {
-    return localStorage.getItem(VIEW_STORAGE_KEY) === "list" ? "list" : "grid";
+    const stored = localStorage.getItem(VIEW_STORAGE_KEY);
+    return stored === "list" || stored === "compact" ? stored : "grid";
   } catch {
     // Private mode, or storage disabled — the default is still a valid view.
     return "grid";
@@ -234,10 +243,18 @@ export function BooksPage() {
   useLibraryEvents();
   const [search, setSearch] = useState("");
   const [submitted, setSubmitted] = useState("");
-  const [kind, setKind] = useState<BookEditionKind | undefined>();
+  const [kind, setKind] = useState<BookEditionKind | "all">("all");
   const [showAdd, setShowAdd] = useState(false);
   const isAdmin = useCurrentUser().data?.is_admin ?? false;
   const [view, setView] = useState<BooksViewMode>(readStoredView);
+
+  useEffect(() => {
+    const id = setTimeout(
+      () => setSubmitted(search.trim()),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => clearTimeout(id);
+  }, [search]);
 
   const changeView = (next: BooksViewMode) => {
     setView(next);
@@ -250,7 +267,7 @@ export function BooksPage() {
 
   const { data, isLoading, refetch, isRefetching } = useBooks({
     q: submitted || undefined,
-    kind,
+    kind: kind === "all" ? undefined : kind,
     limit: 100,
   });
   // Reading/listening progress drives the default order. Both are small,
@@ -300,6 +317,13 @@ export function BooksPage() {
               <UserRound className="h-4 w-4" />
               {t("books.authorsLink")}
             </Link>
+            <Link
+              to="/books/listening"
+              className="focus-ring inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-lg bg-neutral-800 px-4 text-sm font-medium text-neutral-100 transition-colors hover:bg-neutral-700"
+            >
+              <Headphones className="h-4 w-4" />
+              {t("books.listeningLink")}
+            </Link>
             <Button onClick={() => setShowAdd(true)}>
               <Plus className="mr-1.5 h-4 w-4" />
               {isAdmin ? t("books.addBook") : t("books.requestBook")}
@@ -308,74 +332,55 @@ export function BooksPage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <form
-          className="flex w-full gap-2 sm:w-auto"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSubmitted(search.trim());
-          }}
-        >
-          <Input
+      <div className="mb-4 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <ToolbarSearch
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("books.filterPlaceholder")}
-            className="w-full sm:w-56"
+            onChange={setSearch}
+            placeholder={t("books.searchPlaceholder")}
+            className="w-full sm:w-auto sm:max-w-md sm:flex-1"
           />
-          <Button
-            type="submit"
-            variant="secondary"
-            size="icon"
-            aria-label={t("books.search")}
+          <FilterPanel
+            trigger={<FilterButton count={kind === "all" ? 0 : 1} />}
+            title={t("filters.title")}
+            resultCount={
+              data ? t("books.resultCount", { count: data.total }) : null
+            }
+            onReset={kind === "all" ? undefined : () => setKind("all")}
           >
-            <Search className="h-4 w-4" />
-          </Button>
-        </form>
-
-        <div className="flex gap-1.5">
-          {([undefined, "ebook", "audiobook"] as const).map((k) => (
-            <button
-              key={k ?? "all"}
-              type="button"
-              onClick={() => setKind(k)}
-              aria-pressed={kind === k}
-              className={`focus-ring rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
-                kind === k
-                  ? "bg-primary-500/15 text-primary-200"
-                  : "bg-neutral-800 text-neutral-400 hover:text-neutral-200"
-              }`}
-            >
-              {k
-                ? t(`books.kind${k === "audiobook" ? "Audiobook" : "Ebook"}`)
-                : t("books.kindAll")}
-            </button>
-          ))}
+            <FilterGroup label={t("books.kindSection")}>
+              <FilterSegmented
+                ariaLabel={t("books.kindSection")}
+                options={(["all", "audiobook", "ebook"] as const).map((k) => ({
+                  id: k,
+                  label: t(`books.kindOptions.${k}`),
+                }))}
+                value={kind}
+                onChange={setKind}
+              />
+            </FilterGroup>
+          </FilterPanel>
+          <ViewToggle
+            value={view}
+            onChange={changeView}
+            modes={BOOK_VIEW_MODES}
+            className="ml-auto"
+          />
         </div>
-
-        <div className="ms-auto flex overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900">
-          {(
-            [
-              { mode: "grid" as const, Icon: LayoutGrid },
-              { mode: "list" as const, Icon: List },
-            ] as const
-          ).map(({ mode, Icon }) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => changeView(mode)}
-              aria-pressed={view === mode}
-              title={t(`books.view.${mode}`)}
-              aria-label={t(`books.view.${mode}`)}
-              className={`focus-ring flex h-9 w-9 items-center justify-center transition-colors ${
-                view === mode
-                  ? "bg-neutral-800 text-neutral-200"
-                  : "text-neutral-400 hover:text-neutral-300"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-            </button>
-          ))}
-        </div>
+        <ActiveFilterChips
+          chips={
+            kind === "all"
+              ? []
+              : [
+                  {
+                    id: "kind",
+                    label: t(`books.kindOptions.${kind}`),
+                    onRemove: () => setKind("all"),
+                  },
+                ]
+          }
+          onClearAll={() => setKind("all")}
+        />
       </div>
 
       {isLoading ? (
@@ -395,8 +400,8 @@ export function BooksPage() {
             </Button>
           )}
         </div>
-      ) : view === "grid" ? (
-        <BookGrid books={books} />
+      ) : view !== "list" ? (
+        <BookGrid books={books} compact={view === "compact"} />
       ) : (
         <ul className="space-y-2">
           {books.map((b) => (
