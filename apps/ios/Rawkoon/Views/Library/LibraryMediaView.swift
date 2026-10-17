@@ -171,100 +171,103 @@ struct LibraryMediaView: View {
     }
 
     private var mediaToolbar: some View {
-        VStack(spacing: 8) {
-            LibraryGrowthStrip()
-                .padding(.horizontal, 16)
-            searchField("Search titles", text: $state.mediaSearch)
-                .padding(.horizontal, 16)
-            HStack {
-                LibraryFilterChip(activeLabels: activeFilterLabels) {
-                    state.mediaType = .all
-                    state.mediaStatus = .all
-                    state.sort = .added_at
-                    state.sortAscending = false
-                } content: {
-                    Picker("Type", selection: $state.mediaType) {
-                        ForEach(MediaTypeFilter.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.inline)
-                    Picker("Status", selection: $state.mediaStatus) {
-                        ForEach(MediaStatusFilter.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.inline)
-                    Menu("Sort by") {
-                        Picker("Sort by", selection: $state.sort) {
-                            ForEach(MediaSort.allCases) { Text($0.title).tag($0) }
-                        }
-                        .pickerStyle(.inline)
-                        Picker("Direction", selection: $state.sortAscending) {
-                            Text("Descending").tag(false)
-                            Text("Ascending").tag(true)
-                        }
-                        .pickerStyle(.inline)
-                    }
+        HStack(spacing: 8) {
+            searchField(LocalizedStringKey("Search titles"), text: $state.mediaSearch)
+                .frame(minWidth: 100, maxWidth: .infinity)
+            LibraryFilterChip(activeLabels: activeFilterLabels) {
+                state.mediaType = .all
+                state.mediaStatus = .all
+                state.sort = .added_at
+                state.sortAscending = false
+            } content: {
+                Picker("Type", selection: $state.mediaType) {
+                    ForEach(MediaTypeFilter.allCases) { Text($0.title).tag($0) }
                 }
-                Spacer(minLength: 0)
+                .pickerStyle(.inline)
+                Picker("Status", selection: $state.mediaStatus) {
+                    ForEach(MediaStatusFilter.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.inline)
+                Menu("Sort by") {
+                    Picker("Sort by", selection: $state.sort) {
+                        ForEach(MediaSort.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.inline)
+                    Picker("Direction", selection: $state.sortAscending) {
+                        Text("Descending").tag(false)
+                        Text("Ascending").tag(true)
+                    }
+                    .pickerStyle(.inline)
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
         }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
     }
 
     private var mediaGrid: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
-                LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach(media) { mediaItem in
-                        let zoomID = RawkoonZoom.media(
-                            tmdbId: mediaItem.tmdbId,
-                            mediaType: mediaItem.type == "show" ? "tv" : "movie"
-                        )
-                        NavigationLink {
-                            MediaDetailView(
-                                tmdbId: mediaItem.tmdbId,
-                                mediaType: mediaItem.type == "show" ? "tv" : "movie",
-                                title: mediaItem.title,
-                                posterPath: mediaItem.posterUrl,
-                                libraryId: mediaItem.id
-                            )
-                            .rawkoonZoomDestination(zoomID)
-                        } label: {
-                            MediaPosterCard(
-                                title: mediaItem.title,
-                                posterURL: model.absoluteURL(mediaItem.posterUrl),
-                                menuItems: mediaPosterMenuItems(
-                                    inLibrary: true,
-                                    isAdmin: model.isAdmin,
-                                    canAutoSearch: movieCanAutoSearch(type: mediaItem.type, status: mediaItem.status)
-                                ),
-                                onMenuAction: { state.handleMenu($0, media: mediaItem, model: model) },
-                                overlay: {
-                                    if state.busyMediaIds.contains(mediaItem.id) {
-                                        ProgressView().tint(Theme.apricot)
-                                            .transition(.rawkoonSwap)
-                                    } else {
-                                        mediaBadge(for: mediaItem)
-                                    }
-                                }
-                            )
-                            .rawkoonZoomSource(zoomID)
-                        }
-                        .buttonStyle(.rawkoonPressable)
-                        .disabled(!LibraryRowPresentation(media: mediaItem).isInteractive)
-                        .rawkoonScrollSettle()
-                    }
-                }
-                .padding(.horizontal, 16)
+                LibraryGrowthStrip()
+                    .padding(.horizontal, 16)
 
-                if mediaHasMore {
-                    paginationFooter
+                if loadingMedia, media.isEmpty {
+                    mediaGridSkeleton
+                } else if media.isEmpty {
+                    mediaEmptyState
+                } else {
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(media) { mediaItem in
+                            let zoomID = RawkoonZoom.media(
+                                tmdbId: mediaItem.tmdbId,
+                                mediaType: mediaItem.type == "show" ? "tv" : "movie"
+                            )
+                            NavigationLink {
+                                MediaDetailView(
+                                    tmdbId: mediaItem.tmdbId,
+                                    mediaType: mediaItem.type == "show" ? "tv" : "movie",
+                                    title: mediaItem.title,
+                                    posterPath: mediaItem.posterUrl,
+                                    libraryId: mediaItem.id
+                                )
+                                .rawkoonZoomDestination(zoomID)
+                            } label: {
+                                MediaPosterCard(
+                                    title: mediaItem.title,
+                                    posterURL: model.absoluteURL(mediaItem.posterUrl),
+                                    menuItems: mediaPosterMenuItems(
+                                        inLibrary: true,
+                                        isAdmin: model.isAdmin,
+                                        canAutoSearch: movieCanAutoSearch(type: mediaItem.type, status: mediaItem.status)
+                                    ),
+                                    onMenuAction: { state.handleMenu($0, media: mediaItem, model: model) },
+                                    overlay: {
+                                        if state.busyMediaIds.contains(mediaItem.id) {
+                                            ProgressView().tint(Theme.apricot)
+                                                .transition(.rawkoonSwap)
+                                        } else {
+                                            mediaBadge(for: mediaItem)
+                                        }
+                                    }
+                                )
+                                .rawkoonZoomSource(zoomID)
+                            }
+                            .buttonStyle(.rawkoonPressable)
+                            .disabled(!LibraryRowPresentation(media: mediaItem).isInteractive)
+                            .rawkoonScrollSettle()
+                        }
+                    }
+                    .padding(.horizontal, 16)
+
+                    if mediaHasMore {
+                        paginationFooter
+                    }
                 }
             }
             .padding(.vertical, 16)
             .onGeometryChange(for: Bool.self) { $0.size.height > 40 } action: { mediaRowsLaidOut = $0 }
         }
         .reportsTabBarScroll()
-        .overlay { mediaOverlay }
         // motion-ok: listMotion already resolves Reduce Motion
         .animation(mediaListMotion, value: state.animationToken(for: media))
         .refreshable { await state.load(reset: true, model: model) }
@@ -315,20 +318,14 @@ struct LibraryMediaView: View {
     }
 
     @ViewBuilder
-    private var mediaOverlay: some View {
-        if loadingMedia, media.isEmpty {
-            if density == .list {
-                mediaListSkeleton
-            } else {
-                mediaGridSkeleton
-            }
-        } else if let mediaError, media.isEmpty {
+    private var mediaEmptyState: some View {
+        if let mediaError {
             ContentUnavailableView(
                 "Couldn't load", systemImage: "exclamationmark.triangle",
                 description: Text(mediaError)
             )
             .rawkoonLivingSymbol(.error)
-        } else if !loadingMedia, mediaError == nil, media.isEmpty {
+        } else {
             ContentUnavailableView(
                 "No titles", systemImage: "film",
                 description: Text("Nothing matches these filters.")
@@ -339,39 +336,34 @@ struct LibraryMediaView: View {
 
     /// Warm skeleton poster grid shown while the first media page loads.
     private var mediaGridSkeleton: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(0 ..< 9, id: \.self) { _ in
-                    VStack(alignment: .leading, spacing: 6) {
-                        ShimmerView(cornerRadius: 10)
-                            .aspectRatio(2.0 / 3.0, contentMode: .fit)
-                        ShimmerView(cornerRadius: 4).frame(height: 12)
-                    }
+        LazyVGrid(columns: columns, spacing: 16) {
+            ForEach(0 ..< 9, id: \.self) { _ in
+                VStack(alignment: .leading, spacing: 6) {
+                    ShimmerView(cornerRadius: 10)
+                        .aspectRatio(2.0 / 3.0, contentMode: .fit)
+                    ShimmerView(cornerRadius: 4).frame(height: 12)
                 }
             }
-            .padding(16)
         }
+        .padding(.horizontal, 16)
         .allowsHitTesting(false)
     }
 
     /// Warm skeleton rows matching the list layout while the first page loads.
     private var mediaListSkeleton: some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                ForEach(0 ..< 8, id: \.self) { _ in
-                    HStack(alignment: .top, spacing: 12) {
-                        ShimmerView(cornerRadius: 6).frame(width: 46, height: 69)
-                        VStack(alignment: .leading, spacing: 6) {
-                            ShimmerView(cornerRadius: 4).frame(height: 14)
-                            ShimmerView(cornerRadius: 4).frame(width: 140, height: 10)
-                        }
-                        Spacer(minLength: 0)
+        LazyVStack(spacing: 8) {
+            ForEach(0 ..< 8, id: \.self) { _ in
+                HStack(alignment: .top, spacing: 12) {
+                    ShimmerView(cornerRadius: 6).frame(width: 46, height: 69)
+                    VStack(alignment: .leading, spacing: 6) {
+                        ShimmerView(cornerRadius: 4).frame(height: 14)
+                        ShimmerView(cornerRadius: 4).frame(width: 140, height: 10)
                     }
-                    .padding(12)
-                    .background(Theme.raised, in: RoundedRectangle(cornerRadius: 12))
+                    Spacer(minLength: 0)
                 }
+                .padding(12)
+                .background(Theme.raised, in: RoundedRectangle(cornerRadius: 12))
             }
-            .padding(.horizontal, 16).padding(.vertical, 16)
         }
         .allowsHitTesting(false)
     }
@@ -379,41 +371,49 @@ struct LibraryMediaView: View {
     private var mediaList: some View {
         ScrollView {
             LazyVStack(spacing: 8) {
-                ForEach(media) { mediaItem in
-                    let zoomID = RawkoonZoom.media(
-                        tmdbId: mediaItem.tmdbId,
-                        mediaType: mediaItem.type == "show" ? "tv" : "movie"
-                    )
-                    NavigationLink {
-                        MediaDetailView(
-                            tmdbId: mediaItem.tmdbId,
-                            mediaType: mediaItem.type == "show" ? "tv" : "movie",
-                            title: mediaItem.title,
-                            posterPath: mediaItem.posterUrl,
-                            libraryId: mediaItem.id
-                        )
-                        .rawkoonZoomDestination(zoomID)
-                    } label: {
-                        LibraryMediaRow(
-                            media: mediaItem,
-                            posterURL: model.absoluteURL(mediaItem.posterUrl),
-                            isBusy: state.busyMediaIds.contains(mediaItem.id),
-                            menuItems: mediaPosterMenuItems(
-                                inLibrary: true,
-                                isAdmin: model.isAdmin,
-                                canAutoSearch: movieCanAutoSearch(type: mediaItem.type, status: mediaItem.status)
-                            ),
-                            onMenuAction: { state.handleMenu($0, media: mediaItem, model: model) }
-                        )
-                        .rawkoonZoomSource(zoomID)
-                    }
-                    .buttonStyle(.rawkoonPressable(scale: 0.98))
-                    .disabled(!LibraryRowPresentation(media: mediaItem).isInteractive)
-                    .rawkoonScrollSettle()
-                }
+                LibraryGrowthStrip()
 
-                if mediaHasMore {
-                    paginationFooter
+                if loadingMedia, media.isEmpty {
+                    mediaListSkeleton
+                } else if media.isEmpty {
+                    mediaEmptyState
+                } else {
+                    ForEach(media) { mediaItem in
+                        let zoomID = RawkoonZoom.media(
+                            tmdbId: mediaItem.tmdbId,
+                            mediaType: mediaItem.type == "show" ? "tv" : "movie"
+                        )
+                        NavigationLink {
+                            MediaDetailView(
+                                tmdbId: mediaItem.tmdbId,
+                                mediaType: mediaItem.type == "show" ? "tv" : "movie",
+                                title: mediaItem.title,
+                                posterPath: mediaItem.posterUrl,
+                                libraryId: mediaItem.id
+                            )
+                            .rawkoonZoomDestination(zoomID)
+                        } label: {
+                            LibraryMediaRow(
+                                media: mediaItem,
+                                posterURL: model.absoluteURL(mediaItem.posterUrl),
+                                isBusy: state.busyMediaIds.contains(mediaItem.id),
+                                menuItems: mediaPosterMenuItems(
+                                    inLibrary: true,
+                                    isAdmin: model.isAdmin,
+                                    canAutoSearch: movieCanAutoSearch(type: mediaItem.type, status: mediaItem.status)
+                                ),
+                                onMenuAction: { state.handleMenu($0, media: mediaItem, model: model) }
+                            )
+                            .rawkoonZoomSource(zoomID)
+                        }
+                        .buttonStyle(.rawkoonPressable(scale: 0.98))
+                        .disabled(!LibraryRowPresentation(media: mediaItem).isInteractive)
+                        .rawkoonScrollSettle()
+                    }
+
+                    if mediaHasMore {
+                        paginationFooter
+                    }
                 }
             }
             .padding(.horizontal, 16).padding(.vertical, 16)
@@ -421,7 +421,6 @@ struct LibraryMediaView: View {
             .onGeometryChange(for: Bool.self) { $0.size.height > 40 } action: { mediaRowsLaidOut = $0 }
         }
         .reportsTabBarScroll()
-        .overlay { mediaOverlay }
         // motion-ok: listMotion already resolves Reduce Motion
         .animation(mediaListMotion, value: state.animationToken(for: media))
         .refreshable { await state.load(reset: true, model: model) }

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The one filter control for both library tabs: a glass chip that names what is
-/// active, plus a clear chip that only exists while something is.
+/// The one filter control for both library tabs: a glass "Filters" chip with a count
+/// of what is active, plus a clear chip that only exists while something is.
 struct LibraryFilterChip<Content: View>: View {
     /// Active values in display order; empty means nothing is filtered.
     let activeLabels: [String]
@@ -12,13 +12,6 @@ struct LibraryFilterChip<Content: View>: View {
         !activeLabels.isEmpty
     }
 
-    /// Two values at most so the chip fits a phone; the full list stays in the accessibility label.
-    private var displayLabel: String {
-        let shown = activeLabels.prefix(2).joined(separator: " · ")
-        let hidden = activeLabels.count - 2
-        return hidden > 0 ? "\(shown) +\(hidden)" : shown
-    }
-
     var body: some View {
         GlassEffectContainer(spacing: 8) {
             HStack(spacing: 8) {
@@ -27,17 +20,20 @@ struct LibraryFilterChip<Content: View>: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "line.3.horizontal.decrease").font(.caption2)
+                        Text("Filters").font(.subheadline.weight(.medium))
                         if isActive {
-                            Text(displayLabel)
-                                .font(.subheadline.weight(.medium))
-                                .lineLimit(1)
-                        } else {
-                            Text("Filters").font(.subheadline.weight(.medium))
+                            Text(activeLabels.count, format: .number)
+                                .font(.caption2.weight(.bold))
+                                .monospacedDigit()
+                                .foregroundStyle(Theme.onAccent)
+                                .frame(minWidth: 18, minHeight: 18)
+                                .background(Theme.apricot, in: .capsule)
                         }
                         Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
                     }
                     .foregroundStyle(isActive ? Theme.apricot : Theme.textStrong)
-                    .padding(.horizontal, 12).padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .frame(height: 40)
                     .glassEffect(.regular.interactive(), in: .capsule)
                 }
                 .accessibilityLabel(isActive ? Text("Filters: \(activeLabels.joined(separator: ", "))") : Text("Filters"))

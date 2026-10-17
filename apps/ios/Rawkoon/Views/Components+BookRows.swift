@@ -43,7 +43,7 @@ private func searchFieldStack(
         }
     }
     .padding(.horizontal, 12)
-    .padding(.vertical, 10)
+    .frame(height: 40)
     .background(Theme.inset, in: RoundedRectangle(cornerRadius: 12))
     .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border, lineWidth: 1))
 }
