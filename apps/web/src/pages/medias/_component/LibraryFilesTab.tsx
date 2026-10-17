@@ -112,7 +112,7 @@ export function LibraryFilesTab({
         <h2 className="mb-3 font-sans text-base font-semibold text-neutral-100">
           {isShow ? t("library.files.seasons") : t("library.files.file")}
         </h2>
-        {isShow && mappedFolder && (
+        {mappedFolder && (
           <p className="-mt-1.5 mb-3 break-all font-mono text-xs text-neutral-400">
             {mappedFolder}
           </p>

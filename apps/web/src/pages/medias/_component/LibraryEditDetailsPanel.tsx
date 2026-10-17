@@ -103,7 +103,9 @@ function Body({
       : undefined;
     return match?.query ?? options[0]?.query ?? "";
   })();
-  const [searchQuery, setSearchQuery] = useState(persistedQuery);
+  // Only a real choice counts: the options may still be loading when this mounts.
+  const [searchChoice, setSearchChoice] = useState<string | null>(null);
+  const searchQuery = searchChoice ?? persistedQuery;
 
   const set = (field: DetailField, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -129,7 +131,7 @@ function Body({
     (url) => typeof url === "string" && !isImageUrl(url),
   );
   const searchTitleChanged =
-    searchQuery !== persistedQuery && options.length > 0;
+    searchChoice !== null && searchChoice !== persistedQuery;
   const dirty =
     changedDetails.length > 0 ||
     searchTitleChanged ||
@@ -146,30 +148,60 @@ function Body({
         payload[field] = value || null;
       }
     }
-    setSaving(true);
-    try {
-      if (Object.keys(payload).length > 0)
-        await updateOverrides.mutateAsync({ id: item.id, overrides: payload });
-      if (searchTitleChanged) {
-        const option = options.find((o) => o.query === searchQuery);
-        if (option)
-          await updateSearchTitle.mutateAsync({
+    const steps: { name: string; run: () => Promise<unknown> }[] = [];
+    if (Object.keys(payload).length > 0)
+      steps.push({
+        name: t("library.edit.details"),
+        run: () =>
+          updateOverrides.mutateAsync({ id: item.id, overrides: payload }),
+      });
+    const option = searchTitleChanged
+      ? options.find((o) => o.query === searchQuery)
+      : undefined;
+    if (option)
+      steps.push({
+        name: t("library.edit.searchTitle"),
+        run: () =>
+          updateSearchTitle.mutateAsync({
             id: item.id,
             body: {
               search_title_language: option.languageCode,
               search_title: option.query,
             },
-          });
-      }
-      for (const kind of Object.keys(picks) as ArtworkKind[]) {
-        const url = picks[kind];
-        if (url !== undefined)
-          await updateArtwork.mutateAsync({ id: item.id, kind, url });
+          }),
+      });
+    for (const kind of Object.keys(picks) as ArtworkKind[]) {
+      const url = picks[kind];
+      if (url !== undefined)
+        steps.push({
+          name: t("library.edit.artwork"),
+          run: () => updateArtwork.mutateAsync({ id: item.id, kind, url }),
+        });
+    }
+    if (steps.length === 0) return;
+
+    setSaving(true);
+    const saved: string[] = [];
+    try {
+      for (const step of steps) {
+        try {
+          await step.run();
+        } catch {
+          const done = [...new Set(saved)];
+          toast.error(
+            done.length > 0
+              ? t("library.edit.saveFailedAfter", {
+                  failed: step.name,
+                  saved: done.join(", "),
+                })
+              : t("library.edit.saveFailedPart", { failed: step.name }),
+          );
+          return;
+        }
+        saved.push(step.name);
       }
       toast.success(t("library.edit.saved"));
       onClose();
-    } catch {
-      toast.error(t("library.edit.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -273,7 +305,7 @@ function Body({
               : t("library.edit.searchTitleUnavailable")}
           </p>
         ) : (
-          <Select value={searchQuery} onValueChange={setSearchQuery}>
+          <Select value={searchQuery} onValueChange={setSearchChoice}>
             <SelectTrigger aria-label={t("library.edit.searchTitle")}>
               <SelectValue />
             </SelectTrigger>

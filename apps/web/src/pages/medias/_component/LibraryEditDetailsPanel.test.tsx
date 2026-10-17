@@ -6,6 +6,7 @@ const overridesMutate = vi.fn(async () => ({}));
 const searchTitleMutate = vi.fn(async () => ({}));
 const artworkMutate = vi.fn(async () => ({}));
 const toastSuccess = vi.fn();
+const toastError = vi.fn();
 
 vi.mock("@/features/medias/hooks/useUpdateLibraryOverrides", () => ({
   useUpdateLibraryOverrides: () => ({ mutateAsync: overridesMutate }),
@@ -19,11 +20,13 @@ vi.mock("@/features/medias/hooks/useUpdateLibraryArtwork", () => ({
 vi.mock("@/features/medias/hooks/useArtworkCandidates", () => ({
   useArtworkCandidates: () => ({ data: { candidates: [] }, isLoading: false }),
 }));
+const loadedOptions = [
+  { query: "Film", languageCode: "en", label: "English", isOriginal: false },
+  { query: "Titre", languageCode: "fr", label: "French", isOriginal: false },
+];
+let titleOptions = loadedOptions;
 vi.mock("@/features/medias/hooks/useLibraryTitleOptions", () => ({
-  useLibraryTitleOptions: () => [
-    { query: "Film", languageCode: "en", label: "English", isOriginal: false },
-    { query: "Titre", languageCode: "fr", label: "French", isOriginal: false },
-  ],
+  useLibraryTitleOptions: () => titleOptions,
 }));
 // Radix Select needs pointer events happy-dom lacks; a native select keeps it testable.
 vi.mock("@/components/ui/select", () => ({
@@ -58,7 +61,10 @@ vi.mock("@/components/ui/select", () => ({
   }) => <option value={value}>{children}</option>,
 }));
 vi.mock("sonner", () => ({
-  toast: { success: (m: string) => toastSuccess(m), error: vi.fn() },
+  toast: {
+    success: (m: string) => toastSuccess(m),
+    error: (m: string) => toastError(m),
+  },
 }));
 
 import { LibraryEditDetailsPanel } from "./LibraryEditDetailsPanel";
@@ -78,20 +84,22 @@ const item = (over: Partial<LibraryMedia> = {}) =>
     ...over,
   }) as LibraryMedia;
 
+const panel = (media: LibraryMedia, onClose = vi.fn()) => (
+  <LibraryEditDetailsPanel
+    open
+    onClose={onClose}
+    item={media}
+    defaultBackdropUrl={null}
+    tmdb={{ title: "Film (TMDB)", overview: "TMDB overview", year: 2023 }}
+    tmdbOriginalTitle={null}
+    tmdbOriginalLanguage={null}
+    tmdbTitleTranslations={[]}
+    tmdbPending={false}
+  />
+);
+
 const mount = (media: LibraryMedia, onClose = vi.fn()) => {
-  render(
-    <LibraryEditDetailsPanel
-      open
-      onClose={onClose}
-      item={media}
-      defaultBackdropUrl={null}
-      tmdb={{ title: "Film (TMDB)", overview: "TMDB overview", year: 2023 }}
-      tmdbOriginalTitle={null}
-      tmdbOriginalLanguage={null}
-      tmdbTitleTranslations={[]}
-      tmdbPending={false}
-    />,
-  );
+  render(panel(media, onClose));
   return onClose;
 };
 
@@ -101,6 +109,8 @@ describe("LibraryEditDetailsPanel", () => {
     searchTitleMutate.mockClear();
     artworkMutate.mockClear();
     toastSuccess.mockClear();
+    toastError.mockClear();
+    titleOptions = loadedOptions;
   });
 
   it("shows stored values as placeholders until a field is overridden", () => {
@@ -194,5 +204,46 @@ describe("LibraryEditDetailsPanel", () => {
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
+  });
+
+  it("does not count the search title as changed when options arrive after mount", () => {
+    titleOptions = [];
+    const media = item();
+    const { rerender } = render(panel(media));
+    titleOptions = loadedOptions;
+    rerender(panel(media));
+
+    expect(
+      (screen.getByTestId("search-title") as HTMLSelectElement).value,
+    ).toBe("Film");
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "library.edit.save",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
+  it("names the part that failed, keeps the panel open and does not toast success", async () => {
+    searchTitleMutate.mockRejectedValueOnce(new Error("boom"));
+    const onClose = mount(item());
+    fireEvent.change(screen.getByLabelText("library.edit.fieldYear"), {
+      target: { value: "2024" },
+    });
+    fireEvent.change(screen.getByTestId("search-title"), {
+      target: { value: "Titre" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "library.edit.save" }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalledOnce());
+    expect(toastError.mock.calls[0][0]).toContain(
+      "library.edit.saveFailedAfter",
+    );
+    expect(toastError.mock.calls[0][0]).toContain(
+      "failed:library.edit.searchTitle",
+    );
+    expect(toastSuccess).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

@@ -2421,7 +2421,6 @@
       "imageUrlInvalid": "Enter a full web address starting with http:// or https://",
       "save": "Save changes",
       "saved": "Details saved",
-      "saveFailed": "Couldn’t save your changes",
       "artworkPoster": "Poster",
       "artworkBackdrop": "Backdrop",
       "artworkLanguage": "Language",
@@ -2430,7 +2429,9 @@
       "artworkLoading": "Loading artwork…",
       "artworkEmpty": "No artwork available for this title",
       "artworkNoneInLanguage": "No artwork in that language",
-      "artworkReset": "Use default"
+      "artworkReset": "Use default",
+      "saveFailedPart": "{{failed}} couldn’t be saved.",
+      "saveFailedAfter": "{{failed}} couldn’t be saved. Saved: {{saved}}."
     },
     "files": {
       "file": "File",

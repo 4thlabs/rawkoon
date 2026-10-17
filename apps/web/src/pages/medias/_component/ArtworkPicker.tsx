@@ -124,7 +124,8 @@ export function ArtworkPicker({
 
   const pick = (url: string | null) => {
     setPasted((prev) => ({ ...prev, [kind]: "" }));
-    onPick(kind, url);
+    // With nothing stored there is nothing to clear, so drop the staged pick instead.
+    onPick(kind, url === null && storedOverride === null ? undefined : url);
   };
 
   const isPoster = kind === "poster";

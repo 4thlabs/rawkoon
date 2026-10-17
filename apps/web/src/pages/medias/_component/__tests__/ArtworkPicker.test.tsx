@@ -248,6 +248,12 @@ describe("ArtworkPicker", () => {
     );
   });
 
+  it("drops a staged pick instead of staging a null when nothing is stored", () => {
+    render(<Picker item={item()} picks={{ poster: "https://a/2.jpg" }} />);
+    fireEvent.click(screen.getByTestId("artwork-reset"));
+    expect(onPick).toHaveBeenCalledWith("poster", undefined);
+  });
+
   it("reset clears the override and is hidden with no override set", () => {
     const { rerender } = render(<Picker item={item()} />);
     expect(screen.queryByTestId("artwork-reset")).toBeNull();
