@@ -57,8 +57,7 @@ interface LibraryToolbarProps {
   onTypeChange: (value: FilterType) => void;
   onStatusChange: (value: FilterStatus) => void;
   onLanguageChange: (value: string) => void;
-  onSortByChange: (value: SortKey) => void;
-  onSortDirChange: (value: SortDir) => void;
+  onSortChange: (sortBy: SortKey, sortDir: SortDir) => void;
   onViewModeChange: (value: ViewMode) => void;
   onReset: () => void;
 }
@@ -80,8 +79,7 @@ export function LibraryToolbar({
   onTypeChange,
   onStatusChange,
   onLanguageChange,
-  onSortByChange,
-  onSortDirChange,
+  onSortChange,
   onViewModeChange,
   onReset,
 }: LibraryToolbarProps) {
@@ -133,10 +131,8 @@ export function LibraryToolbar({
         sort: t(`medias.library.sort.${sortBy}`),
         direction: t(`medias.library.sortDir.${sortBy}.${sortDir}`),
       }),
-      onRemove: () => {
-        onSortByChange(LIBRARY_DEFAULTS.sortBy);
-        onSortDirChange(LIBRARY_DEFAULTS.sortDir);
-      },
+      onRemove: () =>
+        onSortChange(LIBRARY_DEFAULTS.sortBy, LIBRARY_DEFAULTS.sortDir),
     });
 
   return (
@@ -200,10 +196,9 @@ export function LibraryToolbar({
             <div className="flex flex-wrap items-center gap-2">
               <Select
                 value={sortBy}
-                onValueChange={(v) => {
-                  onSortByChange(v as SortKey);
-                  onSortDirChange(FIRST_DIR[v as SortKey]);
-                }}
+                onValueChange={(v) =>
+                  onSortChange(v as SortKey, FIRST_DIR[v as SortKey])
+                }
               >
                 <SelectTrigger
                   aria-label={t("medias.library.sortSection")}
@@ -224,7 +219,7 @@ export function LibraryToolbar({
                   ariaLabel={t("medias.library.sortDirection")}
                   options={dirOptions}
                   value={sortDir}
-                  onChange={onSortDirChange}
+                  onChange={(dir) => onSortChange(sortBy, dir)}
                 />
               </div>
             </div>
