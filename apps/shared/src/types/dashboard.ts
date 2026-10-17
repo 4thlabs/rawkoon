@@ -151,3 +151,39 @@ export interface DashboardHeroItem {
 export interface DashboardHeroResponse {
   items: DashboardHeroItem[];
 }
+
+export interface DashboardPipelineDownloadItem {
+  /** download_history id; matches `DownloadProgressItem.id` in the live SSE feed. */
+  id: number;
+  library_media_id: number | null;
+  book_id: number | null;
+  title: string;
+  /** 0..1 */
+  progress: number;
+  eta_seconds: number | null;
+}
+
+export interface DashboardPipeline {
+  downloading: {
+    count: number;
+    speed_bytes_per_sec: number;
+    /** The first three in-flight grabs, oldest first. */
+    items: DashboardPipelineDownloadItem[];
+  };
+  /** Titles whose grab is waiting out the grab delay. */
+  delayed: { count: number };
+  attention: {
+    /** alerts + gave_up */
+    count: number;
+    alerts: number;
+    /** Wanted titles whose last search found nothing or errored, not already in an alert. */
+    gave_up: number;
+  };
+  rss: {
+    last_run_at: string | null;
+    ok: boolean | null;
+    releases_found: number | null;
+    next_run_at: string | null;
+  };
+  reencode: { active: number; queued: number };
+}

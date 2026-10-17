@@ -4,6 +4,7 @@ import type { FixtureRegistry } from "./types";
 // (media_type + numeric tmdb_id) — good negative-check targets.
 export const dashboardFixtures: FixtureRegistry = {
   "GET /api/dashboard/activities/feed": { phase: "read", negativeBody: null },
+  "GET /api/dashboard/pipeline": { phase: "read", negativeBody: null },
   "GET /api/dashboard/downloads/speed": { phase: "read", negativeBody: null },
   // Binary image proxy: the mocked Jellyfin serves no image bytes, so the route
   // correctly returns 404 "Image not found". We assert reachability + that path.
