@@ -952,6 +952,13 @@ describe("Discovery (Step 1b)", () => {
     ]);
   });
 
+  it("33b2. Ligature in the title matches its spelled-out filename", async () => {
+    const result = await discoverMovie("Cœur", 2019, [
+      "Coeur (2019) [1080p WEB].mkv",
+    ]);
+    expect(result?.imported).toBe(1);
+  });
+
   it("33c. Title only matches whole words", async () => {
     const result = await discoverMovie("It", 2017, [
       "Kitten Heist (2017) [1080p WEB].mkv",

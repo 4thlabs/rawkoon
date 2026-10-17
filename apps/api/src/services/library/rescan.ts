@@ -53,11 +53,16 @@ const DB_WRITE_CONCURRENCY = 8;
 
 function normalizeForDiscovery(str: string): string {
   // Fold accents first: "Ça" must become "ca", not " a" (which would then
-  // match any filename containing the letter "a").
+  // match any filename containing the letter "a"). NFD leaves ligatures and
+  // stroked letters whole, so those are spelled out by hand.
   return str
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
     .toLowerCase()
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
+    .replace(/ø/g, "o")
+    .replace(/ß/g, "ss")
     .replace(/[^a-z0-9]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
