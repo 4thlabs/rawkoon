@@ -1,97 +1,36 @@
-import {
-  BookOpen,
-  Bookmark,
-  CalendarIcon,
-  Compass,
-  Inbox,
-  LayoutDashboard,
-  Layers2,
-  Library,
-  Sparkles,
-} from "lucide-react";
+import { Activity, Compass, LayoutDashboard, Library } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { readFindMode } from "@/lib/routing/findMode";
 
-interface NavItem {
+export interface NavItem {
   path: string;
   translationKey: string;
   icon: LucideIcon;
-  /**
-   * Hide this entry unless the named feature flag is on. Books default to off
-   * so a movies-only install sees no change after upgrading.
-   */
-  featureFlag?: "books";
 }
 
-export interface NavSection {
-  labelKey?: string;
-  items: NavItem[];
-}
-
-export const navSections: NavSection[] = [
-  {
-    items: [
-      {
-        path: "/",
-        translationKey: "nav.dashboard",
-        icon: LayoutDashboard,
-      },
-      {
-        path: "/calendar",
-        translationKey: "nav.calendar",
-        icon: CalendarIcon,
-      },
-      {
-        path: "/library",
-        translationKey: "nav.library",
-        icon: Library,
-      },
-      {
-        path: "/books",
-        translationKey: "nav.books",
-        icon: BookOpen,
-        featureFlag: "books",
-      },
-      {
-        path: "/requests",
-        translationKey: "nav.requests",
-        icon: Inbox,
-      },
-      {
-        path: "/explore",
-        translationKey: "nav.explore",
-        icon: Compass,
-      },
-      {
-        path: "/discover",
-        translationKey: "nav.discover",
-        icon: Sparkles,
-      },
-      {
-        path: "/watchlist",
-        translationKey: "nav.watchlist",
-        icon: Bookmark,
-      },
-      {
-        path: "/collections",
-        translationKey: "nav.collections",
-        icon: Layers2,
-      },
-    ],
-  },
+export const navItems: NavItem[] = [
+  { path: "/", translationKey: "nav.dashboard", icon: LayoutDashboard },
+  { path: "/library", translationKey: "nav.library", icon: Library },
+  { path: "/find", translationKey: "nav.find", icon: Compass },
+  { path: "/activity", translationKey: "nav.activity", icon: Activity },
 ];
 
-/**
- * Nav sections with feature-flagged entries removed. Every nav consumer should
- * use this rather than `navSections` directly, so a disabled feature cannot
- * leak into the sidebar, the user menu, or the command palette.
- */
-export function visibleNavSections(flags: {
-  books_enabled?: boolean;
-}): NavSection[] {
-  const enabled = (item: NavItem): boolean =>
-    item.featureFlag === "books" ? !!flags.books_enabled : true;
+export function isNavRouteActive(path: string, pathname: string): boolean {
+  if (path === "/") return pathname === "/";
+  if (path === "/library") {
+    return (
+      pathname === path || pathname.startsWith(`${path}/`) || isBooks(pathname)
+    );
+  }
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
 
-  return navSections
-    .map((section) => ({ ...section, items: section.items.filter(enabled) }))
-    .filter((section) => section.items.length > 0);
+/** Books sit under Library, so every /books page keeps Library lit. */
+function isBooks(pathname: string): boolean {
+  return pathname === "/books" || pathname.startsWith("/books/");
+}
+
+/** The nav entry for Find reopens the mode last used this session. */
+export function resolveNavPath(path: string): string {
+  return path === "/find" && readFindMode() === "swipe" ? "/find/swipe" : path;
 }

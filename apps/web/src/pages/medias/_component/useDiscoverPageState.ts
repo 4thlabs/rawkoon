@@ -7,13 +7,15 @@ export const DISCOVER_DEFAULTS = {
   sort: "popularity.desc" as string,
   page: 1 as number,
   lang: null as string | null,
+  q: null as string | null,
+  hide_owned: false as boolean,
 };
 
 export type DiscoverPageSearchParams = Partial<typeof DISCOVER_DEFAULTS>;
 
 export function useDiscoverPageState(searchParams: DiscoverPageSearchParams) {
   const { state, setState } = useUrlState(
-    "/explore/",
+    "/find/",
     searchParams,
     DISCOVER_DEFAULTS,
   );

@@ -128,3 +128,34 @@ extension View {
             .tint(Theme.apricot)
     }
 }
+
+/// A settings screen's row: its icon and title, with a count badge when something needs attention.
+struct SettingsDestinationRow: View {
+    let destination: SettingsDestination
+    var badge = 0
+
+    var body: some View {
+        HStack {
+            Label(destination.title, systemImage: destination.systemImage)
+            Spacer(minLength: 8)
+            SettingsCountBadge(count: badge)
+        }
+    }
+}
+
+/// The small count that says how many open problems sit behind a row; nothing at zero.
+struct SettingsCountBadge: View {
+    let count: Int
+
+    var body: some View {
+        if count > 0 {
+            Text(verbatim: count > 99 ? "99+" : String(count))
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 7)
+                .frame(minWidth: 20, minHeight: 20)
+                .background(Capsule().fill(Theme.badge))
+                .accessibilityLabel(Text("\(count) open problems"))
+        }
+    }
+}

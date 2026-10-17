@@ -17,7 +17,7 @@ import { useAddToLibrary } from "@/features/medias/hooks/useAddToLibrary";
 import { useSearchOnAddEnabled } from "@/features/medias/hooks/useSearchOnAddEnabled";
 import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
 import { useCurrentUser } from "@/lib/auth/useAuth";
-import { useCreateRequest } from "@/pages/requests/_hooks/useRequests";
+import { useCreateRequest } from "@/pages/activity/requests/_hooks/useRequests";
 import { formatRelativeTime } from "@/lib/utils/relativeTime";
 import { ExploreCardDetailDialog } from "@/pages/medias/_component/ExploreCardDetailDialog";
 import { GreetingCard } from "@/pages/_component/GreetingCard";

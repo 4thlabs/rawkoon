@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { navSections } from "@/lib/routing/navigation";
+import { navItems } from "@/lib/routing/navigation";
 
-const ALL_NAV_PATHS = navSections.flatMap((s) => s.items.map((i) => i.path));
+const ALL_NAV_PATHS = navItems.map((i) => i.path);
 
 function runWhenIdle(fn: () => void): void {
   if (typeof window === "undefined") return;

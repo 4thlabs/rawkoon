@@ -27,6 +27,6 @@ describe("SeedingTab", () => {
     expect(screen.getByText("rules-section")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "settings.seeding.viewTorrents" }),
-    ).toHaveAttribute("href", "/library/downloads?view=seeding");
+    ).toHaveAttribute("href", "/settings/downloads?view=seeding");
   });
 });

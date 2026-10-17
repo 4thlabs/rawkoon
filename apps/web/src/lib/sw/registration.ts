@@ -10,16 +10,6 @@ export function syncBadge(): void {
   }
 }
 
-export function clearBadge(): void {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.ready.then((registration) => {
-      if (registration.active) {
-        registration.active.postMessage({ type: "clearBadge" });
-      }
-    });
-  }
-}
-
 function postSwStrings(): void {
   if (!("serviceWorker" in navigator)) return;
   const strings = {

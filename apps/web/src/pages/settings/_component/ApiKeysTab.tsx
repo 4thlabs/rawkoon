@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { KeyRound, Plus, Trash2, Copy, Check } from "lucide-react";
+import { Plus, Trash2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/dialog";
@@ -216,12 +216,6 @@ export function ApiKeysTab() {
       className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6"
       key="api-keys-tab"
     >
-      <SettingsPageHeader
-        icon={KeyRound}
-        title={t("settings.apiKeys.title")}
-        description={t("settings.apiKeys.description")}
-      />
-
       <div className="bg-neutral-800 rounded-xl border border-neutral-700 p-6">
         <div className="mb-6 flex items-start justify-between gap-4">
           <SettingsPageHeader

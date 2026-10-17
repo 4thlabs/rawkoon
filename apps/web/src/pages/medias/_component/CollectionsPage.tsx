@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FindBackLink } from "@/pages/find/_component/FindBackLink";
 import { useTranslation } from "react-i18next";
 import { useMissingCollections } from "@/features/medias/hooks/useMissingCollections";
 import {
@@ -141,6 +142,7 @@ export function CollectionsPage() {
 
   return (
     <PageLayout>
+      <FindBackLink />
       <PageHeader
         icon={Clapperboard}
         title={t("medias.collections.pageTitle", "Collections")}

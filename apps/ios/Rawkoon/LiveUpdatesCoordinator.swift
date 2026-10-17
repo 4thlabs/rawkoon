@@ -325,6 +325,15 @@ final class LiveUpdatesCoordinator {
         if case .book = destination, appModel?.booksEnabled == false {
             return
         }
+        // Inbox, calendar and watchlist are tab content, not pushed screens.
+        if let tab = destination.hostTab {
+            if case .watchlist = destination {
+                appModel?.requestedFindShelf = .watchlist
+            }
+            appModel?.requestedActivityLane = destination.activityLane
+            appModel?.requestedRootTab = tab
+            return
+        }
         appModel?.deepLinkTarget = destination
     }
 

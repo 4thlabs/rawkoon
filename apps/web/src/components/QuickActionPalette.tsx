@@ -11,7 +11,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Search,
   Sparkles,
-  Bell,
+  Compass,
   Settings,
   RefreshCw,
   Clapperboard,
@@ -20,15 +20,11 @@ import {
   User,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { TmdbMediaSearchItem } from "@rawkoon/shared/types";
 import { useQuickSearch } from "@/lib/search/useSearch";
-import { visibleNavSections } from "@/lib/routing/navigation";
-import { useFeatures } from "@/lib/routing/useFeatures";
+import { navItems, resolveNavPath } from "@/lib/routing/navigation";
 import { usePrefetchAllRoutes } from "@/lib/routing/usePrefetchAllRoutes";
-import { ExploreCardDetailDialog } from "@/pages/medias/_component/ExploreCardDetailDialog";
 import { Dialog } from "@/components/dialog";
 import { Input } from "@/components/ui/input";
-import { useTitleSearchActions } from "@/components/quick-actions/useTitleSearchActions";
 import {
   QuickActionRow,
   type QuickAction,
@@ -61,9 +57,6 @@ export function QuickActionPalette({
   const prefetchAllRoutes = usePrefetchAllRoutes();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
-  const [detailItem, setDetailItem] = useState<TmdbMediaSearchItem | null>(
-    null,
-  );
 
   const handleClose = useCallback(() => {
     setQuery("");
@@ -75,58 +68,48 @@ export function QuickActionPalette({
   const normalizedQuery = deferredQuery.trim().toLowerCase();
   const trimmedQuery = query.trim();
   const isLoggedIn = router.location.pathname !== "/login";
-  const { data: features } = useFeatures();
-  const booksEnabled = !!features?.books_enabled;
-  const navSectionsVisible = useMemo(
-    () => visibleNavSections({ books_enabled: booksEnabled }),
-    [booksEnabled],
-  );
   const shouldSearch = isOpen && normalizedQuery.length >= 2 && isLoggedIn;
 
-  const { titleActions, titleItems, isSearchingTitles, titleSearchFailed } =
-    useTitleSearchActions({
-      isOpen: isOpen && isLoggedIn,
-      query: trimmedQuery,
-      onClose: handleClose,
-      onOpenDetails: setDetailItem,
-    });
+  const findAction = useMemo<QuickAction[]>(
+    () =>
+      trimmedQuery
+        ? [
+            {
+              id: "find-search",
+              title: t("common.quickActionsSearchFind", {
+                query: trimmedQuery,
+              }),
+              description: t("common.quickActionsSearchFindDescription"),
+              icon: <Compass size={20} />,
+              section: "find" as const,
+              action: () => {
+                navigate({ to: "/find", search: { q: trimmedQuery } });
+                handleClose();
+              },
+            },
+          ]
+        : [],
+    [handleClose, navigate, t, trimmedQuery],
+  );
 
   const actions = useMemo<QuickAction[]>(() => {
-    const navActions = navSectionsVisible.flatMap((section) =>
-      section.items.map((item) => ({
-        id: `nav-${item.path}`,
-        title: t(item.translationKey),
-        description: t("common.quickActionsOpenPage", {
-          page: t(item.translationKey),
-        }),
-        icon: <item.icon size={20} />,
-        section: "actions" as const,
-        keywords: [item.path, item.translationKey, section.labelKey].filter(
-          (k): k is string => Boolean(k),
-        ),
-        action: () => {
-          navigate({ to: item.path });
-          handleClose();
-        },
-      })),
-    );
+    const navActions = navItems.map((item) => ({
+      id: `nav-${item.path}`,
+      title: t(item.translationKey),
+      description: t("common.quickActionsOpenPage", {
+        page: t(item.translationKey),
+      }),
+      icon: <item.icon size={20} />,
+      section: "actions" as const,
+      keywords: [item.path, item.translationKey],
+      action: () => {
+        navigate({ to: resolveNavPath(item.path) });
+        handleClose();
+      },
+    }));
 
     return [
       ...navActions,
-      {
-        id: "notifications",
-        title: t("notifications.title"),
-        description: t("common.quickActionsOpenPage", {
-          page: t("notifications.title"),
-        }),
-        icon: <Bell size={20} />,
-        section: "actions",
-        keywords: ["notifications", "alerts"],
-        action: () => {
-          navigate({ to: "/notifications" });
-          handleClose();
-        },
-      },
       {
         id: "settings",
         title: t("settings.title"),
@@ -137,7 +120,7 @@ export function QuickActionPalette({
         section: "actions",
         keywords: ["settings", "profile", "integrations"],
         action: () => {
-          navigate({ to: "/settings", search: { tab: "profile" as const } });
+          navigate({ to: "/settings/profile" });
           handleClose();
         },
       },
@@ -153,7 +136,7 @@ export function QuickActionPalette({
         },
       },
     ];
-  }, [handleClose, navigate, navSectionsVisible, t]);
+  }, [handleClose, navigate, t]);
 
   const filteredActions = useMemo<QuickAction[]>(() => {
     if (!normalizedQuery) {
@@ -233,7 +216,7 @@ export function QuickActionPalette({
       icon: <User size={20} />,
       section: "users" as const,
       action: () => {
-        navigate({ to: "/settings", search: { tab: "profile" as const } });
+        navigate({ to: "/settings/people" });
         handleClose();
       },
     }));
@@ -243,7 +226,7 @@ export function QuickActionPalette({
 
   const sectionLabels: Record<QuickAction["section"], string> = useMemo(
     () => ({
-      titles: t("common.quickActionsSectionTitles"),
+      find: t("common.quickActionsSectionFind"),
       medias: t("common.quickActionsSectionMedias"),
       books: t("common.quickActionsSectionBooks"),
       users: t("common.quickActionsSectionUsers"),
@@ -257,28 +240,14 @@ export function QuickActionPalette({
       return filteredActions;
     }
 
-    // A library title the TMDB list already shows would otherwise appear twice.
-    const shownLibraryIds = new Set(
-      titleItems.flatMap((item) =>
-        item.library_id != null ? [`media-${item.library_id}`] : [],
-      ),
+    const rest = [...collectionResults, ...filteredActions].sort(
+      (a, b) =>
+        matchScore(b.title, normalizedQuery) -
+        matchScore(a.title, normalizedQuery),
     );
-    const rest = [...collectionResults, ...filteredActions]
-      .filter((action) => !shownLibraryIds.has(action.id))
-      .sort(
-        (a, b) =>
-          matchScore(b.title, normalizedQuery) -
-          matchScore(a.title, normalizedQuery),
-      );
 
-    return [...titleActions, ...rest];
-  }, [
-    filteredActions,
-    normalizedQuery,
-    collectionResults,
-    titleActions,
-    titleItems,
-  ]);
+    return [...findAction, ...rest];
+  }, [filteredActions, normalizedQuery, collectionResults, findAction]);
 
   const isSearchingCollections = shouldSearch && searchQuery.isLoading;
 
@@ -351,131 +320,92 @@ export function QuickActionPalette({
       // Enter confirms an IME composition rather than running a row.
       if (event.nativeEvent.isComposing) return;
       const active = results[safeActiveIndex];
-      if (event.shiftKey && active?.onDetails) active.onDetails();
-      else active?.action();
+      active?.action();
     }
   };
 
-  const showTitlesHeading = titleActions.length > 0 && !!normalizedQuery;
-
   return (
-    <>
-      <Dialog
-        isOpen={isOpen}
-        onClose={handleClose}
-        title={t("common.quickActions")}
-        panelClassName="max-w-3xl overflow-hidden p-0"
-      >
-        <div className="border-b px-5 py-4 border-neutral-700">
-          <div className="flex items-center gap-3 rounded-2xl border px-3 border-neutral-700 bg-neutral-900">
-            <Search className="h-4 w-4 text-neutral-400" />
-            <Input
-              ref={inputRef}
-              autoFocus
-              role="combobox"
-              aria-autocomplete="list"
-              aria-expanded={results.length > 0}
-              aria-controls={LISTBOX_ID}
-              aria-activedescendant={
-                results.length > 0
-                  ? `${LISTBOX_ID}-${safeActiveIndex}`
-                  : undefined
-              }
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setActiveIndex(0);
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder={t("common.quickActionsPlaceholder")}
-              className="border-0 bg-transparent! px-0 focus:ring-0"
-            />
-            <span className="hidden items-center rounded-lg border px-2 py-1 text-[11px] font-semibold text-neutral-400 border-neutral-700 sm:inline-flex">
-              ⌘K
-            </span>
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-3 text-xs text-neutral-400">
-            {normalizedQuery.length >= 2 ? (
-              <p>
-                <span className="hidden sm:inline">
-                  {t("common.quickActionsTitlesHint")}
-                </span>
-                <span className="sm:hidden">
-                  {t("common.quickActionsTitlesHintTouch")}
-                </span>
-              </p>
-            ) : (
-              <p>{t("common.quickActionsHint")}</p>
-            )}
-            <p className="hidden sm:block">{router.location.pathname}</p>
-          </div>
+    <Dialog
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={t("common.quickActions")}
+      panelClassName="max-w-3xl overflow-hidden p-0"
+    >
+      <div className="border-b px-5 py-4 border-neutral-700">
+        <div className="flex items-center gap-3 rounded-2xl border px-3 border-neutral-700 bg-neutral-900">
+          <Search className="h-4 w-4 text-neutral-400" />
+          <Input
+            ref={inputRef}
+            autoFocus
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={results.length > 0}
+            aria-controls={LISTBOX_ID}
+            aria-activedescendant={
+              results.length > 0
+                ? `${LISTBOX_ID}-${safeActiveIndex}`
+                : undefined
+            }
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setActiveIndex(0);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder={t("common.quickActionsPlaceholder")}
+            className="border-0 bg-transparent! px-0 focus:ring-0"
+          />
+          <span className="hidden items-center rounded-lg border px-2 py-1 text-[11px] font-semibold text-neutral-400 border-neutral-700 sm:inline-flex">
+            ⌘K
+          </span>
         </div>
+        <div className="mt-3 flex items-center justify-between gap-3 text-xs text-neutral-400">
+          <p>{t("common.quickActionsHint")}</p>
+          <p className="hidden sm:block">{router.location.pathname}</p>
+        </div>
+      </div>
 
-        <div className="max-h-[60dvh] overflow-y-auto p-3">
-          {(isSearchingTitles || isSearchingCollections) &&
-            results.length === 0 && (
-              <div className="px-3 pb-3 text-xs text-neutral-400">
-                {t("common.quickActionsSearchingTitles")}
-              </div>
-            )}
+      <div className="max-h-[60dvh] overflow-y-auto p-3">
+        {isSearchingCollections && results.length === 0 && (
+          <div className="px-3 pb-3 text-xs text-neutral-400">
+            {t("common.quickActionsSearching")}
+          </div>
+        )}
 
-          {titleSearchFailed && (
-            <p role="alert" className="px-3 pb-3 text-xs text-amber-300">
-              {t("common.quickActionsTitlesFailed")}
+        {results.length > 0 ? (
+          <div
+            id={LISTBOX_ID}
+            role="listbox"
+            aria-label={t("common.quickActions")}
+            className="space-y-1"
+          >
+            {results.map((action, index) => (
+              <QuickActionRow
+                key={action.id}
+                id={`${LISTBOX_ID}-${index}`}
+                action={action}
+                isActive={safeActiveIndex === index}
+                sectionLabel={
+                  normalizedQuery ? sectionLabels[action.section] : null
+                }
+                onHover={() => setActiveIndex(index)}
+              />
+            ))}
+          </div>
+        ) : isSearchingCollections ? null : (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-14 text-center border-neutral-700">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-800">
+              <Sparkles className="h-5 w-5 text-neutral-500" />
+            </div>
+            <p className="font-medium text-white">
+              {t("common.quickActionsNoResults")}
             </p>
-          )}
-
-          {results.length > 0 ? (
-            <div
-              id={LISTBOX_ID}
-              role="listbox"
-              aria-label={t("common.quickActions")}
-              className="space-y-1"
-            >
-              {results.map((action, index) => (
-                <QuickActionRow
-                  key={action.id}
-                  id={`${LISTBOX_ID}-${index}`}
-                  action={action}
-                  heading={
-                    showTitlesHeading && index === 0
-                      ? sectionLabels.titles
-                      : showTitlesHeading && index === titleActions.length
-                        ? sectionLabels.actions
-                        : null
-                  }
-                  isActive={safeActiveIndex === index}
-                  sectionLabel={
-                    normalizedQuery ? sectionLabels[action.section] : null
-                  }
-                  onHover={() => setActiveIndex(index)}
-                />
-              ))}
-            </div>
-          ) : isSearchingTitles ? null : (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-14 text-center border-neutral-700">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-800">
-                <Sparkles className="h-5 w-5 text-neutral-500" />
-              </div>
-              <p className="font-medium text-white">
-                {t("common.quickActionsNoResults")}
-              </p>
-              <p className="mt-1 text-sm text-neutral-400">
-                {t("common.quickActionsNoResultsDescription")}
-              </p>
-            </div>
-          )}
-        </div>
-      </Dialog>
-
-      {detailItem && (
-        <ExploreCardDetailDialog
-          item={detailItem}
-          isOpen
-          onClose={() => setDetailItem(null)}
-          onAdded={() => setDetailItem(null)}
-        />
-      )}
-    </>
+            <p className="mt-1 text-sm text-neutral-400">
+              {t("common.quickActionsNoResultsDescription")}
+            </p>
+          </div>
+        )}
+      </div>
+    </Dialog>
   );
 }

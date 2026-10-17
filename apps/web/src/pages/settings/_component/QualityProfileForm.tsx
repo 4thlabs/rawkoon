@@ -12,6 +12,7 @@ import {
 } from "@/pages/settings/useQualityProfiles";
 import type { QualityProfile } from "@rawkoon/shared/types";
 import { cn } from "@/lib/utils";
+import { AdvancedDisclosure } from "@/components/ui/advanced-disclosure";
 import { MultiSelect } from "./QualityProfileMultiSelect";
 import { SOURCE_OPTIONS } from "./qualityProfileSources";
 import { TrackerPrioritySection } from "./QualityProfileTrackerSection";
@@ -214,122 +215,125 @@ export function QualityProfileForm({
         </div>
       </div>
 
-      {/* One column on phones — the ranked lists are too tall to sit side by side. */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <MultiSelect
-          label={t("settings.qualityProfiles.preferredSources")}
-          placeholder={t("settings.qualityProfiles.selectSources")}
-          options={SOURCE_OPTIONS}
-          selected={form.preferred_sources}
-          onChange={(v) => set("preferred_sources", v)}
-          orderable
-          rankLabel={(i) => rankBonus(i, SOURCE_RANK_BASE, SOURCE_RANK_STEP)}
-        />
-        <MultiSelect
-          label={t("settings.qualityProfiles.preferredCodecs")}
-          placeholder={t("settings.qualityProfiles.selectCodecs")}
-          options={CODEC_OPTIONS}
-          selected={form.preferred_codecs}
-          onChange={(v) => set("preferred_codecs", v)}
-          orderable
-          rankLabel={(i) => rankBonus(i, CODEC_RANK_BASE, RANK_STEP)}
-        />
-      </div>
-
-      <MultiSelect
-        label={t("settings.qualityProfiles.preferredLanguages")}
-        placeholder={t("settings.qualityProfiles.selectLanguages")}
-        options={LANGUAGE_OPTIONS}
-        selected={form.preferred_languages}
-        onChange={(v) => set("preferred_languages", v)}
-        orderable
-        rankLabel={(i) => rankBonus(i, LANGUAGE_RANK_BASE, RANK_STEP)}
-      />
-
       <div className="flex flex-col gap-1.5">
-        <FieldLabel htmlFor="qp-preferred-search-language">
-          {t("settings.qualityProfiles.preferredSearchLanguage")}
-        </FieldLabel>
-        <select
-          id="qp-preferred-search-language"
-          className={selectClass}
-          value={form.preferred_search_language ?? ""}
-          onChange={(e) =>
-            set(
-              "preferred_search_language",
-              e.target.value === "" ? null : e.target.value,
-            )
-          }
-        >
-          <option value="">
-            {t(
-              "settings.qualityProfiles.preferredSearchLanguageDefault",
-              "English (default)",
-            )}
-          </option>
-          {SEARCH_TITLE_LANGUAGE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <FieldLabel>HDR</FieldLabel>
+        <div className="space-y-2 pt-0.5">
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <span
+              className={cn(
+                "flex h-4 w-4 items-center justify-center rounded border transition-colors",
+                form.prefer_hdr
+                  ? "text-white border-primary-400 bg-primary-400"
+                  : "border-neutral-600 group-hover:border-neutral-400",
+              )}
+            >
+              {form.prefer_hdr && <Check size={10} strokeWidth={3} />}
+            </span>
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={form.prefer_hdr}
+              onChange={(e) => set("prefer_hdr", e.target.checked)}
+            />
+            <span className="text-sm text-neutral-300">
+              {t("settings.qualityProfiles.preferHdr")}
+            </span>
+          </label>
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <span
+              className={cn(
+                "flex h-4 w-4 items-center justify-center rounded border transition-colors",
+                form.require_hdr
+                  ? "text-white border-primary-400 bg-primary-400"
+                  : "border-neutral-600 group-hover:border-neutral-400",
+              )}
+            >
+              {form.require_hdr && <Check size={10} strokeWidth={3} />}
+            </span>
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={form.require_hdr}
+              onChange={(e) => set("require_hdr", e.target.checked)}
+            />
+            <span className="text-sm text-neutral-300">
+              {t("settings.qualityProfiles.requireHdr")}
+            </span>
+          </label>
+        </div>
       </div>
 
-      <TrackerPrioritySection
-        trackers={form.prioritized_trackers}
-        preferOverQuality={form.prefer_tracker_over_quality}
-        onTrackersChange={(v) => set("prioritized_trackers", v)}
-        onPreferOverQualityChange={(v) => set("prefer_tracker_over_quality", v)}
-      />
-
-      <div className="grid grid-cols-2 gap-4 items-start">
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>HDR</FieldLabel>
-          <div className="space-y-2 pt-0.5">
-            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-              <span
-                className={cn(
-                  "flex h-4 w-4 items-center justify-center rounded border transition-colors",
-                  form.prefer_hdr
-                    ? "text-white border-primary-400 bg-primary-400"
-                    : "border-neutral-600 group-hover:border-neutral-400",
-                )}
-              >
-                {form.prefer_hdr && <Check size={10} strokeWidth={3} />}
-              </span>
-              <input
-                type="checkbox"
-                className="sr-only"
-                checked={form.prefer_hdr}
-                onChange={(e) => set("prefer_hdr", e.target.checked)}
-              />
-              <span className="text-sm text-neutral-300">
-                {t("settings.qualityProfiles.preferHdr")}
-              </span>
-            </label>
-            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-              <span
-                className={cn(
-                  "flex h-4 w-4 items-center justify-center rounded border transition-colors",
-                  form.require_hdr
-                    ? "text-white border-primary-400 bg-primary-400"
-                    : "border-neutral-600 group-hover:border-neutral-400",
-                )}
-              >
-                {form.require_hdr && <Check size={10} strokeWidth={3} />}
-              </span>
-              <input
-                type="checkbox"
-                className="sr-only"
-                checked={form.require_hdr}
-                onChange={(e) => set("require_hdr", e.target.checked)}
-              />
-              <span className="text-sm text-neutral-300">
-                {t("settings.qualityProfiles.requireHdr")}
-              </span>
-            </label>
-          </div>
+      <AdvancedDisclosure>
+        {/* One column on phones — the ranked lists are too tall to sit side by side. */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <MultiSelect
+            label={t("settings.qualityProfiles.preferredSources")}
+            placeholder={t("settings.qualityProfiles.selectSources")}
+            options={SOURCE_OPTIONS}
+            selected={form.preferred_sources}
+            onChange={(v) => set("preferred_sources", v)}
+            orderable
+            rankLabel={(i) => rankBonus(i, SOURCE_RANK_BASE, SOURCE_RANK_STEP)}
+          />
+          <MultiSelect
+            label={t("settings.qualityProfiles.preferredCodecs")}
+            placeholder={t("settings.qualityProfiles.selectCodecs")}
+            options={CODEC_OPTIONS}
+            selected={form.preferred_codecs}
+            onChange={(v) => set("preferred_codecs", v)}
+            orderable
+            rankLabel={(i) => rankBonus(i, CODEC_RANK_BASE, RANK_STEP)}
+          />
         </div>
+
+        <MultiSelect
+          label={t("settings.qualityProfiles.preferredLanguages")}
+          placeholder={t("settings.qualityProfiles.selectLanguages")}
+          options={LANGUAGE_OPTIONS}
+          selected={form.preferred_languages}
+          onChange={(v) => set("preferred_languages", v)}
+          orderable
+          rankLabel={(i) => rankBonus(i, LANGUAGE_RANK_BASE, RANK_STEP)}
+        />
+
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel htmlFor="qp-preferred-search-language">
+            {t("settings.qualityProfiles.preferredSearchLanguage")}
+          </FieldLabel>
+          <select
+            id="qp-preferred-search-language"
+            className={selectClass}
+            value={form.preferred_search_language ?? ""}
+            onChange={(e) =>
+              set(
+                "preferred_search_language",
+                e.target.value === "" ? null : e.target.value,
+              )
+            }
+          >
+            <option value="">
+              {t(
+                "settings.qualityProfiles.preferredSearchLanguageDefault",
+                "English (default)",
+              )}
+            </option>
+            {SEARCH_TITLE_LANGUAGE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <TrackerPrioritySection
+          trackers={form.prioritized_trackers}
+          preferOverQuality={form.prefer_tracker_over_quality}
+          onTrackersChange={(v) => set("prioritized_trackers", v)}
+          onPreferOverQualityChange={(v) =>
+            set("prefer_tracker_over_quality", v)
+          }
+        />
+
         <FormInput
           label={t("settings.qualityProfiles.maxSizeGb")}
           type="number"
@@ -344,55 +348,55 @@ export function QualityProfileForm({
           }
           placeholder={t("settings.qualityProfiles.maxSizeGbPlaceholder")}
         />
-      </div>
 
-      <FormInput
-        label={t("customFormats.minSeeders")}
-        type="number"
-        min="0"
-        value={form.min_seeders}
-        onChange={(e) => set("min_seeders", Number(e.target.value) || 0)}
-        placeholder={t("customFormats.minSeedersHelp")}
-      />
-
-      <FormInput
-        label={t("settings.qualityProfiles.grabDelayMinutes")}
-        type="number"
-        min="0"
-        max={43200}
-        // Empty shows the "0" placeholder, so the field can be cleared while typing.
-        value={form.grab_delay_minutes || ""}
-        onChange={(e) =>
-          set(
-            "grab_delay_minutes",
-            Math.min(43200, Math.max(0, Number(e.target.value) || 0)),
-          )
-        }
-        placeholder="0"
-      />
-      <p className="-mt-3 text-xs text-neutral-400">
-        {t("settings.qualityProfiles.grabDelayHelp")}
-      </p>
-      {form.grab_delay_minutes > 0 && (
-        <label className="flex items-center gap-2.5 cursor-pointer select-none text-sm text-neutral-200">
-          <input
-            type="checkbox"
-            checked={form.bypass_delay_if_cutoff_met}
-            onChange={(e) =>
-              set("bypass_delay_if_cutoff_met", e.target.checked)
-            }
-          />
-          {t("settings.qualityProfiles.bypassDelayIfCutoffMet")}
-        </label>
-      )}
-
-      <div className="flex flex-col gap-1.5">
-        <FieldLabel>{t("customFormats.title")}</FieldLabel>
-        <CustomFormatAssignmentEditor
-          value={form.custom_formats}
-          onChange={(v) => set("custom_formats", v)}
+        <FormInput
+          label={t("customFormats.minSeeders")}
+          type="number"
+          min="0"
+          value={form.min_seeders}
+          onChange={(e) => set("min_seeders", Number(e.target.value) || 0)}
+          placeholder={t("customFormats.minSeedersHelp")}
         />
-      </div>
+
+        <FormInput
+          label={t("settings.qualityProfiles.grabDelayMinutes")}
+          type="number"
+          min="0"
+          max={43200}
+          // Empty shows the "0" placeholder, so the field can be cleared while typing.
+          value={form.grab_delay_minutes || ""}
+          onChange={(e) =>
+            set(
+              "grab_delay_minutes",
+              Math.min(43200, Math.max(0, Number(e.target.value) || 0)),
+            )
+          }
+          placeholder="0"
+        />
+        <p className="-mt-3 text-xs text-neutral-400">
+          {t("settings.qualityProfiles.grabDelayHelp")}
+        </p>
+        {form.grab_delay_minutes > 0 && (
+          <label className="flex items-center gap-2.5 cursor-pointer select-none text-sm text-neutral-200">
+            <input
+              type="checkbox"
+              checked={form.bypass_delay_if_cutoff_met}
+              onChange={(e) =>
+                set("bypass_delay_if_cutoff_met", e.target.checked)
+              }
+            />
+            {t("settings.qualityProfiles.bypassDelayIfCutoffMet")}
+          </label>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>{t("customFormats.title")}</FieldLabel>
+          <CustomFormatAssignmentEditor
+            value={form.custom_formats}
+            onChange={(v) => set("custom_formats", v)}
+          />
+        </div>
+      </AdvancedDisclosure>
 
       <div className="flex items-center gap-2 pt-1 border-t border-neutral-700/60">
         <Button type="submit" disabled={busy}>

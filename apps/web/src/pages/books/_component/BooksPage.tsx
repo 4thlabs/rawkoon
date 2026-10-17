@@ -28,6 +28,7 @@ import {
 } from "@/features/player/usePlayback";
 import { PageLayout } from "@/components/PageLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { LibrarySwitch } from "@/pages/medias/_component/LibrarySwitch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useBooks } from "../_hooks/useBooks";
@@ -269,6 +270,7 @@ export function BooksPage() {
 
   return (
     <PageLayout>
+      <LibrarySwitch active="books" />
       <PageHeader
         icon={Library}
         title={t("books.title")}
@@ -285,7 +287,7 @@ export function BooksPage() {
                 asChild, so the prop reached the DOM and the anchor's icon and
                 label stacked on top of each other. */}
             <Link
-              to="/books/explore"
+              to="/find/bestsellers"
               className="focus-ring inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-lg bg-neutral-800 px-4 text-sm font-medium text-neutral-100 transition-colors hover:bg-neutral-700"
             >
               <Trophy className="h-4 w-4" />

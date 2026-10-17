@@ -64,25 +64,32 @@ nonisolated struct UpsertSeedRuleBody: Encodable, Sendable {
     }
 }
 
-/// Sharing subset of the shared post-processing row. Ratio-only, like the web
-/// screen: saving clears both seed-time targets. `minSeedRatio` 0 is the public
-/// "no ratio target".
+/// Sharing subset of the shared post-processing row: each target is a ratio, a time, or both
+/// (whichever comes first), plus the download-safety settings. `minSeedRatio` 0 is the public
+/// "no ratio target"; an explicit JSON null clears a time or private-ratio target.
 nonisolated struct UpdateSeedSettingsBody: Encodable, Sendable {
     var seedSweepEnabled: Bool
     var minSeedRatio: Double
+    var publicSeedTimeMins: Int?
     var privateSeedRatio: Double?
+    var privateSeedTimeMins: Int?
+    var blockedExtensions: [String]
+    var minFreeSpaceGb: Int?
 
     enum CodingKeys: String, CodingKey {
         case seedSweepEnabled, minSeedRatio, publicSeedTimeMins, privateSeedRatio, privateSeedTimeMins
+        case blockedExtensions, minFreeSpaceGb
     }
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(seedSweepEnabled, forKey: .seedSweepEnabled)
         try c.encode(minSeedRatio, forKey: .minSeedRatio)
-        try c.encode(Int?.none, forKey: .publicSeedTimeMins)
+        try c.encode(publicSeedTimeMins, forKey: .publicSeedTimeMins)
         try c.encode(privateSeedRatio, forKey: .privateSeedRatio)
-        try c.encode(Int?.none, forKey: .privateSeedTimeMins)
+        try c.encode(privateSeedTimeMins, forKey: .privateSeedTimeMins)
+        try c.encode(blockedExtensions, forKey: .blockedExtensions)
+        try c.encodeIfPresent(minFreeSpaceGb, forKey: .minFreeSpaceGb)
     }
 }
 

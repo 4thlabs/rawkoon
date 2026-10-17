@@ -86,6 +86,7 @@ describe("useNotificationStream", () => {
       expect.objectContaining({ id: 99, title: "Hi", body: "There" }),
     );
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["notifications"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["requests"] });
   });
 
   it("ignores the connected handshake", () => {

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -16,7 +15,6 @@ import { getDeviceInfo } from "@/lib/device";
 import { useAuth } from "@/lib/auth/useAuth";
 import { NotificationChannelsSection } from "@/pages/settings/_component/NotificationChannelsSection";
 import { NotificationPreferencesSection } from "@/pages/settings/_component/NotificationPreferencesSection";
-import { SettingsPageHeader } from "@/pages/settings/_component/SettingsPageHeader";
 import { useConfirm } from "@/components/confirm/ConfirmContext";
 
 export function NotificationsTab() {
@@ -224,11 +222,6 @@ export function NotificationsTab() {
       className="animate-in fade-in slide-in-from-right-4 duration-300"
       key="notifications-tab"
     >
-      <SettingsPageHeader
-        icon={Bell}
-        title={t("settings.notifications.title")}
-        description={t("settings.notifications.description")}
-      />
       <div className="bg-neutral-800 rounded-xl border border-neutral-700 p-6">
         {!isSupported ? (
           <div className="p-4 bg-yellow-900/20 text-yellow-200 rounded-lg">

@@ -30,6 +30,7 @@ interface SegmentedTabsProps<T extends string> {
   inactiveBadgeClassName?: string;
   ariaLabel?: string;
   fullWidth?: boolean;
+  disabled?: boolean;
 }
 
 function TabIcon({
@@ -98,6 +99,7 @@ export function SegmentedTabs<T extends string>({
   inactiveBadgeClassName,
   ariaLabel,
   fullWidth = false,
+  disabled = false,
 }: SegmentedTabsProps<T>) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const activeItemRef = useRef<HTMLButtonElement | null>(null);
@@ -143,6 +145,7 @@ export function SegmentedTabs<T extends string>({
                 type="button"
                 role="tab"
                 aria-selected={isActive}
+                disabled={disabled}
                 onClick={() => onChange(item.id)}
                 ref={isActive ? activeItemRef : undefined}
                 className={cn(
@@ -210,6 +213,7 @@ export function SegmentedTabs<T extends string>({
               type="button"
               role="tab"
               aria-selected={isActive}
+              disabled={disabled}
               onClick={() => onChange(item.id)}
               ref={isActive ? activeItemRef : undefined}
               className={cn(

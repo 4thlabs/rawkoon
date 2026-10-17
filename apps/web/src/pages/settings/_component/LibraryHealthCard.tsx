@@ -187,7 +187,7 @@ function OrphanHealthRow() {
         </p>
       </div>
       <a
-        href="/library/downloads?view=orphans"
+        href="/settings/downloads?view=orphans"
         className="text-sm text-primary-400 underline underline-offset-2"
       >
         {t("orphans.health.action")}

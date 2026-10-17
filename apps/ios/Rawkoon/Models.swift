@@ -247,3 +247,52 @@ nonisolated struct SeasonSummary: Decodable, Hashable, Sendable {
     let name: String
     let episodeCount: Int?
 }
+
+// MARK: - Quick search (library)
+
+nonisolated struct QuickSearchMedia: Decodable, Identifiable, Hashable, Sendable {
+    let id: Int
+    let title: String
+    let type: String // "movie" | "show"
+    let year: Int?
+    let status: String
+}
+
+nonisolated struct QuickSearchBook: Decodable, Identifiable, Hashable, Sendable {
+    let id: Int
+    let title: String
+    let authors: [String]
+    let year: Int?
+}
+
+/// `GET /api/search/quick`: what the library holds for a query. Users are ignored here.
+nonisolated struct QuickSearchResponse: Decodable, Sendable {
+    let medias: [QuickSearchMedia]
+    let books: [QuickSearchBook]
+}
+
+// MARK: - Missing collections
+
+nonisolated struct CollectionMovie: Decodable, Identifiable, Hashable, Sendable {
+    let id: String
+    let tmdbId: Int
+    let title: String
+    let releaseYear: Int?
+    let posterUrl: String?
+    let alreadyExists: Bool
+}
+
+nonisolated struct MediaCollection: Decodable, Identifiable, Hashable, Sendable {
+    let id: Int
+    let name: String
+    let posterUrl: String?
+    let movies: [CollectionMovie]
+    let ownedCount: Int
+    let totalCount: Int
+    let missingCount: Int
+}
+
+/// `GET /api/medias/collections/missing`: franchises the library holds some of but not all.
+nonisolated struct MissingCollectionsResponse: Decodable, Sendable {
+    let collections: [MediaCollection]
+}

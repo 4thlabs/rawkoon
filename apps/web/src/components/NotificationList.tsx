@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { useDeleteNotification } from "@/lib/notifications/useDeleteNotification";
 import { useMarkAsReadOptimistic } from "@/lib/notifications/useMarkAsReadOptimistic";
 import type { Notification } from "@rawkoon/shared/types";
@@ -9,6 +10,9 @@ import { cn } from "@/lib/utils";
 import { NotificationLeadingVisual } from "@/components/NotificationLeadingVisual";
 import { openNotificationTarget } from "@/lib/notifications/navigation";
 import { useConfirm } from "@/components/confirm/ConfirmContext";
+import { useCurrentUser } from "@/lib/auth/useAuth";
+import { inlineActionFor } from "@/lib/notifications/notificationActions";
+import { useSearchAgain } from "@/lib/notifications/useSearchAgain";
 
 interface NotificationListProps {
   notifications: Notification[];
@@ -25,6 +29,9 @@ export function NotificationList({
   const { confirm } = useConfirm();
   const markAsReadMutation = useMarkAsReadOptimistic();
   const deleteMutation = useDeleteNotification();
+  const navigate = useNavigate();
+  const isAdmin = useCurrentUser().data?.is_admin === true;
+  const searchAgain = useSearchAgain();
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
@@ -48,6 +55,21 @@ export function NotificationList({
     });
   };
 
+  const handleInlineAction = (
+    e: MouseEvent<HTMLButtonElement>,
+    notification: Notification,
+  ) => {
+    e.stopPropagation();
+    const action = inlineActionFor(notification, isAdmin);
+    if (!action) return;
+    if (!notification.read) markAsReadMutation.mutate(notification.id);
+    if (action.kind === "reviewRequest") {
+      void navigate({ to: "/activity/requests" });
+      return;
+    }
+    searchAgain.mutate(action);
+  };
+
   if (!notifications || notifications.length === 0) {
     return (
       <div className="text-center py-8 text-neutral-400">
@@ -58,88 +80,116 @@ export function NotificationList({
 
   return (
     <div className="w-full space-y-2">
-      {notifications.map((notification) => (
-        <div
-          key={notification.id}
-          role="button"
-          tabIndex={0}
-          aria-label={t("a11y.openNotification")}
-          onClick={() => handleNotificationClick(notification)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              void handleNotificationClick(notification);
-            }
-          }}
-          className={cn(
-            "relative p-4 rounded-lg border cursor-pointer transition-colors",
-            notification.read
-              ? "bg-neutral-800 border-neutral-700 hover:bg-neutral-700/80"
-              : "bg-primary-500/10 border-primary-800 hover:bg-primary-500/20",
-          )}
-        >
-          <div className="flex items-start gap-4">
-            {/* Poster thumbnail when present, else type icon */}
-            <div className="mt-1">
-              <NotificationLeadingVisual
-                type={notification.type}
-                metadata={notification.metadata}
-                imageUrl={notification.image_url}
-                size="md"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start gap-2">
-                <div className="flex-1">
-                  <h4
-                    className={cn(
-                      "text-sm font-medium",
-                      notification.read
-                        ? "text-neutral-100"
-                        : "text-neutral-100 font-semibold",
-                    )}
-                  >
-                    {notification.title}
-                  </h4>
-                  <p
-                    className={cn(
-                      "text-sm mt-1",
-                      !notification.read
-                        ? "text-neutral-300"
-                        : "text-neutral-400",
-                    )}
-                  >
-                    {notification.body}
-                  </p>
-                  <p
-                    className={cn(
-                      "text-xs mt-2",
-                      !notification.read
-                        ? "text-neutral-400"
-                        : "text-neutral-500",
-                    )}
-                  >
-                    {formatDate(notification.created_at, i18n.language || "en")}{" "}
-                    {formatTime(notification.created_at, i18n.language || "en")}
-                  </p>
-                </div>
-                {!notification.read && (
-                  <div className="absolute top-[10px] right-[10px]">
-                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                  </div>
-                )}
+      {notifications.map((notification) => {
+        const inlineAction = inlineActionFor(notification, isAdmin);
+        return (
+          <div
+            key={notification.id}
+            role="button"
+            tabIndex={0}
+            aria-label={t("a11y.openNotification")}
+            onClick={() => handleNotificationClick(notification)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                void handleNotificationClick(notification);
+              }
+            }}
+            className={cn(
+              "relative p-4 rounded-lg border cursor-pointer transition-colors",
+              notification.read
+                ? "bg-neutral-800 border-neutral-700 hover:bg-neutral-700/80"
+                : "bg-primary-500/10 border-primary-800 hover:bg-primary-500/20",
+            )}
+          >
+            <div className="flex items-start gap-4">
+              {/* Poster thumbnail when present, else type icon */}
+              <div className="mt-1">
+                <NotificationLeadingVisual
+                  type={notification.type}
+                  metadata={notification.metadata}
+                  imageUrl={notification.image_url}
+                  size="md"
+                />
               </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1">
+                    <h4
+                      className={cn(
+                        "text-sm font-medium",
+                        notification.read
+                          ? "text-neutral-100"
+                          : "text-neutral-100 font-semibold",
+                      )}
+                    >
+                      {notification.title}
+                    </h4>
+                    <p
+                      className={cn(
+                        "text-sm mt-1",
+                        !notification.read
+                          ? "text-neutral-300"
+                          : "text-neutral-400",
+                      )}
+                    >
+                      {notification.body}
+                    </p>
+                    <p
+                      className={cn(
+                        "text-xs mt-2",
+                        !notification.read
+                          ? "text-neutral-400"
+                          : "text-neutral-500",
+                      )}
+                    >
+                      {formatDate(
+                        notification.created_at,
+                        i18n.language || "en",
+                      )}{" "}
+                      {formatTime(
+                        notification.created_at,
+                        i18n.language || "en",
+                      )}
+                    </p>
+                    {inlineAction && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleInlineAction(e, notification)}
+                        disabled={
+                          inlineAction.kind === "searchAgain" &&
+                          searchAgain.isPending
+                        }
+                        className="focus-ring mt-3 inline-flex items-center gap-1.5 rounded-lg border border-primary-600/60 bg-primary-600/15 px-3 py-1.5 text-xs font-semibold text-primary-300 hover:bg-primary-600/25 disabled:opacity-50"
+                      >
+                        {inlineAction.kind === "searchAgain" &&
+                          searchAgain.isPending && (
+                            <Loader2 size={12} className="animate-spin" />
+                          )}
+                        {inlineAction.kind === "searchAgain"
+                          ? t("notifications.searchAgain")
+                          : t("notifications.review")}
+                      </button>
+                    )}
+                  </div>
+                  {!notification.read && (
+                    <div className="absolute top-[10px] right-[10px]">
+                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={(e) => handleDelete(e, notification.id)}
+                className="flex justify-center items-center ml-2 p-1 text-neutral-400 hover:text-red-400 transition-colors"
+                aria-label={t("notifications.delete")}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
-            <button
-              onClick={(e) => handleDelete(e, notification.id)}
-              className="flex justify-center items-center ml-2 p-1 text-neutral-400 hover:text-red-400 transition-colors"
-              aria-label={t("notifications.delete")}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {hasMore && onLoadMore && (
         <div className="text-center pt-4">
           <button

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Check, Send } from "lucide-react";
-import { useCreateRequest } from "@/pages/requests/_hooks/useRequests";
+import { useCreateRequest } from "@/pages/activity/requests/_hooks/useRequests";
 
 interface Props {
   media: {

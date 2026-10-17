@@ -78,10 +78,4 @@ extension AppModel {
         requestPushAuthorization()
         return added
     }
-
-    /// Opens Explore with its search field focused, from anywhere.
-    func openExploreSearch() {
-        exploreSearchFocusRequest = true
-        requestedRootTab = .explore
-    }
 }

@@ -7,19 +7,19 @@ extension RootTab {
         case .home: "house"
         case .library: "film.stack"
         case .books: "books.vertical"
-        case .discover: "sparkles.rectangle.stack"
-        case .explore: "square.grid.2x2"
-        case .notifications: "bell"
+        case .find: "magnifyingglass"
         case .settings: "gearshape"
-        case .activity: "arrow.down.circle"
-        case .requests: "tray.and.arrow.down"
-        case .watchlist: "bookmark"
+        case .activity: "tray.full"
         case .server: "server.rack"
         }
     }
 
     var selectedSymbol: String {
-        self == .settings ? symbol : symbol + ".fill"
+        switch self {
+        // These symbols have no .fill variant, so the selected slot would render blank.
+        case .settings, .find, .server: symbol
+        default: symbol + ".fill"
+        }
     }
 
     var title: LocalizedStringKey {
@@ -27,13 +27,9 @@ extension RootTab {
         case .home: "Home"
         case .library: "Media"
         case .books: "Books"
-        case .discover: "Discover"
-        case .explore: "Explore"
-        case .notifications: "Notifications"
+        case .find: "Find"
         case .settings: "Settings"
         case .activity: "Activity"
-        case .requests: "Requests"
-        case .watchlist: "Watchlist"
         case .server: "Server"
         }
     }

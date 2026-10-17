@@ -1,3 +1,4 @@
+import { APP_PATHS } from "@rawkoon/shared/constants";
 import { prisma } from "@rawkoon/api/db";
 import { loadConfig } from "@rawkoon/api/config";
 import { getJsonCache, setJsonCache } from "@rawkoon/api/services/cache";
@@ -167,7 +168,7 @@ async function notifyAdminsForNewReleases(
         title,
         body,
         "github-release",
-        "/settings?tab=releases",
+        APP_PATHS.settingsUpdates,
         {
           current_version: getAppVersion(),
           releases: releasesAheadOfCurrentVersion.map((release) => ({

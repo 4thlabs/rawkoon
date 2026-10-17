@@ -1,22 +1,32 @@
 import RawkoonKit
 import SwiftUI
 
-/// Prowlarr / Jackett integration (admin). One view, two kinds. `GET/PUT
-/// /api/integrations/{kind}` + `GET .../indexers` for the RSS multiselect (which
-/// returns data only once the manager is enabled and saved).
-struct IndexerManagerIntegrationView: View {
-    enum Kind {
-        case prowlarr, jackett
-        var path: String {
-            self == .prowlarr ? "prowlarr" : "jackett"
-        }
-
-        var title: LocalizedStringKey {
-            self == .prowlarr ? "Prowlarr" : "Jackett"
-        }
+/// The two indexer managers Rawkoon can search through.
+enum IndexerManagerKind: CaseIterable, Hashable {
+    case prowlarr, jackett
+    var path: String {
+        self == .prowlarr ? "prowlarr" : "jackett"
     }
 
-    let kind: Kind
+    var title: LocalizedStringKey {
+        self == .prowlarr ? "Prowlarr" : "Jackett"
+    }
+
+    /// The manager's name as plain text, for sentences.
+    var localizedName: LocalizedStringResource {
+        self == .prowlarr ? "Prowlarr" : "Jackett"
+    }
+}
+
+/// Prowlarr / Jackett integration (admin), shown under the switch on the Indexers screen. One view, two kinds. `GET/PUT
+/// /api/integrations/{kind}` + `GET .../indexers` for the RSS multiselect (which
+/// returns data only once the manager is enabled and saved).
+struct IndexerManagerIntegrationView<Extra: View>: View {
+    let kind: IndexerManagerKind
+    /// Called after a successful save with whether the connection is enabled.
+    var onSaved: (Bool) -> Void = { _ in }
+    /// More sections the host adds under the manager's own (the list of indexers it serves).
+    @ViewBuilder var extraSections: () -> Extra
     @Environment(AppModel.self) private var model
 
     @State private var loading = true
@@ -55,8 +65,6 @@ struct IndexerManagerIntegrationView: View {
                 form
             }
         }
-        .navigationTitle(kind.title)
-        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var form: some View {
@@ -79,6 +87,7 @@ struct IndexerManagerIntegrationView: View {
                 } header: {
                     Text("RSS indexers")
                 }
+                extraSections()
                 if let saveError {
                     Section { Text(saveError).foregroundStyle(Theme.terracotta) }
                         .listRowBackground(Theme.raised)
@@ -144,6 +153,7 @@ struct IndexerManagerIntegrationView: View {
             apiKeyInput = ""
             loaded = current
             await loadIndexerOptions()
+            onSaved(enabled)
         } catch {
             saveError = settingsErrorMessage(error)
         }

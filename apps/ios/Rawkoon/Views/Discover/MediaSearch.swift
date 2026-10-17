@@ -1,59 +1,18 @@
 import RawkoonKit
 import SwiftUI
 
-/// The movies, shows and books search shown on Explore. The field sits above
-/// the grid; two or more characters swap the grid for `MediaSearchResults`.
-struct MediaSearchField: View {
-    @Binding var query: String
-    var focus: FocusState<Bool>.Binding?
-
-    @FocusState private var unusedFocus: Bool
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(Theme.muted)
-            TextField("Search movies, shows & books", text: $query)
-                .focused(focus ?? $unusedFocus)
-                .foregroundStyle(Theme.text)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-            if !query.isEmpty {
-                Button {
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(Theme.faint)
-                        // A 44pt hit area without growing the field.
-                        .padding(12)
-                        .contentShape(Rectangle())
-                        .padding(-12)
-                }
-                .accessibilityLabel("Clear")
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Theme.inset, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border, lineWidth: 1))
-        .padding(.horizontal, 16)
-    }
-
-    /// Short queries keep showing the grid instead of a noisy result list.
-    static func isActive(_ query: String) -> Bool {
-        query.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2
-    }
-}
-
-struct MediaSearchResults: View {
+/// Find's answers to one query, in three groups: your library, TMDB titles, then books.
+struct FindSearchResults: View {
     @Environment(AppModel.self) private var model
 
     let query: String
 
-    @State private var kindFilter: KindFilter = .all
+    @State private var libraryResults: QuickSearchResponse?
     @State private var searchResults: [TmdbSearchItem] = []
     @State private var bookResults: [BookSearchHit] = []
     @State private var loadingSearch = false
+    /// Bumped per search, so a slower, superseded one can't clear the loading flag of the newer one.
+    @State private var searchGeneration = 0
     @State private var searchError: String?
     @State private var addingVolumeId: String?
     @State private var requestingVolumeId: String?
@@ -65,85 +24,56 @@ struct MediaSearchResults: View {
     /// Volumes requested this session, so the row flips before (or without) a server echo.
     @State private var requestedVolumeIds: Set<String> = []
     /// What the results on screen were searched for.
-    @State private var resultsKey: SearchKey?
-
-    private enum KindFilter: String, CaseIterable {
-        case all = "All"
-        case movies = "Movies"
-        case tv = "TV"
-        case books = "Books"
-
-        var apiValue: String? {
-            switch self {
-            case .all: nil
-            case .movies: "movie"
-            case .tv: "tv"
-            case .books: nil
-            }
-        }
-
-        var title: LocalizedStringKey {
-            switch self {
-            case .all: "All"
-            case .movies: "Movies"
-            case .tv: "TV"
-            case .books: "Books"
-            }
-        }
-
-        var includesMoviesAndTV: Bool {
-            self != .books
-        }
-
-        var includesBooks: Bool {
-            self == .all || self == .books
-        }
-    }
+    @State private var resultsKey: String?
 
     private var trimmedQuery: String {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private struct SearchKey: Equatable {
-        let query: String
-        let kind: KindFilter
-    }
-
     /// The task key: the connection is part of it so the search runs again once it's back.
     private struct SearchTrigger: Equatable {
-        let key: SearchKey
+        let query: String
         let offline: Bool
+        let booksEnabled: Bool
+    }
+
+    private var libraryMedias: [QuickSearchMedia] {
+        libraryResults?.medias ?? []
+    }
+
+    private var libraryBooks: [QuickSearchBook] {
+        model.booksEnabled ? libraryResults?.books ?? [] : []
+    }
+
+    private var hasLibraryHits: Bool {
+        !libraryMedias.isEmpty || !libraryBooks.isEmpty
+    }
+
+    /// The answer for this query hasn't arrived: still in the debounce, or searching with nothing else to show.
+    private var showsSkeleton: Bool {
+        !model.isOffline && resultsKey != trimmedQuery && (loadingSearch || hasNoResults)
+    }
+
+    private var hasNoResults: Bool {
+        !hasLibraryHits && searchResults.isEmpty && bookResults.isEmpty
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            kindPicker
-            searchContent
-        }
-        .rawkoonMotion(RawkoonMotion.spring, value: loadingSearch)
-        // Debounced; a new key cancels the pending search before it runs.
-        .task(id: SearchTrigger(key: SearchKey(query: trimmedQuery, kind: kindFilter), offline: model.isOffline)) {
-            try? await Task.sleep(for: .milliseconds(300))
-            guard !Task.isCancelled else { return }
-            await runSearch(query: trimmedQuery, kind: kindFilter)
-        }
-    }
-
-    private var kindPicker: some View {
-        Picker("Kind", selection: $kindFilter) {
-            ForEach(KindFilter.allCases, id: \.self) { kind in
-                Text(kind.title).tag(kind)
+        searchContent
+            .rawkoonMotion(RawkoonMotion.spring, value: loadingSearch)
+            // Debounced; a new key cancels the pending search before it runs.
+            .task(id: SearchTrigger(query: trimmedQuery, offline: model.isOffline, booksEnabled: model.booksEnabled)) {
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+                await runSearch(query: trimmedQuery)
             }
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, 16)
     }
 
     // MARK: Search results
 
     @ViewBuilder
     private var searchContent: some View {
-        if loadingSearch {
+        if showsSkeleton {
             VStack(spacing: 10) {
                 ForEach(0 ..< 5, id: \.self) { _ in
                     ShimmerView(cornerRadius: 14).frame(height: 120)
@@ -152,7 +82,7 @@ struct MediaSearchResults: View {
             .padding(.horizontal, 16)
             .allowsHitTesting(false)
             .transition(.rawkoonSwap)
-        } else if model.isOffline, searchResults.isEmpty, bookResults.isEmpty {
+        } else if model.isOffline, hasNoResults {
             ContentUnavailableView(
                 "You're offline",
                 systemImage: "wifi.slash",
@@ -161,7 +91,7 @@ struct MediaSearchResults: View {
             .rawkoonLivingSymbol(.error)
             .padding(.top, 16)
             .transition(.rawkoonSwap)
-        } else if let searchError {
+        } else if let searchError, hasNoResults {
             ContentUnavailableView(
                 "Search failed",
                 systemImage: "wifi.slash",
@@ -170,7 +100,7 @@ struct MediaSearchResults: View {
             .rawkoonLivingSymbol(.error)
             .padding(.top, 16)
             .transition(.rawkoonSwap)
-        } else if searchResults.isEmpty, bookResults.isEmpty {
+        } else if hasNoResults {
             ContentUnavailableView(
                 "Nothing to show yet",
                 systemImage: "magnifyingglass",
@@ -181,41 +111,112 @@ struct MediaSearchResults: View {
             .transition(.rawkoonSwap)
         } else {
             VStack(alignment: .leading, spacing: 20) {
-                if !bookResults.isEmpty {
-                    Text("Books")
-                        .font(.sectionTitle)
-                        .foregroundStyle(Theme.textStrong)
-                        .padding(.horizontal, 16)
-                    ForEach(bookResults) { hit in
-                        bookSearchRow(hit)
-                            .padding(.horizontal, 16)
-                    }
-                }
-                if !searchResults.isEmpty {
-                    if !bookResults.isEmpty {
-                        Text("Movies & TV")
-                            .font(.sectionTitle)
-                            .foregroundStyle(Theme.textStrong)
-                            .padding(.horizontal, 16)
-                    }
-                    LazyVStack(spacing: 10) {
-                        ForEach(searchResults) { item in
-                            SearchTitleRow(
-                                item: item,
-                                action: resultAction(for: item),
-                                busy: addingTitleIds.contains(item.id),
-                                libraryId: addedLibraryIds[item.id],
-                                onAdd: { mode in Task { await addTitle(item, mode: mode) } }
-                            )
-                            .rawkoonEntrance(id: item.id)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .rawkoonEntranceScope()
+                ForEach(FindResultGroup.visible(booksEnabled: model.booksEnabled), id: \.self) { group in
+                    groupSection(group)
                 }
             }
             .transition(.rawkoonSwap)
         }
+    }
+
+    @ViewBuilder
+    private func groupSection(_ group: FindResultGroup) -> some View {
+        switch group {
+        case .library where hasLibraryHits:
+            sectionHeader("In your library")
+            VStack(spacing: 10) {
+                ForEach(libraryMedias) { media in
+                    libraryRow(
+                        title: media.title,
+                        detail: libraryDetail(media),
+                        systemImage: media.type == "show" ? "tv" : "film",
+                        destination: .media(libraryId: media.id, season: nil, episode: nil, focusManagement: false)
+                    )
+                }
+                ForEach(libraryBooks) { book in
+                    libraryRow(
+                        title: book.title,
+                        detail: book.authors.joined(separator: ", "),
+                        systemImage: "book",
+                        destination: .book(bookId: book.id)
+                    )
+                }
+            }
+            .padding(.horizontal, 16)
+        case .titles where !searchResults.isEmpty:
+            sectionHeader("Titles")
+            LazyVStack(spacing: 10) {
+                ForEach(searchResults) { item in
+                    SearchTitleRow(
+                        item: item,
+                        action: resultAction(for: item),
+                        busy: addingTitleIds.contains(item.id),
+                        libraryId: addedLibraryIds[item.id],
+                        onAdd: { mode in Task { await addTitle(item, mode: mode) } }
+                    )
+                    .rawkoonEntrance(id: item.id)
+                }
+            }
+            .padding(.horizontal, 16)
+            .rawkoonEntranceScope()
+        case .books where !bookResults.isEmpty:
+            sectionHeader("Books")
+            ForEach(bookResults) { hit in
+                bookSearchRow(hit)
+                    .padding(.horizontal, 16)
+            }
+        default:
+            EmptyView()
+        }
+    }
+
+    private func sectionHeader(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .font(.sectionTitle)
+            .foregroundStyle(Theme.textStrong)
+            .padding(.horizontal, 16)
+    }
+
+    private func libraryDetail(_ media: QuickSearchMedia) -> String {
+        let kind = media.type == "show" ? String(localized: "Show") : String(localized: "Movie")
+        guard let year = media.year else { return kind }
+        return "\(year) \u{00B7} \(kind)"
+    }
+
+    private func libraryRow(
+        title: String, detail: String, systemImage: String, destination: NotificationDestination
+    ) -> some View {
+        NavigationLink {
+            NotificationDestinationView(destination: destination)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Theme.muted)
+                    .frame(width: 32)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: title)
+                        .font(.display(16))
+                        .foregroundStyle(Theme.textStrong)
+                        .lineLimit(2)
+                    if !detail.isEmpty {
+                        Text(verbatim: detail)
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.muted)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.faint)
+            }
+            .padding(12)
+            .frame(minHeight: 56)
+            .background(Theme.raised, in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.border, lineWidth: 1))
+        }
+        .buttonStyle(.rawkoonPressable(scale: 0.98))
     }
 
     @ViewBuilder
@@ -319,10 +320,11 @@ struct MediaSearchResults: View {
 
     // MARK: Search data
 
-    private func runSearch(query: String, kind: KindFilter) async {
-        // Searching offline would only fail; results for another query or kind go.
+    private func runSearch(query: String) async {
+        // Searching offline would only fail; results for another query go.
         guard !model.isOffline else {
-            if resultsKey != SearchKey(query: query, kind: kind) {
+            if resultsKey != query {
+                libraryResults = nil
                 searchResults = []
                 bookResults = []
                 resultsKey = nil
@@ -330,52 +332,55 @@ struct MediaSearchResults: View {
             searchError = nil
             return
         }
+        searchGeneration += 1
+        let generation = searchGeneration
         loadingSearch = true
         searchError = nil
-        defer { loadingSearch = false }
+        defer {
+            if generation == searchGeneration {
+                loadingSearch = false
+            }
+        }
 
         guard let client = model.api() else {
             searchError = String(localized: "Not signed in.")
             return
         }
 
-        var tmdb: [TmdbSearchItem] = []
-        var books: [BookSearchHit] = []
-        var firstError: String?
+        let withBooks = model.booksEnabled
+        async let library = Self.attempt { try await client.quickSearch(q: query) }
+        async let titles = Self.attempt { try await client.tmdbSearch(q: query).items }
+        async let books: Attempt<[BookSearchHit]> = withBooks
+            ? Self.attempt { try await client.bookSearch(q: query).results }
+            : Attempt(value: [], error: nil)
+        let (libraryOutcome, titlesOutcome, booksOutcome) = await (library, titles, books)
+        guard !Task.isCancelled else { return }
 
-        if kind.includesMoviesAndTV {
-            do {
-                tmdb = try await client.tmdbSearch(q: query, kind: kind.apiValue).items
-            } catch let error as APIError {
-                firstError = message(for: error)
-            } catch {
-                firstError = String(localized: "Can't reach the server. Try again in a moment.")
-            }
-            guard !Task.isCancelled else { return }
-        }
+        libraryResults = libraryOutcome.value
+        searchResults = titlesOutcome.value ?? []
+        bookResults = booksOutcome.value ?? []
+        resultsKey = query
+        // Only a search that found nothing reports why; a partial answer still shows.
+        searchError = hasNoResults
+            ? [libraryOutcome.error, titlesOutcome.error, booksOutcome.error].compactMap(\.self).first
+            : nil
+    }
 
-        if kind.includesBooks {
-            do {
-                books = try await client.bookSearch(q: query).results
-            } catch let error as APIError {
-                if firstError == nil {
-                    firstError = message(for: error)
-                }
-            } catch {
-                if firstError == nil {
-                    firstError = String(localized: "Can't reach the server. Try again in a moment.")
-                }
-            }
-            guard !Task.isCancelled else { return }
-        }
+    /// One group's outcome, so a failing group never blanks the others.
+    private nonisolated struct Attempt<Value: Sendable>: Sendable {
+        let value: Value?
+        let error: String?
+    }
 
-        searchResults = tmdb
-        bookResults = books
-        resultsKey = SearchKey(query: query, kind: kind)
-        if tmdb.isEmpty, books.isEmpty {
-            searchError = firstError
-        } else {
-            searchError = nil
+    private nonisolated static func attempt<Value: Sendable>(
+        _ work: @Sendable () async throws -> Value
+    ) async -> Attempt<Value> {
+        do {
+            return try await Attempt(value: work(), error: nil)
+        } catch let error as APIError {
+            return Attempt(value: nil, error: error.userMessage(unauthorized: String(localized: "Sign in required.")))
+        } catch {
+            return Attempt(value: nil, error: String(localized: "Can't reach the server. Try again in a moment."))
         }
     }
 
@@ -424,7 +429,7 @@ struct MediaSearchResults: View {
             try await client.addBook(googleVolumeId: hit.googleVolumeId)
             model.requestPushAuthorization()
             await model.loadLibrary()
-            await runSearch(query: trimmedQuery, kind: kindFilter)
+            await runSearch(query: trimmedQuery)
         } catch {
             searchError = String(localized: "Could not add that book.")
         }
@@ -447,12 +452,12 @@ struct MediaSearchResults: View {
             requestedVolumeIds.insert(hit.googleVolumeId)
             model.toast(String(localized: "Requested — we'll notify you"), style: .success)
             model.requestPushAuthorization()
-            await runSearch(query: trimmedQuery, kind: kindFilter)
+            await runSearch(query: trimmedQuery)
         } catch let error as APIError {
             model.toast(message(for: error), style: .error)
             // 409: someone already requested or added it, so pick up the real state.
             if case let .server(status, _) = error, status == 409 {
-                await runSearch(query: trimmedQuery, kind: kindFilter)
+                await runSearch(query: trimmedQuery)
             }
         } catch {
             model.toast(String(localized: "Can't reach the server. Try again in a moment."), style: .error)

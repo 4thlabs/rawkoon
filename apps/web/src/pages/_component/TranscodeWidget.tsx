@@ -136,8 +136,7 @@ export function TranscodeWidget() {
           )}
         </span>
         <Link
-          to="/settings"
-          search={{ tab: "transcode" }}
+          to="/settings/reencode"
           className="font-semibold text-primary-400"
         >
           {t("transcode.widget.manage")}

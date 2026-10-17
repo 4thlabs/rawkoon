@@ -20,7 +20,11 @@ vi.mock("@tanstack/react-router", () => ({
     </a>
   ),
   useNavigate: () => vi.fn(),
-  useRouterState: () => ({ location: { pathname: "/" } }),
+  useRouterState: ({
+    select,
+  }: {
+    select: (r: { location: { pathname: string } }) => unknown;
+  }) => select({ location: { pathname: "/" } }),
 }));
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -39,98 +43,56 @@ vi.mock("motion/react", () => ({
     }) => <span {...p}>{children}</span>,
   },
 }));
-vi.mock("@/lib/auth", () => ({ clearUser: vi.fn() }));
-vi.mock("@/lib/auth/useAuth", () => ({
-  useLogout: () => ({ mutateAsync: vi.fn() }),
-  useAuth: () => ({
-    user: {
-      email: "a@b.com",
-      first_name: "A",
-      is_admin: false,
-      avatar_url: null,
-    },
-  }),
-}));
-vi.mock("@/pages/settings/useUsers", () => ({
-  useUpdateProfile: () => ({ mutate: vi.fn() }),
-}));
-vi.mock("@/pages/settings/useNavPosition", () => ({
-  useNavPosition: () => ({ position: "left", setPosition: vi.fn() }),
-}));
-vi.mock("@/lib/utils/format", () => ({ formatDisplayName: () => "A" }));
-vi.mock("@/components/NotificationsBell", () => ({
-  NotificationsMenu: () => <div data-testid="notifications" />,
-}));
-vi.mock("@/components/UserMenu", () => ({
-  UserMenu: () => <div data-testid="usermenu" />,
-}));
+vi.mock("@/lib/app/useTheme", () => ({ useTheme: () => ({}) }));
 vi.mock("@/lib/routing/usePrefetchRoute", () => ({
   usePrefetchRoute: () => vi.fn(),
 }));
-vi.mock("@/lib/app/useTheme", () => ({
-  useTheme: () => ({}),
+vi.mock("@/components/AccountMenu", () => ({
+  AccountMenu: ({ variant }: { variant: string }) => (
+    <div data-testid="account-menu" data-variant={variant} />
+  ),
 }));
-vi.mock("@/lib/routing/useFeatures", () => ({
-  useFeatures: () => ({ data: { books_enabled: false } }),
-}));
-vi.mock("@/lib/routing/navigation", () => {
-  // Defined inside the factory: vi.mock is hoisted above module-level consts.
-  const sections = [
-    {
-      labelKey: "nav.section_life",
-      items: [
-        { path: "/", icon: () => <svg />, translationKey: "nav.dashboard" },
-      ],
-    },
-    {
-      labelKey: "nav.section_homelab",
-      items: [
-        {
-          path: "/library",
-          icon: () => <svg />,
-          translationKey: "nav.library",
-        },
-      ],
-    },
-  ];
-  return { navSections: sections, visibleNavSections: () => sections };
-});
-vi.mock("@/components/NavPositionPicker", () => ({
-  NavPositionPicker: ({
-    value,
-    onChange: _onChange,
-  }: {
-    value: string;
-    onChange: (p: string) => void;
-  }) => <div data-testid="nav-position-picker" data-value={value} />,
+let badge = 0;
+vi.mock("@/lib/notifications/useActivityBadge", () => ({
+  useActivityBadge: () => badge,
 }));
 
 function renderSidebar(position: NavPosition) {
   return render(<Sidebar position={position} />);
 }
 
-describe("Sidebar section labels", () => {
-  it("shows section labels for left position", () => {
+describe("Sidebar", () => {
+  it("lists exactly Home, Library, Find and Activity", () => {
     renderSidebar("left");
-    expect(screen.queryByText("nav.section_life")).toBeTruthy();
-    expect(screen.queryByText("nav.section_homelab")).toBeTruthy();
+    const links = screen
+      .getAllByRole("link")
+      .map((l) => l.getAttribute("href"));
+    expect(links).toEqual(
+      expect.arrayContaining(["/", "/library", "/find", "/activity"]),
+    );
+    expect(links).not.toContain("/settings");
+    expect(links).not.toContain("/notifications");
   });
 
-  it("hides section labels for top position", () => {
+  it("has no bell, user menu or separate settings and logout controls", () => {
+    renderSidebar("left");
+    expect(screen.queryByTestId("notifications")).toBeNull();
+    expect(screen.queryByLabelText("nav.logout")).toBeNull();
+    expect(screen.getAllByTestId("account-menu")).toHaveLength(1);
+  });
+
+  it("uses the compact account trigger on a horizontal bar", () => {
     renderSidebar("top");
-    expect(screen.queryByText("nav.section_life")).toBeNull();
-    expect(screen.queryByText("nav.section_homelab")).toBeNull();
+    expect(screen.getByTestId("account-menu").dataset.variant).toBe("compact");
   });
 
-  it("hides section labels for bottom position", () => {
-    renderSidebar("bottom");
-    expect(screen.queryByText("nav.section_life")).toBeNull();
-    expect(screen.queryByText("nav.section_homelab")).toBeNull();
-  });
-
-  it("shows section labels for right position", () => {
-    renderSidebar("right");
-    expect(screen.queryByText("nav.section_life")).toBeTruthy();
-    expect(screen.queryByText("nav.section_homelab")).toBeTruthy();
+  it("shows the activity count on the Activity entry", () => {
+    badge = 5;
+    renderSidebar("left");
+    const activity = screen
+      .getAllByRole("link")
+      .find((l) => l.getAttribute("href") === "/activity");
+    expect(activity?.textContent).toContain("5");
+    badge = 0;
   });
 });

@@ -1,3 +1,4 @@
+import { APP_PATHS } from "@rawkoon/shared/constants";
 import { prisma } from "@rawkoon/api/db";
 import { addOrUpdateLibraryFromTmdb } from "@rawkoon/api/services/libraryFromTmdb";
 import { addBookFromVolume } from "@rawkoon/api/services/books/bookLibrary";
@@ -71,7 +72,7 @@ async function notifyAdminsRequestPending(
         }),
         notificationCopy(admin.locale, "requestPendingBody", { title: label }),
         "request_pending",
-        "/requests",
+        APP_PATHS.activityRequests,
         { requestId },
         posterUrl ?? undefined,
         { preferenceKey: "request_pending" },
@@ -346,7 +347,7 @@ export async function approveRequest(
     notificationCopy(locale, "requestApprovedTitle"),
     notificationCopy(locale, "requestDecidedBodyApproved", { title: label }),
     "request_decided",
-    "/requests",
+    APP_PATHS.activityRequests,
     { requestId: id },
     req.posterUrl ?? undefined,
     { preferenceKey: "request_decided" },
@@ -424,7 +425,7 @@ async function approveBookRequest(
     notificationCopy(locale, "requestApprovedTitle"),
     notificationCopy(locale, "requestDecidedBodyApproved", { title: label }),
     "request_decided",
-    "/requests",
+    APP_PATHS.activityRequests,
     { requestId: req.id },
     req.posterUrl ?? undefined,
     { preferenceKey: "request_decided" },
@@ -468,7 +469,7 @@ export async function denyRequest(
           title: label,
         }),
     "request_decided",
-    "/requests",
+    APP_PATHS.activityRequests,
     { requestId: id },
     req.posterUrl ?? undefined,
     { preferenceKey: "request_decided" },
@@ -563,7 +564,7 @@ async function finalizeRequestAvailable(
   const url =
     opts.urlLibraryMediaId != null
       ? buildLibraryNotificationUrl(opts.urlLibraryMediaId)
-      : "/requests";
+      : APP_PATHS.activityRequests;
 
   await createAndQueueNotification(
     req.requestedById,

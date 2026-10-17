@@ -1,12 +1,13 @@
 import Foundation
+import RawkoonKit
 
 /// Where a notification's `url` should take the user, resolved to a concrete
 /// in-app screen.
 ///
-/// iOS has no general path router — this is a bounded mapper, not one. Only
-/// the paths the server actually emits (see `buildLibraryNotificationUrl` /
-/// `buildNotificationUrl` on the web side) are mapped; anything else resolves
-/// to `nil` and the caller stays on the current screen. Never open a web view.
+/// iOS has no general path router — this is a bounded mapper, not one. The
+/// path table lives in `NotificationRoute` (Kit); only paths the server
+/// actually emits are mapped, anything else resolves to `nil` and the caller
+/// stays on the current screen. Never open a web view.
 enum NotificationDestination: Identifiable, Equatable, Sendable {
     /// `/library/{mediaId}`, optionally `?season=&episode=&tab=management`.
     /// `mediaId` here is the library row id (not a TMDB id) — the resolving
@@ -14,10 +15,20 @@ enum NotificationDestination: Identifiable, Equatable, Sendable {
     case media(libraryId: Int, season: Int?, episode: Int?, focusManagement: Bool)
     /// `/books/{bookId}`.
     case book(bookId: Int)
-    /// `/requests`.
+    /// `/activity/requests`; opens the Requests lane of the Activity tab.
     case requests
-    /// `/settings?tab=transcode` (re-encode finished / failed).
-    case transcode
+    /// `/activity`; opens the Activity tab rather than a sheet.
+    case inbox
+    /// `/activity/calendar?date=`; opens the Activity tab rather than a sheet.
+    case calendar(date: String?)
+    /// `/find/watchlist`; opens the Find tab rather than a sheet.
+    case watchlist
+    /// `/settings/reencode` (re-encode finished / failed).
+    case reencode
+    /// `/settings/alerts` (notification preferences).
+    case alerts
+    /// `/settings/updates` (app updates).
+    case updates
 
     var id: String {
         switch self {
@@ -27,45 +38,57 @@ enum NotificationDestination: Identifiable, Equatable, Sendable {
             "book-\(bookId)"
         case .requests:
             "requests"
-        case .transcode:
-            "transcode"
+        case .inbox:
+            "inbox"
+        case let .calendar(date):
+            "calendar-\(date ?? "-")"
+        case .watchlist:
+            "watchlist"
+        case .reencode:
+            "reencode"
+        case .alerts:
+            "alerts"
+        case .updates:
+            "updates"
         }
     }
 
     /// Parses a notification `url` (a web SPA path such as
     /// `/library/42?season=2&tab=management`) into a native destination.
-    /// Returns `nil` for an empty/missing url, `/notifications` (the list
-    /// itself), or any path this app doesn't have a screen for.
+    /// Returns `nil` for an empty/missing url, `/activity` (the inbox itself),
+    /// or any path this app doesn't have a screen for.
     static func resolve(url: String?) -> NotificationDestination? {
-        guard let url, !url.isEmpty else { return nil }
-        guard let components = URLComponents(string: url) else { return nil }
-
-        let segments = components.path.split(separator: "/").map(String.init)
-        guard let head = segments.first else { return nil }
-
-        func queryInt(_ name: String) -> Int? {
-            components.queryItems?.first(where: { $0.name == name })?.value.flatMap(Int.init)
+        switch NotificationRoute.parse(url) {
+        case let .media(libraryId, season, episode, focusManagement)?:
+            .media(libraryId: libraryId, season: season, episode: episode, focusManagement: focusManagement)
+        case let .book(bookId)?: .book(bookId: bookId)
+        case .requests?: .requests
+        case .inbox?: .inbox
+        case let .calendar(date)?: .calendar(date: date)
+        case .watchlist?: .watchlist
+        case .reencode?: .reencode
+        case .alerts?: .alerts
+        case .updates?: .updates
+        case nil: nil
         }
+    }
 
-        switch head {
-        case "library":
-            guard segments.count >= 2, let libraryId = Int(segments[1]) else { return nil }
-            let focusManagement = components.queryItems?.first(where: { $0.name == "tab" })?.value == "management"
-            return .media(
-                libraryId: libraryId, season: queryInt("season"), episode: queryInt("episode"),
-                focusManagement: focusManagement
-            )
-        case "books":
-            guard segments.count >= 2, let bookId = Int(segments[1]) else { return nil }
-            return .book(bookId: bookId)
-        case "requests":
-            return .requests
-        case "settings":
-            let tab = components.queryItems?.first(where: { $0.name == "tab" })?.value
-            return tab == "transcode" ? .transcode : nil
-        default:
-            // Includes "notifications" (the list itself) and anything unknown.
-            return nil
+    /// The tab that hosts this destination, for the ones that are not a pushed screen.
+    var hostTab: RootTab? {
+        switch self {
+        case .inbox, .requests, .calendar: .activity
+        case .watchlist: .find
+        default: nil
+        }
+    }
+
+    /// The Activity lane a tab-hosted destination opens on.
+    var activityLane: ActivityLane? {
+        switch self {
+        case .inbox: .inbox
+        case .requests: .requests
+        case .calendar: .calendar
+        default: nil
         }
     }
 }

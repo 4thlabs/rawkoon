@@ -4,14 +4,10 @@ import type {
 } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import {
-  ADMIN_ENDPOINTS,
   DASHBOARD_ENDPOINTS,
   DOWNLOADS_ENDPOINTS,
   LIBRARY_ENDPOINTS,
-  MEDIAS_ENDPOINTS,
   NOTIFICATION_ENDPOINTS,
-  INTEGRATION_ENDPOINTS,
-  QUALITY_PROFILES_ENDPOINTS,
 } from "@/lib/endpoints";
 import type { LibraryListResponse } from "@rawkoon/shared/types";
 import { webFetcher } from "@/lib/api/fetcher";
@@ -113,23 +109,16 @@ function prefetchHomePageDataOptimistic(queryClient: QueryClient): void {
  * Returns array of {queryKey, queryFn} objects
  */
 const routeQueryDefinitions = {
-  "/calendar": () => [
+  "/activity/calendar": () => [
     {
       queryKey: queryKeys.dashboard.upcoming(),
       queryFn: () => webFetcher(DASHBOARD_ENDPOINTS.UPCOMING.LIST),
     },
   ],
 
-  "/explore": () => [
-    {
-      queryKey: queryKeys.medias.explore(),
-      queryFn: () => webFetcher(`${MEDIAS_ENDPOINTS.EXPLORE}?language=en`),
-    },
-  ],
-
   // "/library" is prefetched as an infinite query — see prefetchRouteData.
 
-  "/notifications": () => [
+  "/activity": () => [
     {
       queryKey: queryKeys.notifications.unreadCount(),
       queryFn: () => webFetcher(NOTIFICATION_ENDPOINTS.UNREAD_COUNT),
@@ -138,7 +127,7 @@ const routeQueryDefinitions = {
     // with ensureQueryData due to structure mismatch if not careful.
   ],
 
-  "/activity": (params: { service?: string; type?: string }) => [
+  "/activity/history": (params: { service?: string; type?: string }) => [
     {
       queryKey: queryKeys.dashboard.activityFeed({
         limit: 25,
@@ -155,76 +144,6 @@ const routeQueryDefinitions = {
       },
     },
   ],
-
-  "/settings": (params: { tab?: string }) => {
-    const tab = params.tab || "profile";
-    const queries: Array<{
-      queryKey: readonly unknown[];
-      queryFn: () => unknown;
-    }> = [];
-
-    // Always prefetch user profile for settings
-    queries.push({
-      queryKey: queryKeys.auth.me,
-      queryFn: () => fetchAuthMeUser(webFetcher),
-    });
-
-    if (tab === "notifications") {
-      queries.push({
-        queryKey: queryKeys.notifications.devices(),
-        queryFn: () => webFetcher(NOTIFICATION_ENDPOINTS.DEVICES),
-      });
-    }
-
-    if (tab === "users") {
-      queries.push({
-        queryKey: queryKeys.admin.users(),
-        queryFn: () => webFetcher(ADMIN_ENDPOINTS.USERS),
-      });
-    }
-
-    if (tab === "integrations") {
-      queries.push({
-        queryKey: queryKeys.integrations.tmdb(),
-        queryFn: () => webFetcher(INTEGRATION_ENDPOINTS.TMDB),
-      });
-      queries.push({
-        queryKey: queryKeys.integrations.jellyfin(),
-        queryFn: () => webFetcher(INTEGRATION_ENDPOINTS.JELLYFIN),
-      });
-      queries.push({
-        queryKey: queryKeys.integrations.downloadClient(),
-        queryFn: () => webFetcher(INTEGRATION_ENDPOINTS.DOWNLOAD_CLIENT),
-      });
-    }
-
-    if (tab === "ai") {
-      queries.push({
-        queryKey: queryKeys.integrations.aiProvider(),
-        queryFn: () => webFetcher(INTEGRATION_ENDPOINTS.AI_PROVIDER),
-      });
-      queries.push({
-        queryKey: queryKeys.integrations.aiStats(30),
-        queryFn: () => webFetcher(INTEGRATION_ENDPOINTS.AI_PROVIDER_STATS(30)),
-      });
-    }
-
-    if (tab === "jobs") {
-      queries.push({
-        queryKey: queryKeys.admin.scheduledJobs(),
-        queryFn: () => webFetcher(ADMIN_ENDPOINTS.SCHEDULED_JOBS),
-      });
-    }
-
-    if (tab === "media") {
-      queries.push({
-        queryKey: queryKeys.qualityProfiles.list(),
-        queryFn: () => webFetcher(QUALITY_PROFILES_ENDPOINTS.LIST),
-      });
-    }
-
-    return queries;
-  },
 } as const;
 
 type RouteQueryDef = {

@@ -9,6 +9,7 @@ import {
   releaseCheckCronFor,
 } from "@rawkoon/shared/utils";
 import { cronLocale } from "@/lib/utils/cron";
+import { AdvancedDisclosure } from "@/components/ui/advanced-disclosure";
 
 type PresetKind =
   | "hourly"
@@ -100,59 +101,72 @@ export function ReleaseCheckFieldset({
         {t("settings.mediaLibrary.releaseCheck.description")}
       </p>
       <div className="space-y-2">
-        {PRESETS.map((value) => (
-          <div key={value}>
-            <label className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-neutral-200">
-              <input
-                type="radio"
-                name="release-check-preset"
-                value={value}
-                checked={kind === value}
-                onChange={() => update(value, time, custom)}
-              />
-              <span>
-                {t(`settings.mediaLibrary.releaseCheck.presets.${value}`)}
+        {PRESETS.filter((value) => value !== "custom").map((value) => (
+          <label
+            key={value}
+            className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-neutral-200"
+          >
+            <input
+              type="radio"
+              name="release-check-preset"
+              value={value}
+              checked={kind === value}
+              onChange={() => update(value, time, custom)}
+            />
+            <span>
+              {t(`settings.mediaLibrary.releaseCheck.presets.${value}`)}
+            </span>
+            {value === "every6h" && (
+              <span className="rounded-full bg-neutral-700/60 px-2 py-0.5 text-xs text-neutral-300">
+                {t("settings.mediaLibrary.releaseCheck.defaultTag")}
               </span>
-              {value === "every6h" && (
-                <span className="rounded-full bg-neutral-700/60 px-2 py-0.5 text-xs text-neutral-300">
-                  {t("settings.mediaLibrary.releaseCheck.defaultTag")}
-                </span>
-              )}
-              {value === "daily" && (
-                <input
-                  type="time"
-                  aria-label={t("settings.mediaLibrary.releaseCheck.timeLabel")}
-                  value={time}
-                  onFocus={() =>
-                    kind !== "daily" && update("daily", time, custom)
-                  }
-                  onChange={(e) => update("daily", e.target.value, custom)}
-                  className={INPUT_CLASS}
-                />
-              )}
-            </label>
-            {value === "custom" && kind === "custom" && (
-              <div className="mt-2 pl-6">
-                <input
-                  type="text"
-                  aria-label={t(
-                    "settings.mediaLibrary.releaseCheck.customLabel",
-                  )}
-                  aria-invalid={customInvalid}
-                  value={custom}
-                  onChange={(e) => update("custom", time, e.target.value)}
-                  placeholder="0 */4 * * *"
-                  spellCheck={false}
-                  autoCapitalize="off"
-                  className={`${INPUT_CLASS} w-full max-w-xs font-mono ${customInvalid ? "border-red-500/70" : ""}`}
-                />
-                <p className="mt-1 text-xs text-neutral-400">
-                  {t("settings.mediaLibrary.releaseCheck.customHint")}
-                </p>
-              </div>
             )}
-          </div>
+            {value === "daily" && (
+              <input
+                type="time"
+                aria-label={t("settings.mediaLibrary.releaseCheck.timeLabel")}
+                value={time}
+                onFocus={() =>
+                  kind !== "daily" && update("daily", time, custom)
+                }
+                onChange={(e) => update("daily", e.target.value, custom)}
+                className={INPUT_CLASS}
+              />
+            )}
+          </label>
         ))}
+        <AdvancedDisclosure defaultOpen={kind === "custom"} className="mt-2">
+          <label className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-neutral-200">
+            <input
+              type="radio"
+              name="release-check-preset"
+              value="custom"
+              checked={kind === "custom"}
+              onChange={() => update("custom", time, custom)}
+            />
+            <span>
+              {t("settings.mediaLibrary.releaseCheck.presets.custom")}
+            </span>
+          </label>
+          {kind === "custom" && (
+            <div className="pl-6">
+              <input
+                type="text"
+                aria-label={t("settings.mediaLibrary.releaseCheck.customLabel")}
+                aria-invalid={customInvalid}
+                value={custom}
+                onChange={(e) => update("custom", time, e.target.value)}
+                placeholder="0 */4 * * *"
+                spellCheck={false}
+                autoCapitalize="off"
+                className={`${INPUT_CLASS} w-full max-w-xs font-mono ${customInvalid ? "border-red-500/70" : ""}`}
+              />
+              <p className="mt-1 text-xs text-neutral-400">
+                {t("settings.mediaLibrary.releaseCheck.customHint")}
+              </p>
+            </div>
+          )}
+        </AdvancedDisclosure>
       </div>
 
       {customInvalid || dailyInvalid ? (

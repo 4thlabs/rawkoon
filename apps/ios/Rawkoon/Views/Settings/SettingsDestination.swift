@@ -1,14 +1,21 @@
+import RawkoonKit
 import SwiftUI
 
-/// The admin taxonomy: one summary row each on the phone's Settings screen, and
-/// inset sections on the Mac's Server screen.
+/// The server pages and the System page: one summary row each on the phone's Settings screen,
+/// and inset sections on the Mac's Server screen. A page with a single screen opens it directly.
 enum SettingsGroup: String, CaseIterable, Identifiable {
-    case integrations
-    case libraryQuality
+    case connections
+    case library
+    case quality
+    case afterDownload
     case books
-    case usersSecurity
-    case jobsReleases
+    case people
+    case general
+    case ai
     case system
+
+    /// The pages under Server, in order; System is a group of its own below them.
+    static let server: [SettingsGroup] = allCases.filter { $0 != .system }
 
     var id: String {
         rawValue
@@ -16,23 +23,29 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
 
     var title: LocalizedStringKey {
         switch self {
-        case .integrations: "Integrations"
-        case .libraryQuality: "Library & Quality"
+        case .connections: "Connections"
+        case .library: "Library & import"
+        case .quality: "Quality"
+        case .afterDownload: "After download"
         case .books: "Books"
-        case .usersSecurity: "Users & Security"
-        case .jobsReleases: "Jobs & Releases"
-        case .system: "System & AI"
+        case .people: "People"
+        case .general: "General"
+        case .ai: "AI"
+        case .system: "System"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .integrations: "point.3.connected.trianglepath.dotted"
-        case .libraryQuality: "slider.horizontal.3"
+        case .connections: "point.3.connected.trianglepath.dotted"
+        case .library: "folder"
+        case .quality: "slider.horizontal.3"
+        case .afterDownload: "arrow.up.arrow.down.circle"
         case .books: "books.vertical"
-        case .usersSecurity: "person.2"
-        case .jobsReleases: "clock"
-        case .system: "gearshape"
+        case .people: "person.2"
+        case .general: "globe"
+        case .ai: "sparkles"
+        case .system: "gearshape.2"
         }
     }
 
@@ -48,56 +61,71 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
     }
 }
 
-/// A single admin settings row: its taxonomy group, label, icon, search keywords,
-/// and the existing view it pushes. Replaces the 22 inline `NavigationLink`s.
+/// A single settings screen: its page, label, icon, search keywords, and the view it pushes.
 enum SettingsDestination: String, CaseIterable, Identifiable {
-    case general
-    case liveUpdates
+    // You
+    case security
+    case alerts
+    case appPreferences
+    // Connections
     case tmdb
     case fanart
     case jellyfin
-    case prowlarr
-    case jackett
     case indexers
     case downloadClient
-    case bookProviders
-    case ai
+    // Library & import
     case mediaLibrary
+    case libraryDefaults
     case autoGrab
-    case seeding
-    case arrImport
+    // Quality
     case qualityProfiles
     case customFormats
+    // After download
+    case seeding
+    // Books
     case books
+    case bookProviders
     case bookQualityProfiles
+    // People
     case users
     case sessions
     case apiKeys
     case oidcProviders
-    case blocklist
+    // General, AI
+    case general
+    case ai
+    // System
+    case health
     case jobs
     case reencode
+    case arrImport
+    case blocklist
+    case aiUsage
     case releases
+    case liveUpdates
 
     var id: String {
         rawValue
     }
 
-    var group: SettingsGroup {
+    /// The server page this screen sits under; nil for the personal screens.
+    var group: SettingsGroup? {
         switch self {
-        case .tmdb, .fanart, .jellyfin, .prowlarr, .jackett, .indexers, .downloadClient:
-            .integrations
-        case .mediaLibrary, .autoGrab, .seeding, .arrImport, .qualityProfiles, .customFormats:
-            .libraryQuality
-        case .books, .bookQualityProfiles, .bookProviders:
-            .books
-        case .users, .sessions, .apiKeys, .oidcProviders, .blocklist:
-            .usersSecurity
-        case .jobs, .reencode, .releases:
-            .jobsReleases
-        case .general, .liveUpdates, .ai:
-            .system
+        case .security, .alerts, .appPreferences: nil
+        case .tmdb, .fanart, .jellyfin, .indexers, .downloadClient: .connections
+        case .mediaLibrary, .libraryDefaults, .autoGrab: .library
+        case .qualityProfiles, .customFormats: .quality
+        case .seeding: .afterDownload
+        case .books, .bookProviders, .bookQualityProfiles: .books
+        case .users, .sessions, .apiKeys, .oidcProviders: .people
+        case .general: .general
+        case .ai: .ai
+        case .health, .jobs, .reencode, .arrImport, .blocklist, .aiUsage, .releases, .liveUpdates: .system
         }
+    }
+
+    var isAdminOnly: Bool {
+        group != nil
     }
 
     /// Row label. `LocalizedStringKey` so `Label` looks the key up in the
@@ -108,33 +136,37 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
 
     var titleKey: String {
         switch self {
-        case .general: "General"
-        case .liveUpdates: "Live updates"
+        case .security: "Security"
+        case .alerts: "Alerts"
+        case .appPreferences: "App"
         case .tmdb: "TMDB"
         case .fanart: "fanart.tv"
         case .jellyfin: "Jellyfin"
-        case .ai: "AI"
-        case .prowlarr: "Prowlarr"
-        case .jackett: "Jackett"
         case .indexers: "Indexers"
         case .downloadClient: "Download client"
-        case .bookProviders: "Book providers"
-        case .mediaLibrary: "Library"
-        case .autoGrab: "Automatic grabbing"
-        case .seeding: "Seeding"
-        case .arrImport: "Import from Radarr/Sonarr"
+        case .mediaLibrary: "Folders & import"
+        case .libraryDefaults: "Defaults"
+        case .autoGrab: "Adding & checking"
         case .qualityProfiles: "Quality profiles"
         case .customFormats: "Custom formats"
+        case .seeding: "Seeding"
         case .books: "Books"
+        case .bookProviders: "Book providers"
         case .bookQualityProfiles: "Book quality profiles"
         case .users: "Users"
         case .sessions: "Sessions"
         case .apiKeys: "API keys"
         case .oidcProviders: "SSO providers"
-        case .blocklist: "Blocklist"
+        case .general: "General"
+        case .ai: "AI"
+        case .health: "Health"
         case .jobs: "Jobs"
         case .reencode: "Re-encode"
-        case .releases: "Releases"
+        case .arrImport: "Downloads"
+        case .blocklist: "Blocklist"
+        case .aiUsage: "AI usage"
+        case .releases: "App updates"
+        case .liveUpdates: "Live updates"
         }
     }
 
@@ -144,66 +176,85 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
-        case .general: "globe"
-        case .liveUpdates: "dot.radiowaves.left.and.right"
+        case .security: "lock.shield"
+        case .alerts: "bell"
+        case .appPreferences: "iphone"
         case .tmdb: "film"
         case .fanart: "photo.on.rectangle"
         case .jellyfin: "play.rectangle"
-        case .ai: "sparkles"
-        case .prowlarr: "magnifyingglass.circle"
-        case .jackett: "magnifyingglass.circle"
         case .indexers: "magnifyingglass"
         case .downloadClient: "arrow.down.circle"
-        case .bookProviders: "books.vertical"
         case .mediaLibrary: "folder"
+        case .libraryDefaults: "checklist"
         case .autoGrab: "bolt.badge.clock"
-        case .seeding: "arrow.up.arrow.down.circle"
-        case .arrImport: "square.and.arrow.down"
         case .qualityProfiles: "slider.horizontal.3"
         case .customFormats: "tag"
+        case .seeding: "arrow.up.arrow.down.circle"
         case .books: "book"
+        case .bookProviders: "books.vertical"
         case .bookQualityProfiles: "books.vertical.circle"
         case .users: "person.2"
         case .sessions: "shield"
         case .apiKeys: "key"
         case .oidcProviders: "person.badge.key"
-        case .blocklist: "nosign"
+        case .general: "globe"
+        case .ai: "sparkles"
+        case .health: "heart.text.square"
         case .jobs: "clock"
         case .reencode: "gauge.with.dots.needle.67percent"
+        case .arrImport: "square.and.arrow.down"
+        case .blocklist: "nosign"
+        case .aiUsage: "chart.bar"
         case .releases: "shippingbox"
+        case .liveUpdates: "dot.radiowaves.left.and.right"
         }
     }
 
     /// Extra terms the search matches beyond the title, so common synonyms find a row.
     var keywords: [String] {
         switch self {
-        case .general: ["system", "app", "server"]
-        case .liveUpdates: ["sse", "stream", "events", "diagnostics", "debug", "reconnect"]
+        case .security: ["password", "passkey", "calendar", "subscribe", "ics", "login"]
+        case .alerts: ["notifications", "push", "devices", "channels", "ntfy", "webhook"]
+        case .appPreferences: ["language", "playback", "rewind", "download", "wi-fi", "storage", "offline", "cache"]
         case .tmdb: ["the movie database", "metadata", "discovery"]
         case .fanart: ["fanart", "artwork", "posters", "backdrops", "metadata"]
         case .jellyfin: ["media server", "streaming"]
-        case .ai: ["llm", "recommendations", "usage", "cost", "budget", "history", "provider", "tokens"]
-        case .prowlarr: ["indexer", "search", "releases"]
-        case .jackett: ["indexer", "search", "releases"]
-        case .indexers: ["indexer", "search", "trackers", "torrent", "usenet"]
-        case .downloadClient: ["qbittorrent", "transmission", "deluge", "torrent", "download"]
-        case .bookProviders: ["audnexus", "audible", "open library", "metadata", "books"]
-        case .mediaLibrary: ["folders", "paths", "root", "media", "library"]
-        case .autoGrab: ["grab", "auto", "automatic", "search", "interval", "delay", "schedule", "cron", "check", "held", "pending", "readiness", "rss"]
-        case .seeding: ["seeding", "seed", "ratio", "torrent", "release", "share", "sharing", "tracker"]
-        case .arrImport: ["radarr", "sonarr", "migrate", "import"]
-        case .qualityProfiles: ["quality", "profile", "resolution"]
+        case .indexers: [
+                "indexer", "search", "trackers", "torrent", "usenet", "prowlarr", "jackett", "rss", "manager", "active",
+            ]
+        case .downloadClient: ["qbittorrent", "transmission", "deluge", "torrent", "download", "hook", "webhook"]
+        case .mediaLibrary: [
+                "folders", "paths", "root", "media", "library", "import", "post-processing", "template", "naming",
+                "hardlink", "scan", "reindex",
+            ]
+        case .libraryDefaults: ["default", "profile", "movie", "show", "book", "quality"]
+        case .autoGrab: [
+                "grab", "auto", "automatic", "search", "search on add", "interval", "delay", "schedule", "cron",
+                "check", "held", "pending", "rss",
+            ]
+        case .qualityProfiles: ["quality", "profile", "resolution", "cutoff", "hdr", "trackers", "grab delay"]
         case .customFormats: ["custom", "format", "scoring"]
-        case .books: ["audiobook", "ebook", "reading"]
+        case .seeding: [
+                "seeding", "seed", "ratio", "days", "time", "torrent", "release", "share", "sharing", "tracker",
+                "private", "public", "extensions", "blocked", "free space", "safety", "override",
+            ]
+        case .books: ["audiobook", "ebook", "reading", "metadata sources", "files"]
+        case .bookProviders: ["audnexus", "audible", "open library", "metadata", "books"]
         case .bookQualityProfiles: ["book", "quality", "profile"]
-        case .users: ["accounts", "people", "members", "admin"]
+        case .users: ["accounts", "people", "members", "admin", "invitations", "invite"]
         case .sessions: ["login", "devices", "security"]
         case .apiKeys: ["api", "token", "keys", "access"]
         case .oidcProviders: ["sso", "oidc", "single sign-on", "login", "auth"]
+        case .general: ["system", "app", "server", "country", "upcoming", "region"]
+        case .ai: ["llm", "provider", "model", "prices", "budget", "api key"]
+        case .health: ["readiness", "ready", "problems", "attention", "library health", "rss", "status", "fix"]
+        case .jobs: ["tasks", "scheduled", "queue", "run"]
+        case .reencode: ["re-encode", "transcode", "hevc", "av1", "queue", "compress", "run window"]
+        case .arrImport: ["radarr", "sonarr", "migrate", "import", "downloads"]
         case .blocklist: ["block", "banned", "releases"]
-        case .jobs: ["tasks", "scheduled", "queue"]
-        case .reencode: ["re-encode", "transcode", "hevc", "av1", "queue", "compress"]
-        case .releases: ["updates", "changelog", "version"]
+        case .aiUsage: ["ai", "llm", "usage", "cost", "spend", "history", "calls", "tokens", "stats"]
+        case .releases: ["updates", "changelog", "version", "releases"]
+        case .liveUpdates: ["sse", "stream", "events", "diagnostics", "debug", "reconnect"]
         }
     }
 
@@ -219,36 +270,77 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
         return keywords.contains { $0.lowercased().contains(needle) }
     }
 
+    /// Where a failing readiness check is fixed.
+    static func fix(for check: GrabReadinessCheck) -> SettingsDestination? {
+        switch check.fix {
+        case .indexerManager: .indexers
+        case .downloadClient: .downloadClient
+        case .defaultProfiles: .libraryDefaults
+        case .qualityProfiles: .qualityProfiles
+        case nil: nil
+        }
+    }
+
+    // swiftlint:disable:next cyclomatic_complexity
     @ViewBuilder
     var destination: some View {
         switch self {
-        case .general: GeneralSettingsView()
-        case .liveUpdates: SSEDebugView()
+        case .security: SettingsSecurityView()
+        case .alerts: SettingsAlertsView()
+        case .appPreferences: SettingsAppView()
         case .tmdb: TmdbIntegrationView()
         case .fanart: FanartIntegrationView()
         case .jellyfin: JellyfinIntegrationView()
-        case .ai: AiSettingsView()
-        case .prowlarr: IndexerManagerIntegrationView(kind: .prowlarr)
-        case .jackett: IndexerManagerIntegrationView(kind: .jackett)
-        case .indexers: IndexersView()
+        case .indexers: IndexersSettingsView()
         case .downloadClient: DownloadClientEditView()
-        case .bookProviders: BooksProviderView()
         case .mediaLibrary: MediaLibrarySettingsView()
+        case .libraryDefaults: LibraryDefaultsView()
         case .autoGrab: AutoGrabSettingsView()
-        case .seeding: SeedingSettingsView()
-        case .arrImport: ArrLibraryImportView()
         case .qualityProfiles: QualityProfilesCrudView()
         case .customFormats: CustomFormatsCrudView()
+        case .seeding: SeedingSettingsView()
         case .books: BooksSettingsView()
+        case .bookProviders: BooksProviderView()
         case .bookQualityProfiles: BookQualityProfilesCrudView()
         case .users: UsersAdminView()
         case .sessions: SessionsAdminView()
         case .apiKeys: ApiKeysAdminView()
         case .oidcProviders: OidcProvidersCrudView()
-        case .blocklist: BlocklistAdminView()
+        case .general: GeneralSettingsView()
+        case .ai: AiSettingsView()
+        case .health: HealthSettingsView()
         case .jobs: JobsAdminView()
         case .reencode: ReencodeAdminView()
+        case .arrImport: ArrLibraryImportView()
+        case .blocklist: BlocklistAdminView()
+        case .aiUsage: AiUsageView()
         case .releases: ReleasesAdminView()
+        case .liveUpdates: SSEDebugView()
         }
+    }
+}
+
+/// A page's screens, pushed from its summary row; a page with one screen skips this list.
+struct SettingsGroupView: View {
+    let group: SettingsGroup
+    /// Open-problem counts to show beside a screen's row.
+    var badges: [SettingsDestination: Int] = [:]
+
+    var body: some View {
+        Form {
+            Section {
+                ForEach(group.destinations) { destination in
+                    NavigationLink {
+                        destination.destination
+                    } label: {
+                        SettingsDestinationRow(destination: destination, badge: badges[destination] ?? 0)
+                    }
+                }
+            }
+            .listRowBackground(Theme.raised)
+        }
+        .settingsScreenStyle()
+        .navigationTitle(group.title)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

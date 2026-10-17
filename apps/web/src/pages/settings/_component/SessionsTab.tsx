@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Monitor, Trash2, LogOut, Key, Wifi, Shield } from "lucide-react";
+import { Monitor, Trash2, LogOut, Key, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminSessions } from "@/pages/settings/useAdminSessions";
 import { useRevokeSession } from "@/pages/settings/useRevokeSession";
@@ -139,11 +139,6 @@ export function SessionsTab() {
       className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6"
       key="sessions-tab"
     >
-      <SettingsPageHeader
-        icon={Shield}
-        title={t("settings.sessions.sessionsTitle")}
-        description={t("settings.sessions.sessionsDescription")}
-      />
       {/* Active Sessions */}
       <SectionCard
         title={t("settings.sessions.sessionsTitle")}

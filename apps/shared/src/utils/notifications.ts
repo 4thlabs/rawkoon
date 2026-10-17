@@ -1,5 +1,18 @@
+import { APP_PATHS } from "../constants/appPaths";
+
 const LEGACY_NOTIFICATION_PATHS: Record<string, string> = {
-  "/medias": "/library",
+  "/medias": APP_PATHS.library,
+  "/requests": APP_PATHS.activityRequests,
+  "/watchlist": APP_PATHS.findWatchlist,
+  "/notifications": APP_PATHS.activity,
+  "/calendar": APP_PATHS.activityCalendar,
+};
+
+/** Old `/settings?tab=` links still stored on past notifications. */
+const LEGACY_SETTINGS_TABS: Record<string, string> = {
+  releases: APP_PATHS.settingsUpdates,
+  transcode: APP_PATHS.settingsReencode,
+  notifications: APP_PATHS.settingsAlerts,
 };
 
 function hasScheme(url: string): boolean {
@@ -7,22 +20,20 @@ function hasScheme(url: string): boolean {
 }
 
 function normalizePathname(pathname: string): string {
-  if (LEGACY_NOTIFICATION_PATHS[pathname]) {
-    return LEGACY_NOTIFICATION_PATHS[pathname];
-  }
-
-  if (
-    pathname.endsWith("/") &&
-    LEGACY_NOTIFICATION_PATHS[pathname.slice(0, -1)]
-  ) {
-    return LEGACY_NOTIFICATION_PATHS[pathname.slice(0, -1)];
-  }
-
-  return pathname;
+  const trimmed =
+    pathname.length > 1 && pathname.endsWith("/")
+      ? pathname.slice(0, -1)
+      : pathname;
+  return LEGACY_NOTIFICATION_PATHS[trimmed] ?? pathname;
 }
 
+/**
+ * Maps pre-restructure in-app paths to their current ones. An absolute URL is
+ * only rewritten when it points at `appOrigin`; anything else is left as is.
+ */
 export function normalizeNotificationUrl(
   url: string | null | undefined,
+  appOrigin?: string,
 ): string | null {
   if (!url) return null;
 
@@ -32,7 +43,23 @@ export function normalizeNotificationUrl(
 
     const isAbsolute = hasScheme(raw);
     const parsed = new URL(raw, "https://rawkoon.local");
-    parsed.pathname = normalizePathname(parsed.pathname);
+    if (
+      isAbsolute &&
+      (!appOrigin || parsed.origin !== new URL(appOrigin).origin)
+    ) {
+      return raw;
+    }
+
+    const legacySettings =
+      parsed.pathname.replace(/\/$/, "") === "/settings"
+        ? LEGACY_SETTINGS_TABS[parsed.searchParams.get("tab") ?? ""]
+        : undefined;
+    if (legacySettings) {
+      parsed.pathname = legacySettings;
+      parsed.searchParams.delete("tab");
+    } else {
+      parsed.pathname = normalizePathname(parsed.pathname);
+    }
 
     if (isAbsolute) {
       return parsed.toString();
@@ -53,7 +80,7 @@ export function buildLibraryNotificationUrl(
     tab?: "management";
   },
 ): string {
-  return buildNotificationUrl(`/library/${mediaId}`, {
+  return buildNotificationUrl(`${APP_PATHS.library}/${mediaId}`, {
     tab: opts?.tab ?? "management",
     season: opts?.season ?? undefined,
     episode: opts?.episode ?? undefined,

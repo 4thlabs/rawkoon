@@ -1,19 +1,13 @@
 {
   "nav": {
     "dashboard": "Accueil",
-    "explore": "Parcourir",
     "discover": "Pour vous",
     "library": "Bibliothèque",
-    "books": "Livres",
-    "requests": "Demandes",
-    "watchlist": "À regarder",
-    "collections": "Collections",
-    "calendar": "Calendrier",
     "logout": "Déconnexion",
-    "positionTitle": "Position de la navigation",
-    "search": "Recherche",
-    "more": "Plus",
-    "mobileTabs": "Navigation principale"
+    "mobileTabs": "Navigation principale",
+    "find": "Trouver",
+    "activity": "Activité",
+    "account": "Compte"
   },
   "requests": {
     "title": "Demandes",
@@ -38,7 +32,7 @@
   },
   "calendar": {
     "title": "Calendrier",
-    "subtitle": "Événements du foyer et sorties média à venir au même endroit",
+    "subtitle": "Les sorties de films et de séries à venir au même endroit",
     "sunday": "Dim",
     "monday": "Lun",
     "tuesday": "Mar",
@@ -146,7 +140,7 @@
     },
     "activityPage": {
       "title": "Activité récente",
-      "subtitle": "Parcourez l’activité du foyer avec des filtres par service et par type.",
+      "subtitle": "Tout ce que Rawkoon a fait, filtrable par service et par type.",
       "serviceFilter": "Service",
       "typeFilter": "Type",
       "allServices": "Tous les services",
@@ -155,7 +149,7 @@
       "clearFilters": "Effacer les filtres",
       "loadMore": "Voir plus",
       "emptyTitle": "Aucune activité trouvée",
-      "emptyDescription": "La nouvelle activité du foyer apparaîtra ici au fil du temps.",
+      "emptyDescription": "La nouvelle activité apparaîtra ici au fil du temps.",
       "emptyFilteredDescription": "Essayez un autre service ou un autre type d’activité.",
       "services": {
         "calendar": "Calendrier",
@@ -385,7 +379,6 @@
     "unexpectedError": "Une erreur inattendue est survenue",
     "reloadPage": "Recharger la page",
     "failedToLoad": "Échec du chargement",
-    "userMenu": "Menu utilisateur",
     "loading": "Chargement...",
     "cancel": "Annuler",
     "confirmDialog": {
@@ -402,15 +395,8 @@
     "expand": "Développer",
     "refetch": "Actualiser",
     "quickActions": "Actions rapides",
-    "quickActionsPlaceholder": "Rechercher un film, une série ou une page...",
-    "quickActionsHint": "Tapez un titre pour chercher des films et des séries",
-    "quickActionsTitlesHint": "Entrée ajoute ou ouvre, Maj+Entrée affiche les détails",
-    "quickActionsTitlesHintTouch": "Touchez un titre pour l'ajouter, ou le bouton d'info pour les détails",
-    "quickActionsTitlesFailed": "La recherche de films et de séries est indisponible pour le moment.",
-    "quickActionsSearchingTitles": "Recherche de films et de séries...",
-    "quickActionsSectionTitles": "Films et séries",
-    "quickActionsAdd": "Ajouter",
-    "quickActionsDetails": "Détails",
+    "quickActionsPlaceholder": "Rechercher dans votre bibliothèque, les pages et les actions...",
+    "quickActionsHint": "Tapez un titre pour le trouver dans votre bibliothèque, ou cherchez dans Trouver",
     "quickActionsNoResults": "Aucune action rapide trouvée",
     "quickActionsNoResultsDescription": "Essayez un autre mot-clé ou ouvrez une section depuis la barre latérale.",
     "quickActionsOpenPage": "Ouvrir {{page}}",
@@ -431,7 +417,11 @@
     "copy": "Copier",
     "open": "Ouvrir",
     "requestFailed": "La requête a échoué",
-    "tooManyRequests": "Trop de requêtes. Veuillez ralentir."
+    "tooManyRequests": "Trop de requêtes. Veuillez ralentir.",
+    "quickActionsSearchFind": "Chercher « {{query}} » dans Trouver",
+    "quickActionsSearchFindDescription": "Chercher des films, séries et livres",
+    "quickActionsSectionFind": "Trouver",
+    "quickActionsSearching": "Recherche en cours..."
   },
   "notifications": {
     "modal": {
@@ -442,14 +432,19 @@
     },
     "title": "Notifications",
     "description": "Voir et gérer vos notifications",
-    "bell": "Notifications",
     "pushFallback": "Vous avez une nouvelle notification",
     "noNotifications": "Aucune notification",
     "markAllAsRead": "Tout marquer comme lu",
     "viewAll": "Voir tout",
     "delete": "Supprimer",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette notification ?",
-    "loadMore": "Charger plus"
+    "loadMore": "Charger plus",
+    "searchAgain": "Relancer la recherche",
+    "review": "Examiner",
+    "searchAgainGrabbed": "Recherche lancée, une version a été récupérée",
+    "searchAgainNothing": "Recherche terminée, rien ne correspond pour le moment",
+    "searchAgainFailed": "Impossible de lancer la recherche",
+    "searchAgainNothingTitle": "Recherche sur tout le titre, rien ne correspond pour le moment"
   },
   "emotion": {
     "howDidYouFeel": "Comment vous êtes-vous senti ?",
@@ -469,10 +464,6 @@
   },
   "settings": {
     "title": "Réglages",
-    "sections": {
-      "account": "Compte",
-      "admin": "Admin"
-    },
     "general": {
       "title": "Général",
       "description": "Valeurs par défaut globales utilisées par les tâches en arrière-plan et les intégrations partagées.",
@@ -686,19 +677,9 @@
       "backedUp": "sauvegardée",
       "addedOn": "Ajoutée le {{date}}"
     },
-    "activity": {
-      "title": "Activité",
-      "description": "Parcourez l’activité paginée du foyer avec des filtres."
-    },
     "media": {
-      "title": "Médias",
-      "description": "Configurez les profils de qualité, le post-traitement de la bibliothèque, l'historique média et les imports.",
       "tabs": {
         "qualityProfiles": "Profils de qualité",
-        "librarySettings": "Paramètres de la bibliothèque",
-        "seeding": "Partage",
-        "history": "Historique",
-        "import": "Importation",
         "customFormats": "Formats personnalisés"
       }
     },
@@ -784,9 +765,6 @@
       "movieTemplate": "Modèle de nom de fichier (film)",
       "episodeTemplate": "Modèle de chemin (épisode)",
       "minSeedRatio": "Retirer le torrent du client de téléchargement quand le ratio atteint (0 = juste après traitement)",
-      "activeIndexerManager": "Gestionnaire d'indexeurs",
-      "noIndexerConfigured": "Aucun gestionnaire d'indexeurs configuré. Activez Prowlarr ou Jackett dans les paramètres des Intégrations.",
-      "noIndexerSelected": "Aucune sélection",
       "defaultMovieQualityProfile": "Profil qualité par défaut des films",
       "defaultMovieQualityProfileNone": "Aucun (pas de profil assigné à l'ajout)",
       "defaultMovieQualityProfileHint": "Assigné automatiquement aux nouveaux films ajoutés à la bibliothèque.",
@@ -1196,8 +1174,6 @@
     },
     "integrations": {
       "testConnection": "Tester la connexion",
-      "title": "Intégrations",
-      "description": "Connectez des intégrations tierces utilisées par le tableau de bord.",
       "indexers": "Indexeurs",
       "groups": {
         "media": "Médias",
@@ -1448,7 +1424,8 @@
         "interactive": "Recherche interactive",
         "manual_search": "Recherche manuelle",
         "unknown": "Inconnu"
-      }
+      },
+      "pricingAdvanced": "Tarifs et budget quotidien"
     },
     "blocklist": {
       "title": "Liste de blocage",
@@ -1612,7 +1589,7 @@
       "statusOff": "L'arrêt automatique du partage est désactivé",
       "shared_one": "{{count}} torrent en partage",
       "shared_other": "{{count}} torrents en partage",
-      "description": "Après l'import, Rawkoon garde chaque torrent en partage jusqu'à ce qu'il atteigne son ratio, puis le retire du client. La copie de votre bibliothèque est un lien physique, elle reste donc en place.",
+      "description": "Après l’importation, Rawkoon continue de partager chaque torrent jusqu’à son ratio ou sa durée cible, puis le retire du client. Votre copie dans la bibliothèque est un lien physique, elle reste donc.",
       "enable": "Arrêter le partage une fois l'objectif atteint",
       "enableHint": "Désactivé, un torrent n'est retiré à l'import que s'il atteint déjà le ratio public.",
       "preview_one": "{{count}} torrent arrêterait le partage maintenant, {{size}}.",
@@ -1626,9 +1603,9 @@
       "days_one": "{{count}} jour",
       "days_other": "{{count}} jours",
       "sentence": {
-        "both": "Arrêter le partage au ratio {{ratio}} ou après {{time}} de partage, selon ce qui arrive en premier.",
-        "ratio": "Arrêter le partage une fois le ratio {{ratio}} atteint.",
-        "time": "Arrêter le partage après {{time}}.",
+        "both": "Continuer le partage jusqu’au ratio {{ratio}} ou {{time}}, selon ce qui arrive en premier.",
+        "ratio": "Continuer le partage jusqu’au ratio {{ratio}}.",
+        "time": "Continuer le partage pendant {{time}}.",
         "none": "Arrêter le partage dès l'import. Rien n'est partagé."
       },
       "unknownPrivate": "Un indexeur que Rawkoon ne peut pas joindre est considéré comme privé, pour qu'aucun torrent ne soit retiré trop tôt par erreur.",
@@ -1647,15 +1624,22 @@
         "cancel": "Annuler",
         "empty": "Aucun indexeur trouvé. Connectez d'abord Prowlarr ou Jackett.",
         "heldCount_one": "{{count}} en partage",
-        "heldCount_other": "{{count}} en partage"
+        "heldCount_other": "{{count}} en partage",
+        "advanced": "Réglages par indexeur"
       },
       "save": "Enregistrer les règles de partage",
       "saved": "Règles de partage enregistrées.",
       "saveError": "Impossible d'enregistrer les règles de partage.",
       "label": {
         "ratio": "Ratio {{ratio}}",
-        "none": "Dès l'import"
-      }
+        "none": "Dès l'import",
+        "both": "Ratio {{ratio}} ou {{time}}",
+        "time": "{{time}}"
+      },
+      "orAfter": "Ou jours",
+      "timeUnit": "Unité de temps",
+      "unitDays": "jours",
+      "unitHours": "heures"
     },
     "downloadSafety": {
       "title": "Sécurité des téléchargements",
@@ -1673,6 +1657,158 @@
     },
     "transcode": {
       "title": "Réencodage"
+    },
+    "pages": {
+      "profile": {
+        "title": "Profil",
+        "description": "Votre nom, courriel et photo.",
+        "keywords": "avatar, nom, courriel, compte"
+      },
+      "security": {
+        "title": "Sécurité",
+        "description": "Mot de passe, clés d’accès et lien du calendrier.",
+        "keywords": "mot de passe, clé d’accès, calendrier, abonnement, connexion"
+      },
+      "alerts": {
+        "title": "Alertes",
+        "description": "Les notifications que vous recevez et où elles vont.",
+        "keywords": "notifications, alertes, canaux"
+      },
+      "app": {
+        "title": "Application",
+        "description": "La langue et l’emplacement de la navigation.",
+        "keywords": "langue, navigation, position"
+      },
+      "connections": {
+        "title": "Connexions",
+        "description": "Les services avec lesquels Rawkoon communique : métadonnées, serveur de médias, indexeurs et client de téléchargement.",
+        "keywords": "indexeur, indexeurs, recherche, client de téléchargement, métadonnées, serveur de médias"
+      },
+      "library": {
+        "title": "Bibliothèque",
+        "description": "Dossiers, valeurs par défaut des nouveaux titres et fréquence de vérification des versions.",
+        "keywords": "dossiers, chemins, nommage, modèles, défauts, vérification, fréquence, recherche à l’ajout"
+      },
+      "quality": {
+        "title": "Qualité",
+        "description": "Profils de qualité et formats personnalisés.",
+        "keywords": "qualité, profil, résolution, format personnalisé, pointage"
+      },
+      "after-download": {
+        "title": "Après le téléchargement",
+        "description": "Ce qui arrive à un torrent une fois importé, et les règles de sécurité des fichiers.",
+        "keywords": "partage, ratio, torrent, sécurité, extensions, espace libre"
+      },
+      "books": {
+        "title": "Livres",
+        "description": "La bibliothèque de livres et de livres audio, son fournisseur de métadonnées et l’emplacement des fichiers.",
+        "keywords": "livre audio, livres, lecture, profil de qualité"
+      },
+      "people": {
+        "title": "Personnes",
+        "description": "Utilisateurs, invitations, authentification unique, clés d’API et sessions.",
+        "keywords": "utilisateurs, comptes, membres, invitations, sessions, clés d’api, authentification unique"
+      },
+      "general": {
+        "title": "Général",
+        "description": "Pays et sorties à venir.",
+        "keywords": "pays, sorties à venir, région"
+      },
+      "ai": {
+        "title": "IA",
+        "description": "Connectez un modèle compatible OpenAI pour aider à choisir les versions.",
+        "keywords": "ia, modèle, fournisseur, tarifs"
+      },
+      "health": {
+        "title": "Santé",
+        "description": "Rawkoon peut-il trouver, récupérer et importer en ce moment ?",
+        "keywords": "santé, diagnostic, état, préparation, flux rss"
+      },
+      "jobs": {
+        "title": "Tâches",
+        "description": "Tâches planifiées, état des files et historique récent.",
+        "keywords": "tâches, planifiées, file, historique"
+      },
+      "reencode": {
+        "title": "Réencodage",
+        "description": "La file de réencodage, son historique et sa plage d’exécution.",
+        "keywords": "réencodage, transcodage, compression, file"
+      },
+      "downloads": {
+        "title": "Téléchargements",
+        "description": "Préparation, partage, restes, historique des téléchargements et importation Radarr et Sonarr.",
+        "keywords": "téléchargements, importation, partage, restes, historique, migration"
+      },
+      "blocklist": {
+        "title": "Liste de blocage",
+        "description": "Les versions qui ne sont jamais récupérées automatiquement.",
+        "keywords": "liste de blocage, bloqué, versions"
+      },
+      "ai-usage": {
+        "title": "Utilisation de l’IA",
+        "description": "Ce que coûte le fournisseur d’IA et ses performances.",
+        "keywords": "ia, utilisation, coût, budget, historique"
+      },
+      "updates": {
+        "title": "Mises à jour",
+        "description": "Versions publiques de Rawkoon, actualisées toutes les 6 heures.",
+        "keywords": "mises à jour, nouveautés, version, journal des changements"
+      }
+    },
+    "groups": {
+      "you": "Vous",
+      "server": "Serveur",
+      "system": "Système"
+    },
+    "search": {
+      "label": "Rechercher dans les réglages",
+      "placeholder": "Rechercher dans les réglages",
+      "empty": "Aucun réglage ne correspond à votre recherche."
+    },
+    "advanced": "Avancé",
+    "app": {
+      "languageHint": "La langue utilisée dans toute l’application. Les titres la suivent quand une traduction existe.",
+      "navigation": "Navigation",
+      "navigationHint": "Choisissez où la barre de navigation apparaît sur ordinateur."
+    },
+    "connections": {
+      "hookAdvanced": "Script de fin de téléchargement",
+      "indexers": {
+        "title": "Indexeurs",
+        "help": "Choisissez le gestionnaire d’indexeurs que Rawkoon interroge.",
+        "switchLabel": "Gestionnaire d’indexeurs",
+        "switchError": "Impossible de changer de gestionnaire d’indexeurs.",
+        "saveToActivate": "Enregistrez {{manager}} pour en faire le gestionnaire d’indexeurs actif."
+      }
+    },
+    "library": {
+      "folders": {
+        "title": "Dossiers",
+        "description": "Où Rawkoon cherche les téléchargements et range les films et séries terminés.",
+        "templates": "Modèles de nommage"
+      },
+      "defaults": {
+        "title": "Valeurs par défaut",
+        "description": "Le profil de qualité d’un nouveau titre tant que vous ne le changez pas."
+      },
+      "schedule": {
+        "title": "Fréquence de vérification"
+      },
+      "maintenance": "Maintenance"
+    },
+    "afterDownload": {
+      "safety": "Sécurité des fichiers"
+    },
+    "health": {
+      "allClear": "Rawkoon peut trouver, récupérer et importer en ce moment.",
+      "needsAttention_one": "{{count}} point demande de l’attention avant que Rawkoon fonctionne seul.",
+      "needsAttention_other": "{{count}} points demandent de l’attention avant que Rawkoon fonctionne seul.",
+      "library": "Santé de la bibliothèque",
+      "readyToGrab": "Prêt à récupérer.",
+      "libraryIssues_one": "{{count}} problème de bibliothèque à examiner",
+      "libraryIssues_other": "{{count}} problèmes de bibliothèque à examiner",
+      "alertsOpen_one": "{{count}} alerte ouverte",
+      "alertsOpen_other": "{{count}} alertes ouvertes"
     }
   },
   "medias": {
@@ -1758,7 +1894,10 @@
       "needsUpgrade": "Mise à niveau requise",
       "episodesMissing_one": "{{count}} ép. manquant",
       "episodesMissing_other": "{{count}} éps. manquants",
-      "downloadsImport": "Importer des téléchargements"
+      "downloadsImport": "Importer des téléchargements",
+      "switchLabel": "Sections de la bibliothèque",
+      "switchMedia": "Films et séries",
+      "switchBooks": "Livres"
     },
     "watchlist": {
       "pageTitle": "Liste de visionnage",
@@ -1774,8 +1913,6 @@
       "ownedOf": "{{owned}}/{{total}}"
     },
     "explore": {
-      "pageTitle": "Découvrir",
-      "pageSubtitle": "Recherchez sur TMDB et parcourez Découvrir.",
       "trending": "Tendances",
       "popularMovies": "Films populaires",
       "popularShows": "Séries populaires",
@@ -2681,12 +2818,12 @@
     }
   },
   "downloadsPage": {
-    "title": "Téléchargements",
-    "subtitle": "Ce qui se trouve dans votre client de téléchargement, et ce dont Rawkoon a encore besoin.",
     "tabs": {
       "import": "Importer",
       "seeding": "Partage",
-      "orphans": "Orphelins"
+      "orphans": "Orphelins",
+      "history": "Historique",
+      "arr": "Radarr et Sonarr"
     }
   },
   "seeding": {
@@ -2959,5 +3096,66 @@
       "cpuThreads": "Threads CPU (vide = auto)",
       "actionFailed": "Échec de l'action"
     }
+  },
+  "activity": {
+    "lanes": {
+      "label": "Sections d'activité",
+      "inbox": "Boîte de réception",
+      "queue": "File d'attente",
+      "requests": "Demandes",
+      "calendar": "Calendrier",
+      "history": "Historique"
+    },
+    "queue": {
+      "filterLabel": "Filtrer la file d'attente",
+      "all": "Tout",
+      "status": {
+        "downloading": "Téléchargement",
+        "waiting": "En attente",
+        "importing": "Importation",
+        "stalled": "Bloqué",
+        "failed": "Échec"
+      },
+      "reason": {
+        "grabIn_one": "Récupération dans {{time}}, {{count}} version comparée",
+        "grabIn_other": "Récupération dans {{time}}, {{count}} versions comparées",
+        "grabDue_one": "Prêt à récupérer, {{count}} version trouvée",
+        "grabDue_other": "Prêt à récupérer, {{count}} versions trouvées",
+        "paused": "En pause dans le client de téléchargement",
+        "importing": "Téléchargement terminé, en attente d'importation",
+        "stalled": "Aucune donnée ne provient des pairs",
+        "failed": "Le client de téléchargement a signalé une erreur",
+        "importFailed": "Téléchargé, mais l'importation a échoué"
+      }
+    }
+  },
+  "find": {
+    "title": "Trouver",
+    "browse": "Parcourir",
+    "swipe": "Swipe",
+    "modeLabel": "Mode de Trouver",
+    "placeholder": "Chercher films, séries, livres et votre bibliothèque",
+    "clear": "Effacer la recherche",
+    "hideOwned": "Masquer ce que je possède",
+    "groups": {
+      "library": "Dans votre bibliothèque",
+      "titles": "Films et séries",
+      "books": "Livres"
+    },
+    "shelves": {
+      "label": "Étagères",
+      "watchlist": "À regarder",
+      "watchlistHint": "Les titres mis de côté pour plus tard",
+      "collections": "Collections",
+      "collectionsHint": "Complétez les séries de films commencées",
+      "bestsellers": "Meilleures ventes",
+      "bestsellersHint": "Des listes de livres pour votre prochaine lecture"
+    },
+    "countInList": "titres dans cette liste",
+    "hiddenOnPage_one": "{{count}} titre que vous possédez est masqué sur cette page",
+    "hiddenOnPage_other": "{{count}} titres que vous possédez sont masqués sur cette page",
+    "allOwnedOnPage": "Tout ce qui figure sur cette page est déjà dans votre bibliothèque.",
+    "nextPage": "Page suivante",
+    "searchingBooks": "Recherche de livres..."
   }
 }

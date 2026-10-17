@@ -47,16 +47,13 @@ export function SeedingTab() {
           </div>
         </div>
         <a
-          href="/library/downloads?view=seeding"
+          href="/settings/downloads?view=seeding"
           className="text-sm text-primary-400 underline underline-offset-2"
         >
           {t("settings.seeding.viewTorrents")}
         </a>
       </div>
-      <SeedingSettingsSection
-        key={`seed-${settings.updated_at}`}
-        settings={settings}
-      />
+      <SeedingSettingsSection settings={settings} />
     </div>
   );
 }

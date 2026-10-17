@@ -59,7 +59,7 @@ export function LibraryPageHeader({
         {isAdmin && (
           <button
             type="button"
-            onClick={() => navigate({ to: "/library/downloads" })}
+            onClick={() => navigate({ to: "/settings/downloads" })}
             className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-800/60 px-3 text-sm font-medium text-neutral-300 transition-colors hover:bg-neutral-700/70 hover:text-neutral-100"
           >
             <Download size={14} />
