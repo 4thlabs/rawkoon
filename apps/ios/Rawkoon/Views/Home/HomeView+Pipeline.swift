@@ -152,7 +152,7 @@ private struct PipelineCard: View {
 
     private func isIdle(_ row: Row) -> Bool {
         guard available(row), let pipeline else { return true }
-        switch row {
+        return switch row {
         case .downloading: pipeline.downloading.count == 0
         case .delayed: pipeline.delayed.count == 0
         case .attention: pipeline.attention.count == 0
@@ -164,13 +164,13 @@ private struct PipelineCard: View {
     private func value(_ row: Row) -> String {
         guard available(row), let pipeline else { return "–" }
         switch row {
-        case .downloading: String(pipeline.downloading.count)
-        case .delayed: String(pipeline.delayed.count)
-        case .attention: String(pipeline.attention.count)
+        case .downloading: return String(pipeline.downloading.count)
+        case .delayed: return String(pipeline.delayed.count)
+        case .attention: return String(pipeline.attention.count)
         case .rss:
             let relative = ActivityPresentation.relativeTime(pipeline.rss.lastRunAt)
             return relative.isEmpty ? "–" : relative
-        case .reencode: "\(pipeline.reencode.active)/\(pipeline.reencode.queued)"
+        case .reencode: return "\(pipeline.reencode.active)/\(pipeline.reencode.queued)"
         }
     }
 

@@ -1,6 +1,36 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Couldn't load the missing titles.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de charger les titres manquants."
+          }
+        }
+      }
+    },
+    "No failed searches": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune recherche infructueuse"
+          }
+        }
+      }
+    },
+    "Searches that found nothing": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherches sans résultat"
+          }
+        }
+      }
+    },
     "Active manager: %@": {
       "localizations": {
         "fr": {
