@@ -17,7 +17,6 @@ import { LibraryToolbar } from "./LibraryToolbar";
 import { LibraryGrid } from "./LibraryGrid";
 import {
   useLibraryPageState,
-  LIBRARY_DEFAULTS,
   type LibraryPageSearchParams,
 } from "./useLibraryPageState";
 
@@ -39,9 +38,8 @@ export function LibraryPage() {
   const liveSearchToast = useLiveSearchToast();
 
   // ─── Filter / sort state (URL-persisted) ───────────────────────────────────
-  const { state, setState, activeFilterCount } = useLibraryPageState(
-    searchParams as LibraryPageSearchParams,
-  );
+  const { state, setState, setSort, resetFilters, activeFilterCount } =
+    useLibraryPageState(searchParams as LibraryPageSearchParams);
   const {
     type: typeFilter,
     status: statusFilter,
@@ -102,15 +100,6 @@ export function LibraryPage() {
         : typeFilter === "show"
           ? showCount
           : movieCount + showCount;
-  const resetFilters = () =>
-    setState({
-      type: LIBRARY_DEFAULTS.type,
-      status: LIBRARY_DEFAULTS.status,
-      language: LIBRARY_DEFAULTS.language,
-      sortBy: LIBRARY_DEFAULTS.sortBy,
-      sortDir: LIBRARY_DEFAULTS.sortDir,
-    });
-
   return (
     <PageLayout>
       <LibrarySwitch active="media" />
@@ -143,8 +132,7 @@ export function LibraryPage() {
           onTypeChange={(value) => setState({ type: value })}
           onStatusChange={(value) => setState({ status: value })}
           onLanguageChange={(value) => setState({ language: value })}
-          onSortByChange={(value) => setState({ sortBy: value })}
-          onSortDirChange={(value) => setState({ sortDir: value })}
+          onSortChange={setSort}
           onViewModeChange={(value) => setState({ view: value })}
           onReset={resetFilters}
         />
@@ -153,7 +141,12 @@ export function LibraryPage() {
           items={sorted}
           isLoading={isLoading}
           viewMode={viewMode}
-          filtered={activeFilterCount > 0 || search !== ""}
+          filtered={
+            typeFilter !== "all" ||
+            statusFilter !== "all" ||
+            languageFilter !== "all" ||
+            search !== ""
+          }
           onMovieSearch={handleMovieSearch}
           movieSearchPending={searchMovie.isPending}
           movieSearchId={searchMovie.variables?.id ?? null}

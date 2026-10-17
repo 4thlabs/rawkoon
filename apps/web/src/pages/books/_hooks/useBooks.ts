@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api/client";
 import { BOOKS_ENDPOINTS } from "@/lib/endpoints";
 import { queryKeys } from "@/lib/queryKeys";
@@ -44,6 +49,7 @@ export function useBooks(params: BookListParams = {}) {
   return useQuery({
     queryKey: queryKeys.books.list(params),
     queryFn: () => fetchApi<BookListResponse>(listQuery(params)),
+    placeholderData: keepPreviousData,
   });
 }
 
