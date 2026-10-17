@@ -5,7 +5,7 @@ extension MediaDetailView {
     // MARK: Seasons (interactive)
 
     /// Info tab: admins on in-library shows get a compact summary (the controls
-    /// live in Manage); everyone else keeps the read-only list.
+    /// live in Files); everyone else keeps the read-only list.
     @ViewBuilder
     var seasonsSection: some View {
         if libraryId != nil, model.isAdmin, showManagement {
@@ -22,7 +22,7 @@ extension MediaDetailView {
             let all = episodesBySeason.values.flatMap(\.self)
             let downloaded = all.filter { $0.status == "downloaded" }.count
             Button {
-                withRawkoonMotion(.easeInOut(duration: 0.15)) { detailTab = .manage }
+                withRawkoonMotion(.easeInOut(duration: 0.15)) { detailTab = .files }
             } label: {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -32,7 +32,7 @@ extension MediaDetailView {
                             .foregroundStyle(Theme.muted)
                     }
                     Spacer(minLength: 0)
-                    Text("Manage seasons").font(.subheadline.weight(.medium)).foregroundStyle(Theme.apricot)
+                    Text("View in Files").font(.subheadline.weight(.medium)).foregroundStyle(Theme.apricot)
                     Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(Theme.apricot)
                 }
                 .padding(12)
@@ -45,7 +45,7 @@ extension MediaDetailView {
         }
     }
 
-    /// Manage tab: the full per-season controls.
+    /// Files tab: the full per-season controls.
     var manageSeasonsSection: some View {
         seasonsList(manage: true)
     }

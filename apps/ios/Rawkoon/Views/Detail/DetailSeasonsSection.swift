@@ -15,7 +15,7 @@ struct DetailSeasonsSection: View {
     let filesBySeason: [Int: [LibraryFileInfo]]
     let inLibrary: Bool
     let isAdmin: Bool
-    /// Manage-tab presentation: inline Search + monitor toggle + state per season.
+    /// Files-tab presentation: inline Search + monitor toggle + state per season.
     var manage = false
 
     let onSeasonAutoSearch: (Int) async -> Void

@@ -2,10 +2,10 @@ import RawkoonKit
 import SwiftUI
 
 extension MediaDetailView {
-    // MARK: Management (admin, in-library)
+    // MARK: Files tab (admin, in-library)
 
     @ViewBuilder
-    var managementSections: some View {
+    var filesSections: some View {
         if managementLoading, managementItem == nil {
             ProgressView().tint(Theme.muted)
                 .frame(maxWidth: .infinity)
@@ -13,7 +13,7 @@ extension MediaDetailView {
         } else if let managementError, managementItem == nil {
             VStack(spacing: 12) {
                 ContentUnavailableView(
-                    "Couldn't load management",
+                    "Couldn't load files",
                     systemImage: "exclamationmark.triangle",
                     description: Text(managementError)
                 )
@@ -27,9 +27,7 @@ extension MediaDetailView {
                 .tint(Theme.apricot)
             }
             .padding(.top, 8)
-        } else if let managementItem {
-            managementControlsCard(managementItem)
-                .id("management")
+        } else if managementItem != nil {
             if mediaType == "tv" {
                 manageSeasonsSection
             }
@@ -50,247 +48,6 @@ extension MediaDetailView {
                     .foregroundStyle(Theme.terracotta)
                     .padding(.horizontal, 16)
             }
-        }
-    }
-
-    func managementControlsCard(_ item: LibraryMedia) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 10) {
-                Text("Management")
-                    .font(.sectionTitle)
-                    .foregroundStyle(Theme.textStrong)
-                Spacer()
-                if applyingManagementChange {
-                    ProgressView().tint(Theme.muted)
-                }
-                // The item's edit / artwork / rescan / remove actions live in one
-                // overflow menu so no single control has to carry a long label.
-                Menu {
-                    Button {
-                        showingOverridesEditor = true
-                    } label: {
-                        Label("Edit info", systemImage: "pencil")
-                    }
-                    Button {
-                        showingArtworkPicker = true
-                    } label: {
-                        Label("Change artwork", systemImage: "photo")
-                    }
-                    .requiresConnection(model.isOffline)
-                    Button {
-                        Task { await runRescan() }
-                    } label: {
-                        Label("Rescan files", systemImage: "arrow.clockwise")
-                    }
-                    .requiresConnection(model.isOffline)
-                    Button {
-                        if let libraryId {
-                            reencodeTarget = ReencodeTarget(selection: TranscodeSelection(mediaId: libraryId), subtitle: title)
-                        }
-                    } label: {
-                        Label("Re-encode…", systemImage: "gauge.with.dots.needle.67percent")
-                    }
-                    .requiresConnection(model.isOffline)
-                    Divider()
-                    Button(role: .destructive) {
-                        pendingRemoveLibraryId = libraryId
-                        pendingRemoveTitle = title
-                        showingRemoveConfirm = true
-                    } label: {
-                        Label("Remove from library", systemImage: "trash")
-                    }
-                    .requiresConnection(model.isOffline)
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.title3)
-                        .foregroundStyle(Theme.apricot)
-                }
-                .disabled(applyingManagementChange)
-                .accessibilityLabel("More actions")
-            }
-
-            searchControls(item)
-
-            managementDivider
-
-            // Monitoring + quality: what the library tracks and how.
-            Toggle("Monitored", isOn: Binding(
-                get: { item.monitored },
-                set: { newValue in Task { await applyMonitoredChange(newValue) } }
-            ))
-            .tint(Theme.terracotta)
-            .disabled(applyingManagementChange)
-            .requiresConnection(model.isOffline)
-
-            managementFieldRow(label: "Status") {
-                LocalizedStatus.text(item.status)
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.muted)
-            }
-            Text("Status is controlled by grabs and scans, not edited manually.")
-                .font(.caption2)
-                .foregroundStyle(Theme.faint)
-
-            qualityProfileField(item)
-        }
-        .padding(14)
-        .background(Theme.raised, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.border, lineWidth: 1))
-        .padding(.horizontal, 16)
-        .sheet(isPresented: $showingOverridesEditor) {
-            NavigationStack {
-                LibraryOverridesEditorView(item: item) { updated in
-                    managementItem = updated
-                    managementNotice = String(localized: "Details updated.")
-                }
-                .environment(model)
-            }
-        }
-        .sheet(isPresented: $showingArtworkPicker) {
-            NavigationStack {
-                LibraryArtworkPickerView(item: item) { updated in
-                    managementItem = updated
-                    managementNotice = String(localized: "Artwork updated.")
-                }
-                .environment(model)
-            }
-        }
-    }
-
-    /// The last outcome line and the one search control the item needs now.
-    @ViewBuilder
-    private func searchControls(_ item: LibraryMedia) -> some View {
-        if let note = item.lastSearchNote {
-            LastSearchLine(note: note, showsReason: true)
-        }
-
-        // The card's one lamp: searching releases is the primary reason an
-        // admin opens Management. Movies split it: tap auto-searches, the
-        // chevron opens the interactive sheet. Shows search per season/episode.
-        // Only a wanted movie: /search resets status to wanted and grabs as a
-        // first download, so a downloaded movie keeps the interactive lamp.
-        // A wanted item that came up empty swaps the lamp for explicit retry/choose buttons.
-        if let note = item.lastSearchNote, note.isMiss {
-            missActions
-        } else if mediaType == "movie", movieCanAutoSearch(type: "movie", status: item.status) {
-            MovieAutoSearchLamp(
-                isSearching: autoSearching,
-                onAutoSearch: { Task { await movieAutoSearch() } },
-                onChoose: { openReleaseSearch() }
-            )
-            .disabled(applyingManagementChange)
-            .requiresConnection(model.isOffline)
-        } else {
-            Button {
-                openReleaseSearch()
-            } label: {
-                Label("Search releases", systemImage: "magnifyingglass")
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 44)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(Theme.apricot)
-            .foregroundStyle(Theme.onAccent)
-            .fontWeight(.semibold)
-            .disabled(applyingManagementChange)
-            .requiresConnection(model.isOffline)
-        }
-    }
-
-    /// After a search that found nothing: rerun it, or pick a release by hand.
-    private var missActions: some View {
-        HStack(spacing: 10) {
-            if mediaType == "movie" {
-                Button {
-                    Task { await movieAutoSearch() }
-                } label: {
-                    HStack(spacing: 6) {
-                        if autoSearching {
-                            ProgressView().tint(Theme.apricot)
-                        }
-                        Text("Search again")
-                    }
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 44)
-                }
-                .buttonStyle(.bordered)
-                .tint(Theme.apricot)
-                .fontWeight(.semibold)
-                .disabled(autoSearching)
-            }
-            Button {
-                openReleaseSearch()
-            } label: {
-                Text("Choose a release")
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 44)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(Theme.apricot)
-            .foregroundStyle(Theme.onAccent)
-            .fontWeight(.semibold)
-        }
-        .disabled(applyingManagementChange)
-        .requiresConnection(model.isOffline)
-    }
-
-    var managementDivider: some View {
-        Divider().overlay(Theme.border)
-    }
-
-    /// A label on the left, its control/value trailing — the row shape shared by
-    /// the Status and Quality-profile lines.
-    func managementFieldRow(label: LocalizedStringKey, @ViewBuilder trailing: () -> some View) -> some View {
-        HStack {
-            Text(label)
-                .font(.subheadline)
-                .foregroundStyle(Theme.text)
-            Spacer(minLength: 8)
-            trailing()
-        }
-    }
-
-    /// The quality-profile control on its own full-width line so a long profile
-    /// name truncates instead of wrapping the label onto a second row.
-    func qualityProfileField(_ item: LibraryMedia) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Quality profile")
-                .font(.subheadline)
-                .foregroundStyle(Theme.text)
-            Menu {
-                Picker("Quality profile", selection: Binding(
-                    get: { item.qualityProfileId ?? 0 },
-                    set: { newValue in Task { await applyQualityProfileChange(newValue == 0 ? nil : newValue) } }
-                )) {
-                    Text("None").tag(0)
-                    ForEach(qualityProfiles) { profile in
-                        Text(profile.name).tag(profile.id)
-                    }
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Text(qualityProfileName(for: item))
-                        .foregroundStyle(Theme.text)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.muted)
-                }
-                .padding(.horizontal, 12)
-                .frame(minHeight: 40)
-                .frame(maxWidth: .infinity)
-                .background(Theme.inset, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.border, lineWidth: 1))
-            }
-            .tint(Theme.apricot)
-            .disabled(applyingManagementChange)
-            .requiresConnection(model.isOffline)
         }
     }
 

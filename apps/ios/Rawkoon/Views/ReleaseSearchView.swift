@@ -47,37 +47,7 @@ struct ReleaseSearchView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Capsule()
-                .fill(Theme.borderStrong)
-                .frame(width: 40, height: 5)
-                .padding(.top, 8)
-
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Releases")
-                        .font(.display(22))
-                        .foregroundStyle(Theme.textStrong)
-                    Text(session.searchQuery)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(Theme.faint)
-                        .lineLimit(1)
-                    if let service = session.service, !service.isEmpty {
-                        Text(service)
-                            .font(.system(.caption2, design: .monospaced))
-                            .foregroundStyle(Theme.muted)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                // An explicit close, since a drag over the list must never be what dismisses the sheet.
-                Button("Done") { dismiss() }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.apricot)
-                    .frame(minHeight: 44)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 6)
-            .padding(.bottom, 10)
+            ReleaseSheetHeader(title: "Releases", subtitle: session.searchQuery, detail: session.service)
 
             ReleaseSearchControls(session: session, filters: filters)
             ReleaseSearchResults(session: session, filters: filters, onGrabbed: onGrabbed, scrolledAway: $scrolledAway)

@@ -42,6 +42,7 @@ extension MediaDetailView {
                 statusTint: detailStatusTint
             )
             primaryAction
+            controlStrip
             if availableTabs.count > 1 {
                 detailTabBar
             }
@@ -50,9 +51,9 @@ extension MediaDetailView {
                 infoSections
             case .similar:
                 similarSection
-            case .manage:
+            case .files:
                 if showManagement {
-                    managementSections
+                    filesSections
                 }
             }
         }
