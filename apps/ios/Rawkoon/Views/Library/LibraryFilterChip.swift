@@ -31,13 +31,15 @@ struct LibraryFilterChip<Content: View>: View {
                             Text(displayLabel)
                                 .font(.subheadline.weight(.medium))
                                 .lineLimit(1)
+                                .frame(maxWidth: 96, alignment: .leading)
                         } else {
                             Text("Filters").font(.subheadline.weight(.medium))
                         }
                         Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
                     }
                     .foregroundStyle(isActive ? Theme.apricot : Theme.textStrong)
-                    .padding(.horizontal, 12).padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .frame(height: 40)
                     .glassEffect(.regular.interactive(), in: .capsule)
                 }
                 .accessibilityLabel(isActive ? Text("Filters: \(activeLabels.joined(separator: ", "))") : Text("Filters"))

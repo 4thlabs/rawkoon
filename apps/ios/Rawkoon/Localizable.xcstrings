@@ -15243,6 +15243,26 @@
         }
       }
     },
+    "Search books": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher des livres"
+          }
+        }
+      }
+    },
+    "Search titles": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher des titres"
+          }
+        }
+      }
+    },
     "%lld active, %lld queued": {
       "localizations": {
         "fr": {

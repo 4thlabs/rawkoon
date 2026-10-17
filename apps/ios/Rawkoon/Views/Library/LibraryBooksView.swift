@@ -38,25 +38,22 @@ struct LibraryBooksView: View {
     }
 
     private var booksToolbar: some View {
-        VStack(spacing: 8) {
-            searchField("Search books", text: $state.bookSearch)
-                .padding(.horizontal, 16)
-            HStack {
-                LibraryFilterChip(
-                    activeLabels: state.bookKind == .all ? [] : [String(localized: state.bookKind.title)]
-                ) {
-                    state.bookKind = .all
-                } content: {
-                    Picker("Kind", selection: $state.bookKind) {
-                        ForEach(BookKindFilter.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.inline)
+        HStack(spacing: 8) {
+            searchField(LocalizedStringKey("Search books"), text: $state.bookSearch)
+                .frame(minWidth: 100, maxWidth: .infinity)
+            LibraryFilterChip(
+                activeLabels: state.bookKind == .all ? [] : [String(localized: state.bookKind.title)]
+            ) {
+                state.bookKind = .all
+            } content: {
+                Picker("Kind", selection: $state.bookKind) {
+                    ForEach(BookKindFilter.allCases) { Text($0.title).tag($0) }
                 }
-                Spacer(minLength: 0)
+                .pickerStyle(.inline)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
         }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
     }
 
     @ViewBuilder
