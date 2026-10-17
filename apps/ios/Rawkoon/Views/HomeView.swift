@@ -48,6 +48,15 @@ struct HomeView: View {
         return scenes.lazy.compactMap(\.keyWindow).first?.safeAreaInsets.top ?? 0
     }
 
+    /// DEBUG-only: `RAWKOON_HOME_ANCHOR=center` opens Home mid-scroll so screenshots reach the cards below the hero.
+    private var debugScrollAnchor: UnitPoint? {
+        #if DEBUG
+            ProcessInfo.processInfo.environment["RAWKOON_HOME_ANCHOR"] == "center" ? .center : nil
+        #else
+            nil
+        #endif
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
@@ -90,6 +99,7 @@ struct HomeView: View {
                 .ignoresSafeArea()
                 .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { measuredTopInset = $0 }
         }
+        .defaultScrollAnchor(debugScrollAnchor)
         .reportsTabBarScroll()
         .background(Theme.base)
         .onChange(of: model.pendingMediaLink, initial: true) { _, link in
