@@ -15,7 +15,11 @@ extension RootTab {
     }
 
     var selectedSymbol: String {
-        self == .settings ? symbol : symbol + ".fill"
+        switch self {
+        // These symbols have no .fill variant, so the selected slot would render blank.
+        case .settings, .find, .server: symbol
+        default: symbol + ".fill"
+        }
     }
 
     var title: LocalizedStringKey {
