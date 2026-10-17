@@ -52,7 +52,11 @@ const SCAN_CONCURRENCY = 4;
 const DB_WRITE_CONCURRENCY = 8;
 
 function normalizeForDiscovery(str: string): string {
+  // Fold accents first: "Ça" must become "ca", not " a" (which would then
+  // match any filename containing the letter "a").
   return str
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, " ")
     .replace(/\s+/g, " ")
@@ -249,16 +253,23 @@ async function rescanLibraryItemInner(
 
   // ── Step 1b: Discovery — scan library dir for untracked video files ────────
   // Walk the configured movies/shows library path and insert a media_files row
-  // for any video file that fuzzy-matches this item's title+year but isn't
-  // already tracked. Updates status to "downloaded" if it was "wanted".
-  if (mediaSettings && media.type === "movie" && media.title) {
+  // for any video file whose name contains this item's title and year as whole
+  // words and that no library item tracks yet. Updates status to "downloaded"
+  // if it was "wanted".
+  const normalizedMovieTitle =
+    media.type === "movie" && media.title
+      ? normalizeForDiscovery(media.title)
+      : "";
+  // A title with no Latin letters or digits normalizes to "" and would match
+  // every file, so it skips discovery.
+  if (mediaSettings && normalizedMovieTitle) {
     const libraryPath = mediaSettings.moviesLibraryPath;
     if (libraryPath) {
       const remappedLibDir = remapPath(libraryPath);
       try {
         const entries = await readdir(remappedLibDir, { withFileTypes: true });
-        const normalizedTitle = normalizeForDiscovery(media.title);
-        const yearStr = media.year != null ? String(media.year) : null;
+        const titleWords = ` ${normalizedMovieTitle} `;
+        const yearWord = media.year != null ? ` ${media.year} ` : null;
 
         const candidates: Array<{
           diskPath: string;
@@ -272,9 +283,9 @@ async function rescanLibraryItemInner(
             continue;
 
           const stem = entry.name.slice(0, -ext.length);
-          const normalized = normalizeForDiscovery(stem);
-          if (!normalized.includes(normalizedTitle)) continue;
-          if (yearStr != null && !normalized.includes(yearStr)) continue;
+          const words = ` ${normalizeForDiscovery(stem)} `;
+          if (!words.includes(titleWords)) continue;
+          if (yearWord != null && !words.includes(yearWord)) continue;
 
           const diskPath = join(remappedLibDir, entry.name);
           const dbPath = join(libraryPath, entry.name);
@@ -282,8 +293,24 @@ async function rescanLibraryItemInner(
           candidates.push({ diskPath, dbPath, name: entry.name });
         }
 
+        // A file another library item already tracks belongs to that item.
+        const ownedElsewhere =
+          candidates.length > 0
+            ? new Set(
+                (
+                  await prisma.mediaFile.findMany({
+                    where: {
+                      filePath: { in: candidates.map((c) => c.dbPath) },
+                      mediaId: { not: mediaId },
+                    },
+                    select: { filePath: true },
+                  })
+                ).map((f) => f.filePath),
+              )
+            : new Set<string>();
+
         const created = await mapPool(
-          candidates,
+          candidates.filter((c) => !ownedElsewhere.has(c.dbPath)),
           SCAN_CONCURRENCY,
           async ({ diskPath, dbPath, name }) => {
             let st;

@@ -53,6 +53,8 @@ type State = {
   enqueuedDhIds: number[]; // IDs passed to enqueueLibraryPostProcess
   mediaSettings: MediaSettingsRecord | null;
   createdFiles: object[];
+  // Paths tracked by a different library item (discovery must skip them).
+  otherOwnedPaths: string[];
   activeDownloadCount: number;
   activeTranscodeFileIds: number[];
 };
@@ -71,6 +73,7 @@ const state: State = {
   enqueuedDhIds: [],
   mediaSettings: null,
   createdFiles: [],
+  otherOwnedPaths: [],
   activeDownloadCount: 0,
 };
 
@@ -142,7 +145,16 @@ mock.module("@rawkoon/api/db", () => ({
       },
     },
     mediaFile: {
-      findMany: () => Promise.resolve(state.files),
+      findMany: (args?: { where?: { filePath?: { in: string[] } } }) => {
+        const paths = args?.where?.filePath?.in;
+        if (paths)
+          return Promise.resolve(
+            state.otherOwnedPaths
+              .filter((p) => paths.includes(p))
+              .map((filePath) => ({ filePath })),
+          );
+        return Promise.resolve(state.files);
+      },
       update: (args: { where: { id: number } }) => {
         state.updatedFileIds.push(args.where.id);
         return Promise.resolve({});
@@ -324,6 +336,7 @@ beforeEach(() => {
   state.enqueuedDhIds = [];
   state.mediaSettings = null;
   state.createdFiles = [];
+  state.otherOwnedPaths = [];
   state.activeDownloadCount = 0;
   state.activeTranscodeFileIds = [];
 
@@ -903,6 +916,63 @@ describe("Discovery (Step 1b)", () => {
 
     const result = await rescanLibraryItem(1);
     expect(result?.imported).toBe(0);
+  });
+
+  function discoverMovie(title: string, year: number, files: string[]) {
+    state.media = { id: 1, type: "movie", status: "downloaded", title, year };
+    state.remainingFileCount = 1;
+    state.mediaSettings = {
+      moviesLibraryPath: "/movies",
+      showsLibraryPath: null,
+      movieTemplate: "{title} ({year})",
+      episodeTemplate: "",
+      fileOperation: "none",
+    };
+    readdirMap["/movies"] = files;
+    for (const name of files) {
+      scanMap[`/movies/${name}`] = makeMi();
+      statMap[`/movies/${name}`] = true;
+    }
+    return rescanLibraryItem(1);
+  }
+
+  it("33b. Accented short title only matches its own file, not every same-year file", async () => {
+    const result = await discoverMovie("Ça", 2017, [
+      "Ça (2017) [1080p WEB].mkv",
+      "Logan (2017) [1080p WEB].mkv",
+      "Wonder Woman (2017) [2160p BluRay].mkv",
+    ]);
+    expect(result?.imported).toBe(1);
+    expect(state.createdFiles).toEqual([
+      expect.objectContaining({
+        data: expect.objectContaining({
+          fileName: "Ça (2017) [1080p WEB].mkv",
+        }),
+      }),
+    ]);
+  });
+
+  it("33c. Title only matches whole words", async () => {
+    const result = await discoverMovie("It", 2017, [
+      "Kitten Heist (2017) [1080p WEB].mkv",
+    ]);
+    expect(result?.imported).toBe(0);
+  });
+
+  it("33d. Title with no Latin letters or digits skips discovery", async () => {
+    const result = await discoverMovie("君の名は", 2016, [
+      "Your Name (2016) [1080p BluRay].mkv",
+    ]);
+    expect(result?.imported).toBe(0);
+  });
+
+  it("33e. File already tracked by another library item → not imported", async () => {
+    state.otherOwnedPaths = ["/movies/The Matrix (1999) [1080p BluRay].mkv"];
+    const result = await discoverMovie("The Matrix", 1999, [
+      "The Matrix (1999) [1080p BluRay].mkv",
+    ]);
+    expect(result?.imported).toBe(0);
+    expect(state.createdFiles).toHaveLength(0);
   });
 });
 
