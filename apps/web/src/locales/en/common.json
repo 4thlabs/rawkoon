@@ -32,7 +32,7 @@
   },
   "calendar": {
     "title": "Calendar",
-    "subtitle": "Household events and upcoming media releases in one place",
+    "subtitle": "Upcoming movie and TV releases in one place",
     "sunday": "Sun",
     "monday": "Mon",
     "tuesday": "Tue",
@@ -140,7 +140,7 @@
     },
     "activityPage": {
       "title": "Recent Activity",
-      "subtitle": "Browse the household activity feed with service and type filters.",
+      "subtitle": "Everything Rawkoon did, filterable by service and type.",
       "serviceFilter": "Service",
       "typeFilter": "Type",
       "allServices": "All services",
@@ -149,7 +149,7 @@
       "clearFilters": "Clear filters",
       "loadMore": "Load more",
       "emptyTitle": "No activity found",
-      "emptyDescription": "New household activity will appear here as it happens.",
+      "emptyDescription": "New activity will appear here as it happens.",
       "emptyFilteredDescription": "Try a different service or activity type.",
       "services": {
         "calendar": "Calendar",
