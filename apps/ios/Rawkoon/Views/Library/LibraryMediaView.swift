@@ -44,7 +44,7 @@ struct LibraryMediaView: View {
     }
 
     private var mediaListMotion: Animation? {
-        mediaRowsLaidOut && media.allSatisfy { shownMediaIds.contains($0.id) } ? listMotion : nil
+        !media.isEmpty && mediaRowsLaidOut && media.allSatisfy { shownMediaIds.contains($0.id) } ? listMotion : nil
     }
 
     private var columns: [GridItem] {

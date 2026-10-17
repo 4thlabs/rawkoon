@@ -32,7 +32,7 @@ func withRawkoonMotion<Result>(_ animation: Animation, _ body: () throws -> Resu
 extension View {
     /// Applies `animation` to `value`, degrading to a short crossfade under
     /// Reduce Motion. Prefer this over `.animation(_:value:)` everywhere.
-    func rawkoonMotion(_ animation: Animation, value: some Equatable) -> some View {
+    func rawkoonMotion(_ animation: Animation?, value: some Equatable) -> some View {
         modifier(RawkoonMotionModifier(animation: animation, value: AnyEquatable(value)))
     }
 
@@ -64,10 +64,10 @@ private struct ScrollSettle: ViewModifier {
 
 private struct RawkoonMotionModifier: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let animation: Animation
+    let animation: Animation?
     let value: AnyEquatable
     func body(content: Content) -> some View {
-        content.animation(reduceMotion ? RawkoonMotion.reduced : animation, value: value)
+        content.animation(animation.map { reduceMotion ? RawkoonMotion.reduced : $0 }, value: value)
     }
 }
 

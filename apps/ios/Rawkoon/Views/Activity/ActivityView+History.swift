@@ -32,9 +32,16 @@ extension ActivityView {
                 }
             }
             .rawkoonMotion(
-                RawkoonMotion.spring,
+                historyInitialLoadResolved ? RawkoonMotion.spring : nil,
                 value: Self.laneState(loading: loadingHistory, failed: historyError != nil, isEmpty: activities.isEmpty)
             )
+            .onChange(of: Self.laneState(
+                loading: loadingHistory, failed: historyError != nil, isEmpty: activities.isEmpty
+            )) { _, current in
+                if current != .loading {
+                    historyInitialLoadResolved = true
+                }
+            }
         }
         .padding(16)
     }

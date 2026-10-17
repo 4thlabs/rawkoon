@@ -13,6 +13,7 @@ struct RawkoonTabBar: View {
     let onExpand: () -> Void
     /// A tap on the tab already shown; the container pops it to its root.
     var onReselect: (RootTab) -> Void = { _ in }
+    var animateSelection: (RootTab) -> Bool = { _ in true }
     /// Narrowed by the container on small screens so slots stay 44pt wide.
     var horizontalPadding: CGFloat = 5
 
@@ -60,7 +61,11 @@ struct RawkoonTabBar: View {
             } else if active {
                 onReselect(tab)
             } else {
-                withRawkoonMotion(.spring(duration: 0.35, bounce: 0.2)) { selection = tab }
+                if animateSelection(tab) {
+                    withRawkoonMotion(.spring(duration: 0.35, bounce: 0.2)) { selection = tab }
+                } else {
+                    selection = tab
+                }
             }
         } label: {
             icon(tab, active: active)

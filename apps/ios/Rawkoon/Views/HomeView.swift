@@ -12,6 +12,7 @@ struct HomeView: View {
     @State var pipeline: DashboardPipeline?
     @State private var homeVisible = false
     @State private var loading = true
+    @State private var heroHasChanged = false
     @State private var measuredTopInset: CGFloat = 0
     /// When the last full refresh finished, so switching back to Home within a
     /// few seconds doesn't refetch every rail.
@@ -68,20 +69,14 @@ struct HomeView: View {
 
                 if loading, recent.isEmpty {
                     homeSkeleton
-                        .transition(.rawkoonSwap)
                 } else {
                     loadedContent
-                        .transition(.rawkoonSwap)
                 }
             }
             // The hero runs to the top edge; without it the greeting keeps its inset.
             .padding(.top, showsHero ? 0 : 12)
             .padding(.bottom, 108)
-            // Crossfade skeleton → content instead of a hard cut, so the rails
-            // fade in rather than popping into place on first load.
-            .rawkoonMotion(RawkoonMotion.spring, value: loading)
-            // A hero arriving after first paint swaps the header and drops the nav bar; ease it, don't jump.
-            .rawkoonMotion(RawkoonMotion.spring, value: showsHero)
+            .rawkoonMotion(heroHasChanged ? RawkoonMotion.spring : nil, value: showsHero)
         }
         // Behind the status bar, so rails scrolled past the hero don't run under the clock bare.
         .overlay(alignment: .top) {
@@ -124,6 +119,7 @@ struct HomeView: View {
             homeVisible = true
             hydrateFromCache()
         }
+        .onChange(of: showsHero) { _, _ in heroHasChanged = true }
         .onDisappear { homeVisible = false }
         .task { await load() }
         // Kept-alive iPhone tabs never re-appear, so a revisit refreshes like the old TabView did.
