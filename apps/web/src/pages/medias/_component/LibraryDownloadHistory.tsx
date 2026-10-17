@@ -1,4 +1,4 @@
-import { Clock, Download, Pause, Play, Sparkles, Trash2 } from "lucide-react";
+import { Clock, Pause, Play, Sparkles, Trash2 } from "lucide-react";
 import { SeedChip } from "@/features/seeding/components/SeedChip";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,17 +12,17 @@ import {
   isPausedState,
   formatLiveStats,
 } from "@/features/medias/hooks/downloadRowState";
-import { Badge, ManagementSection } from "./LibrarySharedUI";
+import { Badge } from "./LibrarySharedUI";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/confirm/ConfirmContext";
 
-interface LibraryDownloadHistorySectionProps {
+interface LibraryDownloadHistoryProps {
   libraryId: number;
 }
 
-export function LibraryDownloadHistorySection({
+export function LibraryDownloadHistory({
   libraryId,
-}: LibraryDownloadHistorySectionProps) {
+}: LibraryDownloadHistoryProps) {
   const { t } = useTranslation("common");
   const { data, isLoading } = useLibraryDownloads(libraryId);
   const deleteEntry = useDeleteLibraryDownloadEntry(libraryId);
@@ -36,37 +36,34 @@ export function LibraryDownloadHistorySection({
     deleteEntry.isPending || clearFailed.isPending || downloadAction.isPending;
 
   return (
-    <ManagementSection
-      icon={Download}
-      title={t("library.management.downloads")}
-      count={items.length}
-      collapsible
-      defaultOpen
-    >
-      <>
+    <section>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="font-sans text-base font-semibold text-neutral-100">
+          {t("library.management.downloads")}
+        </h2>
         {hasRemovable && (
-          <div className="flex justify-end mb-3">
-            <button
-              type="button"
-              disabled={busyDeleting}
-              onClick={() => {
-                confirm({
-                  variant: "destructive",
-                  description: t(
-                    "library.management.clearFailedDownloadsConfirm",
-                  ),
-                  confirmLabel: t("library.management.clearFailedDownloads"),
-                  onConfirm: () => {
-                    clearFailed.mutate();
-                  },
-                });
-              }}
-              className="rounded-md px-2.5 py-1 text-xs font-semibold text-rose-400 hover:bg-rose-950/40 disabled:opacity-50"
-            >
-              {t("library.management.clearFailedDownloads")}
-            </button>
-          </div>
+          <button
+            type="button"
+            disabled={busyDeleting}
+            onClick={() => {
+              confirm({
+                variant: "destructive",
+                description: t(
+                  "library.management.clearFailedDownloadsConfirm",
+                ),
+                confirmLabel: t("library.management.clearFailedDownloads"),
+                onConfirm: () => {
+                  clearFailed.mutate();
+                },
+              });
+            }}
+            className="focus-ring rounded-md px-2 py-1 text-sm text-neutral-300 transition-colors hover:text-red-300 disabled:opacity-50"
+          >
+            {t("library.management.clearFailedDownloads")}
+          </button>
         )}
+      </div>
+      <>
         {isLoading ? (
           <p className="text-xs text-neutral-400">
             {t("library.management.searching")}
@@ -99,7 +96,7 @@ export function LibraryDownloadHistorySection({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p
-                      className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-100 leading-snug min-w-0"
+                      className="flex items-center gap-1.5 font-mono text-xs text-neutral-100 leading-snug min-w-0"
                       title={row.release_title}
                     >
                       {row.ai_picked && (
@@ -279,6 +276,6 @@ export function LibraryDownloadHistorySection({
           </div>
         )}
       </>
-    </ManagementSection>
+    </section>
   );
 }

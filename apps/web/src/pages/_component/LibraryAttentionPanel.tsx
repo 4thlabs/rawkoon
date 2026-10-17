@@ -110,9 +110,7 @@ function AttentionRow({
   const SeverityIcon = SEVERITY_ICON[severity];
   const tv = tvLabel(item);
   const isPostProcess = item.kind === "post_process_error";
-  const linkTab = isPostProcess
-    ? ("management" as const)
-    : ("releases" as const);
+  const linkTab = isPostProcess ? ("files" as const) : ("releases" as const);
 
   const resetKey = `${item.media_id}:${item.episode_id ?? "m"}`;
   const seasonKey =

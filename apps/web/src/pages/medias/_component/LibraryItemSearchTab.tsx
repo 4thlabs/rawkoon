@@ -1,22 +1,11 @@
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   LibraryMedia,
   MediaItem,
   TitleTranslation,
 } from "@rawkoon/shared/types";
-import {
-  buildTitleOptions,
-  type LabeledTitleOption,
-} from "@/lib/utils/interactive-search";
-import { languageDisplayName } from "@/lib/utils/languageDisplayName";
+import { useLibraryTitleOptions } from "@/features/medias/hooks/useLibraryTitleOptions";
 import { InteractiveSearchPanel } from "./InteractiveSearchPanel";
-
-/**
- * Language library titles are stored in — mirrors the API's
- * TMDB_LANGUAGE_LIBRARY_PERSISTENCE ("en-US").
- */
-const LIBRARY_TITLE_LANGUAGE = "en";
 
 function libraryToMediaItem(item: LibraryMedia): MediaItem {
   return {
@@ -78,7 +67,7 @@ export function LibraryItemSearchTab({
   onClearUpgradeMode,
 }: Props) {
   const mediaItem = libraryToMediaItem(item);
-  const { t, i18n } = useTranslation("common");
+  const { t } = useTranslation("common");
 
   const seasonSuffix =
     !episodeSearchCtx && seasonSearchCtx !== null
@@ -93,40 +82,13 @@ export function LibraryItemSearchTab({
 
   const localizedQuery = `${item.search_title?.trim() || item.title}${ctxSuffix}`;
 
-  // Build the per-language title options for the search picker. The stored
-  // library title is the default; EN/FR are pinned, then the original language,
-  // then a few common languages — letting the user search private trackers by
-  // whichever localized title they use.
-  //
-  // `item.title` is always English: the API persists library titles with
-  // TMDB_LANGUAGE_LIBRARY_PERSISTENCE ("en-US") so DB values stay stable across
-  // locales. Passing the UI language here instead would label the English title
-  // as e.g. French and hide TMDB's actual French title from the picker.
-  const titleOptions = useMemo<LabeledTitleOption[]>(() => {
-    const originalTag = t("medias.interactive.originalTag", "original");
-    return buildTitleOptions({
-      localized: item.title,
-      localizedLanguage: LIBRARY_TITLE_LANGUAGE,
-      original: tmdbOriginalTitle,
-      originalLanguage: tmdbOriginalLanguage,
-      translations: tmdbTitleTranslations,
-      suffix: ctxSuffix,
-    }).map((option) => {
-      const name = languageDisplayName(option.languageCode, i18n.language);
-      return {
-        ...option,
-        label: option.isOriginal ? `${name} (${originalTag})` : name,
-      };
-    });
-  }, [
-    item.title,
-    tmdbOriginalTitle,
-    tmdbOriginalLanguage,
-    tmdbTitleTranslations,
-    ctxSuffix,
-    i18n.language,
-    t,
-  ]);
+  const titleOptions = useLibraryTitleOptions({
+    title: item.title,
+    originalTitle: tmdbOriginalTitle,
+    originalLanguage: tmdbOriginalLanguage,
+    translations: tmdbTitleTranslations,
+    suffix: ctxSuffix,
+  });
 
   return (
     <>

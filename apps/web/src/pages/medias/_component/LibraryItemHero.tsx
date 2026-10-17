@@ -15,6 +15,7 @@ import { formatRuntimeMinutes } from "@rawkoon/shared/utils";
 import { useStatusLabel } from "@/features/medias/hooks/useStatusLabel";
 import { libraryStatusPresentation } from "@/utils/libraryStatusPresentation";
 import { statusLineParts } from "@/features/medias/lib/itemPageActions";
+import { LibraryControlStrip } from "./LibraryControlStrip";
 import { LibraryItemActions } from "./LibraryItemActions";
 import type {
   LibraryMedia,
@@ -36,6 +37,10 @@ type Props = {
   onWatchlistToggle: () => void;
   onChooseRelease: () => void;
   onUpgradeSearch: () => void;
+  onEditDetails: () => void;
+  onSearchReleases: () => void;
+  onUpgradeManualSearch: () => void;
+  onRemoved: () => void;
 };
 
 export function LibraryItemHero({
@@ -51,6 +56,10 @@ export function LibraryItemHero({
   onWatchlistToggle,
   onChooseRelease,
   onUpgradeSearch,
+  onEditDetails,
+  onSearchReleases,
+  onUpgradeManualSearch,
+  onRemoved,
 }: Props) {
   const { t, i18n } = useTranslation("common");
   const [backdropLoaded, setBackdropLoaded] = useState(false);
@@ -229,58 +238,65 @@ export function LibraryItemHero({
                 ))}
               </div>
             )}
+          </div>
+        </div>
 
-            {/* Action buttons */}
-            <div className="flex flex-wrap items-center gap-2 mt-0.5">
+        {/* Admin controls, then the quiet links */}
+        <div className="mt-5 flex flex-col gap-3 md:ml-[9rem]">
+          {isAdmin && (
+            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <LibraryItemActions
                 item={item}
                 isAdmin={isAdmin}
                 onChooseRelease={onChooseRelease}
                 onUpgradeSearch={onUpgradeSearch}
               />
-              <button
-                type="button"
-                onClick={onWatchlistToggle}
-                disabled={watchlistPending}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50",
-                  isInWatchlist
-                    ? "bg-primary-500/25 text-primary-100 hover:bg-primary-500/35 ring-1 ring-primary-500/40"
-                    : "bg-primary-500/15 text-primary-200 hover:bg-primary-500/25 ring-1 ring-primary-500/30",
-                )}
-              >
-                {isInWatchlist ? (
-                  <BookmarkCheck size={12} />
-                ) : (
-                  <Bookmark size={12} />
-                )}
-                {isInWatchlist
-                  ? t("medias.detail.inWatchlist")
-                  : t("medias.detail.addToWatchlist")}
-              </button>
-
+              <LibraryControlStrip
+                item={item}
+                onEditDetails={onEditDetails}
+                onSearchReleases={onSearchReleases}
+                onUpgradeManualSearch={onUpgradeManualSearch}
+                onRemoved={onRemoved}
+              />
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-white/70">
+            <button
+              type="button"
+              onClick={onWatchlistToggle}
+              disabled={watchlistPending}
+              aria-pressed={isInWatchlist}
+              className="focus-ring inline-flex items-center gap-1.5 rounded py-1 transition-colors hover:text-white disabled:opacity-50"
+            >
+              {isInWatchlist ? (
+                <BookmarkCheck size={14} className="text-primary-300" />
+              ) : (
+                <Bookmark size={14} />
+              )}
+              {isInWatchlist
+                ? t("medias.detail.inWatchlist")
+                : t("medias.detail.addToWatchlist")}
+            </button>
+            {trailerData?.key && (
               <a
-                href={tmdbUrl}
+                href={`https://www.youtube.com/watch?v=${trailerData.key}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-100 hover:bg-white/10 transition-colors"
+                className="focus-ring inline-flex items-center gap-1.5 rounded py-1 transition-colors hover:text-white"
               >
-                <ExternalLink size={12} />
-                TMDB
+                <Play size={14} />
+                {t("medias.detail.watchTrailer")}
               </a>
-
-              {trailerData?.key && (
-                <a
-                  href={`https://www.youtube.com/watch?v=${trailerData.key}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-100 hover:bg-white/10 transition-colors"
-                >
-                  <Play size={12} />
-                  {t("medias.detail.watchTrailer")}
-                </a>
-              )}
-            </div>
+            )}
+            <a
+              href={tmdbUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="focus-ring inline-flex items-center gap-1.5 rounded py-1 transition-colors hover:text-white"
+            >
+              <ExternalLink size={14} />
+              TMDB
+            </a>
           </div>
         </div>
       </div>

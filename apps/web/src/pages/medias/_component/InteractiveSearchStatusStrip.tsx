@@ -73,9 +73,9 @@ export function InteractiveSearchStatusStrip({
         </div>
       )}
 
-      {/* Desktop results count + query pill — hidden on mobile (mobile uses drawer) */}
+      {/* Results count and the search title the indexers were asked for */}
       {isSearchMode && searchApiQuery.length >= 2 && (
-        <div className="mb-3 hidden flex-wrap items-center gap-x-2.5 gap-y-1 sm:flex">
+        <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
           <span className="text-xs font-semibold text-neutral-200">
             {t("medias.interactive.resultsVisible", {
               visible: visibleCount,
@@ -98,7 +98,7 @@ export function InteractiveSearchStatusStrip({
               {t("medias.interactive.resetView")}
             </button>
           )}
-          <span className="flex min-w-0 max-w-[320px] items-center gap-1.5 text-[11px]">
+          <span className="flex min-w-0 max-w-full items-center gap-1.5 text-xs sm:max-w-[320px]">
             <span className="shrink-0 text-neutral-400">
               {t("medias.interactive.searchPrefix", "Search:")}
             </span>

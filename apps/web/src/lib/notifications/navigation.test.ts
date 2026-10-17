@@ -25,10 +25,10 @@ describe("openNotificationTarget", () => {
   });
 
   it("routes a relative path in-app, keeping search and hash", async () => {
-    openNotificationTarget("/library/5?tab=management#ep");
+    openNotificationTarget("/library/5?tab=files#ep");
     await vi.waitFor(() =>
       expect(navigate).toHaveBeenCalledWith({
-        href: "/library/5?tab=management#ep",
+        href: "/library/5?tab=files#ep",
       }),
     );
     expect(assign).not.toHaveBeenCalled();

@@ -18,12 +18,12 @@ final class ActivityLaneTests: XCTestCase {
 
     func testSearchGaveUpOffersSearchAgainToAdmins() {
         XCTAssertEqual(
-            InboxAction.resolve(type: "library_grab_skipped", url: "/library/42?tab=management", isAdmin: true),
+            InboxAction.resolve(type: "library_grab_skipped", url: "/library/42?tab=files", isAdmin: true),
             .searchAgain(libraryId: 42, season: nil, episode: nil)
         )
         XCTAssertEqual(
             InboxAction.resolve(
-                type: "library_grab_skipped", url: "/library/7?tab=management&season=2&episode=5", isAdmin: true
+                type: "library_grab_skipped", url: "/library/7?tab=files&season=2&episode=5", isAdmin: true
             ),
             .searchAgain(libraryId: 7, season: 2, episode: 5)
         )

@@ -6,6 +6,7 @@ import {
   type ButtonHTMLAttributes,
   type ReactElement,
   type ReactNode,
+  type Ref,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, SlidersHorizontal, X } from "lucide-react";
@@ -19,7 +20,8 @@ import {
 
 const DESKTOP_QUERY = "(min-width: 640px)";
 
-function useIsDesktop(): boolean {
+/** True from 640px up, where FilterPanel is a popover rather than a sheet. */
+export function useIsDesktop(): boolean {
   const [matches, setMatches] = useState(() =>
     typeof window !== "undefined" && window.matchMedia
       ? window.matchMedia(DESKTOP_QUERY).matches
@@ -338,11 +340,13 @@ export function ToolbarSearch({
   onChange,
   placeholder,
   className,
+  inputRef,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   className?: string;
+  inputRef?: Ref<HTMLInputElement>;
 }) {
   return (
     <div className={cn("relative min-w-0", className)}>
@@ -352,6 +356,7 @@ export function ToolbarSearch({
         className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
       />
       <input
+        ref={inputRef}
         type="search"
         aria-label={placeholder}
         value={value}

@@ -5,7 +5,7 @@ describe("inlineActionFor", () => {
   it("offers Search again for a movie-level search that gave up", () => {
     expect(
       inlineActionFor(
-        { type: "library_grab_skipped", url: "/library/7?tab=management" },
+        { type: "library_grab_skipped", url: "/library/7?tab=files" },
         true,
       ),
     ).toEqual({ kind: "searchAgain", mediaId: 7, season: null, episode: null });
@@ -16,7 +16,7 @@ describe("inlineActionFor", () => {
       inlineActionFor(
         {
           type: "library_grab_skipped",
-          url: "/library/7?tab=management&season=2&episode=5",
+          url: "/library/7?tab=files&season=2&episode=5",
         },
         true,
       ),

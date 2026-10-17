@@ -77,11 +77,11 @@ export function buildLibraryNotificationUrl(
   opts?: {
     season?: number | null;
     episode?: number | null;
-    tab?: "management";
+    tab?: "files";
   },
 ): string {
   return buildNotificationUrl(`${APP_PATHS.library}/${mediaId}`, {
-    tab: opts?.tab ?? "management",
+    tab: opts?.tab ?? "files",
     season: opts?.season ?? undefined,
     episode: opts?.episode ?? undefined,
   });

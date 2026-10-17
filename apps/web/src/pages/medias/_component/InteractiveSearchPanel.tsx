@@ -19,7 +19,6 @@ import { MEDIAS_ENDPOINTS } from "@/lib/endpoints";
 import { InteractiveSearchToolbar } from "./InteractiveSearchToolbar";
 import { InteractiveSearchStatusStrip } from "./InteractiveSearchStatusStrip";
 import { InteractiveSearchResultsList } from "./InteractiveSearchResultsList";
-import { InteractiveSearchMobileDrawer } from "./InteractiveSearchMobileDrawer";
 import type { MediaItem } from "@rawkoon/shared/types";
 import type { LabeledTitleOption } from "@/lib/utils/interactive-search";
 
@@ -145,7 +144,6 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
     <div className="flex flex-col">
       <InteractiveSearchToolbar
         filterQuery={state.filterQuery}
-        showFilters={state.showFilters}
         hideRejected={state.hideRejected}
         sortBy={state.sortBy}
         sortDir={state.sortDir}
@@ -159,77 +157,15 @@ export function InteractiveSearchPanel(props: InteractiveSearchPanelProps) {
         availableSeasons={state.availableSeasons}
         trackerOptions={state.trackerOptions}
         languageOptions={state.languageOptions}
-        hasAdvancedFilters={state.hasAdvancedFilters}
-        totalActiveFilters={state.totalActiveFilters}
-        isFetching={state.activeQuery.isFetching}
-        needsSearchQuery={state.needsSearchQuery}
-        onOpenMobileDrawer={() => state.setMobileDrawerOpen(true)}
-        searchInputRef={state.searchInputRef}
-        onRefetch={() => void state.activeQuery.refetch()}
-        onIncludedTrackersChange={state.handleIncludedTrackersChange}
-        onExcludedTrackersChange={state.handleExcludedTrackersChange}
-      />
-
-      {/* Mobile bottom drawer — all controls except search + toggles */}
-      <InteractiveSearchMobileDrawer
-        open={state.mobileDrawerOpen}
-        onClose={() => state.setMobileDrawerOpen(false)}
-        isShow={state.isShow}
-        availableSeasons={state.availableSeasons}
-        selectedSeason={state.selectedSeason}
-        onSeasonChange={(s) =>
-          state.setFilters((prev) => ({ ...prev, selectedSeason: s }))
-        }
-        needsSearchQuery={state.needsSearchQuery}
         visibleCount={state.visibleCount}
         totalReleases={state.totalReleases}
-        hiddenCount={state.hiddenCount}
-        searchApiQuery={state.searchApiQuery}
-        canSelectTitle={state.canSelectTitle}
-        titleOptions={state.titleOptions}
-        selectedTitleQuery={state.selectedTitleQuery}
-        onSelectTitle={state.selectSearchTitle}
-        hideRejected={state.hideRejected}
-        onHideRejectedChange={(v) =>
-          state.setFilters((prev) => ({ ...prev, hideRejected: v }))
-        }
-        showPacksOnly={state.showPacksOnly}
-        onShowPacksOnlyChange={(v) =>
-          state.setFilters((prev) => ({ ...prev, showPacksOnly: v }))
-        }
-        hasViewOverrides={state.hasViewOverrides}
-        onResetView={state.resetView}
-        sortBy={state.sortBy}
-        sortDir={state.sortDir}
-        onSortByChange={(v) =>
-          state.setFilters((prev) => ({ ...prev, sortBy: v }))
-        }
-        onToggleSortDir={() =>
-          state.setFilters((prev) => ({
-            ...prev,
-            sortDir: prev.sortDir === "asc" ? "desc" : "asc",
-          }))
-        }
-        totalActiveFilters={state.totalActiveFilters}
-        hasAdvancedFilters={state.hasAdvancedFilters}
-        onClearFilters={() =>
-          state.setFilters((prev) => ({
-            ...prev,
-            includedTrackers: [],
-            excludedTrackers: [],
-            includedLanguages: [],
-          }))
-        }
-        trackerOptions={state.trackerOptions}
-        includedTrackers={state.includedTrackers}
-        excludedTrackers={state.excludedTrackers}
+        isFetching={state.activeQuery.isFetching}
+        needsSearchQuery={state.needsSearchQuery}
+        searchInputRef={state.searchInputRef}
+        onRefetch={() => void state.activeQuery.refetch()}
+        onResetFilters={state.resetFilters}
         onIncludedTrackersChange={state.handleIncludedTrackersChange}
         onExcludedTrackersChange={state.handleExcludedTrackersChange}
-        languageOptions={state.languageOptions}
-        includedLanguages={state.includedLanguages}
-        onIncludedLanguagesChange={(values) =>
-          state.setFilters((prev) => ({ ...prev, includedLanguages: values }))
-        }
       />
 
       <div className="pt-3">
