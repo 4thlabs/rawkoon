@@ -15102,6 +15102,126 @@
           }
         }
       }
+    },
+    "2 more": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 de plus"
+          }
+        }
+      }
+    },
+    "Delayed grabs": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargements différés"
+          }
+        }
+      }
+    },
+    "Last RSS run": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernier passage RSS"
+          }
+        }
+      }
+    },
+    "Re-encoding": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réencodage"
+          }
+        }
+      }
+    },
+    "Couldn't check": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérification impossible"
+          }
+        }
+      }
+    },
+    "No delayed grabs": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun téléchargement différé"
+          }
+        }
+      }
+    },
+    "Waiting to grab": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente de téléchargement"
+          }
+        }
+      }
+    },
+    "No RSS runs yet": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun passage RSS"
+          }
+        }
+      }
+    },
+    "%lld alerts, %lld gave up": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld alertes, %lld recherches abandonnées"
+          }
+        }
+      }
+    },
+    "%@ · %lld found": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld trouvées"
+          }
+        }
+      }
+    },
+    "%@ · %lld found · next %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld trouvées · prochain %@"
+          }
+        }
+      }
+    },
+    "%lld active, %lld queued": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld actif(s), %lld en attente"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -12,6 +12,7 @@ struct ContinueListeningView: View {
     var onPlaybackDismiss: (() -> Void)?
 
     @State private var items: [ContinueItem] = []
+    @State private var listeningStats: ListeningStats?
     @State private var errorMessage: String?
     @State var openingID: String?
     @State var busyIds: Set<String> = []
@@ -64,9 +65,25 @@ struct ContinueListeningView: View {
 
     private var card: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Continue", systemImage: "bookmark")
-                .font(.display(16))
-                .foregroundStyle(Theme.textStrong)
+            HStack {
+                Label("Continue", systemImage: "bookmark")
+                    .font(.display(16))
+                    .foregroundStyle(Theme.textStrong)
+                Spacer()
+                if let listeningStats {
+                    NavigationLink {
+                        ListeningStatsView(stats: listeningStats)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("Listening")
+                            Image(systemName: "chevron.right")
+                        }
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Theme.apricotSoft)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
 
             if let errorMessage, items.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
@@ -202,6 +219,10 @@ struct ContinueListeningView: View {
             errorMessage = nil
             return
         }
+        if listeningStats == nil {
+            listeningStats = client.cached(Endpoints.listeningStats)?.value
+        }
+        async let listeningR = client.listeningStats()
         // The saved copy paints first, so the rail never waits on the network.
         if items.isEmpty {
             let cachedAudio = client.cachedProgress()?.value
@@ -220,6 +241,10 @@ struct ContinueListeningView: View {
         async let ebookProgressR = client.readingProgress()
         let audiobookProgress = try? await audiobookProgressR
         let ebookProgress = try? await ebookProgressR
+        if let stats = try? await listeningR {
+            listeningStats = stats
+            WidgetSnapshotWriter.shared.updateListening(stats)
+        }
         // Both failed: keep what is on screen rather than blanking the rail.
         guard audiobookProgress != nil || ebookProgress != nil else {
             if items.isEmpty {

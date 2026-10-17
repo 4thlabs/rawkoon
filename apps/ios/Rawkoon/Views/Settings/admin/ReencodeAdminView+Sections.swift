@@ -264,3 +264,17 @@ extension ReencodeAdminView {
         return line
     }
 }
+
+struct ReencodeStateBadge: View {
+    let state: String
+    let windowStart: String
+
+    var body: some View {
+        switch state {
+        case "running": StatusBadge(text: "Running", tint: Theme.seed)
+        case "paused": StatusBadge(text: "Paused", tint: Theme.apricot)
+        case "waiting_window": StatusBadge(text: "Waits for \(windowStart)", tint: Theme.importing)
+        default: StatusBadge(text: "Idle", tint: Theme.muted)
+        }
+    }
+}

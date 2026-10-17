@@ -1,30 +1,15 @@
 import RawkoonKit
 import SwiftUI
 
-/// The home screen for every user: greeting, Continue, Recently Added,
-/// Upcoming and For-You rails, then a widget stack (Now Watching, Downloads,
-/// Library Attention, RSS, Library stats). The ops widgets (Downloads, RSS,
-/// Library stats) are admin-only; all widgets also self-hide when their
-/// integration is off or has no data.
 struct HomeView: View {
     @Environment(AppModel.self) var model
     @Environment(\.isActiveRootTab) var isActiveRootTab
 
     @State var recent: [LibraryMedia] = []
     @State private var upcoming: [UpcomingItem] = []
-    @State private var discover: DiscoverDeckResponse?
     @State private var hero: DashboardHeroResponse?
     @State var nowPlaying: NowPlayingResponse?
-    @State var speed: SpeedResponse?
-    @State var attention: [AttentionItem] = []
-    @State var downloadRows: [ActivityView.QueueRow] = []
-    /// Wanted titles whose last search found nothing, newest first.
-    @State var wantedMisses: [LibraryMedia] = []
-    @State var rss: RssStatusResponse?
-    @State var stats: LibraryStats?
-    /// Nil until the features request (or its cache) answers, so Books never flashes in.
-    @State private var booksEnabled: Bool?
-    @State var reencodeSummary: TranscodeSummary?
+    @State var pipeline: DashboardPipeline?
     @State private var loading = true
     @State private var measuredTopInset: CGFloat = 0
     /// When the last full refresh finished, so switching back to Home within a
@@ -34,11 +19,8 @@ struct HomeView: View {
     /// Bumped on pull-to-refresh and when Continue's player sheet dismisses
     /// so Listening reloads with Continue.
     @State private var continueToken = 0
-    /// A "Needs attention" row tapped: the widget carries only a library id, so
-    /// resolve the full item (for its tmdbId/poster) then push its detail.
-    @State var attentionTarget: AttentionRoute?
-    @State var resolvingAttentionId: Int?
     /// The just-landed banner while it's up, and a counter that fires its haptic.
+    @State var attentionTarget: AttentionRoute?
     @State var landedBanner: LandedArrival?
     @State var landedBannerCount = 0
 
@@ -53,7 +35,7 @@ struct HomeView: View {
     }
 
     private var showsHero: Bool {
-        hero?.items.isEmpty == false
+        hero?.items.isEmpty == false || nowPlaying?.sessions?.isEmpty == false
     }
 
     /// Status-bar height, measured live so rotation and resizes follow; the window is a cold-start fallback.
@@ -68,8 +50,8 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                if let hero, showsHero {
-                    HomeHero(hero: hero, topInset: heroTopInset) { greeting(onHero: true) }
+                if showsHero {
+                    HomeHero(hero: hero ?? DashboardHeroResponse(items: []), nowPlaying: nowPlaying?.sessions?.first, topInset: heroTopInset) { greeting(onHero: true) }
                 } else {
                     greeting(onHero: false)
                 }
@@ -136,30 +118,22 @@ struct HomeView: View {
             }
         }
         .task { await model.refreshUnreadNotificationCount() }
-        // A download or search finishing (library events) and coming back to Home both refresh these two cards.
-        .task(id: [isActiveRootTab ? 1 : 0, model.libraryChangeToken, model.isAdmin ? 1 : 0]) {
-            guard isActiveRootTab, !model.isOffline else { return }
-            await loadQueueAndMisses()
+        .task(id: [isActiveRootTab, model.isAdmin, model.isOffline]) {
+            guard model.isAdmin, isActiveRootTab, !model.isOffline else { return }
+            while !Task.isCancelled {
+                if let client = model.api() {
+                    pipeline = try? await client.dashboardPipeline()
+                }
+                try? await Task.sleep(for: .seconds(15))
+            }
         }
         .onChange(of: model.reconnectToken) { _, _ in
             continueToken += 1
             Task { await load() }
         }
-        // Re-encode progress: poll only while Home is the visible tab (.task cancels on disappear).
-        // Keyed on isAdmin too: it resolves after Home first appears on a cold launch.
-        .task(id: [isActiveRootTab, model.isAdmin, model.isOffline]) {
-            guard model.isAdmin, isActiveRootTab, !model.isOffline else { return }
-            while !Task.isCancelled {
-                if let client = model.api(), let summary = try? await client.transcodeSummary() {
-                    reencodeSummary = summary
-                }
-                try? await Task.sleep(for: .seconds(5))
-            }
-        }
         .refreshable {
             continueToken += 1
             await load()
-            await loadQueueAndMisses()
         }
     }
 
@@ -172,12 +146,9 @@ struct HomeView: View {
                 limit: 3,
                 onPlaybackDismiss: { continueToken += 1 }
             )
-            ListeningStatsCard(refreshToken: continueToken)
-                .padding(.horizontal, 16)
-            if let growth = model.libraryGrowth, !growth.isEmpty {
-                LibraryGrowthCard(growth: growth, isAdmin: model.isAdmin, showBooks: booksEnabled == true)
+            if model.isAdmin {
+                pipelineCard
                     .padding(.horizontal, 16)
-                    .transition(.rawkoonSwap)
             }
             if !recent.isEmpty || !model.recentArrivals.isEmpty {
                 recentlyAddedRail
@@ -185,13 +156,6 @@ struct HomeView: View {
             if !upcoming.isEmpty {
                 rail("Upcoming", upcoming.map(RailItem.upcoming))
             }
-            if let discover, !discover.items.isEmpty {
-                rail(
-                    discover.source == .personalized ? "For you" : "Trending",
-                    discover.items.map(RailItem.discover)
-                )
-            }
-            widgets
         }
     }
 
@@ -266,21 +230,20 @@ struct HomeView: View {
 
     // MARK: First-load skeleton
 
-    /// Warm shimmer standing in for the first paint: a continue card, poster rails
-    /// and a widget, shaped like the real content below it.
+    /// Warm shimmer standing in for the first paint: Continue, Pipeline and poster rails.
     private var homeSkeleton: some View {
         VStack(alignment: .leading, spacing: 26) {
             // Continue-listening card.
             ShimmerView(cornerRadius: 16)
                 .frame(height: 96)
                 .padding(.horizontal, 16)
+            if model.isAdmin {
+                ShimmerView(cornerRadius: 16)
+                    .frame(height: 120)
+                    .padding(.horizontal, 16)
+            }
             skeletonRail(titleWidth: 140)
             skeletonRail(titleWidth: 96)
-            skeletonRail(titleWidth: 120)
-            // A widget card.
-            ShimmerView(cornerRadius: 16)
-                .frame(height: 120)
-                .padding(.horizontal, 16)
         }
         .allowsHitTesting(false)
     }
@@ -319,22 +282,10 @@ struct HomeView: View {
         if hero == nil, let cached = client.cached(Endpoints.dashboardHero()) {
             hero = cached.value
         }
-        if discover == nil, let cached = client.cached(Endpoints.discoverDeck(limit: 12)) {
-            discover = cached.value
+        if model.isAdmin, pipeline == nil, let cached = client.cached(Endpoints.dashboardPipeline) {
+            pipeline = cached.value
         }
-        if attention.isEmpty, let cached = client.cached(Endpoints.libraryAttention) {
-            attention = cached.value.items
-        }
-        if rss == nil, let cached = client.cached(Endpoints.rssStatus) {
-            rss = cached.value
-        }
-        if stats == nil {
-            stats = client.cachedLibraryStats()
-        }
-        if let features = client.cached(Endpoints.systemFeatures) {
-            booksEnabled = features.value.booksEnabled
-        }
-        if !recent.isEmpty || !upcoming.isEmpty || discover != nil {
+        if !recent.isEmpty || !upcoming.isEmpty {
             loading = false
         }
     }
@@ -353,16 +304,9 @@ struct HomeView: View {
         }
         async let recentR = client.recentlyAdded()
         async let upcomingR = client.upcoming()
-        async let discoverR = client.discoverDeck(exclude: [], limit: 12)
         async let heroR = client.dashboardHero()
         async let npR = client.nowPlaying()
-        async let speedR = client.speed()
-        async let attnR = client.libraryAttention()
-        async let rssR = client.rssStatus()
-        let isAdmin = model.isAdmin
         async let growthR: Void = model.refreshLibraryGrowth(force: true)
-        async let featuresR = client.systemFeatures()
-        async let statsR: LibraryStats? = isAdmin ? client.libraryStats() : nil
 
         // A failed refetch (a transient error on pull-to-refresh) must not blank
         // content already on screen: replace each section only when its request
@@ -380,30 +324,11 @@ struct HomeView: View {
         if let items = await (try? upcomingR)?.items {
             upcoming = items
         }
-        if let deck = try? await discoverR {
-            discover = deck
-            Task { await WidgetSnapshotWriter.shared.updateSuggestion(deck, model: model) }
-        }
         if let fresh = try? await heroR {
             hero = fresh
         }
         if let np = try? await npR {
             nowPlaying = np
-        }
-        if let sp = try? await speedR {
-            speed = sp
-        }
-        if let items = await (try? attnR)?.items {
-            attention = items
-        }
-        if let status = try? await rssR {
-            rss = status
-        }
-        if let s = try? await statsR {
-            stats = s
-        }
-        if let features = try? await featuresR {
-            booksEnabled = features.booksEnabled
         }
         await growthR
 
