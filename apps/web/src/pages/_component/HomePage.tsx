@@ -7,7 +7,9 @@ import { getUserFirstName } from "@/lib/utils/format";
 import { HomeHero } from "@/pages/_component/HomeHero";
 import { RecentlyAddedRail } from "@/pages/_component/RecentlyAddedRail";
 import { UpcomingRail } from "@/pages/_component/UpcomingRail";
-import { WidgetGrid } from "@/pages/_component/WidgetGrid";
+import { PipelineCard } from "@/pages/_component/PipelineCard";
+import { ContinueListeningWidget } from "@/features/continue/ContinueListeningWidget";
+import { BooksCard } from "@/features/listening/BooksCard";
 
 // ─── Motion variants ──────────────────────────────────────────────────────────
 
@@ -28,9 +30,9 @@ const sectionVariants: Variants = {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 /**
- * Home is a fixed media composition: greeting, two full-width poster rails,
- * then a responsive widget grid — in a stable order. No configurable layout,
- * edit mode, or persistence.
+ * Home is a fixed composition: the hero, Continue beside the pipeline and
+ * books cards (stacked under it on phones), then two full-width poster rails.
+ * No configurable layout, edit mode, or persistence.
  */
 export function HomePage() {
   const { data: user } = useCurrentUser();
@@ -45,6 +47,22 @@ export function HomePage() {
         initial="hidden"
         animate="show"
       >
+        <motion.div
+          variants={sectionVariants}
+          className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20.5rem]"
+        >
+          <CardErrorBoundary>
+            <ContinueListeningWidget />
+          </CardErrorBoundary>
+          <div className="space-y-4 lg:col-start-2 lg:row-start-1">
+            <CardErrorBoundary>
+              <PipelineCard />
+            </CardErrorBoundary>
+            <CardErrorBoundary>
+              <BooksCard />
+            </CardErrorBoundary>
+          </div>
+        </motion.div>
         <motion.div variants={sectionVariants}>
           <CardErrorBoundary>
             <RecentlyAddedRail />
@@ -54,9 +72,6 @@ export function HomePage() {
           <CardErrorBoundary>
             <UpcomingRail />
           </CardErrorBoundary>
-        </motion.div>
-        <motion.div variants={sectionVariants}>
-          <WidgetGrid />
         </motion.div>
       </motion.div>
     </PageLayout>

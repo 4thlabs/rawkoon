@@ -1,5 +1,6 @@
 import type {
   ActiveDownloadsResponse,
+  DashboardPipeline,
   DownloadProgressItem,
   DownloadProgressSummaryResponse,
 } from "@rawkoon/shared/types";
@@ -45,6 +46,27 @@ export function mergeSummaryProgress(
       const live = byId.get(row.id);
       return live ? { ...row, progress: live.progress } : row;
     }),
+  };
+}
+
+/** Same overlay for the Home pipeline card's first three downloads. */
+export function mergePipelineProgress(
+  current: DashboardPipeline | undefined,
+  progress: DownloadProgressItem[],
+): DashboardPipeline | undefined {
+  if (!current || progress.length === 0) return current;
+  const byId = new Map(progress.map((p) => [p.id, p]));
+  return {
+    ...current,
+    downloading: {
+      ...current.downloading,
+      items: current.downloading.items.map((row) => {
+        const live = byId.get(row.id);
+        return live
+          ? { ...row, progress: live.progress, eta_seconds: live.etaSeconds }
+          : row;
+      }),
+    },
   };
 }
 

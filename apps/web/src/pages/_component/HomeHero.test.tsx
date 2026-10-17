@@ -115,6 +115,48 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("HomeHero now watching", () => {
+  const session = {
+    session_id: "s1",
+    user: "Alex",
+    device: "Living room",
+    title: "Live Film",
+    poster_url: null,
+    progress_pct: 42,
+    paused: false,
+  };
+  const withSessions = (sessions: unknown[], items: DashboardHeroItem[]) => {
+    const fetcher = vi.fn((url: string) =>
+      Promise.resolve(
+        url.startsWith("/api/dashboard/hero")
+          ? { items }
+          : url.includes("now-playing")
+            ? { enabled: true, sessions }
+            : { item: {} },
+      ),
+    );
+    return renderWithProviders(<HomeHero userName="Sam" />, { fetcher });
+  };
+
+  it("leads with a Now watching slide while someone is watching", async () => {
+    withSessions([session], [item(1)]);
+    expect(
+      await screen.findByText("dashboard.hero.kicker.nowWatching"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Live Film")).toBeInTheDocument();
+    expect(
+      screen.getByRole("progressbar", { name: "Live Film" }),
+    ).toHaveAttribute("aria-valuenow", "42");
+    expect(screen.queryByText("Film 1")).toBeNull();
+  });
+
+  it("is unchanged when nobody is watching", async () => {
+    withSessions([], [item(1)]);
+    expect(await screen.findByText("Film 1")).toBeInTheDocument();
+    expect(screen.queryByText("dashboard.hero.kicker.nowWatching")).toBeNull();
+  });
+});
+
 describe("HomeHero", () => {
   it("shows an arrival with greeting, kicker, relative time and Details", async () => {
     render({
@@ -321,10 +363,11 @@ describe("hero strings", () => {
         "details",
         "goTo",
         "kicker",
+        "watchingOn",
       ].sort(),
     );
     expect(Object.keys(hero.kicker).sort()).toEqual(
-      ["arrivals", "forYou", "trending"].sort(),
+      ["arrivals", "forYou", "nowWatching", "trending"].sort(),
     );
   });
 });

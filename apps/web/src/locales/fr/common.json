@@ -118,14 +118,16 @@
       "kicker": {
         "arrivals": "Vient d'arriver",
         "forYou": "Pour vous",
-        "trending": "Tendances"
+        "trending": "Tendances",
+        "nowWatching": "En lecture"
       },
       "arrived": "arrivé {{relative}}",
       "details": "Détails",
       "add": "Ajouter",
       "added": "Ajouté",
       "addFailed": "Impossible d'ajouter « {{title}} »",
-      "goTo": "Afficher {{title}}"
+      "goTo": "Afficher {{title}}",
+      "watchingOn": "{{user}} sur {{device}}"
     },
     "greetingSubtitle": {
       "night": "Un dernier épisode ? On ne dira rien.",
@@ -199,17 +201,11 @@
     "home": {
       "recentlyAdded": "Ajouts récents",
       "recentlyAddedEmpty": "Rien d'ajouté pour l'instant",
-      "nowWatching": "En lecture",
-      "nowWatchingEmpty": "Personne ne regarde en ce moment",
       "continue": "Reprendre",
       "paused": "En pause",
       "upcoming": "Sorties à venir",
-      "downloadsTitle": "Téléchargements",
       "transfer": "Transfert",
       "downloadClientNotConfigured": "Client de téléchargement non configuré",
-      "pendingDelay": "En attente de récupération",
-      "pendingGrabIn": "Récupération dans {{time}}",
-      "pendingGrabDue": "Récupération imminente",
       "grabNow": "Récupérer maintenant",
       "nothingDownloading": "Aucun téléchargement en cours",
       "downloadClientUnreachable": "Client de téléchargement injoignable",
@@ -221,13 +217,8 @@
         "no_space": "Il n'y a pas assez d'espace disque libre.",
         "all_failed": "Toutes les versions en attente ont été bloquées ou ont échoué."
       },
-      "downloadState": {
-        "stalled": "Bloqué",
-        "paused": "En pause",
-        "error": "Erreur"
-      },
-      "pendingMore": "+{{count}} de plus",
-      "upcomingEmpty": "Rien à venir"
+      "upcomingEmpty": "Rien à venir",
+      "books": "Livres"
     },
     "libraryAttention": {
       "title": "Bibliothèque — à traiter",
@@ -272,6 +263,36 @@
       "toastFound_other": "RSS : {{count}} releases trouvées",
       "toastNone": "RSS : aucune nouvelle release",
       "openLibraryLink": "Ouvrir la médiathèque"
+    },
+    "pipeline": {
+      "title": "Pipeline",
+      "unavailable": "Vérification impossible",
+      "loadError": "Impossible de charger le pipeline.",
+      "downloading": "Téléchargements",
+      "nothingDownloading": "Aucun téléchargement en cours",
+      "downloadingCount_one": "{{count}} téléchargement en cours",
+      "downloadingCount_other": "{{count}} téléchargements en cours",
+      "etaLeft": "{{time}} restant",
+      "delayed": "Récupérations différées",
+      "noDelayed": "Rien en attente",
+      "delayedWaiting_one": "{{count}} titre attend la fin du délai",
+      "delayedWaiting_other": "{{count}} titres attendent la fin du délai",
+      "attention": "À vérifier",
+      "allClear": "Tout est en ordre",
+      "attentionSplit": "{{alerts}} alertes, {{gaveUp}} abandonnés",
+      "rss": "Dernier passage RSS",
+      "rssNever": "Pas encore exécuté",
+      "rssNeverNext": "Pas encore exécuté, prochain {{next}}",
+      "rssFailed": "Le dernier passage a échoué",
+      "rssOk_one": "{{count}} version trouvée",
+      "rssOk_other": "{{count}} versions trouvées",
+      "rssOkNext_one": "{{count}} version trouvée, prochain {{next}}",
+      "rssOkNext_other": "{{count}} versions trouvées, prochain {{next}}",
+      "reencode": "Réencodage",
+      "nothingReencoding": "Aucun réencodage",
+      "reencodeCounts": "{{active}} en cours, {{queued}} en file",
+      "more_one": "{{count}} de plus",
+      "more_other": "{{count}} de plus"
     }
   },
   "device": {
@@ -2628,11 +2649,9 @@
     "title": "Écoute",
     "streak_one": "1 jour de série",
     "streak_other": "{{count}} jours de série",
-    "hoursHint": "Les heures commencent maintenant — écoutez et elles s'accumuleront.",
     "emptySeries": "Aucune série dans la bibliothèque pour l'instant.",
     "thisWeek": "Cette semaine",
     "series": "Séries",
-    "seriesLine": "{{name}} · {{percent}} %",
     "booksOf": "{{count}} sur {{total}}",
     "loadError": "Impossible de charger les stats d'écoute."
   },
@@ -2866,7 +2885,8 @@
       "ebook": "Livre numérique"
     },
     "resultCount_one": "{{count}} livre",
-    "resultCount_other": "{{count}} livres"
+    "resultCount_other": "{{count}} livres",
+    "listeningLink": "Écoute"
   },
   "downloadsPage": {
     "tabs": {
@@ -3049,21 +3069,6 @@
     "queueFailed": "Impossible d'ajouter à la file",
     "refineFailed": "Impossible d'affiner l'estimation",
     "dvNote": "Dolby Vision → HDR10",
-    "widget": {
-      "title": "Réencodage",
-      "running": "En cours",
-      "paused": "En pause",
-      "waits": "Attend {{time}}",
-      "idle": "Inactif",
-      "left": "~{{time}} restant",
-      "more": "+ {{count}} autres",
-      "total": "~{{time}} au total",
-      "saved": "−{{size}} libérés · {{count}} terminés",
-      "failed_one": "{{count}} échec",
-      "failed_other": "{{count}} échecs",
-      "manage": "Gérer →",
-      "queued": "{{count}} en file"
-    },
     "admin": {
       "runWindow": "Plage horaire",
       "pause": "Mettre en pause",

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type {
   DashboardHeroItem,
+  DashboardJellyfinNowPlayingItem,
   AddToLibraryResponse,
   DashboardHeroSource,
   TmdbMediaSearchItem,
@@ -27,6 +28,7 @@ import {
   nextHeroIndex,
 } from "@/pages/_component/heroRotation";
 import { useDashboardHero } from "@/pages/_component/useDashboardHero";
+import { useNowWatching } from "@/pages/_component/useNowWatching";
 
 const KICKER_KEY: Record<DashboardHeroSource, string> = {
   arrivals: "dashboard.hero.kicker.arrivals",
@@ -78,11 +80,80 @@ function toSearchItem(item: DashboardHeroItem): TmdbMediaSearchItem {
   };
 }
 
+type HeroSlide =
+  | { kind: "item"; item: DashboardHeroItem }
+  | { kind: "watching"; session: DashboardJellyfinNowPlayingItem };
+
+const slideKey = (slide: HeroSlide) =>
+  slide.kind === "watching"
+    ? `watching-${slide.session.session_id}`
+    : `${slide.item.tmdb_id}-${slide.item.media_type}`;
+
+const slideTitle = (slide: HeroSlide) =>
+  slide.kind === "watching" ? slide.session.title : slide.item.title;
+
+function WatchingBackdrop({ posterUrl }: { posterUrl: string | null }) {
+  if (!posterUrl) return <div className="h-full w-full bg-neutral-900" />;
+  return (
+    <img
+      src={posterUrl}
+      alt=""
+      className="h-full w-full scale-125 object-cover opacity-60 blur-2xl"
+    />
+  );
+}
+
+function WatchingCopy({
+  session,
+}: {
+  session: DashboardJellyfinNowPlayingItem;
+}) {
+  const { t } = useTranslation("common");
+  const pct = Math.round(Math.max(0, Math.min(100, session.progress_pct)));
+  return (
+    <>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-300">
+        {t("dashboard.hero.kicker.nowWatching")}
+      </p>
+      <h2 className="mt-1 line-clamp-2 break-words text-3xl font-bold tracking-tight text-white drop-shadow sm:text-5xl">
+        {session.title}
+      </h2>
+      <p className="mt-2 text-sm text-neutral-300">
+        {session.device
+          ? t("dashboard.hero.watchingOn", {
+              user: session.user,
+              device: session.device,
+            })
+          : session.user}
+        {session.paused ? ` (${t("dashboard.home.paused")})` : ""}
+      </p>
+      <div className="mt-4 flex max-w-sm items-center gap-3">
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/20">
+          <div
+            role="progressbar"
+            aria-label={session.title}
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="h-full rounded-full bg-primary-300"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="font-mono text-xs tabular-nums text-neutral-300">
+          {pct}%
+        </span>
+      </div>
+    </>
+  );
+}
+
 function HeroCarousel({
   items,
+  watching,
   userName,
 }: {
   items: DashboardHeroItem[];
+  watching: DashboardJellyfinNowPlayingItem[];
   userName: string;
 }) {
   const { t, i18n } = useTranslation("common");
@@ -99,11 +170,18 @@ function HeroCarousel({
   const createRequest = useCreateRequest();
   const { data: user } = useCurrentUser();
 
-  const count = items.length;
+  // Someone watching right now goes first, ahead of arrivals and deck picks.
+  const slides: HeroSlide[] = [
+    ...watching.map((session) => ({ kind: "watching" as const, session })),
+    ...items.map((item) => ({ kind: "item" as const, item })),
+  ];
+  const count = slides.length;
   const index = clampHeroIndex(stored, count);
-  const item = items[index];
+  const slide = slides[index];
+  const item = slide.kind === "item" ? slide.item : null;
+  const session = slide.kind === "watching" ? slide.session : null;
   // Each slide says why it is here: arrivals first, then deck picks.
-  const source = item.source;
+  const source = item?.source ?? "arrivals";
 
   useEffect(() => {
     if (reduced || paused || count < 2) return;
@@ -117,16 +195,19 @@ function HeroCarousel({
   const showSearchHint = searchOnAddEnabled && user?.is_admin === true;
 
   const relative =
-    source === "arrivals"
+    item && source === "arrivals"
       ? formatRelativeTime(item.arrived_at, i18n.language)
       : null;
-  const meta = [
-    relative ? t("dashboard.hero.arrived", { relative }) : null,
-    episodeCode(item),
-    source === "arrivals" ? null : item.year,
-  ].filter((part) => part != null && part !== "");
+  const meta = item
+    ? [
+        relative ? t("dashboard.hero.arrived", { relative }) : null,
+        episodeCode(item),
+        source === "arrivals" ? null : item.year,
+      ].filter((part) => part != null && part !== "")
+    : [];
 
   const onAdd = (searchOnAdd?: boolean) => {
+    if (!item) return;
     const tmdbId = item.tmdb_id;
     const type = item.media_type === "tv" ? "show" : "movie";
     const callbacks = {
@@ -180,26 +261,30 @@ function HeroCarousel({
     >
       <AnimatePresence>
         <motion.div
-          key={`${item.tmdb_id}-${item.media_type}`}
+          key={slideKey(slide)}
           className="absolute inset-0 -z-20"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.9, ease: "easeInOut" }}
         >
-          <motion.img
-            src={item.backdrop_url}
-            alt=""
-            className="h-full w-full object-cover"
-            initial={{ scale: 1.04 }}
-            animate={reduced ? { scale: 1.04 } : { scale: 1.14 }}
-            transition={{
-              duration: 18,
-              ease: "linear",
-              repeat: reduced ? 0 : Infinity,
-              repeatType: "reverse",
-            }}
-          />
+          {item ? (
+            <motion.img
+              src={item.backdrop_url}
+              alt=""
+              className="h-full w-full object-cover"
+              initial={{ scale: 1.04 }}
+              animate={reduced ? { scale: 1.04 } : { scale: 1.14 }}
+              transition={{
+                duration: 18,
+                ease: "linear",
+                repeat: reduced ? 0 : Infinity,
+                repeatType: "reverse",
+              }}
+            />
+          ) : (
+            <WatchingBackdrop posterUrl={session?.poster_url ?? null} />
+          )}
         </motion.div>
       </AnimatePresence>
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-neutral-950 via-neutral-950/55 to-transparent" />
@@ -208,85 +293,93 @@ function HeroCarousel({
       <div className="flex min-h-[26rem] flex-col justify-end gap-5 px-4 pb-6 pt-16 sm:min-h-[30rem] sm:px-6 lg:px-8">
         <GreetingCard userName={userName} onHero />
         <motion.div
-          key={`${item.tmdb_id}-${item.media_type}-copy`}
+          key={`${slideKey(slide)}-copy`}
           className="max-w-2xl"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
         >
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-300">
-            {t(KICKER_KEY[source])}
-          </p>
-          <h2 className="mt-1 line-clamp-2 break-words text-3xl font-bold tracking-tight text-white drop-shadow sm:text-5xl">
-            {item.title}
-          </h2>
-          {meta.length > 0 && (
-            <p className="mt-2 text-sm text-neutral-300">{meta.join(" · ")}</p>
-          )}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            {source !== "arrivals" &&
-              (added.has(item.tmdb_id) ? (
-                <span
-                  className={`${buttonBase} bg-white/15 text-white/80`}
-                  aria-live="polite"
-                >
-                  {user?.is_admin
-                    ? t("dashboard.hero.added")
-                    : t("requests.requested")}
-                </span>
-              ) : (
-                <div className="flex flex-col items-start gap-1">
-                  <div className="inline-flex items-stretch">
-                    <button
-                      type="button"
-                      onClick={() => onAdd()}
-                      disabled={
-                        addToLibrary.isPending || createRequest.isPending
-                      }
-                      className={`${buttonBase} bg-primary-500 text-white hover:bg-primary-400 disabled:opacity-60 ${showSearchHint ? "rounded-r-none pr-4" : ""}`}
+          {item ? (
+            <>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-300">
+                {t(KICKER_KEY[source])}
+              </p>
+              <h2 className="mt-1 line-clamp-2 break-words text-3xl font-bold tracking-tight text-white drop-shadow sm:text-5xl">
+                {item.title}
+              </h2>
+              {meta.length > 0 && (
+                <p className="mt-2 text-sm text-neutral-300">
+                  {meta.join(" · ")}
+                </p>
+              )}
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                {source !== "arrivals" &&
+                  (added.has(item.tmdb_id) ? (
+                    <span
+                      className={`${buttonBase} bg-white/15 text-white/80`}
+                      aria-live="polite"
                     >
-                      {t("dashboard.hero.add")}
-                    </button>
-                    {showSearchHint && (
-                      <AddOnlyMenu
-                        onAddOnly={() => onAdd(false)}
-                        disabled={addToLibrary.isPending}
-                        className="h-10 rounded-r-full border-l border-white/25 bg-primary-500 px-2.5 text-white hover:bg-primary-400"
-                      />
-                    )}
-                  </div>
-                  {showSearchHint && (
-                    <AddSearchCaption className="text-neutral-300" />
-                  )}
-                </div>
-              ))}
-            {item.library_id != null ? (
-              <Link
-                to="/library/$libraryId"
-                params={{ libraryId: String(item.library_id) }}
-                className={`${buttonBase} ${source === "arrivals" ? "bg-primary-500 text-white hover:bg-primary-400" : "bg-white/15 text-white hover:bg-white/25"}`}
-              >
-                {t("dashboard.hero.details")}
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setDetail(toSearchItem(item))}
-                className={`${buttonBase} bg-white/15 text-white hover:bg-white/25`}
-              >
-                {t("dashboard.hero.details")}
-              </button>
-            )}
-          </div>
+                      {user?.is_admin
+                        ? t("dashboard.hero.added")
+                        : t("requests.requested")}
+                    </span>
+                  ) : (
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="inline-flex items-stretch">
+                        <button
+                          type="button"
+                          onClick={() => onAdd()}
+                          disabled={
+                            addToLibrary.isPending || createRequest.isPending
+                          }
+                          className={`${buttonBase} bg-primary-500 text-white hover:bg-primary-400 disabled:opacity-60 ${showSearchHint ? "rounded-r-none pr-4" : ""}`}
+                        >
+                          {t("dashboard.hero.add")}
+                        </button>
+                        {showSearchHint && (
+                          <AddOnlyMenu
+                            onAddOnly={() => onAdd(false)}
+                            disabled={addToLibrary.isPending}
+                            className="h-10 rounded-r-full border-l border-white/25 bg-primary-500 px-2.5 text-white hover:bg-primary-400"
+                          />
+                        )}
+                      </div>
+                      {showSearchHint && (
+                        <AddSearchCaption className="text-neutral-300" />
+                      )}
+                    </div>
+                  ))}
+                {item.library_id != null ? (
+                  <Link
+                    to="/library/$libraryId"
+                    params={{ libraryId: String(item.library_id) }}
+                    className={`${buttonBase} ${source === "arrivals" ? "bg-primary-500 text-white hover:bg-primary-400" : "bg-white/15 text-white hover:bg-white/25"}`}
+                  >
+                    {t("dashboard.hero.details")}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setDetail(toSearchItem(item))}
+                    className={`${buttonBase} bg-white/15 text-white hover:bg-white/25`}
+                  >
+                    {t("dashboard.hero.details")}
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            session && <WatchingCopy session={session} />
+          )}
         </motion.div>
 
         {count > 1 && (
           <div className="flex items-center gap-1">
-            {items.map((it, i) => (
+            {slides.map((it, i) => (
               <button
-                key={`${it.tmdb_id}-${it.media_type}`}
+                key={slideKey(it)}
                 type="button"
-                aria-label={t("dashboard.hero.goTo", { title: it.title })}
+                aria-label={t("dashboard.hero.goTo", { title: slideTitle(it) })}
                 aria-current={i === index}
                 onClick={() => setIndex(i)}
                 className="flex h-6 w-6 items-center justify-center"
@@ -313,12 +406,19 @@ function HeroCarousel({
 }
 
 /**
- * Home's opening film: a backdrop deck with the greeting overlaid. With no
- * items (empty, loading or failed) it renders the plain greeting instead.
+ * Home's opening film: a backdrop deck with the greeting overlaid, led by a
+ * Now watching slide while someone is watching. With no slides (empty, loading
+ * or failed) it renders the plain greeting instead.
  */
 export function HomeHero({ userName }: { userName: string }) {
   const { data } = useDashboardHero();
+  const nowWatching = useNowWatching();
   const items = data?.items ?? [];
-  if (!data || items.length === 0) return <GreetingCard userName={userName} />;
-  return <HeroCarousel items={items} userName={userName} />;
+  const watching = nowWatching.data?.enabled
+    ? (nowWatching.data.sessions ?? [])
+    : [];
+  if (items.length === 0 && watching.length === 0) {
+    return <GreetingCard userName={userName} />;
+  }
+  return <HeroCarousel items={items} watching={watching} userName={userName} />;
 }
