@@ -23,7 +23,7 @@ extension MediaDetailView {
     }
 
     /// The add/request lamp for titles not yet in the library. In-library
-    /// "Search releases" is no longer here — it moved into the Management card.
+    /// "Search releases" is no longer here — it moved into the control strip.
     @ViewBuilder
     var primaryAction: some View {
         if libraryId == nil {

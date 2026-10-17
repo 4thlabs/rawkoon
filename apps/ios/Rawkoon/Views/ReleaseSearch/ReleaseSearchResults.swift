@@ -95,36 +95,13 @@ struct ReleaseSearchResults: View {
     @ViewBuilder
     private var content: some View {
         if session.isLoading {
-            VStack(spacing: 10) {
-                ProgressView().tint(Theme.apricot)
-                Text("Searching…")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.muted)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .transition(.rawkoonSwap)
+            ReleaseSheetStateView(kind: .searching)
         } else if model.isOffline, session.releases.isEmpty {
-            ContentUnavailableView {
-                Label("Offline", systemImage: "wifi.slash")
-            } description: {
-                Text("Release search needs a connection.")
-            }
-            .rawkoonLivingSymbol(.error)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .transition(.rawkoonSwap)
+            ReleaseSheetStateView(kind: .offline)
         } else if let errorMessage = session.errorMessage, session.releases.isEmpty {
-            ContentUnavailableView {
-                Label("Search failed", systemImage: "exclamationmark.triangle")
-            } description: {
-                Text(errorMessage)
-            }
-            .rawkoonLivingSymbol(.error)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .transition(.rawkoonSwap)
+            ReleaseSheetStateView(kind: .failed(errorMessage))
         } else if session.releases.isEmpty {
-            ContentUnavailableView.search
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .transition(.rawkoonSwap)
+            ReleaseSheetStateView(kind: .empty(String(localized: "Nothing grabbable found for this search.")))
         } else if filters.filteredReleases(in: session).isEmpty {
             // Results came back but the active filters (commonly "Hide rejected")
             // hide them all — say so and offer a reset, mirroring the web

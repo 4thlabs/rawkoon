@@ -412,7 +412,7 @@ extension MediaDetailView {
             libraryId = item.id
             recordLibraryChangeFeedback()
             if showManagement {
-                detailTab = .manage
+                detailTab = .files
                 await refreshManagementData()
             }
             if mode.opensReleaseSheet {

@@ -164,7 +164,7 @@ extension MediaDetailView {
         }
     }
 
-    /// Seeds the Manage tab from the store and the saved responses.
+    /// Seeds the Files tab from the store and the saved responses.
     func hydrateManagementFromCache(client: APIClient) {
         guard let libraryId, model.isAdmin else { return }
         if managementItem == nil {
