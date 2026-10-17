@@ -1,8 +1,6 @@
-import { Navigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageLayout } from "@/components/PageLayout";
 import { PageHeader } from "@/components/PageHeader";
-import { useFeatures } from "@/lib/routing/useFeatures";
 import { useListeningStats } from "./useListeningStats";
 import {
   ListeningStatsFigures,
@@ -13,12 +11,7 @@ import { formatListeningHours } from "./formatListeningHours";
 
 export function ListeningStatsPage() {
   const { t } = useTranslation("common");
-  const features = useFeatures();
   const stats = useListeningStats();
-
-  if (features.isSuccess && !features.data.books_enabled) {
-    return <Navigate to="/" />;
-  }
 
   const data = stats.data;
   const maxSeconds = data ? weekBarMaxSeconds(data.week) : 1;

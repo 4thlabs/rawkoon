@@ -4,6 +4,7 @@ import type {
   DashboardHeroItem,
   DashboardHeroResponse,
 } from "@rawkoon/shared/types";
+import { queryKeys } from "@/lib/queryKeys";
 import { renderWithProviders } from "@/test-utils/render";
 import { HomeHero } from "@/pages/_component/HomeHero";
 import en from "@/locales/en/common.json";
@@ -113,6 +114,102 @@ beforeEach(() => mockReducedMotion(false));
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe("HomeHero now watching", () => {
+  const session = {
+    session_id: "s1",
+    user: "Alex",
+    device: "Living room",
+    title: "Live Film",
+    poster_url: null,
+    progress_pct: 42,
+    paused: false,
+  };
+  const withSessions = (sessions: unknown[], items: DashboardHeroItem[]) => {
+    const fetcher = vi.fn((url: string) =>
+      Promise.resolve(
+        url.startsWith("/api/dashboard/hero")
+          ? { items }
+          : url.includes("now-playing")
+            ? { enabled: true, sessions }
+            : { item: {} },
+      ),
+    );
+    return renderWithProviders(<HomeHero userName="Sam" />, { fetcher });
+  };
+
+  it("leads with a Now watching slide while someone is watching", async () => {
+    withSessions([session], [item(1)]);
+    expect(
+      await screen.findByText("dashboard.hero.kicker.nowWatching"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Live Film")).toBeInTheDocument();
+    expect(
+      screen.getByRole("progressbar", { name: "Live Film" }),
+    ).toHaveAttribute("aria-valuenow", "42");
+    expect(screen.queryByText("Film 1")).toBeNull();
+  });
+
+  it("keeps the viewed slide when a Now watching slide appears and disappears", async () => {
+    const { queryClient } = withSessions([], [item(1), item(2)]);
+    await screen.findByText("Film 1");
+    fireEvent.click(
+      screen.getByRole("button", { name: "dashboard.hero.goTo title:Film 2" }),
+    );
+    expect(screen.getByText("Film 2")).toBeInTheDocument();
+
+    const key = queryKeys.dashboard.jellyfinNowPlaying();
+    await waitFor(() =>
+      expect(queryClient.getQueryState(key)?.status).toBe("success"),
+    );
+    act(() => {
+      queryClient.setQueryData(key, { enabled: true, sessions: [session] });
+    });
+    expect(
+      await screen.findByRole("button", {
+        name: "dashboard.hero.goTo title:Live Film",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Film 2")).toBeInTheDocument();
+    expect(screen.queryByText("Live Film")).toBeNull();
+
+    act(() => {
+      queryClient.setQueryData(key, { enabled: true, sessions: [] });
+    });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", {
+          name: "dashboard.hero.goTo title:Live Film",
+        }),
+      ).toBeNull(),
+    );
+    expect(screen.getByText("Film 2")).toBeInTheDocument();
+  });
+
+  it("falls back to a valid slide when the viewed Now watching slide ends", async () => {
+    const { queryClient } = withSessions([session], [item(1)]);
+    await screen.findByText("Live Film");
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryState(queryKeys.dashboard.jellyfinNowPlaying())
+          ?.status,
+      ).toBe("success"),
+    );
+    act(() => {
+      queryClient.setQueryData(queryKeys.dashboard.jellyfinNowPlaying(), {
+        enabled: true,
+        sessions: [],
+      });
+    });
+    expect(await screen.findByText("Film 1")).toBeInTheDocument();
+  });
+
+  it("is unchanged when nobody is watching", async () => {
+    withSessions([], [item(1)]);
+    expect(await screen.findByText("Film 1")).toBeInTheDocument();
+    expect(screen.queryByText("dashboard.hero.kicker.nowWatching")).toBeNull();
+  });
 });
 
 describe("HomeHero", () => {
@@ -321,10 +418,11 @@ describe("hero strings", () => {
         "details",
         "goTo",
         "kicker",
+        "watchingOn",
       ].sort(),
     );
     expect(Object.keys(hero.kicker).sort()).toEqual(
-      ["arrivals", "forYou", "trending"].sort(),
+      ["arrivals", "forYou", "nowWatching", "trending"].sort(),
     );
   });
 });

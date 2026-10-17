@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type {
   ActiveDownloadsResponse,
+  DashboardPipeline,
   DownloadProgressItem,
   DownloadProgressSummaryResponse,
   LandedArrival,
@@ -15,6 +16,7 @@ import { recordLanded } from "@/features/medias/hooks/useLandedArrivals";
 import { queryKeys } from "@/lib/queryKeys";
 import {
   mergeActiveProgress,
+  mergePipelineProgress,
   mergeSummaryProgress,
 } from "../lib/activeDownloads";
 import { mergeDownloadProgress } from "../lib/mergeDownloadProgress";
@@ -40,6 +42,9 @@ export function useLibraryEvents() {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.downloads.pendingReleases(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.pipeline(),
       });
     };
     const es = new EventSource("/api/library/events", {
@@ -87,6 +92,10 @@ export function useLibraryEvents() {
           queryClient.setQueryData<DownloadProgressSummaryResponse>(
             queryKeys.downloads.progress(),
             (current) => mergeSummaryProgress(current, downloads),
+          );
+          queryClient.setQueryData<DashboardPipeline>(
+            queryKeys.dashboard.pipeline(),
+            (current) => mergePipelineProgress(current, downloads),
           );
           return;
         }

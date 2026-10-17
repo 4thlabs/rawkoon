@@ -149,12 +149,12 @@ The layout follows the approved wave 1 mockup.
 
 ### Web
 
-- **Order.** On desktop:
-  - the hero;
-  - a two-column row, Continue (left) and Pipeline above Books (right);
-  - the Recently added and Upcoming rails.
+- **Order.** On desktop, after the hero, two columns:
+  - left: Continue (two cards side by side, with "See all" when there are
+    more), then the Recently added and Upcoming rails;
+  - right: Pipeline above Books. Members get Books alone.
 
-  Phones stack hero, Continue, Pipeline, Books, then the rails.
+  Phones stack hero, Continue (one card), Pipeline, Books, then the rails.
 - **Hero.** It keeps its sources (just arrived, for you, trending). When
   Jellyfin reports someone watching, the first slide is Now watching, with
   the title, viewer and progress. The data comes from the existing
