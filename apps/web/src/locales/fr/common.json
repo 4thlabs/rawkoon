@@ -218,7 +218,8 @@
         "all_failed": "Toutes les versions en attente ont été bloquées ou ont échoué."
       },
       "upcomingEmpty": "Rien à venir",
-      "books": "Livres"
+      "books": "Livres",
+      "seeAll": "Tout voir"
     },
     "libraryAttention": {
       "title": "Bibliothèque — à traiter",

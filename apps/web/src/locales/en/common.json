@@ -218,7 +218,8 @@
         "all_failed": "Every held release was blocked or failed."
       },
       "upcomingEmpty": "Nothing upcoming",
-      "books": "Books"
+      "books": "Books",
+      "seeAll": "See all"
     },
     "libraryAttention": {
       "title": "Library attention",

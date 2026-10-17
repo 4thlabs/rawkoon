@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
@@ -158,7 +158,8 @@ function HeroCarousel({
 }) {
   const { t, i18n } = useTranslation("common");
   const reduced = usePrefersReducedMotion();
-  const [stored, setIndex] = useState(0);
+  const [storedKey, setStoredKey] = useState<string | null>(null);
+  const lastIndex = useRef(0);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const paused = hovered || focused;
@@ -176,21 +177,33 @@ function HeroCarousel({
     ...items.map((item) => ({ kind: "item" as const, item })),
   ];
   const count = slides.length;
-  const index = clampHeroIndex(stored, count);
+  // The viewed slide is tracked by key so a Now watching slide arriving or
+  // leaving never swaps it under the viewer; the index is only a fallback.
+  const found = storedKey
+    ? slides.findIndex((s) => slideKey(s) === storedKey)
+    : 0;
+  const index = found >= 0 ? found : clampHeroIndex(lastIndex.current, count);
+  lastIndex.current = index;
   const slide = slides[index];
+  const currentKey = slideKey(slide);
+  const setIndex = (i: number) => setStoredKey(slideKey(slides[i]));
   const item = slide.kind === "item" ? slide.item : null;
   const session = slide.kind === "watching" ? slide.session : null;
   // Each slide says why it is here: arrivals first, then deck picks.
   const source = item?.source ?? "arrivals";
 
+  const slidesRef = useRef(slides);
+  slidesRef.current = slides;
+  const rotates = count >= 2;
   useEffect(() => {
-    if (reduced || paused || count < 2) return;
-    const id = setTimeout(
-      () => setIndex(nextHeroIndex(index, count)),
-      HERO_ROTATE_SECONDS * 1000,
-    );
+    if (reduced || paused || !rotates) return;
+    const id = setTimeout(() => {
+      const all = slidesRef.current;
+      const at = all.findIndex((s) => slideKey(s) === currentKey);
+      setStoredKey(slideKey(all[nextHeroIndex(at, all.length)]));
+    }, HERO_ROTATE_SECONDS * 1000);
     return () => clearTimeout(id);
-  }, [index, count, paused, reduced]);
+  }, [currentKey, rotates, paused, reduced]);
 
   const showSearchHint = searchOnAddEnabled && user?.is_admin === true;
 

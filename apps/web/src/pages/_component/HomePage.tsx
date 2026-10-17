@@ -2,6 +2,8 @@ import { motion, type Variants } from "motion/react";
 import { useLibraryEvents } from "@/features/medias/hooks/useLibraryEvents";
 import { PageLayout } from "@/components/PageLayout";
 import { CardErrorBoundary } from "@/components/ErrorBoundary";
+import { cn } from "@/lib/utils";
+import { useFeatures } from "@/lib/routing/useFeatures";
 import { useCurrentUser } from "@/lib/auth/useAuth";
 import { getUserFirstName } from "@/lib/utils/format";
 import { HomeHero } from "@/pages/_component/HomeHero";
@@ -36,6 +38,10 @@ const sectionVariants: Variants = {
  */
 export function HomePage() {
   const { data: user } = useCurrentUser();
+  const features = useFeatures();
+  // A member with books off has no side column, so the left one takes the width.
+  const showSide =
+    user?.is_admin !== false || features.data?.books_enabled !== false;
   useLibraryEvents();
 
   return (
@@ -49,29 +55,34 @@ export function HomePage() {
       >
         <motion.div
           variants={sectionVariants}
-          className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20.5rem]"
+          className={cn(
+            "grid items-start gap-x-6 gap-y-8",
+            showSide && "lg:grid-cols-[minmax(0,1fr)_20.5rem]",
+          )}
         >
-          <CardErrorBoundary>
-            <ContinueListeningWidget />
-          </CardErrorBoundary>
-          <div className="space-y-4 lg:col-start-2 lg:row-start-1">
+          <div className="min-w-0 space-y-8">
             <CardErrorBoundary>
-              <PipelineCard />
-            </CardErrorBoundary>
-            <CardErrorBoundary>
-              <BooksCard />
+              <ContinueListeningWidget />
             </CardErrorBoundary>
           </div>
-        </motion.div>
-        <motion.div variants={sectionVariants}>
-          <CardErrorBoundary>
-            <RecentlyAddedRail />
-          </CardErrorBoundary>
-        </motion.div>
-        <motion.div variants={sectionVariants}>
-          <CardErrorBoundary>
-            <UpcomingRail />
-          </CardErrorBoundary>
+          {showSide && (
+            <div className="space-y-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+              <CardErrorBoundary>
+                <PipelineCard />
+              </CardErrorBoundary>
+              <CardErrorBoundary>
+                <BooksCard />
+              </CardErrorBoundary>
+            </div>
+          )}
+          <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-2">
+            <CardErrorBoundary>
+              <RecentlyAddedRail />
+            </CardErrorBoundary>
+            <CardErrorBoundary>
+              <UpcomingRail />
+            </CardErrorBoundary>
+          </div>
         </motion.div>
       </motion.div>
     </PageLayout>

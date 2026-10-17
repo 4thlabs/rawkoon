@@ -52,6 +52,12 @@ describe("BooksCard", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it("holds its space while stats load", () => {
+    mockUseListeningStats.mockReturnValue({ data: undefined, isLoading: true });
+    const { container } = renderWithProviders(<BooksCard />);
+    expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("is hidden when stats fail to load", () => {
     mockUseListeningStats.mockReturnValue({ data: undefined, isError: true });
     const { container } = renderWithProviders(<BooksCard />);

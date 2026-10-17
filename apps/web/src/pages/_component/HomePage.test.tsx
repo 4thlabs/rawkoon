@@ -10,6 +10,9 @@ vi.mock("@/lib/auth/useAuth", () => ({
   useAuth: () => ({ user: null, isAuthenticated: false, isLoading: false }),
 }));
 
+vi.mock("@/lib/routing/useFeatures", () => ({
+  useFeatures: () => ({ data: { books_enabled: true } }),
+}));
 vi.mock("@/features/medias/hooks/useLibraryEvents", () => ({
   useLibraryEvents: () => {},
 }));

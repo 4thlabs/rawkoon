@@ -325,10 +325,15 @@ function PipelineSkeleton() {
  */
 export function PipelineCard() {
   const { t, i18n } = useTranslation("common");
-  const isAdmin = useCurrentUser().data?.is_admin === true;
+  const currentUser = useCurrentUser();
+  const isAdmin = currentUser.data?.is_admin === true;
   const { data, isLoading, isError } = usePipeline(isAdmin);
   const [expanded, setExpanded] = useState(false);
 
+  // Hold the card's space while the role is unknown so admins don't see it pop in.
+  if (currentUser.isLoading) {
+    return <div aria-hidden className="h-64 md:h-[22rem]" />;
+  }
   if (!isAdmin) return null;
 
   const rows = data ? buildRows(data, t, i18n.language) : [];

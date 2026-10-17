@@ -4,6 +4,7 @@ import type {
   DashboardHeroItem,
   DashboardHeroResponse,
 } from "@rawkoon/shared/types";
+import { queryKeys } from "@/lib/queryKeys";
 import { renderWithProviders } from "@/test-utils/render";
 import { HomeHero } from "@/pages/_component/HomeHero";
 import en from "@/locales/en/common.json";
@@ -148,6 +149,60 @@ describe("HomeHero now watching", () => {
       screen.getByRole("progressbar", { name: "Live Film" }),
     ).toHaveAttribute("aria-valuenow", "42");
     expect(screen.queryByText("Film 1")).toBeNull();
+  });
+
+  it("keeps the viewed slide when a Now watching slide appears and disappears", async () => {
+    const { queryClient } = withSessions([], [item(1), item(2)]);
+    await screen.findByText("Film 1");
+    fireEvent.click(
+      screen.getByRole("button", { name: "dashboard.hero.goTo title:Film 2" }),
+    );
+    expect(screen.getByText("Film 2")).toBeInTheDocument();
+
+    const key = queryKeys.dashboard.jellyfinNowPlaying();
+    await waitFor(() =>
+      expect(queryClient.getQueryState(key)?.status).toBe("success"),
+    );
+    act(() => {
+      queryClient.setQueryData(key, { enabled: true, sessions: [session] });
+    });
+    expect(
+      await screen.findByRole("button", {
+        name: "dashboard.hero.goTo title:Live Film",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Film 2")).toBeInTheDocument();
+    expect(screen.queryByText("Live Film")).toBeNull();
+
+    act(() => {
+      queryClient.setQueryData(key, { enabled: true, sessions: [] });
+    });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", {
+          name: "dashboard.hero.goTo title:Live Film",
+        }),
+      ).toBeNull(),
+    );
+    expect(screen.getByText("Film 2")).toBeInTheDocument();
+  });
+
+  it("falls back to a valid slide when the viewed Now watching slide ends", async () => {
+    const { queryClient } = withSessions([session], [item(1)]);
+    await screen.findByText("Live Film");
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryState(queryKeys.dashboard.jellyfinNowPlaying())
+          ?.status,
+      ).toBe("success"),
+    );
+    act(() => {
+      queryClient.setQueryData(queryKeys.dashboard.jellyfinNowPlaying(), {
+        enabled: true,
+        sessions: [],
+      });
+    });
+    expect(await screen.findByText("Film 1")).toBeInTheDocument();
   });
 
   it("is unchanged when nobody is watching", async () => {

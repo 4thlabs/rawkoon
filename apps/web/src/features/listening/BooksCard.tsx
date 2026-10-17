@@ -17,6 +17,7 @@ export function BooksCard() {
   const stats = useListeningStats();
 
   if (features.data?.books_enabled === false) return null;
+  if (stats.isLoading) return <div aria-hidden className="h-44" />;
   if (stats.isError || !stats.data) return null;
 
   const maxSeconds = weekBarMaxSeconds(stats.data.week);

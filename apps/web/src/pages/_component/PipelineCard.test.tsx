@@ -21,9 +21,12 @@ vi.mock("@tanstack/react-router", () => ({
   ),
 }));
 
-const auth = vi.hoisted(() => ({ isAdmin: true }));
+const auth = vi.hoisted(() => ({ isAdmin: true, loading: false }));
 vi.mock("@/lib/auth/useAuth", () => ({
-  useCurrentUser: () => ({ data: { id: 1, is_admin: auth.isAdmin } }),
+  useCurrentUser: () => ({
+    data: auth.loading ? undefined : { id: 1, is_admin: auth.isAdmin },
+    isLoading: auth.loading,
+  }),
 }));
 
 const idle: DashboardPipeline = {
@@ -78,6 +81,7 @@ const render = (data: DashboardPipeline | Error) => {
 
 beforeEach(() => {
   auth.isAdmin = true;
+  auth.loading = false;
 });
 
 describe("PipelineCard", () => {
@@ -85,6 +89,13 @@ describe("PipelineCard", () => {
     auth.isAdmin = false;
     const { container, fetcher } = render(idle);
     expect(container).toBeEmptyDOMElement();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("holds its space, without fetching, while the user is loading", () => {
+    auth.loading = true;
+    const { container, fetcher } = render(idle);
+    expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
     expect(fetcher).not.toHaveBeenCalled();
   });
 
