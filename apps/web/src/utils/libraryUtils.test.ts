@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { sortItems } from "./libraryUtils";
+import {
+  parseFilterStatus,
+  parseFilterType,
+  parseSortDir,
+  parseSortKey,
+  parseViewMode,
+  sortItems,
+} from "./libraryUtils";
 import type { LibraryMedia } from "@rawkoon/shared/types";
 
 function makeMedia(overrides: Partial<LibraryMedia>): LibraryMedia {
@@ -101,5 +108,23 @@ describe("sortItems — file_size", () => {
     ];
     const result = sortItems(items, "file_size", "asc");
     expect(result.map((i) => i.id)).toEqual([2, 1]);
+  });
+});
+
+describe("library URL parsers", () => {
+  it("accepts every known value, including the skipped status", () => {
+    expect(parseFilterStatus("skipped")).toBe("skipped");
+    expect(parseFilterType("show")).toBe("show");
+    expect(parseSortKey("file_size")).toBe("file_size");
+    expect(parseSortDir("asc")).toBe("asc");
+    expect(parseViewMode("compact")).toBe("compact");
+  });
+
+  it("falls back to undefined for unknown or non-string values", () => {
+    expect(parseFilterStatus("archived")).toBeUndefined();
+    expect(parseFilterType(3)).toBeUndefined();
+    expect(parseSortKey("rating")).toBeUndefined();
+    expect(parseSortDir("up")).toBeUndefined();
+    expect(parseViewMode(null)).toBeUndefined();
   });
 });

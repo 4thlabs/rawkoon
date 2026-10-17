@@ -1,40 +1,27 @@
 import { useMemo, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useSearch } from "@tanstack/react-router";
-import {
-  Film,
-  Tv,
-  Clock,
-  CheckCircle2,
-  Download,
-  BarChart3,
-} from "lucide-react";
 import { useLibraryNavigation } from "@/features/medias/context/LibraryNavigationContext";
 import { PageLayout } from "@/components/PageLayout";
-import { type SegmentedTabItem } from "@/components/ui/segmented-tabs";
 import { useInfiniteLibrary } from "@/features/medias/hooks/useInfiniteLibrary";
 import { useLibraryLanguageTags } from "@/features/medias/hooks/useLibraryLanguageTags";
 import { useLiveSearchToast } from "@/features/medias/hooks/useLiveSearchToast";
 import { useSearchLibraryMovie } from "@/features/medias/hooks/useSearchLibraryMovie";
 import { useLibraryEvents } from "@/features/medias/hooks/useLibraryEvents";
+import { LibraryGrowthStrip } from "@/features/library/LibraryGrowthStrip";
 import { useAuth } from "@/lib/auth/useAuth";
-import { type FilterType, type FilterStatus } from "@/utils/libraryUtils";
 import { GrabReadinessBanner } from "./GrabReadinessBanner";
 import { LibraryPageHeader } from "./LibraryPageHeader";
 import { LibrarySwitch } from "./LibrarySwitch";
-import { LibraryMobileFilterSheet } from "./LibraryMobileFilterSheet";
 import { TmdbSearchModal } from "./TmdbSearchModal";
 import { LibraryToolbar } from "./LibraryToolbar";
 import { LibraryGrid } from "./LibraryGrid";
-import { LibraryStatsPanel } from "./LibraryStatsPanel";
-import { ManagementSection } from "./LibrarySharedUI";
 import {
   useLibraryPageState,
+  LIBRARY_DEFAULTS,
   type LibraryPageSearchParams,
 } from "./useLibraryPageState";
 
 export function LibraryPage() {
-  const { t } = useTranslation("common");
   const { user } = useAuth();
   const { saveLibrarySearch } = useLibraryNavigation();
   const searchParams = useSearch({ from: "/library/" });
@@ -46,7 +33,6 @@ export function LibraryPage() {
 
   useLibraryEvents();
 
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
   const searchMovie = useSearchLibraryMovie();
@@ -63,25 +49,19 @@ export function LibraryPage() {
     search,
     sortBy,
     sortDir,
-    viewMode,
+    view: viewMode,
   } = state;
 
   // ─── Data fetch (server filters + sort + pagination via query params) ───────
-  const {
-    data,
-    isLoading,
-    refetch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteLibrary({
-    type: typeFilter !== "all" ? typeFilter : undefined,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    q: search || undefined,
-    language: languageFilter !== "all" ? languageFilter : undefined,
-    sortBy,
-    sortDir,
-  });
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteLibrary({
+      type: typeFilter !== "all" ? typeFilter : undefined,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+      q: search || undefined,
+      language: languageFilter !== "all" ? languageFilter : undefined,
+      sortBy,
+      sortDir,
+    });
 
   const { data: languageTagsData } = useLibraryLanguageTags();
   const languageTags = languageTagsData?.tags ?? [];
@@ -114,37 +94,22 @@ export function LibraryPage() {
 
   const movieCount = data?.pages[0]?.movie_count ?? 0;
   const showCount = data?.pages[0]?.show_count ?? 0;
-  const typeItems = [
-    { id: "all", label: t("medias.library.typeAll") },
-    {
-      id: "movie",
-      label: t("medias.library.moviesWithCount", { count: movieCount }),
-      icon: Film,
-    },
-    {
-      id: "show",
-      label: t("medias.library.showsWithCount", { count: showCount }),
-      icon: Tv,
-    },
-  ] satisfies SegmentedTabItem<FilterType>[];
-  const statusItems = [
-    { id: "all", label: t("medias.library.statusAll") },
-    {
-      id: "downloaded",
-      label: t("medias.library.statusDownloaded"),
-      icon: CheckCircle2,
-    },
-    {
-      id: "wanted",
-      label: t("medias.library.statusWanted"),
-      icon: Clock,
-    },
-    {
-      id: "downloading",
-      label: t("medias.library.statusDownloading"),
-      icon: Download,
-    },
-  ] satisfies SegmentedTabItem<FilterStatus>[];
+  const resultCount =
+    data === undefined
+      ? null
+      : typeFilter === "movie"
+        ? movieCount
+        : typeFilter === "show"
+          ? showCount
+          : movieCount + showCount;
+  const resetFilters = () =>
+    setState({
+      type: LIBRARY_DEFAULTS.type,
+      status: LIBRARY_DEFAULTS.status,
+      language: LIBRARY_DEFAULTS.language,
+      sortBy: LIBRARY_DEFAULTS.sortBy,
+      sortDir: LIBRARY_DEFAULTS.sortDir,
+    });
 
   return (
     <PageLayout>
@@ -152,8 +117,6 @@ export function LibraryPage() {
       <LibraryPageHeader
         movieCount={movieCount}
         showCount={showCount}
-        isLoading={isLoading}
-        onRefresh={() => refetch()}
         onAddClick={() => setAddModalOpen(true)}
         isAdmin={user?.is_admin ?? false}
       />
@@ -161,14 +124,7 @@ export function LibraryPage() {
       {user?.is_admin && <GrabReadinessBanner />}
 
       <div className="mt-3 space-y-4">
-        <ManagementSection
-          icon={BarChart3}
-          title={t("library.stats.title")}
-          collapsible
-          defaultOpen={false}
-        >
-          <LibraryStatsPanel />
-        </ManagementSection>
+        <LibraryGrowthStrip />
 
         <LibraryToolbar
           search={search}
@@ -179,27 +135,25 @@ export function LibraryPage() {
           sortDir={sortDir}
           viewMode={viewMode}
           languageTags={languageTags}
-          typeItems={typeItems}
-          statusItems={statusItems}
+          movieCount={movieCount}
+          showCount={showCount}
+          resultCount={resultCount}
           activeFilterCount={activeFilterCount}
           onSearchChange={(value) => setState({ search: value })}
           onTypeChange={(value) => setState({ type: value })}
           onStatusChange={(value) => setState({ status: value })}
           onLanguageChange={(value) => setState({ language: value })}
           onSortByChange={(value) => setState({ sortBy: value })}
-          onSortDirToggle={() =>
-            setState({
-              sortDir: sortDir === "asc" ? "desc" : "asc",
-            })
-          }
-          onViewModeChange={(value) => setState({ viewMode: value })}
-          onOpenMobileSheet={() => setSheetOpen(true)}
+          onSortDirChange={(value) => setState({ sortDir: value })}
+          onViewModeChange={(value) => setState({ view: value })}
+          onReset={resetFilters}
         />
 
         <LibraryGrid
           items={sorted}
           isLoading={isLoading}
           viewMode={viewMode}
+          filtered={activeFilterCount > 0 || search !== ""}
           onMovieSearch={handleMovieSearch}
           movieSearchPending={searchMovie.isPending}
           movieSearchId={searchMovie.variables?.id ?? null}
@@ -209,32 +163,6 @@ export function LibraryPage() {
         />
       </div>
 
-      <LibraryMobileFilterSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        typeFilter={typeFilter}
-        statusFilter={statusFilter}
-        languageFilter={languageFilter}
-        sortBy={sortBy}
-        sortDir={sortDir}
-        languageTags={languageTags}
-        typeItems={typeItems}
-        statusItems={statusItems}
-        onTypeChange={(v) => setState({ type: v })}
-        onStatusChange={(v) => setState({ status: v })}
-        onLanguageChange={(v) => setState({ language: v })}
-        onSortByChange={(v) => setState({ sortBy: v })}
-        onSortDirChange={(v) => setState({ sortDir: v })}
-        onReset={() =>
-          setState({
-            type: "all",
-            status: "all",
-            language: "all",
-            sortBy: "added_at",
-            sortDir: "desc",
-          })
-        }
-      />
       <TmdbSearchModal
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}

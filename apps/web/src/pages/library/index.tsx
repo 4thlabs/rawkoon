@@ -1,16 +1,30 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { getCurrentUser } from "@/lib/auth";
 import { prefetchRouteData } from "@/lib/routing/prefetch";
+import {
+  parseFilterStatus,
+  parseFilterType,
+  parseSortDir,
+  parseSortKey,
+  parseViewMode,
+  type FilterStatus,
+  type FilterType,
+  type SortDir,
+  type SortKey,
+  type ViewMode,
+} from "@/utils/libraryUtils";
 import { LibraryPage } from "@/pages/medias/_component/LibraryPage";
 
 type LibrarySearchParams = {
   page?: number;
   pageSize?: number;
   search?: string;
-  type?: string;
-  status?: string;
-  sortBy?: string;
-  sortDir?: "asc" | "desc";
+  type?: FilterType;
+  status?: FilterStatus;
+  language?: string;
+  sortBy?: SortKey;
+  sortDir?: SortDir;
+  view?: ViewMode;
   scrollToMedia?: string;
 };
 
@@ -29,20 +43,15 @@ export const Route = createFileRoute("/library/")({
       typeof search.search === "string" && search.search
         ? search.search
         : undefined,
-    type:
-      typeof search.type === "string" && search.type ? search.type : undefined,
-    status:
-      typeof search.status === "string" && search.status
-        ? search.status
+    type: parseFilterType(search.type),
+    status: parseFilterStatus(search.status),
+    language:
+      typeof search.language === "string" && search.language
+        ? search.language
         : undefined,
-    sortBy:
-      typeof search.sortBy === "string" && search.sortBy
-        ? search.sortBy
-        : undefined,
-    sortDir:
-      search.sortDir === "asc" || search.sortDir === "desc"
-        ? search.sortDir
-        : undefined,
+    sortBy: parseSortKey(search.sortBy),
+    sortDir: parseSortDir(search.sortDir),
+    view: parseViewMode(search.view),
     scrollToMedia:
       typeof search.scrollToMedia === "string"
         ? search.scrollToMedia

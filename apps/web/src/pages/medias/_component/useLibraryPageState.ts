@@ -14,8 +14,11 @@ export const LIBRARY_DEFAULTS = {
   search: "" as string,
   sortBy: "added_at" as SortKey,
   sortDir: "desc" as SortDir,
-  viewMode: "grid" as ViewMode,
+  view: "grid" as ViewMode,
 };
+
+export const isNonDefaultSort = (sortBy: SortKey, sortDir: SortDir) =>
+  sortBy !== LIBRARY_DEFAULTS.sortBy || sortDir !== LIBRARY_DEFAULTS.sortDir;
 
 export type LibraryPageSearchParams = Partial<typeof LIBRARY_DEFAULTS>;
 
@@ -30,6 +33,7 @@ export function useLibraryPageState(searchParams: LibraryPageSearchParams) {
     state.type !== "all",
     state.status !== "all",
     state.language !== "all",
+    isNonDefaultSort(state.sortBy, state.sortDir),
   ].filter(Boolean).length;
 
   return { state, setState, activeFilterCount };

@@ -1,19 +1,15 @@
-import { type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Search as SearchIcon,
-  ArrowUpAZ,
-  ArrowDownAZ,
-  LayoutGrid,
-  Grid3X3,
-  List,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
-import {
-  SegmentedTabs,
-  type SegmentedTabItem,
-} from "@/components/ui/segmented-tabs";
+  ActiveFilterChips,
+  FilterButton,
+  FilterChoices,
+  FilterGroup,
+  FilterPanel,
+  FilterSegmented,
+  ToolbarSearch,
+  type ActiveFilterChip,
+  type FilterOption,
+} from "@/components/ui/filter-panel";
 import {
   Select,
   SelectContent,
@@ -21,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { ViewToggle } from "@/components/ui/view-toggle";
 import {
   type FilterType,
   type FilterStatus,
@@ -29,13 +25,20 @@ import {
   type SortDir,
   type ViewMode,
   LIBRARY_SORT_KEYS,
+  VIEW_MODES,
 } from "@/utils/libraryUtils";
+import { LIBRARY_DEFAULTS, isNonDefaultSort } from "./useLibraryPageState";
 
-interface ToolbarFilterItem {
-  id: string;
-  label: string;
-  icon?: ComponentType<{ size?: number; className?: string }>;
-}
+/** Which direction reads first in the panel; the other follows. */
+const FIRST_DIR: Record<SortKey, SortDir> = {
+  added_at: "desc",
+  last_grabbed_at: "desc",
+  title: "asc",
+  year: "desc",
+  status: "asc",
+  digital_release_date: "desc",
+  file_size: "desc",
+};
 
 interface LibraryToolbarProps {
   search: string;
@@ -46,17 +49,18 @@ interface LibraryToolbarProps {
   sortDir: SortDir;
   viewMode: ViewMode;
   languageTags: string[];
-  typeItems: ToolbarFilterItem[];
-  statusItems: ToolbarFilterItem[];
+  movieCount: number;
+  showCount: number;
+  resultCount: number | null;
   activeFilterCount: number;
   onSearchChange: (value: string) => void;
   onTypeChange: (value: FilterType) => void;
   onStatusChange: (value: FilterStatus) => void;
   onLanguageChange: (value: string) => void;
   onSortByChange: (value: SortKey) => void;
-  onSortDirToggle: () => void;
+  onSortDirChange: (value: SortDir) => void;
   onViewModeChange: (value: ViewMode) => void;
-  onOpenMobileSheet: () => void;
+  onReset: () => void;
 }
 
 export function LibraryToolbar({
@@ -68,247 +72,172 @@ export function LibraryToolbar({
   sortDir,
   viewMode,
   languageTags,
-  typeItems,
-  statusItems,
+  movieCount,
+  showCount,
+  resultCount,
   activeFilterCount,
   onSearchChange,
   onTypeChange,
   onStatusChange,
   onLanguageChange,
   onSortByChange,
-  onSortDirToggle,
+  onSortDirChange,
   onViewModeChange,
-  onOpenMobileSheet,
+  onReset,
 }: LibraryToolbarProps) {
   const { t } = useTranslation("common");
 
+  const typeOptions: FilterOption<FilterType>[] = [
+    { id: "all", label: t("medias.library.typeAll") },
+    { id: "movie", label: t("medias.library.typeMovies"), count: movieCount },
+    { id: "show", label: t("medias.library.typeShows"), count: showCount },
+  ];
+  const statusOptions: FilterOption<FilterStatus>[] = [
+    { id: "all", label: t("medias.library.statusAll") },
+    { id: "downloaded", label: t("medias.library.statusDownloaded") },
+    { id: "wanted", label: t("medias.library.statusWanted") },
+    { id: "downloading", label: t("medias.library.statusDownloading") },
+    { id: "skipped", label: t("medias.library.statusSkipped") },
+  ];
+  const first = FIRST_DIR[sortBy];
+  const second: SortDir = first === "asc" ? "desc" : "asc";
+  const dirOptions: FilterOption<SortDir>[] = [first, second].map((dir) => ({
+    id: dir as SortDir,
+    label: t(`medias.library.sortDir.${sortBy}.${dir}`),
+  }));
+
+  const chips: ActiveFilterChip[] = [];
+  if (typeFilter !== "all")
+    chips.push({
+      id: "type",
+      label: typeOptions.find((o) => o.id === typeFilter)?.label ?? typeFilter,
+      onRemove: () => onTypeChange("all"),
+    });
+  if (statusFilter !== "all")
+    chips.push({
+      id: "status",
+      label:
+        statusOptions.find((o) => o.id === statusFilter)?.label ?? statusFilter,
+      onRemove: () => onStatusChange("all"),
+    });
+  if (languageFilter !== "all")
+    chips.push({
+      id: "language",
+      label: languageFilter,
+      onRemove: () => onLanguageChange("all"),
+    });
+  if (isNonDefaultSort(sortBy, sortDir))
+    chips.push({
+      id: "sort",
+      label: t("medias.library.sortChip", {
+        sort: t(`medias.library.sort.${sortBy}`),
+        direction: t(`medias.library.sortDir.${sortBy}.${sortDir}`),
+      }),
+      onRemove: () => {
+        onSortByChange(LIBRARY_DEFAULTS.sortBy);
+        onSortDirChange(LIBRARY_DEFAULTS.sortDir);
+      },
+    });
+
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="relative w-full sm:w-auto">
-          <SearchIcon
-            size={13}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none"
-          />
-          <input
-            type="search"
-            aria-label={t("medias.library.searchPlaceholder")}
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={t("medias.library.searchPlaceholder")}
-            className="focus-ring w-full sm:w-80 rounded-xl border border-neutral-700 bg-neutral-900 pl-8 pr-3 py-2 text-sm focus:border-primary-500 transition"
-          />
-        </div>
-
-        {/* Sort */}
-        <div className="hidden sm:flex items-center gap-1.5 ml-auto">
-          <Select
-            value={sortBy}
-            onValueChange={(value) => onSortByChange(value as SortKey)}
-          >
-            <SelectTrigger className="h-8 w-auto rounded-xl border-neutral-700 bg-neutral-900 px-2.5 py-1.5 text-xs text-neutral-300">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {LIBRARY_SORT_KEYS.map((key) => (
-                <SelectItem key={key} value={key} className="text-xs">
-                  {t(`medias.library.sort.${key}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <button
-            type="button"
-            onClick={onSortDirToggle}
-            className="rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 text-neutral-500 hover:text-neutral-300 transition-colors"
-            title={
-              sortDir === "asc"
-                ? t("medias.sortDirectionAsc")
-                : t("medias.sortDirectionDesc")
-            }
-          >
-            {sortDir === "asc" ? (
-              <ArrowUpAZ size={14} />
-            ) : (
-              <ArrowDownAZ size={14} />
-            )}
-          </button>
-
-          {/* View mode toggle */}
-          <div className="flex items-center rounded-xl border border-neutral-700 bg-neutral-900 overflow-hidden">
-            {(
-              [
-                {
-                  mode: "grid" as ViewMode,
-                  Icon: LayoutGrid,
-                  label: "Grid",
-                },
-                {
-                  mode: "compact" as ViewMode,
-                  Icon: Grid3X3,
-                  label: "Compact",
-                },
-                { mode: "list" as ViewMode, Icon: List, label: "List" },
-              ] as const
-            ).map(({ mode, Icon, label }) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => onViewModeChange(mode)}
-                title={label}
-                className={cn(
-                  "p-1.5 transition-colors",
-                  viewMode === mode
-                    ? "bg-neutral-800 text-neutral-200"
-                    : "text-neutral-400 hover:text-neutral-300",
-                )}
-              >
-                <Icon size={14} />
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile: filter sheet trigger + view mode toggle */}
-      <div className="flex flex-col gap-2 sm:hidden">
-        <div className="flex items-center gap-2">
-          {/* Filters button */}
-          <button
-            type="button"
-            onClick={onOpenMobileSheet}
-            className="relative flex h-9 items-center gap-1.5 rounded-xl border px-3 text-sm font-medium transition-colors border-neutral-700 bg-neutral-900 text-neutral-300"
-          >
-            <SlidersHorizontal size={13} />
-            {t("medias.library.filtersButton")}
-            {activeFilterCount > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-primary-600 text-[9px] font-bold leading-none text-neutral-950">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-
-          {/* Sort chip */}
-          <button
-            type="button"
-            onClick={onOpenMobileSheet}
-            className="flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs transition-colors border-neutral-700 bg-neutral-900 text-neutral-400"
-          >
-            {sortDir === "asc" ? (
-              <ArrowUpAZ size={12} />
-            ) : (
-              <ArrowDownAZ size={12} />
-            )}
-            {t(`medias.library.sort.${sortBy}`)}
-          </button>
-
-          <div className="flex-1" />
-
-          {/* View mode toggle */}
-          <div className="flex overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900">
-            {(
-              [
-                { mode: "grid" as ViewMode, Icon: LayoutGrid },
-                { mode: "compact" as ViewMode, Icon: Grid3X3 },
-                { mode: "list" as ViewMode, Icon: List },
-              ] as const
-            ).map(({ mode, Icon }) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => onViewModeChange(mode)}
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center transition-colors",
-                  viewMode === mode
-                    ? "bg-neutral-800 text-neutral-200"
-                    : "text-neutral-400 hover:text-neutral-300",
-                )}
-              >
-                <Icon size={14} />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Active filter chips */}
-        {activeFilterCount > 0 && (
-          <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5">
-            {typeFilter !== "all" && (
-              <button
-                type="button"
-                onClick={() => onTypeChange("all")}
-                className="flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium border-primary-800 bg-primary-900/30 text-primary-300"
-              >
-                {typeItems.find((i) => i.id === typeFilter)?.label}
-                <X size={10} />
-              </button>
-            )}
-            {statusFilter !== "all" && (
-              <button
-                type="button"
-                onClick={() => onStatusChange("all")}
-                className="flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium border-primary-800 bg-primary-900/30 text-primary-300"
-              >
-                {statusItems.find((i) => i.id === statusFilter)?.label}
-                <X size={10} />
-              </button>
-            )}
-            {languageFilter !== "all" && (
-              <button
-                type="button"
-                onClick={() => onLanguageChange("all")}
-                className="flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium border-primary-800 bg-primary-900/30 text-primary-300"
-              >
-                {languageFilter}
-                <X size={10} />
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="hidden sm:flex sm:items-center sm:gap-3 sm:flex-wrap">
-        <SegmentedTabs<FilterType>
-          variant="chips"
-          containerClassName="w-auto shrink-0"
-          ariaLabel={t("medias.library.typeAll")}
-          items={typeItems as SegmentedTabItem<FilterType>[]}
-          value={typeFilter}
-          onChange={onTypeChange}
+      <div className="flex flex-wrap items-center gap-2">
+        <ToolbarSearch
+          value={search}
+          onChange={onSearchChange}
+          placeholder={t("medias.library.searchPlaceholder")}
+          className="w-full sm:w-auto sm:max-w-md sm:flex-1"
         />
-        <div className="h-4 w-px shrink-0 bg-neutral-700" />
-        <SegmentedTabs<FilterStatus>
-          variant="chips"
-          containerClassName="w-auto shrink-0"
-          ariaLabel={t("medias.library.statusAll")}
-          items={statusItems as SegmentedTabItem<FilterStatus>[]}
-          value={statusFilter}
-          onChange={onStatusChange}
-        />
-        {languageTags.length > 0 && (
-          <>
-            <div className="h-4 w-px shrink-0 bg-neutral-700" />
-            <Select value={languageFilter} onValueChange={onLanguageChange}>
-              <SelectTrigger
-                aria-label={t("medias.library.languageAll")}
-                className="h-8 w-auto rounded-lg border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-xs">
-                  {t("medias.library.languageAll")}
-                </SelectItem>
-                {languageTags.map((tag) => (
-                  <SelectItem key={tag} value={tag} className="text-xs">
-                    {tag}
+        <FilterPanel
+          trigger={<FilterButton count={activeFilterCount} />}
+          title={t("filters.title")}
+          resultCount={
+            resultCount === null
+              ? null
+              : t("medias.library.resultCount", { count: resultCount })
+          }
+          onReset={activeFilterCount > 0 ? onReset : undefined}
+        >
+          <FilterGroup label={t("medias.library.typeSection")}>
+            <FilterSegmented
+              ariaLabel={t("medias.library.typeSection")}
+              options={typeOptions}
+              value={typeFilter}
+              onChange={onTypeChange}
+            />
+          </FilterGroup>
+          <FilterGroup label={t("medias.library.statusSection")}>
+            <FilterChoices
+              ariaLabel={t("medias.library.statusSection")}
+              options={statusOptions}
+              value={statusFilter}
+              onChange={onStatusChange}
+            />
+          </FilterGroup>
+          {languageTags.length > 0 && (
+            <FilterGroup label={t("medias.library.languageSection")}>
+              <Select value={languageFilter} onValueChange={onLanguageChange}>
+                <SelectTrigger
+                  aria-label={t("medias.library.languageSection")}
+                  className="h-9 w-full rounded-lg border-neutral-700 bg-surface-inset px-3 text-sm"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t("medias.library.languageAll")}
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
-        )}
+                  {languageTags.map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FilterGroup>
+          )}
+          <FilterGroup label={t("medias.library.sortSection")}>
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={sortBy}
+                onValueChange={(v) => {
+                  onSortByChange(v as SortKey);
+                  onSortDirChange(FIRST_DIR[v as SortKey]);
+                }}
+              >
+                <SelectTrigger
+                  aria-label={t("medias.library.sortSection")}
+                  className="h-9 min-w-0 flex-1 rounded-lg border-neutral-700 bg-surface-inset px-3 text-sm"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LIBRARY_SORT_KEYS.map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {t(`medias.library.sort.${key}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="shrink-0">
+                <FilterSegmented
+                  ariaLabel={t("medias.library.sortDirection")}
+                  options={dirOptions}
+                  value={sortDir}
+                  onChange={onSortDirChange}
+                />
+              </div>
+            </div>
+          </FilterGroup>
+        </FilterPanel>
+        <ViewToggle
+          value={viewMode}
+          onChange={onViewModeChange}
+          modes={VIEW_MODES}
+          className="ml-auto"
+        />
       </div>
+      <ActiveFilterChips chips={chips} onClearAll={onReset} />
     </div>
   );
 }

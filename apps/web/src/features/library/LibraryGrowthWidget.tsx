@@ -6,34 +6,18 @@ import {
   WidgetHeader,
   WidgetShell,
 } from "@/pages/_component/widgetPrimitives";
-import { useAuth } from "@/lib/auth/useAuth";
-import { useFeatures } from "@/lib/routing/useFeatures";
 import { formatBytes } from "@/lib/utils/format";
 import { GrowthBars } from "./GrowthBars";
-import { deltaPercent, isGrowthEmpty, metricIn } from "./growthMath";
-import { useLibraryGrowth } from "./useLibraryGrowth";
-
-const monthName = (start: string, locale: string): string =>
-  new Intl.DateTimeFormat(locale, { month: "long", timeZone: "UTC" }).format(
-    new Date(`${start}T00:00:00Z`),
-  );
+import { monthName, useGrowthFigures } from "./useGrowthFigures";
 
 export function LibraryGrowthWidget() {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const features = useFeatures();
-  const query = useLibraryGrowth();
-  const growth = query.data?.growth;
+  const data = useGrowthFigures();
+  if (!data) return null;
 
-  if (query.isError || !growth || isGrowthEmpty(growth)) return null;
-
+  const { growth, booksEnabled, showBytes, current, previous, percent } = data;
   const locale = i18n.language;
-  const booksEnabled = features.data?.books_enabled !== false;
-  const showBytes = user?.is_admin === true && growth.month.bytes !== null;
-  const current = metricIn(growth.month, showBytes, booksEnabled);
-  const previous = metricIn(growth.previous_to_date, showBytes, booksEnabled);
-  const percent = deltaPercent(current, previous);
   const prevMonth = monthName(growth.previous_to_date.start, locale);
   const format = (n: number) => (showBytes ? formatBytes(n) : String(n));
   const arrow =

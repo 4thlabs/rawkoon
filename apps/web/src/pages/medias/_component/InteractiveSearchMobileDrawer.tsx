@@ -13,7 +13,7 @@ import {
   FilterSection,
   type FilterOption,
 } from "./InteractiveSearchFilters";
-import { MobileBottomSheet } from "./MobileBottomSheet";
+import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
 
 interface InteractiveSearchMobileDrawerProps {
   open: boolean;
