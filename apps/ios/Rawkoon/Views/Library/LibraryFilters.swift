@@ -96,6 +96,21 @@ enum MediaSort: String, CaseIterable, Identifiable {
     }
 }
 
+extension MediaSort {
+    /// Short wording for a non-default order, nil for the default (newest added first).
+    func summary(ascending: Bool) -> String? {
+        switch self {
+        case .added_at: ascending ? String(localized: "Oldest first") : nil
+        case .last_grabbed_at: ascending ? String(localized: "Oldest download") : String(localized: "Last download")
+        case .title: ascending ? String(localized: "A–Z") : String(localized: "Z–A")
+        case .year: ascending ? String(localized: "Oldest year") : String(localized: "Newest year")
+        case .status: ascending ? String(localized: "Status A–Z") : String(localized: "Status Z–A")
+        case .digital_release_date: ascending ? String(localized: "Oldest release") : String(localized: "Newest release")
+        case .file_size: ascending ? String(localized: "Smallest first") : String(localized: "Largest first")
+        }
+    }
+}
+
 enum BookKindFilter: String, CaseIterable, Identifiable {
     case all, audiobook, ebook
     var id: String {

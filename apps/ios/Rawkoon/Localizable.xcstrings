@@ -14933,6 +14933,126 @@
         }
       }
     },
+    "Oldest first": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus anciens d'abord"
+          }
+        }
+      }
+    },
+    "Oldest download": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement le plus ancien"
+          }
+        }
+      }
+    },
+    "A–Z": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A–Z"
+          }
+        }
+      }
+    },
+    "Z–A": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z–A"
+          }
+        }
+      }
+    },
+    "Oldest year": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Année la plus ancienne"
+          }
+        }
+      }
+    },
+    "Newest year": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Année la plus récente"
+          }
+        }
+      }
+    },
+    "Status A–Z": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statut A–Z"
+          }
+        }
+      }
+    },
+    "Status Z–A": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statut Z–A"
+          }
+        }
+      }
+    },
+    "Oldest release": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortie la plus ancienne"
+          }
+        }
+      }
+    },
+    "Newest release": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortie la plus récente"
+          }
+        }
+      }
+    },
+    "Smallest first": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus petits d'abord"
+          }
+        }
+      }
+    },
+    "Largest first": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus gros d'abord"
+          }
+        }
+      }
+    },
     "View in Files": {
       "localizations": {
         "fr": {
@@ -14963,22 +15083,22 @@
         }
       }
     },
-    "Quality profile: %@": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Profil de qualité : %@"
-          }
-        }
-      }
-    },
     "On": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Activé"
+          }
+        }
+      }
+    },
+    "Quality profile: %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil de qualité : %@"
           }
         }
       }

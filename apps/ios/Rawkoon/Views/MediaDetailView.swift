@@ -1,6 +1,25 @@
 import RawkoonKit
 import SwiftUI
 
+/// The one sheet the title page can present at a time.
+enum MediaDetailSheet: Identifiable {
+    case overrides(LibraryMedia)
+    case artwork(LibraryMedia)
+    case reencode(ReencodeTarget)
+    case release
+    case menuRelease(ReleaseSearchPresentation)
+
+    var id: String {
+        switch self {
+        case .overrides: "overrides"
+        case .artwork: "artwork"
+        case let .reencode(target): "reencode-\(target.id)"
+        case .release: "release"
+        case let .menuRelease(target): "menu-\(target.id)"
+        }
+    }
+}
+
 /// Pushed from Discover and Library. `mediaType` is TMDB-style ("movie"/"tv").
 /// `libraryId` is non-nil when the title is already in the library.
 ///
@@ -258,67 +277,103 @@ struct MediaDetailView: View {
 
     func attachSheets(_ base: some View) -> some View {
         base
-            .sheet(isPresented: $showingReleaseSearch, onDismiss: {
-                releaseSearchSeason = nil
-                releaseSearchEpisode = nil
-                releaseSearchUpgrade = false
-            }) {
-                ReleaseSearchView(
-                    query: title,
-                    libraryMediaId: libraryId,
-                    tmdbId: tmdbId,
-                    mediaType: mediaType,
-                    availableSeasons: releaseSearchSeason.map { [$0] } ?? (details?.seasons?.map(\.seasonNumber) ?? []),
-                    mediaYear: yearValue,
-                    originalTitle: details?.originalTitle,
-                    originalLanguage: details?.originalLanguage,
-                    titleTranslations: details?.titleTranslations ?? [],
-                    targetSeason: releaseSearchSeason,
-                    targetEpisode: releaseSearchEpisode,
-                    isUpgrade: releaseSearchUpgrade,
-                    onGrabbed: { Task { await refreshManagementData() } }
-                )
-                .environment(model)
+            .sheet(item: activeSheetBinding) { sheet in
+                sheetContent(sheet)
             }
-            .sheet(item: $menuReleaseSearch) { target in
-                ReleaseSearchView(
-                    query: target.query,
-                    libraryMediaId: target.libraryMediaId,
-                    tmdbId: target.tmdbId,
-                    mediaType: target.mediaType,
-                    availableSeasons: [],
-                    onGrabbed: { Task { await refreshManagementData() } }
-                )
-                .environment(model)
-            }
-            .sheet(isPresented: $showingOverridesEditor) {
-                if let item = managementItem {
-                    NavigationStack {
-                        LibraryOverridesEditorView(item: item) { updated in
-                            managementItem = updated
-                            managementNotice = String(localized: "Details updated.")
-                        }
-                        .environment(model)
-                    }
+    }
+
+    /// One sheet at a time: the request flags stay set while another sheet is up, so a second request waits its turn.
+    var activeSheet: MediaDetailSheet? {
+        if showingOverridesEditor, let item = managementItem {
+            return .overrides(item)
+        }
+        if showingArtworkPicker, let item = managementItem {
+            return .artwork(item)
+        }
+        if let reencodeTarget {
+            return .reencode(reencodeTarget)
+        }
+        if showingReleaseSearch {
+            return .release
+        }
+        if let menuReleaseSearch {
+            return .menuRelease(menuReleaseSearch)
+        }
+        return nil
+    }
+
+    var activeSheetBinding: Binding<MediaDetailSheet?> {
+        Binding(
+            get: { activeSheet },
+            set: { newValue in
+                guard newValue == nil, let current = activeSheet else { return }
+                switch current {
+                case .overrides: showingOverridesEditor = false
+                case .artwork: showingArtworkPicker = false
+                case .reencode: reencodeTarget = nil
+                case .release:
+                    showingReleaseSearch = false
+                    releaseSearchSeason = nil
+                    releaseSearchEpisode = nil
+                    releaseSearchUpgrade = false
+                case .menuRelease: menuReleaseSearch = nil
                 }
             }
-            .sheet(isPresented: $showingArtworkPicker) {
-                if let item = managementItem {
-                    NavigationStack {
-                        LibraryArtworkPickerView(item: item) { updated in
-                            managementItem = updated
-                            managementNotice = String(localized: "Artwork updated.")
-                        }
-                        .environment(model)
-                    }
-                }
-            }
-            .sheet(item: $reencodeTarget) { target in
-                ReencodeSheet(target: target) { count in
-                    model.toast(String(localized: "\(count) files added to the re-encode queue"), style: .success)
+        )
+    }
+
+    @ViewBuilder
+    func sheetContent(_ sheet: MediaDetailSheet) -> some View {
+        switch sheet {
+        case let .overrides(item):
+            NavigationStack {
+                LibraryOverridesEditorView(item: item) { updated in
+                    managementItem = updated
+                    managementNotice = String(localized: "Details updated.")
                 }
                 .environment(model)
             }
+        case let .artwork(item):
+            NavigationStack {
+                LibraryArtworkPickerView(item: item) { updated in
+                    managementItem = updated
+                    managementNotice = String(localized: "Artwork updated.")
+                }
+                .environment(model)
+            }
+        case let .reencode(target):
+            ReencodeSheet(target: target) { count in
+                model.toast(String(localized: "\(count) files added to the re-encode queue"), style: .success)
+            }
+            .environment(model)
+        case .release:
+            ReleaseSearchView(
+                query: title,
+                libraryMediaId: libraryId,
+                tmdbId: tmdbId,
+                mediaType: mediaType,
+                availableSeasons: releaseSearchSeason.map { [$0] } ?? (details?.seasons?.map(\.seasonNumber) ?? []),
+                mediaYear: yearValue,
+                originalTitle: details?.originalTitle,
+                originalLanguage: details?.originalLanguage,
+                titleTranslations: details?.titleTranslations ?? [],
+                targetSeason: releaseSearchSeason,
+                targetEpisode: releaseSearchEpisode,
+                isUpgrade: releaseSearchUpgrade,
+                onGrabbed: { Task { await refreshManagementData() } }
+            )
+            .environment(model)
+        case let .menuRelease(target):
+            ReleaseSearchView(
+                query: target.query,
+                libraryMediaId: target.libraryMediaId,
+                tmdbId: target.tmdbId,
+                mediaType: target.mediaType,
+                availableSeasons: [],
+                onGrabbed: { Task { await refreshManagementData() } }
+            )
+            .environment(model)
+        }
     }
 
     func attachDialogs(_ base: some View) -> some View {

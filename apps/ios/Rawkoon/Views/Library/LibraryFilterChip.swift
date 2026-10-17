@@ -12,6 +12,13 @@ struct LibraryFilterChip<Content: View>: View {
         !activeLabels.isEmpty
     }
 
+    /// Two values at most so the chip fits a phone; the full list stays in the accessibility label.
+    private var displayLabel: String {
+        let shown = activeLabels.prefix(2).joined(separator: " · ")
+        let hidden = activeLabels.count - 2
+        return hidden > 0 ? "\(shown) +\(hidden)" : shown
+    }
+
     var body: some View {
         GlassEffectContainer(spacing: 8) {
             HStack(spacing: 8) {
@@ -21,7 +28,7 @@ struct LibraryFilterChip<Content: View>: View {
                     HStack(spacing: 6) {
                         Image(systemName: "line.3.horizontal.decrease").font(.caption2)
                         if isActive {
-                            Text(activeLabels.joined(separator: " · "))
+                            Text(displayLabel)
                                 .font(.subheadline.weight(.medium))
                                 .lineLimit(1)
                         } else {

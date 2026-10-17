@@ -39,7 +39,6 @@ extension MediaDetailView {
                 if wanted {
                     wantedSearchControl(item)
                 }
-                statusCaption(item)
                 if activeTab != .files {
                     if let managementNotice {
                         Text(managementNotice)
@@ -77,6 +76,7 @@ extension MediaDetailView {
         .requiresConnection(model.isOffline)
         .accessibilityValue(Text(item.monitored ? "On" : "Off"))
         .accessibilityAddTraits(.isToggle)
+        .accessibilityHint(Text("Status is controlled by grabs and scans, not edited manually."))
     }
 
     private func qualityProfileChip(_ item: LibraryMedia) -> some View {
@@ -123,15 +123,6 @@ extension MediaDetailView {
         .disabled(applyingManagementChange)
         .requiresConnection(model.isOffline)
         .accessibilityLabel(Text("Search releases"))
-    }
-
-    /// The status and why it can't be edited, kept as a quiet line under the chips.
-    private func statusCaption(_ item: LibraryMedia) -> some View {
-        (LocalizedStatus.text(item.status).foregroundStyle(Theme.muted)
-            + Text(verbatim: " · ").foregroundStyle(Theme.faint)
-            + Text("Status is controlled by grabs and scans, not edited manually.").foregroundStyle(Theme.faint))
-            .font(.caption2)
-            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Movies split the lamp: tap auto-searches, the chevron opens the interactive

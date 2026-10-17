@@ -92,6 +92,10 @@ struct LibraryMediaView: View {
                     state.mediaType = .show
                     state.mediaStatus = .wanted
                 }
+                if ProcessInfo.processInfo.environment["RAWKOON_LIBRARY_SORT_ASC"] != nil {
+                    state.sort = .title
+                    state.sortAscending = true
+                }
             #endif
             state.hydrateFromCache(model: model)
             if store.needsLoad(state.key) {
@@ -160,8 +164,8 @@ struct LibraryMediaView: View {
         if state.mediaStatus != .all {
             labels.append(String(localized: state.mediaStatus.title))
         }
-        if state.sort != .added_at || state.sortAscending {
-            labels.append(String(localized: state.sort.title))
+        if let order = state.sort.summary(ascending: state.sortAscending) {
+            labels.append(order)
         }
         return labels
     }
