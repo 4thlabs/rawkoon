@@ -14,5 +14,6 @@ export const DASHBOARD_ENDPOINTS = {
     STATUS: "/api/dashboard/upcoming/status",
   },
   HERO: "/api/dashboard/hero",
+  PIPELINE: "/api/dashboard/pipeline",
   DOWNLOADS: DOWNLOADS_ENDPOINTS,
 } as const;

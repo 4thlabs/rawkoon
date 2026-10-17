@@ -289,6 +289,10 @@
   },
   {
     "method": "GET",
+    "path": "/api/dashboard/pipeline"
+  },
+  {
+    "method": "GET",
     "path": "/api/dashboard/upcoming"
   },
   {

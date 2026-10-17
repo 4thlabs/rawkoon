@@ -6,6 +6,7 @@ import { dashboardUpcomingRoutes } from "./upcoming";
 import { dashboardJellyfinRoutes } from "./jellyfin";
 import { dashboardDownloadsRoutes } from "./downloads";
 import { dashboardHeroRoutes } from "./hero";
+import { dashboardPipelineRoutes } from "./pipeline";
 
 // Mounted at /api/dashboard by the edge. Each
 // child carries its own segment + requireUser guard; merge them at the root.
@@ -15,4 +16,5 @@ export const dashboardRoutes = new Hono<Env>()
   .route("/", dashboardJellyfinRoutes)
   .route("/", dashboardDownloadsRoutes)
   .route("/", dashboardHeroRoutes)
+  .route("/", dashboardPipelineRoutes)
   .notFound(() => notFound("Not found"));

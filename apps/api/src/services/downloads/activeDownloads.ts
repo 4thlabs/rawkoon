@@ -97,3 +97,27 @@ export function loadActiveGrabRows(): Promise<ActiveGrabRow[]> {
     },
   });
 }
+
+export interface ActiveBookGrabRow {
+  id: number;
+  torrentHash: string | null;
+  bookEdition: { book: { id: number; title: string } } | null;
+}
+
+/** Book grabs still in flight, oldest first. */
+export function loadActiveBookGrabRows(): Promise<ActiveBookGrabRow[]> {
+  return prisma.downloadHistory.findMany({
+    where: {
+      completedAt: null,
+      failed: false,
+      torrentHash: { not: null },
+      bookEditionId: { not: null },
+    },
+    orderBy: { grabbedAt: "asc" },
+    select: {
+      id: true,
+      torrentHash: true,
+      bookEdition: { select: { book: { select: { id: true, title: true } } } },
+    },
+  });
+}
