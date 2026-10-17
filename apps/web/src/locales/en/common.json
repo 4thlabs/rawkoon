@@ -118,14 +118,16 @@
       "kicker": {
         "arrivals": "Just arrived",
         "forYou": "For you",
-        "trending": "Trending"
+        "trending": "Trending",
+        "nowWatching": "Now watching"
       },
       "arrived": "arrived {{relative}}",
       "details": "Details",
       "add": "Add",
       "added": "Added",
       "addFailed": "Couldn't add \"{{title}}\"",
-      "goTo": "Show {{title}}"
+      "goTo": "Show {{title}}",
+      "watchingOn": "{{user}} on {{device}}"
     },
     "greetingSubtitle": {
       "night": "One more episode? We won't tell.",
@@ -199,17 +201,11 @@
     "home": {
       "recentlyAdded": "Recently added",
       "recentlyAddedEmpty": "Nothing added yet",
-      "nowWatching": "Now watching",
-      "nowWatchingEmpty": "Nobody's watching right now",
       "continue": "Continue",
       "paused": "Paused",
       "upcoming": "Upcoming releases",
-      "downloadsTitle": "Downloads",
       "transfer": "Transfer",
       "downloadClientNotConfigured": "Download client not configured",
-      "pendingDelay": "Waiting to grab",
-      "pendingGrabIn": "Grabs in {{time}}",
-      "pendingGrabDue": "Grabbing shortly",
       "grabNow": "Grab now",
       "nothingDownloading": "Nothing downloading",
       "downloadClientUnreachable": "Download client unreachable",
@@ -221,13 +217,9 @@
         "no_space": "There is not enough free disk space.",
         "all_failed": "Every held release was blocked or failed."
       },
-      "downloadState": {
-        "stalled": "Stalled",
-        "paused": "Paused",
-        "error": "Error"
-      },
-      "pendingMore": "+{{count}} more",
-      "upcomingEmpty": "Nothing upcoming"
+      "upcomingEmpty": "Nothing upcoming",
+      "books": "Books",
+      "seeAll": "See all"
     },
     "libraryAttention": {
       "title": "Library attention",
@@ -272,6 +264,36 @@
       "toastFound_other": "RSS: {{count}} releases found",
       "toastNone": "RSS: no new releases",
       "openLibraryLink": "Open media library"
+    },
+    "pipeline": {
+      "title": "Pipeline",
+      "unavailable": "Couldn't check",
+      "loadError": "Couldn't load the pipeline.",
+      "downloading": "Downloading",
+      "nothingDownloading": "Nothing downloading",
+      "downloadingCount_one": "{{count}} download in progress",
+      "downloadingCount_other": "{{count}} downloads in progress",
+      "etaLeft": "{{time}} left",
+      "delayed": "Delayed grabs",
+      "noDelayed": "Nothing waiting",
+      "delayedWaiting_one": "{{count}} title waiting out the delay",
+      "delayedWaiting_other": "{{count}} titles waiting out the delay",
+      "attention": "Needs attention",
+      "allClear": "All clear",
+      "attentionSplit": "{{alerts}} alerts, {{gaveUp}} gave up",
+      "rss": "Last RSS run",
+      "rssNever": "Hasn't run yet",
+      "rssNeverNext": "Hasn't run yet, next {{next}}",
+      "rssFailed": "The last run failed",
+      "rssOk_one": "{{count}} release found",
+      "rssOk_other": "{{count}} releases found",
+      "rssOkNext_one": "{{count}} release found, next {{next}}",
+      "rssOkNext_other": "{{count}} releases found, next {{next}}",
+      "reencode": "Re-encoding",
+      "nothingReencoding": "Nothing re-encoding",
+      "reencodeCounts": "{{active}} active, {{queued}} queued",
+      "more_one": "{{count}} more",
+      "more_other": "{{count}} more"
     }
   },
   "device": {
@@ -2628,11 +2650,9 @@
     "title": "Listening",
     "streak_one": "1 day streak",
     "streak_other": "{{count}} day streak",
-    "hoursHint": "Hours start now — listen and they'll add up.",
     "emptySeries": "No series in the library yet.",
     "thisWeek": "This week",
     "series": "Series",
-    "seriesLine": "{{name}} · {{percent}}%",
     "booksOf": "{{count}} of {{total}}",
     "loadError": "Couldn't load listening stats."
   },
@@ -2866,7 +2886,8 @@
       "ebook": "Ebook"
     },
     "resultCount_one": "{{count}} book",
-    "resultCount_other": "{{count}} books"
+    "resultCount_other": "{{count}} books",
+    "listeningLink": "Listening"
   },
   "downloadsPage": {
     "tabs": {
@@ -3049,21 +3070,6 @@
     "queueFailed": "Could not add to the queue",
     "refineFailed": "Could not refine the estimate",
     "dvNote": "Dolby Vision → HDR10",
-    "widget": {
-      "title": "Re-encode",
-      "running": "Running",
-      "paused": "Paused",
-      "waits": "Waits for {{time}}",
-      "idle": "Idle",
-      "left": "~{{time}} left",
-      "more": "+ {{count}} more",
-      "total": "~{{time}} total",
-      "saved": "−{{size}} saved · {{count}} done",
-      "failed_one": "{{count}} failed",
-      "failed_other": "{{count}} failed",
-      "manage": "Manage →",
-      "queued": "{{count}} queued"
-    },
     "admin": {
       "runWindow": "Run window",
       "pause": "Pause queue",

@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Headphones } from "lucide-react";
 import { WidgetShell, WidgetHeader } from "@/pages/_component/widgetPrimitives";
@@ -9,7 +9,11 @@ import {
 import { usePlayer } from "@/features/player/PlayerProvider";
 import { BookCover } from "@/pages/books/_component/BookCover";
 import { formatClock } from "@/features/player/formatClock";
+import { cn } from "@/lib/utils";
 import { continueItems } from "./continueItems";
+
+/** Cards on Home; the rest sit behind "See all". */
+const CONTINUE_SHOWN = 2;
 
 export function ContinueListeningWidget() {
   const { t } = useTranslation("common");
@@ -27,15 +31,21 @@ export function ContinueListeningWidget() {
   );
   if (items.length === 0) return null;
 
+  const shown = items.slice(0, CONTINUE_SHOWN);
+
   return (
     <WidgetShell>
       <WidgetHeader icon={Headphones} title={t("dashboard.home.continue")} />
-      <div className="divide-y divide-neutral-800/60">
-        {items.map((item) => (
+      <div className="grid divide-y divide-neutral-800/60 sm:grid-cols-2 sm:gap-3 sm:divide-y-0 sm:p-3">
+        {shown.map((item, i) => (
           <button
             key={`${item.kind}-${item.editionId}`}
             type="button"
-            className="focus-ring flex w-full gap-3 px-4 py-3 text-left hover:bg-neutral-900/60"
+            className={cn(
+              "focus-ring w-full gap-3 px-4 py-3 text-left hover:bg-neutral-900/60 sm:rounded-lg sm:border sm:border-neutral-800",
+              // Phones show one card, wider screens two.
+              i === 0 ? "flex" : "hidden sm:flex",
+            )}
             onClick={() => {
               if (item.kind === "audiobook") {
                 void player.load(item.editionId, item.bookId);
@@ -76,6 +86,17 @@ export function ContinueListeningWidget() {
           </button>
         ))}
       </div>
+      {items.length > 1 && (
+        <Link
+          to="/books"
+          className={cn(
+            "focus-ring block border-t border-neutral-800/60 px-4 py-2.5 text-xs text-neutral-400 hover:text-neutral-100",
+            items.length <= CONTINUE_SHOWN && "sm:hidden",
+          )}
+        >
+          {t("dashboard.home.seeAll")}
+        </Link>
+      )}
     </WidgetShell>
   );
 }

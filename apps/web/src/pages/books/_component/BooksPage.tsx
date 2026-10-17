@@ -317,6 +317,13 @@ export function BooksPage() {
               <UserRound className="h-4 w-4" />
               {t("books.authorsLink")}
             </Link>
+            <Link
+              to="/books/listening"
+              className="focus-ring inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-lg bg-neutral-800 px-4 text-sm font-medium text-neutral-100 transition-colors hover:bg-neutral-700"
+            >
+              <Headphones className="h-4 w-4" />
+              {t("books.listeningLink")}
+            </Link>
             <Button onClick={() => setShowAdd(true)}>
               <Plus className="mr-1.5 h-4 w-4" />
               {isAdmin ? t("books.addBook") : t("books.requestBook")}
