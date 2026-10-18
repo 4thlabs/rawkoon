@@ -60,6 +60,8 @@ struct SpineRow: View {
     /// Set on the one chapter holding a stored resume point; the row then opens
     /// there rather than at the chapter's start.
     var resumeText: String?
+    /// The chapter's start and length on the book timeline, e.g. "1:02:13 · 24:05".
+    var timing: String?
 
     var body: some View {
         HStack(spacing: 10) {
@@ -78,6 +80,13 @@ struct SpineRow: View {
                 Text(resumeText)
                     .font(.caption2)
                     .foregroundStyle(Theme.apricot)
+                    .lineLimit(1)
+                    .layoutPriority(1)
+            }
+            if let timing {
+                Text(verbatim: timing)
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundStyle(Theme.faint)
                     .lineLimit(1)
                     .layoutPriority(1)
             }

@@ -113,4 +113,9 @@ struct FormattersTests {
         #expect(Formatters.durationTimestampRounded(0) == "0:00")
         #expect(Formatters.durationTimestampRounded(.nan) == "0:00")
     }
+
+    @Test func chapterTimingShowsStartAndLength() {
+        #expect(Formatters.chapterTiming(startSecs: 0, durationSecs: 1122.6) == "0:00 · 18:43")
+        #expect(Formatters.chapterTiming(startSecs: 3733.9, durationSecs: 1445) == "1:02:13 · 24:05")
+    }
 }
