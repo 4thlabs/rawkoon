@@ -1,17 +1,15 @@
 import Foundation
 
-/// The lanes of the Activity tab, in display order.
+/// The lanes of Activity. The queue is not in the tab's picker: it opens on its own from Home's Pipeline card.
 public enum ActivityLane: String, CaseIterable, Sendable {
     case inbox, queue, requests, calendar, history
 
-    /// The queue shows downloads, which only admins can see.
-    public static func visible(isAdmin: Bool) -> [ActivityLane] {
-        allCases.filter { $0 != .queue || isAdmin }
-    }
+    /// The Activity tab's picker, in display order; four segments fit their labels on a phone.
+    public static let tabLanes: [ActivityLane] = [.inbox, .requests, .calendar, .history]
 
-    /// A stale pick (a lane that is hidden for this user) falls back to the inbox.
-    public static func validated(_ lane: ActivityLane, isAdmin: Bool) -> ActivityLane {
-        visible(isAdmin: isAdmin).contains(lane) ? lane : .inbox
+    /// A pick the picker doesn't offer falls back to the inbox.
+    public static func validated(_ lane: ActivityLane) -> ActivityLane {
+        tabLanes.contains(lane) ? lane : .inbox
     }
 }
 

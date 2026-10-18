@@ -1,7 +1,8 @@
 import RawkoonKit
 import SwiftUI
 
-/// Activity tab: the inbox, the download queue, requests, the upcoming calendar and history.
+/// Activity tab: the inbox, requests, the upcoming calendar and history. Opened on `.queue`, it is the
+/// download queue on its own, pushed from Home's Pipeline card.
 struct ActivityView: View {
     @Environment(AppModel.self) var model
 
@@ -9,9 +10,11 @@ struct ActivityView: View {
     static let historyPageSize = 50
 
     @State private var lane: ActivityLane
+    private let isQueueScreen: Bool
 
     init(initialLane: ActivityLane = .inbox) {
         _lane = State(initialValue: initialLane)
+        isQueueScreen = initialLane == .queue
     }
 
     /// The side the next lane enters from, set before the lane changes so the insertion reads it fresh.
@@ -67,14 +70,16 @@ struct ActivityView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Lane", selection: laneSelection) {
-                ForEach(lanes, id: \.self) { lane in
-                    Text(lane.title).tag(lane)
+            if !isQueueScreen {
+                Picker("Lane", selection: laneSelection) {
+                    ForEach(lanes, id: \.self) { lane in
+                        Text(lane.title).tag(lane)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
             }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
 
             if let speed, showsSpeed, lane == .queue {
                 speedHeader(speed)
@@ -91,19 +96,17 @@ struct ActivityView: View {
         .readableWidth()
         .background(Theme.base)
         .rawkoonMotion(RawkoonMotion.spring, value: showsSpeed)
-        .navigationTitle("Activity")
+        .navigationTitle(isQueueScreen ? "Queue" : "Activity")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: hydrateFromCache)
         .task { await loadSpeed() }
         .task(id: lane) { await loadCurrentLane() }
         // A deep link or an inbox action opens a lane from outside.
         .onChange(of: model.requestedActivityLane, initial: true) { _, requested in
-            guard let requested else { return }
+            // Only the tab answers; a pushed queue screen must not swallow the request.
+            guard let requested, !isQueueScreen else { return }
             model.requestedActivityLane = nil
             select(requested)
-        }
-        .onChange(of: model.isAdmin) { _, _ in
-            lane = ActivityLane.validated(lane, isAdmin: model.isAdmin)
         }
         .onChange(of: model.isOffline) { _, offline in
             guard !offline else { return }
@@ -124,7 +127,7 @@ struct ActivityView: View {
     }
 
     private var lanes: [ActivityLane] {
-        ActivityLane.visible(isAdmin: model.isAdmin)
+        ActivityLane.tabLanes
     }
 
     /// The inbox and requests are lists with their own scrolling and refresh; the other lanes share one scroll view.
@@ -156,7 +159,7 @@ struct ActivityView: View {
     }
 
     private func select(_ requested: ActivityLane) {
-        let newLane = ActivityLane.validated(requested, isAdmin: model.isAdmin)
+        let newLane = ActivityLane.validated(requested)
         guard newLane != lane else { return }
         laneEdge = RawkoonSlide.edge(
             from: lanes.firstIndex(of: lane) ?? 0,

@@ -172,6 +172,21 @@ final class AppModel {
             isLoggedIn = true
             hydrateFromCache()
         }
+        #if DEBUG
+            // A simulator has no keychain; signing in before the first frame matches a signed-in device launch.
+            let env = ProcessInfo.processInfo.environment
+            if
+                !isLoggedIn,
+                let server = env["RAWKOON_SERVER"],
+                let token = env["RAWKOON_TOKEN"],
+                let baseURL = URL(string: server)
+            {
+                serverURL = server
+                apiClient = makeAPIClient(baseURL: baseURL, token: token)
+                isLoggedIn = true
+                hydrateFromCache()
+            }
+        #endif
 
         player.onPositionTick = { [weak self] in self?.persistPlaybackProgress(force: false) }
         player.onPlaybackStopped = { [weak self] in self?.persistPlaybackProgress(force: true) }
@@ -219,25 +234,13 @@ final class AppModel {
         /// present. Compiled only in Debug, so it never ships in a Release/TestFlight
         /// build. Pass via `SIMCTL_CHILD_RAWKOON_SERVER` etc. to `simctl launch`.
         func debugAutologinIfNeeded() async {
-            guard !isLoggedIn else { return }
             let env = ProcessInfo.processInfo.environment
-
-            // A simulator build carries no keychain entitlement, so nothing the app
-            // stores survives a relaunch and every launch starts logged out. Taking
-            // a bearer token straight from the environment sidesteps the keychain
-            // entirely, and avoids putting a real password on a command line.
-            if
-                let server = env["RAWKOON_SERVER"],
-                let token = env["RAWKOON_TOKEN"],
-                let baseURL = URL(string: server)
-            {
-                serverURL = server
-                apiClient = makeAPIClient(baseURL: baseURL, token: token)
-                isLoggedIn = true
-                hydrateFromCache()
+            // `init` already signed in from RAWKOON_TOKEN; the library still needs its first load.
+            if isLoggedIn, env["RAWKOON_TOKEN"] != nil {
                 try? await reloadLibrary()
                 return
             }
+            guard !isLoggedIn else { return }
 
             guard
                 let server = env["RAWKOON_SERVER"],
