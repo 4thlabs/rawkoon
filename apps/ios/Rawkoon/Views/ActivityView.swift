@@ -250,6 +250,21 @@ struct ActivityView: View {
     }
 
     private func calendarRow(_ item: UpcomingItem) -> some View {
+        // Per row, since a show lists one row per upcoming episode day.
+        let zoomID: RawkoonZoom.ID = "upcoming:\(item.id)"
+        return NavigationLink {
+            MediaDetailView(tmdbId: item.tmdbId ?? 0, mediaType: item.mediaType,
+                            title: item.title, posterPath: item.posterUrl, libraryId: item.libraryId)
+                .rawkoonZoomDestination(zoomID)
+        } label: {
+            calendarRowLabel(item)
+                .rawkoonZoomSource(zoomID)
+        }
+        .buttonStyle(.rawkoonPressable)
+        .disabled(item.tmdbId == nil && item.libraryId == nil)
+    }
+
+    private func calendarRowLabel(_ item: UpcomingItem) -> some View {
         HStack(spacing: 12) {
             MediaThumb(url: model.absoluteURL(item.posterUrl), width: 48)
 
