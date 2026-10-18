@@ -2,18 +2,13 @@
 import XCTest
 
 final class ActivityLaneTests: XCTestCase {
-    func testAdminsSeeFiveLanesInOrder() {
-        XCTAssertEqual(ActivityLane.visible(isAdmin: true), [.inbox, .queue, .requests, .calendar, .history])
+    func testTabOffersFourLanesWithoutTheQueue() {
+        XCTAssertEqual(ActivityLane.tabLanes, [.inbox, .requests, .calendar, .history])
     }
 
-    func testMembersDoNotSeeTheQueue() {
-        XCTAssertEqual(ActivityLane.visible(isAdmin: false), [.inbox, .requests, .calendar, .history])
-    }
-
-    func testHiddenLaneFallsBackToInbox() {
-        XCTAssertEqual(ActivityLane.validated(.queue, isAdmin: false), .inbox)
-        XCTAssertEqual(ActivityLane.validated(.queue, isAdmin: true), .queue)
-        XCTAssertEqual(ActivityLane.validated(.history, isAdmin: false), .history)
+    func testLaneOutsideTheTabFallsBackToInbox() {
+        XCTAssertEqual(ActivityLane.validated(.queue), .inbox)
+        XCTAssertEqual(ActivityLane.validated(.history), .history)
     }
 
     func testSearchGaveUpOffersSearchAgainToAdmins() {
