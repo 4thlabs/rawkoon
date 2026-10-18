@@ -433,11 +433,40 @@ export function mergeTmdbTvWithSonarrCalendar(
   return Array.from(byId.values());
 }
 
+/** Day of the first release of `type` in one country entry; malformed entries yield null. */
+const releaseDayOfType = (entry: unknown, type: number): string | null => {
+  const dates = toRecord(entry)?.release_dates;
+  if (!Array.isArray(dates)) return null;
+  for (const raw of dates) {
+    const rd = toRecord(raw);
+    const day = rd?.release_date;
+    if (rd?.type === type && typeof day === "string" && day) {
+      return day.substring(0, 10);
+    }
+  }
+  return null;
+};
+
 /**
- * Fetch the digital (type 4) or physical (type 5) release date for a movie
- * in the requested region from TMDB's /movie/{id}/release_dates endpoint.
- * Returns the ISO date string (YYYY-MM-DD) or null if not found.
+ * The region's digital, then physical, release day; else the first digital
+ * release anywhere, the same fallback the library uses for its own date.
  */
+export const pickUpcomingMovieDay = (
+  results: unknown[],
+  region: string,
+): string | null => {
+  const regionEntry = results.find(
+    (r) => toStringOrNull(toRecord(r)?.iso_3166_1) === region,
+  );
+  return (
+    releaseDayOfType(regionEntry, 4) ??
+    releaseDayOfType(regionEntry, 5) ??
+    results.map((r) => releaseDayOfType(r, 4)).find((day) => day != null) ??
+    null
+  );
+};
+
+/** A movie's home release day (YYYY-MM-DD) from TMDB, or null when unknown. */
 export const fetchMovieReleaseDates = async (
   tmdbId: number,
   tmdbApiKey: string,
@@ -454,36 +483,11 @@ export const fetchMovieReleaseDates = async (
     });
     if (!response.ok) return null;
 
-    const data = (await response.json()) as Record<string, unknown>;
-    const results = Array.isArray(data.results) ? data.results : [];
-
-    const regionEntry = results.find((entry: unknown) => {
-      const e = toRecord(entry);
-      return e && toStringOrNull(e.iso_3166_1) === region;
-    });
-    if (!regionEntry) return null;
-
-    const regionRecord = toRecord(regionEntry);
-    const releaseDates = Array.isArray(regionRecord?.release_dates)
-      ? regionRecord.release_dates
-      : [];
-
-    let digitalDate: string | null = null;
-    let physicalDate: string | null = null;
-
-    for (const rd of releaseDates) {
-      const rdRecord = toRecord(rd);
-      if (!rdRecord) continue;
-      const type = typeof rdRecord.type === "number" ? rdRecord.type : null;
-      const dateStr = toStringOrNull(rdRecord.release_date);
-      if (!dateStr) continue;
-
-      const isoDate = dateStr.substring(0, 10);
-      if (type === 4 && !digitalDate) digitalDate = isoDate;
-      if (type === 5 && !physicalDate) physicalDate = isoDate;
-    }
-
-    return digitalDate || physicalDate || null;
+    const data = toRecord(await response.json());
+    return pickUpcomingMovieDay(
+      Array.isArray(data?.results) ? data.results : [],
+      region,
+    );
   } catch {
     return null;
   }
