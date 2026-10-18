@@ -15,6 +15,7 @@ struct NotificationsListView: View {
     @State private var page = 1
     @State private var hasMore = false
     @State private var loading = true
+    @State private var initialLoadResolved = false
     @State private var loadingMore = false
     @State private var errorMessage: String?
     @State private var pendingDeleteId: Int?
@@ -115,7 +116,17 @@ struct NotificationsListView: View {
                     .transition(.rawkoonSwap)
             }
         }
-        .rawkoonMotion(RawkoonMotion.spring, value: phase)
+        .rawkoonMotion(initialLoadResolved ? RawkoonMotion.spring : nil, value: phase)
+        .onAppear {
+            if phase != .loading {
+                initialLoadResolved = true
+            }
+        }
+        .onChange(of: phase) { _, current in
+            if current != .loading {
+                initialLoadResolved = true
+            }
+        }
     }
 
     private var notificationList: some View {

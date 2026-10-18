@@ -114,9 +114,14 @@ extension ActivityView {
             }
         }
         .rawkoonMotion(
-            RawkoonMotion.spring,
+            queueInitialLoadResolved ? RawkoonMotion.spring : nil,
             value: Self.laneState(loading: loadingQueue, failed: queueError != nil, isEmpty: queueIsEmpty)
         )
+        .onChange(of: Self.laneState(loading: loadingQueue, failed: queueError != nil, isEmpty: queueIsEmpty)) { _, current in
+            if current != .loading {
+                queueInitialLoadResolved = true
+            }
+        }
     }
 
     /// Finished downloads that are still seeding, out of the way until asked for.

@@ -33,6 +33,7 @@ struct ActivityView: View {
     @State var loadingQueue = true
     /// The skeleton is for the cold load only; live reloads keep the current lane still.
     @State var didLoadQueue = false
+    @State var queueInitialLoadResolved = false
     @State var queueError: String?
     /// Releases held by a grab delay, shown as Waiting rows with Grab now.
     @State var heldReleases: [PendingRelease] = []
@@ -46,6 +47,7 @@ struct ActivityView: View {
     // History
     @State var activities: [ActivityRecord] = []
     @State var loadingHistory = true
+    @State var historyInitialLoadResolved = false
     @State var loadingMoreHistory = false
     @State var historyError: String?
     @State var historyLimit = ActivityView.historyPageSize
@@ -58,6 +60,7 @@ struct ActivityView: View {
     // Calendar
     @State private var upcomingItems: [UpcomingItem] = []
     @State private var loadingCalendar = true
+    @State private var calendarInitialLoadResolved = false
     @State private var calendarError: String?
 
     @State private var hydrated = false
@@ -229,11 +232,18 @@ struct ActivityView: View {
             }
         }
         .rawkoonMotion(
-            RawkoonMotion.spring,
+            calendarInitialLoadResolved ? RawkoonMotion.spring : nil,
             value: Self.laneState(
                 loading: loadingCalendar, failed: calendarError != nil, isEmpty: upcomingItems.isEmpty
             )
         )
+        .onChange(of: Self.laneState(
+            loading: loadingCalendar, failed: calendarError != nil, isEmpty: upcomingItems.isEmpty
+        )) { _, current in
+            if current != .loading {
+                calendarInitialLoadResolved = true
+            }
+        }
     }
 
     private func calendarRow(_ item: UpcomingItem) -> some View {

@@ -105,6 +105,7 @@ struct PhoneTabsView<Root: View>: View {
                         model.exploreSearchFocusRequest = true
                     }
                 },
+                animateSelection: { visited.contains($0) },
                 horizontalPadding: insets.padding
             )
             if hasActiveBook {
