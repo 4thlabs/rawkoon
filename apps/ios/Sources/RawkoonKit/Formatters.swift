@@ -76,6 +76,11 @@ public enum Formatters {
         return "\(minutes):\(String(format: "%02d", secs))"
     }
 
+    /// A chapter row's "start · length": the start floors like a resume point, the length rounds.
+    public static func chapterTiming(startSecs: Double, durationSecs: Double) -> String {
+        "\(durationTimestamp(startSecs)) · \(durationTimestampRounded(durationSecs))"
+    }
+
     /// `useAll: true` matches ActivityView/DownloadClientView; `false` matches MediaDetailView.
     public static func speed(_ bytesPerSecond: Double, useAll: Bool) -> String {
         let formatter = ByteCountFormatter()

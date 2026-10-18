@@ -100,7 +100,10 @@ struct PlayerView: View {
                                 index: chapter.index,
                                 title: chapter.title,
                                 downloaded: true,
-                                current: model.player.currentChapterIndex == chapter.index
+                                current: model.player.currentChapterIndex == chapter.index,
+                                timing: Formatters.chapterTiming(
+                                    startSecs: chapter.startSecs, durationSecs: chapter.durationSecs
+                                )
                             )
                             .frame(minHeight: 44)
                         }
