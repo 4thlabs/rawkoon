@@ -33,6 +33,7 @@ extension ExploreView {
         guard let client = model.api() else {
             error = String(localized: "Not signed in.")
             loading = false
+            firstLoadSettled = true
             return
         }
         let generation = loadGeneration
@@ -47,6 +48,7 @@ extension ExploreView {
         defer {
             if generation == loadGeneration {
                 loading = false
+                firstLoadSettled = true
             }
         }
         do {

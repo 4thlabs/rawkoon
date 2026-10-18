@@ -35,6 +35,8 @@ struct ContinueListeningView: View {
                 Color.clear.frame(width: 0, height: 0)
             }
         }
+        // Before the first frame, so a saved card doesn't arrive late and push Home's rails through it.
+        .onAppear { paintFromCache() }
         .task(id: refreshToken) { await load() }
         .sheet(isPresented: $showingPlayer, onDismiss: {
             onPlaybackDismiss?()
@@ -219,21 +221,9 @@ struct ContinueListeningView: View {
             errorMessage = nil
             return
         }
-        if listeningStats == nil {
-            listeningStats = client.cached(Endpoints.listeningStats)?.value
-        }
         async let listeningR = client.listeningStats()
-        // The saved copy paints first, so the rail never waits on the network.
-        if items.isEmpty {
-            let cachedAudio = client.cachedProgress()?.value
-            let cachedEbook = client.cachedReadingProgress()?.value
-            if cachedAudio != nil || cachedEbook != nil {
-                // Animated so the card swaps in and Home's rails glide down instead of jumping.
-                withRawkoonMotion(RawkoonMotion.spring) {
-                    items = buildItems(audiobookProgress: cachedAudio ?? [], ebookProgress: cachedEbook ?? [])
-                }
-            }
-        }
+        // Animated here: by now the card arrives after first paint, so Home's rails glide down instead of jumping.
+        withRawkoonMotion(RawkoonMotion.spring) { paintFromCache() }
         if model.library.isEmpty {
             await model.loadLibrary()
         }
@@ -262,6 +252,20 @@ struct ContinueListeningView: View {
                 ebookProgress: ebookProgress ?? client.cachedReadingProgress()?.value ?? []
             )
             errorMessage = nil
+        }
+    }
+
+    /// The saved copy paints first, so the rail never waits on the network.
+    private func paintFromCache() {
+        guard let client = model.api() else { return }
+        if listeningStats == nil {
+            listeningStats = client.cached(Endpoints.listeningStats)?.value
+        }
+        guard items.isEmpty else { return }
+        let cachedAudio = client.cachedProgress()?.value
+        let cachedEbook = client.cachedReadingProgress()?.value
+        if cachedAudio != nil || cachedEbook != nil {
+            items = buildItems(audiobookProgress: cachedAudio ?? [], ebookProgress: cachedEbook ?? [])
         }
     }
 

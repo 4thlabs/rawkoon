@@ -67,13 +67,13 @@ struct RootTabsView: View {
     @ViewBuilder
     private func tabRoot(_ tab: RootTab) -> some View {
         switch tab {
-        case .home: NavigationStack { HomeView() }
-        case .library: NavigationStack { LibraryView(forcedSection: .media) }
-        case .books: NavigationStack { LibraryView(forcedSection: .books) }
-        case .find: NavigationStack { FindView() }
-        case .settings: NavigationStack { SettingsView(scope: compact ? .all : .personal) }
-        case .activity: NavigationStack { ActivityView() }
-        case .server: NavigationStack { SettingsView(scope: .server) }
+        case .home: NavigationStack { HomeView().hiddenUntilSized() }
+        case .library: NavigationStack { LibraryView(forcedSection: .media).hiddenUntilSized() }
+        case .books: NavigationStack { LibraryView(forcedSection: .books).hiddenUntilSized() }
+        case .find: NavigationStack { FindView().hiddenUntilSized() }
+        case .settings: NavigationStack { SettingsView(scope: compact ? .all : .personal).hiddenUntilSized() }
+        case .activity: NavigationStack { ActivityView().hiddenUntilSized() }
+        case .server: NavigationStack { SettingsView(scope: .server).hiddenUntilSized() }
         }
     }
 

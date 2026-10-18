@@ -172,6 +172,21 @@ final class AppModel {
             isLoggedIn = true
             hydrateFromCache()
         }
+        #if DEBUG
+            // A simulator has no keychain; signing in before the first frame matches a signed-in device launch.
+            let env = ProcessInfo.processInfo.environment
+            if
+                !isLoggedIn,
+                let server = env["RAWKOON_SERVER"],
+                let token = env["RAWKOON_TOKEN"],
+                let baseURL = URL(string: server)
+            {
+                serverURL = server
+                apiClient = makeAPIClient(baseURL: baseURL, token: token)
+                isLoggedIn = true
+                hydrateFromCache()
+            }
+        #endif
 
         player.onPositionTick = { [weak self] in self?.persistPlaybackProgress(force: false) }
         player.onPlaybackStopped = { [weak self] in self?.persistPlaybackProgress(force: true) }

@@ -17,6 +17,8 @@ struct ExploreView: View {
     @State var totalResults = 0
 
     @State var loading = false
+    /// Until the first load settles, an empty grid means "not fetched yet", not "no results".
+    @State var firstLoadSettled = false
     @State var loadingMore = false
     @State var error: String?
     @State var loadMoreError: String?
@@ -225,7 +227,7 @@ struct ExploreView: View {
 
     @ViewBuilder
     private var content: some View {
-        if loading, items.isEmpty {
+        if items.isEmpty, loading || (!firstLoadSettled && error == nil) {
             skeletonGrid
                 .transition(.rawkoonSwap)
         } else if items.isEmpty, error != nil, model.isOffline {
@@ -235,6 +237,7 @@ struct ExploreView: View {
                 description: Text("This will load when you're back online.")
             )
             .rawkoonLivingSymbol(.error)
+            .frame(maxWidth: .infinity)
             .padding(.top, 16)
             .transition(.rawkoonSwap)
         } else if items.isEmpty, error != nil {
@@ -244,6 +247,7 @@ struct ExploreView: View {
                 description: Text(error ?? "")
             )
             .rawkoonLivingSymbol(.error)
+            .frame(maxWidth: .infinity)
             .padding(.top, 16)
             .transition(.rawkoonSwap)
         } else if items.isEmpty {
@@ -259,6 +263,8 @@ struct ExploreView: View {
                 }
             }
             .rawkoonLivingSymbol(.empty)
+            // The leading stack would otherwise hug it to its narrowest wrap.
+            .frame(maxWidth: .infinity)
             .padding(.top, 28)
             .transition(.rawkoonSwap)
         } else if visibleItems.isEmpty {
@@ -297,6 +303,7 @@ struct ExploreView: View {
                 description: Text("Turn off Hide what I own to see these titles again.")
             )
             .rawkoonLivingSymbol(.empty)
+            .frame(maxWidth: .infinity)
             .padding(.top, 28)
         }
     }
