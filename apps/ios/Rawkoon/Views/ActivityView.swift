@@ -13,7 +13,15 @@ struct ActivityView: View {
     private let isQueueScreen: Bool
 
     init(initialLane: ActivityLane = .inbox) {
-        _lane = State(initialValue: initialLane)
+        var lane = initialLane
+        #if DEBUG
+            // Screenshot harness: open a lane without tap injection, like `RAWKOON_TAB`.
+            let raw = ProcessInfo.processInfo.environment["RAWKOON_ACTIVITY_LANE"]
+            if initialLane != .queue, let requested = raw.flatMap(ActivityLane.init(rawValue:)) {
+                lane = requested
+            }
+        #endif
+        _lane = State(initialValue: lane)
         isQueueScreen = initialLane == .queue
     }
 
@@ -61,10 +69,10 @@ struct ActivityView: View {
     @State var typeFilter: String?
 
     // Calendar
-    @State private var upcomingItems: [UpcomingItem] = []
-    @State private var loadingCalendar = true
-    @State private var calendarInitialLoadResolved = false
-    @State private var calendarError: String?
+    @State var upcomingItems: [UpcomingItem] = []
+    @State var loadingCalendar = true
+    @State var calendarInitialLoadResolved = false
+    @State var calendarError: String?
 
     @State private var hydrated = false
 
@@ -199,119 +207,6 @@ struct ActivityView: View {
         .foregroundStyle(Theme.faint)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-    }
-
-    // MARK: Calendar
-
-    private var calendarContent: some View {
-        // A container, not a bare conditional, so the lane slide and the state swaps never share one transition.
-        ZStack(alignment: .top) {
-            if loadingCalendar, upcomingItems.isEmpty {
-                ProgressView().tint(Theme.apricot)
-                    .frame(maxWidth: .infinity, minHeight: 420)
-                    .transition(.rawkoonSwap)
-            } else if let calendarError, upcomingItems.isEmpty {
-                errorView(calendarError)
-                    .transition(.rawkoonSwap)
-            } else if upcomingItems.isEmpty {
-                ContentUnavailableView(
-                    "Nothing upcoming",
-                    systemImage: "calendar",
-                    description: Text("No known releases on the horizon.")
-                )
-                .rawkoonLivingSymbol(.empty)
-                .frame(maxWidth: .infinity, minHeight: 420)
-                .transition(.rawkoonSwap)
-            } else {
-                LazyVStack(spacing: 8) {
-                    ForEach(upcomingItems) { item in
-                        calendarRow(item)
-                            .rawkoonEntrance(id: item.id)
-                    }
-                }
-                .padding(16)
-                .rawkoonEntranceScope()
-                .transition(.rawkoonSwap)
-            }
-        }
-        .rawkoonMotion(
-            calendarInitialLoadResolved ? RawkoonMotion.spring : nil,
-            value: Self.laneState(
-                loading: loadingCalendar, failed: calendarError != nil, isEmpty: upcomingItems.isEmpty
-            )
-        )
-        .onChange(of: Self.laneState(
-            loading: loadingCalendar, failed: calendarError != nil, isEmpty: upcomingItems.isEmpty
-        )) { _, current in
-            if current != .loading {
-                calendarInitialLoadResolved = true
-            }
-        }
-    }
-
-    private func calendarRow(_ item: UpcomingItem) -> some View {
-        // Per row, since a show lists one row per upcoming episode day.
-        let zoomID: RawkoonZoom.ID = "upcoming:\(item.id)"
-        return NavigationLink {
-            MediaDetailView(tmdbId: item.tmdbId ?? 0, mediaType: item.mediaType,
-                            title: item.title, posterPath: item.posterUrl, libraryId: item.libraryId)
-                .rawkoonZoomDestination(zoomID)
-        } label: {
-            calendarRowLabel(item)
-                .rawkoonZoomSource(zoomID)
-        }
-        .buttonStyle(.rawkoonPressable)
-        .disabled(item.tmdbId == nil && item.libraryId == nil)
-    }
-
-    private func calendarRowLabel(_ item: UpcomingItem) -> some View {
-        HStack(spacing: 12) {
-            MediaThumb(url: model.absoluteURL(item.posterUrl), width: 48)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.title)
-                    .font(.display(15))
-                    .foregroundStyle(Theme.textStrong)
-                    .lineLimit(2)
-                HStack(spacing: 8) {
-                    if let releaseDate = item.releaseDate, !releaseDate.isEmpty {
-                        Text(releaseDate)
-                    }
-                    if let season = item.seasonNumber {
-                        if let episode = item.episodeNumber {
-                            Text(String(format: "S%02dE%02d", season, episode))
-                        } else {
-                            Text(String(format: "S%02d", season))
-                        }
-                    }
-                }
-                .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(Theme.faint)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(12)
-        .activityCard(cornerRadius: 12)
-    }
-
-    private func loadCalendar() async {
-        loadingCalendar = true
-        calendarError = nil
-        defer { loadingCalendar = false }
-
-        guard let client = model.api() else {
-            calendarError = String(localized: "Not signed in.")
-            return
-        }
-
-        do {
-            let response = try await client.upcoming()
-            upcomingItems = response.items
-        } catch let error as APIError {
-            calendarError = message(for: error)
-        } catch {
-            calendarError = String(localized: "Can't reach the server. Try again in a moment.")
-        }
     }
 
     // MARK: Shared
