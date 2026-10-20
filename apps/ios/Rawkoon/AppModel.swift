@@ -20,6 +20,8 @@ final class AppModel {
     var serverURL: String
     var library: [BookListItem] = []
     var isAdmin = false
+    /// The signed-in user's id, to tell their own requests from others'.
+    var userId: String?
     /// Mirrors the server's books feature flag; stays on until the server says otherwise.
     var booksEnabled = true
     var libraryGrowth: LibraryGrowth?

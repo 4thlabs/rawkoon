@@ -90,6 +90,22 @@ struct ScreenMotionTests {
         #expect(RequestRowFace.face(busy: false, canModerate: false, status: "approved") == .status("approved"))
     }
 
+    @Test func requesterWithdrawsOrClearsTheirOwnRequest() {
+        #expect(RequestDeleteAction.action(status: "pending", requesterId: "u", userId: "u", isAdmin: false) == .withdraw)
+        #expect(RequestDeleteAction.action(status: "denied", requesterId: "u", userId: "u", isAdmin: true) == .dismiss)
+    }
+
+    @Test func onlyAnAdminDeletesSomeoneElsesRequest() {
+        #expect(RequestDeleteAction.action(status: "denied", requesterId: "m", userId: "u", isAdmin: true) == .delete)
+        #expect(RequestDeleteAction.action(status: "pending", requesterId: "m", userId: "u", isAdmin: false) == nil)
+        #expect(RequestDeleteAction.action(status: "pending", requesterId: nil, userId: nil, isAdmin: false) == nil)
+    }
+
+    @Test func approvedAndAvailableRequestsStay() {
+        #expect(RequestDeleteAction.action(status: "approved", requesterId: "u", userId: "u", isAdmin: true) == nil)
+        #expect(RequestDeleteAction.action(status: "available", requesterId: "m", userId: "u", isAdmin: true) == nil)
+    }
+
     @Test func unreadBadgeRollsOnItsNumber() {
         #expect(UnreadBadge.rollValue("3") == 3)
         #expect(UnreadBadge.rollValue("9+") == 9)

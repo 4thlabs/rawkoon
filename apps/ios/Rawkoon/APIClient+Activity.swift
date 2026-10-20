@@ -97,6 +97,10 @@ extension APIClient {
     func denyRequest(id: Int, reason: String?) async throws {
         try await postExpectOK("/api/requests/\(id)/deny", body: DenyRequestBody(denyReason: reason))
     }
+
+    func deleteRequest(id: Int) async throws {
+        try await deleteExpectOK("/api/requests/\(id)")
+    }
 }
 
 private nonisolated struct LibraryStatsResponse: Decodable {

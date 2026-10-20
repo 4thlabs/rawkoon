@@ -38,11 +38,13 @@ const base: MediaRequest = {
 };
 const rows = vi.hoisted(() => ({ list: [] as unknown[] }));
 const approve = vi.fn();
+const remove = vi.fn();
 
 vi.mock("@/pages/activity/requests/_hooks/useRequests", () => ({
   useRequests: () => ({ data: { requests: rows.list }, isLoading: false }),
   useApproveRequest: () => ({ mutate: approve, isPending: false }),
   useDenyRequest: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteRequest: () => ({ mutate: remove, isPending: false }),
 }));
 vi.mock("@/pages/settings/useQualityProfiles", () => ({
   useQualityProfilesList: () => ({
@@ -92,5 +94,56 @@ describe("RequestsPage book rows", () => {
     renderWithProviders(<RequestsPage />);
     expect(screen.queryByText("requests.approve")).not.toBeInTheDocument();
     expect(screen.getByText("requests.status.pending")).toBeInTheDocument();
+  });
+});
+
+describe("RequestsPage delete button", () => {
+  beforeEach(() => {
+    auth.isAdmin = false;
+    remove.mockClear();
+  });
+
+  it("lets the requester withdraw their own pending request", () => {
+    rows.list = [{ ...base, requested_by: { id: "u", name: "Me" } }];
+    renderWithProviders(<RequestsPage />);
+    expect(
+      screen.getByRole("button", { name: "requests.withdraw" }),
+    ).toBeInTheDocument();
+  });
+
+  it("lets the requester dismiss their own denied request", () => {
+    rows.list = [
+      { ...base, status: "denied", requested_by: { id: "u", name: "Me" } },
+    ];
+    renderWithProviders(<RequestsPage />);
+    expect(
+      screen.getByRole("button", { name: "requests.dismiss" }),
+    ).toBeInTheDocument();
+  });
+
+  it("offers a member nothing on someone else's request", () => {
+    rows.list = [base];
+    renderWithProviders(<RequestsPage />);
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("offers nothing on an approved request, even to an admin", () => {
+    auth.isAdmin = true;
+    rows.list = [{ ...base, status: "approved" }];
+    renderWithProviders(<RequestsPage />);
+    expect(
+      screen.queryByRole("button", { name: "requests.delete" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("deletes another user's denied request on the second click", () => {
+    auth.isAdmin = true;
+    const denied = { ...base, status: "denied" as const };
+    rows.list = [denied];
+    renderWithProviders(<RequestsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "requests.delete" }));
+    expect(remove).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("requests.confirmDelete"));
+    expect(remove).toHaveBeenCalledWith(denied);
   });
 });

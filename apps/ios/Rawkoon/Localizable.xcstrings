@@ -15302,6 +15302,36 @@
           }
         }
       }
+    },
+    "Withdraw": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer"
+          }
+        }
+      }
+    },
+    "This request was withdrawn.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette demande a été retirée."
+          }
+        }
+      }
+    },
+    "Couldn't remove that request.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de retirer cette demande."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

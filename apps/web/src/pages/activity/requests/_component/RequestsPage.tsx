@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Check, Film, Inbox, Send, X } from "lucide-react";
+import { BookOpen, Check, Film, Inbox, Send, Trash2, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { MediaRequest, MediaRequestStatus } from "@rawkoon/shared/types";
 import { PageLayout } from "@/components/PageLayout";
@@ -11,8 +11,75 @@ import { useBookQualityProfiles } from "@/pages/books/_hooks/useBooks";
 import {
   useRequests,
   useApproveRequest,
+  useDeleteRequest,
   useDenyRequest,
 } from "@/pages/activity/requests/_hooks/useRequests";
+
+type DeleteAction = "withdraw" | "dismiss" | "delete";
+
+/** Pending and denied requests can go: the requester's own, or anyone's for an admin. */
+function deleteActionFor(
+  request: MediaRequest,
+  userId: string | undefined,
+  isAdmin: boolean,
+): DeleteAction | null {
+  if (request.status !== "pending" && request.status !== "denied") return null;
+  if (request.requested_by.id === userId) {
+    return request.status === "pending" ? "withdraw" : "dismiss";
+  }
+  return isAdmin ? "delete" : null;
+}
+
+const CONFIRM_KEYS = {
+  withdraw: "requests.confirmWithdraw",
+  dismiss: "requests.confirmDismiss",
+  delete: "requests.confirmDelete",
+} as const;
+
+/** First click arms the button, the second deletes; it disarms on blur or after a few seconds. */
+function DeleteRequestButton({
+  request,
+  action,
+}: {
+  request: MediaRequest;
+  action: DeleteAction;
+}) {
+  const { t } = useTranslation("common");
+  const remove = useDeleteRequest();
+  const [armed, setArmed] = useState(false);
+
+  useEffect(() => {
+    if (!armed) return;
+    const timer = setTimeout(() => setArmed(false), 4000);
+    return () => clearTimeout(timer);
+  }, [armed]);
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (!armed) {
+          setArmed(true);
+          return;
+        }
+        setArmed(false);
+        remove.mutate(request);
+      }}
+      onBlur={() => setArmed(false)}
+      disabled={remove.isPending}
+      aria-label={armed ? undefined : t(`requests.${action}`)}
+      title={armed ? undefined : t(`requests.${action}`)}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+        armed
+          ? "bg-rose-500/15 text-rose-300 hover:bg-rose-500/25"
+          : "text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200"
+      }`}
+    >
+      <Trash2 size={14} />
+      {armed ? t(CONFIRM_KEYS[action]) : null}
+    </button>
+  );
+}
 
 const STATUS_STYLES: Record<MediaRequestStatus, string> = {
   pending: "bg-amber-500/15 text-amber-400",
@@ -64,13 +131,16 @@ function PosterThumb({
 
 function RequestRow({
   request,
+  userId,
   isAdmin,
 }: {
   request: MediaRequest;
+  userId: string | undefined;
   isAdmin: boolean;
 }) {
   const { t } = useTranslation("common");
   const isBook = request.type === "book";
+  const deleteAction = deleteActionFor(request, userId, isAdmin);
   // Book requests are approved with a book quality profile (a separate table).
   const canApprove = isAdmin && request.status === "pending";
   const { data: profilesData } = useQualityProfilesList({
@@ -175,6 +245,10 @@ function RequestRow({
       ) : (
         <StatusBadge status={request.status} />
       )}
+
+      {deleteAction ? (
+        <DeleteRequestButton request={request} action={deleteAction} />
+      ) : null}
     </div>
   );
 }
@@ -209,7 +283,12 @@ export function RequestsPage() {
       ) : (
         <div className="flex flex-col gap-2">
           {requests.map((r) => (
-            <RequestRow key={r.id} request={r} isAdmin={isAdmin} />
+            <RequestRow
+              key={r.id}
+              request={r}
+              userId={user?.id}
+              isAdmin={isAdmin}
+            />
           ))}
         </div>
       )}

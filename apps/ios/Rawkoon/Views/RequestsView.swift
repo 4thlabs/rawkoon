@@ -200,6 +200,14 @@ struct RequestsView: View {
         }
         .padding(.vertical, 4)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if let action = RequestDeleteAction.action(
+                status: req.status, requesterId: req.requestedBy?.id, userId: model.userId, isAdmin: model.isAdmin
+            ) {
+                Button(action.label, action: OfflineFeedback.gate(model.isOffline) {
+                    Task { await delete(request: req) }
+                })
+                .tint(Theme.terracotta)
+            }
             if model.isAdmin, req.status == "pending" {
                 Button("Deny", role: .destructive, action: OfflineFeedback.gate(model.isOffline) {
                     denyTarget = req
@@ -406,6 +414,8 @@ struct RequestsView: View {
             await load()
         } catch APIError.unauthorized {
             adminNote = String(localized: "Admin only.")
+        } catch let error where Self.isWithdrawn(error) {
+            await noteWithdrawn()
         } catch {
             adminNote = String(localized: "Couldn't approve that request.")
         }
@@ -420,9 +430,40 @@ struct RequestsView: View {
             await load()
         } catch APIError.unauthorized {
             adminNote = String(localized: "Admin only.")
+        } catch let error where Self.isWithdrawn(error) {
+            await noteWithdrawn()
         } catch {
             adminNote = String(localized: "Couldn't deny that request.")
         }
+    }
+
+    private func delete(request: MediaRequest) async {
+        guard let client = model.api() else { return }
+        adminNote = nil
+        busyRequestId = request.id
+        defer { busyRequestId = nil }
+        do {
+            try await client.deleteRequest(id: request.id)
+            requests.removeAll { $0.id == request.id }
+            await load()
+        } catch let error where Self.isWithdrawn(error) {
+            await noteWithdrawn()
+        } catch {
+            adminNote = String(localized: "Couldn't remove that request.")
+        }
+    }
+
+    /// A 404 on a listed request means its requester withdrew it meanwhile.
+    private static func isWithdrawn(_ error: Error) -> Bool {
+        switch error as? APIError {
+        case .server(404, _), .http(404): true
+        default: false
+        }
+    }
+
+    private func noteWithdrawn() async {
+        adminNote = String(localized: "This request was withdrawn.")
+        await load()
     }
 }
 
@@ -482,6 +523,28 @@ private struct ProfilePickerSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(Theme.base)
+    }
+}
+
+/// Which removal a request row offers: the requester's own pending or denied
+/// request, or anyone's for an admin. Approved and available requests stay.
+nonisolated enum RequestDeleteAction: Equatable {
+    case withdraw, dismiss, delete
+
+    static func action(status: String, requesterId: String?, userId: String?, isAdmin: Bool) -> Self? {
+        guard status == "pending" || status == "denied" else { return nil }
+        if let userId, requesterId == userId {
+            return status == "pending" ? .withdraw : .dismiss
+        }
+        return isAdmin ? .delete : nil
+    }
+
+    var label: LocalizedStringKey {
+        switch self {
+        case .withdraw: "Withdraw"
+        case .dismiss: "Clear"
+        case .delete: "Delete"
+        }
     }
 }
 
