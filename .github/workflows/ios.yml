@@ -61,7 +61,8 @@ jobs:
           } | tee -a "$GITHUB_OUTPUT"
 
   kit:
-    runs-on: ubuntu-latest
+    # setup-swift refuses Ubuntu 26.04, which ubuntu-latest now points to
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: swift-actions/setup-swift@v2
