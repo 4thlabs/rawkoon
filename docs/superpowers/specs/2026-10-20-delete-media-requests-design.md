@@ -61,7 +61,7 @@ Add the endpoint to the shared request types / endpoint constants so web uses it
 
 Shared across all three clients:
 
-- **Labels follow the action:** "Withdraw" on your own pending request, "Dismiss" on your own denied request, "Delete" when an admin acts on someone else's request. An admin acting on their own request gets the requester label.
+- **Labels follow the action:** "Withdraw" on your own pending request, "Clear" on your own denied request (not "Dismiss": the iOS catalog already translates that as "Fermer"), "Delete" when an admin acts on someone else's request. An admin acting on their own request gets the requester label.
 - **A 404 from delete, approve or deny** shows "This request was withdrawn" and refreshes the list, instead of the current generic error.
 - **The action shows only on rows the rules allow.** The client decides from `status`, `requested_by.id` and the current user's admin flag; the server enforces the same rules.
 - New strings are localized (web `en`/`fr` locales, iOS string catalog, TV string resources).
@@ -80,7 +80,7 @@ Shared across all three clients:
 
 ### RawkoonTV (`~/sites/rawkoon-tv`, separate repo and PR)
 
-- On the details page (`DiscoverDetailsScreen`), a title in `Pending` or `Refused` state that belongs to this account gets a second button: "Withdraw request" for `Pending`, "Dismiss" for `Refused`. Pressing it asks for confirmation (an undo toast can't be reached with a remote), then calls `DELETE api/requests/:id`, the state becomes `Requestable`, and focus moves to the Request button.
+- On the details page (`DiscoverDetailsScreen`), a title in `Pending` or `Refused` state that belongs to this account gets a second button: "Withdraw request" for `Pending`, "Clear request" for `Refused`. Pressing it asks for confirmation (an undo toast can't be reached with a remote), then calls `DELETE api/requests/:id`, the state becomes `Requestable`, and focus moves to the Request button.
 - Ownership: `/api/requests/status` returns `deny_reason` only for the caller's own requests or to admins, so it can't tell the TV whose request it is. Return a boolean such as `mine` in the status response's `request` object (true when the caller is the requester) so the TV knows when to show the button. The TV only handles the account's own requests, admins included: moderating other people's requests stays on web and iOS. (Decided.)
 - The button follows the displayed state: it appears only when `TitleState.of` resolves to `Pending` or `Refused` (so a title whose library entry wins shows no button). *(Claude's call.)*
 - After a successful delete, re-fetch `/api/requests/status` and show what comes back rather than forcing `Requestable` locally. *(Claude's call.)*
