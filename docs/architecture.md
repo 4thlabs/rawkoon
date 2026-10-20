@@ -14,7 +14,7 @@ web interface ship in the same container.
       ├── Rawkoon iOS app (`apps/ios`)
       │     └── REST + APNs device token; audiobook chapters download offline
       │
-      ├── RawkoonTV (separate repo, a Wholphin fork)
+      ├── RawkoonTV (separate repo, Android TV)
       │     └── device-code sign-in, `/api/tv/bootstrap`, then plays from Jellyfin
       │
       └── Rawkoon API

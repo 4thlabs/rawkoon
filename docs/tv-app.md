@@ -4,10 +4,10 @@ RawkoonTV is the Android TV and Fire TV app for Rawkoon. Rawkoon finds and
 downloads your movies and shows; Jellyfin plays them. RawkoonTV puts both on
 the TV: you sign in to Rawkoon once, and it sets up Jellyfin for you.
 
-RawkoonTV is a fork of [Wholphin](https://github.com/damontecres/Wholphin), an
-open-source Jellyfin client for Android TV. Library browsing and playback are
-Wholphin's; RawkoonTV adds the Rawkoon sign-in, discovery, and requests. Its
-source and releases live in
+RawkoonTV is its own Android TV client, built for low-end TVs, with the layout
+of [Wholphin](https://github.com/damontecres/Wholphin) and the Rawkoon look.
+Each person on the TV gets a profile, with its own Rawkoon and Jellyfin
+accounts. Its source and releases live in
 [samuelloranger/rawkoon-tv](https://github.com/samuelloranger/rawkoon-tv).
 
 ## Before you start
@@ -21,7 +21,7 @@ An administrator needs to set up three things once. See
 3. Your Rawkoon account linked to your Jellyfin user, in **Settings → Users**,
    in the Jellyfin column.
 
-The TV needs Android 6 or later.
+The TV needs Android 8 or later.
 
 ## Install
 
@@ -41,6 +41,8 @@ SHA-256 A2:71:9E:DC:5C:9D:1A:75:51:B0:A4:1D:02:7D:40:55:1E:14:DA:F1:2F:35:9F:F5:
 
 ## Sign in
 
+The first launch asks for your Rawkoon address, then adds the first profile:
+
 1. Enter your Rawkoon address.
 2. The TV shows a code and a QR code. On your phone, scan it or open
    `/device` on your Rawkoon instance, sign in if asked, check that the code
@@ -48,49 +50,92 @@ SHA-256 A2:71:9E:DC:5C:9D:1A:75:51:B0:A4:1D:02:7D:40:55:1E:14:DA:F1:2F:35:9F:F5:
 3. The TV finishes on its own: it reads your account, connects to the Jellyfin
    server Rawkoon names, and signs in to it through Quick Connect.
 
-No Jellyfin password and no second server address. **Sign in with email and
-password** on the code screen is the fallback when a phone is not at hand. A
+No Jellyfin password and no second server address. **Email and password** on
+the code screen is the fallback when a phone is not at hand. A
 code expires after 10 minutes; the TV offers a new one.
 
 The TV gets a normal Rawkoon session, listed in **Settings → Sessions &
-Tokens** and revocable there like any other. **Sign out** in the app's Rawkoon
-settings forgets the account on that TV.
+Tokens** and revocable there like any other.
 
-## What it adds to Wholphin
+## Profiles
 
+**Who's watching?** opens on every launch. **Add** signs in another Rawkoon
+account the same way, so everyone in the house gets their own Continue
+watching, requests and home rows. **Manage profiles** sets or clears a
+profile's PIN (at least 4 digits), or removes the profile from the TV
+(**Remove this profile**).
+
+**Settings → Skip "Who's watching?" with one profile** is off by default. When
+it is on and the TV has exactly one profile without a PIN, the app opens that
+profile straight away; otherwise the picker shows as usual.
+
+Updating from RawkoonTV 2.x turns its Jellyfin users into profiles, with their
+PINs. The Rawkoon sign-in goes to the user it belonged to; the other profiles
+are asked to link their Rawkoon account, with a new code, the first time they
+open Discover or their requests.
+
+## What's in it
+
+- **Home.** Continue watching, Next up, the latest additions of each library,
+  **Coming soon** (the next episodes and movies due in your library, with the
+  episode numbers, `S2 · E3–5` when a day brings several) and **My requests**
+  with their state. **Settings → Home rows** reorders or hides the rows, per
+  profile.
+- **Library.** Movies, Shows and Collections as poster grids with sorting,
+  filters and a letter index; title pages, seasons and episodes; Search and
+  Favorites.
 - **Discover and request.** Trending, popular, and upcoming titles come from
   Rawkoon. Open one and request it; the title page shows whether it is pending,
   approved, downloading, or ready. Requests follow the same rules as on the web;
-  see [Requests](/library/requests).
-- **Home rows.** **Coming soon** lists the next episodes and movies due in your
-  library, with the episode numbers (`S2 · E3–5` when a day brings several).
-  **My requests** lists your requests with their state.
-- **Owned titles open in the library.** A title you already have shows **Open**
-  and goes straight to its Jellyfin page instead of the request page.
-- **Rawkoon look.** The Rawkoon theme and fonts are the default. Wholphin's
-  other themes stay available in its display settings.
-- **Interface size.** Rawkoon settings → **Interface size** scales the whole
-  interface. The default is 90%, which fits more on screen on TVs that report a
-  low resolution to apps.
-- **Updates.** The app checks the RawkoonTV releases and offers to install new
-  versions. The first update asks Android for permission to install apps; after
-  that an update is one click and keeps your settings and sign-in. It needs free
-  storage on the TV; when there is not enough, the app says how much is missing.
+  see [Requests](/library/requests). A title you already have opens in the
+  library instead.
+- **Playback.** Jellyfin decides between direct play and transcoding for the
+  TV. Trickplay previews when scrubbing, progress saved to Jellyfin, and the
+  skip button for intros and credits that Jellyfin's media segments mark.
+- **TV home screen.** **Watch Next** and a **Recently added** channel on the
+  Android TV home screen; a card opens its title in the app. Profiles with a PIN
+  keep their titles off the home screen.
+- **Updates.** The app checks the RawkoonTV releases once a day and offers new
+  versions in Settings. The first update asks Android for permission to install
+  apps; after that an update is one click and keeps your profiles and settings.
+  It needs free storage on the TV; when there is not enough, the app says how
+  much is missing.
 
-Everything else is Wholphin: a customizable home, ExoPlayer and MPV playback,
-subtitles, trickplay previews, live TV, music, and refresh-rate switching. See
-[Wholphin's feature list](https://github.com/damontecres/Wholphin#features).
+## Settings
+
+All of them apply to the whole TV, except the home rows, which are per profile.
+
+| Section | Settings |
+| --- | --- |
+| Home | Home rows, items per row, Next up limits, what OK does on Continue watching, the clock |
+| Playback | Skip back and forward amounts, rewind when resuming, max bitrate, max resolution |
+| Skipping | Intros, recaps, previews and credits: show the button, skip by themselves, or do nothing; play the next episode automatically, its countdown, and "Are you still watching?" |
+| Subtitles | Size, colour, background, edge, direct play of PGS subtitles |
+| Audio | Surround passthrough (AC3 / E-AC3), downmix to stereo |
+| Display | Match the display to the video's frame rate (and resolution); HDR10, HDR10+ and Dolby Vision as the TV reports them, always allowed, or never allowed |
+| Language | The TV's language, French, or English |
+| Updates, Profiles, Storage, About | Check now and install, the daily check, skipping "Who's watching?", clearing the image cache, open-source licences |
+
+Matching the frame rate only works on TVs that offer apps more than one display
+mode; on the others the setting has no effect.
 
 ## When sign-in stops
 
 | Message | Cause and fix |
 | --- | --- |
-| Rawkoon has no Jellyfin integration | Set up Jellyfin in **Settings → Integrations**. |
-| This Jellyfin account is not linked to Rawkoon | An administrator links your account in **Settings → Users**. |
-| The media server forgot the sign-in code | Quick Connect codes are short-lived, or Quick Connect is off. Turn it on in Jellyfin and try again. |
-| Could not reach the media server | The TV cannot reach the Jellyfin address Rawkoon gave it. Jellyfin's **Website URL** in Rawkoon must be reachable from the TV. |
-| Your Rawkoon session ended | The session was revoked or expired. Sign in again; the server address is kept. |
+| Can't reach the server. Check the address and the network. | The TV can't reach Rawkoon, or the Jellyfin server Rawkoon names. Check the address; Jellyfin's **Website URL** in Rawkoon must be reachable from the TV. |
+| That address isn't valid. | Enter the full address, starting with `https://` or `http://`. |
+| Wrong email or password. | Check them, or sign in with the code instead. |
+| Too many attempts. Wait a moment, then try again. | Rawkoon limits sign-in attempts. Wait, then try again. |
+| The sign-in was refused on the other device. | The code was denied at `/device`. Start again and approve it. |
+| This Rawkoon server has no Jellyfin set up. | Set up Jellyfin in **Settings → Integrations**. |
+| Ask an admin to link your Jellyfin account in Rawkoon. | An administrator links your account in **Settings → Users**. |
+| Something went wrong (…) | The part in brackets says what failed. If it happens while connecting to Jellyfin, check that Quick Connect is on. |
+| This profile's Jellyfin session ended. Remove the profile and add it again. | The Jellyfin token was revoked or expired. Remove the profile in **Manage profiles** and add it again. |
 
-Report bugs that also happen in Wholphin to
-[Wholphin](https://github.com/damontecres/Wholphin/issues), and RawkoonTV ones
-to [rawkoon-tv](https://github.com/samuelloranger/rawkoon-tv/issues).
+When a profile's Rawkoon session ends (revoked in **Settings → Sessions &
+Tokens**, or expired), Discover and requests ask to link the account again with
+a new code; the profile and its Jellyfin sign-in stay.
+
+Report RawkoonTV bugs to
+[rawkoon-tv](https://github.com/samuelloranger/rawkoon-tv/issues).
