@@ -8,6 +8,7 @@ import { jsonV, queryV } from "@rawkoon/api/middleware/validate";
 import {
   approveRequest,
   createRequest,
+  deleteRequest,
   denyRequest,
 } from "@rawkoon/api/services/mediaRequests";
 
@@ -122,13 +123,15 @@ export const requestRoutes = new Hono<Env>()
             : null,
         // Someone else's request is shown by status only, like GET / hides it.
         request: request
-          ? user.is_admin || request.requestedById === user.id
-            ? {
-                id: request.id,
-                status: request.status,
-                deny_reason: request.denyReason,
-              }
-            : { id: request.id, status: request.status, deny_reason: null }
+          ? {
+              id: request.id,
+              status: request.status,
+              deny_reason:
+                user.is_admin || request.requestedById === user.id
+                  ? request.denyReason
+                  : null,
+              mine: request.requestedById === user.id,
+            }
           : null,
       });
     },
@@ -208,4 +211,20 @@ export const requestRoutes = new Hono<Env>()
       return ok({ ok: true });
     },
   )
+  // DELETE /api/requests/:id — requesters withdraw their own pending or denied
+  // requests; admins delete anyone's.
+  .delete("/:id", async (c) => {
+    const user = c.get("user");
+    const result = await deleteRequest(
+      parseInt(c.req.param("id"), 10),
+      user.id,
+      !!user.is_admin,
+    );
+    if (!result.ok) {
+      return result.reason === "not_found"
+        ? notFound("Request not found")
+        : badRequest("Request can't be deleted");
+    }
+    return ok({ ok: true });
+  })
   .notFound(() => notFound("Not found"));

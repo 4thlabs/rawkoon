@@ -98,6 +98,17 @@ const prismaStub = {
       Object.assign(row, data);
       return row;
     },
+    deleteMany: async ({
+      where,
+    }: {
+      where: { id: number; status: { in: string[] } };
+    }) => {
+      const before = requestRows.length;
+      requestRows = requestRows.filter(
+        (r) => r.id !== where.id || !where.status.in.includes(r.status),
+      );
+      return { count: before - requestRows.length };
+    },
   },
   user: {
     findUnique: async () => injectedDbUser,
@@ -199,5 +210,48 @@ describe("requestRoutes", () => {
       body: JSON.stringify({ tmdb_id: 42, type: "movie", title: "X" }),
     });
     expect(await res.json()).toEqual({ id: 2 });
+  });
+
+  it("GET /status tells the caller whether the request is theirs", async () => {
+    injectedDbUser = { ...ADMIN_USER, id: "u2", isAdmin: false };
+    requestRows[0].denyReason = "no";
+    requestRows[0].status = "denied";
+    const other = await requestRoutes.request("/status?tmdb_id=9&type=movie");
+    expect(((await other.json()) as { request: unknown }).request).toEqual({
+      id: 1,
+      status: "denied",
+      deny_reason: null,
+      mine: false,
+    });
+
+    injectedDbUser = ADMIN_USER;
+    const own = await requestRoutes.request("/status?tmdb_id=9&type=movie");
+    expect(((await own.json()) as { request: unknown }).request).toEqual({
+      id: 1,
+      status: "denied",
+      deny_reason: "no",
+      mine: true,
+    });
+  });
+
+  it("DELETE /:id withdraws the caller's pending request", async () => {
+    const res = await requestRoutes.request("/1", { method: "DELETE" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(requestRows).toEqual([]);
+  });
+
+  it("DELETE /:id 404s on another user's request for a non-admin", async () => {
+    injectedDbUser = { ...ADMIN_USER, id: "u2", isAdmin: false };
+    const res = await requestRoutes.request("/1", { method: "DELETE" });
+    expect(res.status).toBe(404);
+    expect(requestRows).toHaveLength(1);
+  });
+
+  it("DELETE /:id 400s on an approved request", async () => {
+    requestRows[0].status = "approved";
+    const res = await requestRoutes.request("/1", { method: "DELETE" });
+    expect(res.status).toBe(400);
+    expect(requestRows).toHaveLength(1);
   });
 });

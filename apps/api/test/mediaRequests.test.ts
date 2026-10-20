@@ -32,6 +32,7 @@ const state: {
   defaultProfiles: { movie: number | null; show: number | null };
   failLibraryAdd: boolean;
   searchQueued: number[];
+  beforeDeleteMany: (() => void) | null;
 } = {
   library: [],
   libraryBooks: [],
@@ -47,6 +48,7 @@ const state: {
   defaultProfiles: { movie: null, show: null },
   failLibraryAdd: false,
   searchQueued: [],
+  beforeDeleteMany: null,
 };
 
 function installMediaRequestDbMock() {
@@ -152,6 +154,18 @@ function installMediaRequestDbMock() {
           const row = state.requests.find((r) => r.id === where.id)!;
           Object.assign(row, data);
           return Promise.resolve(row);
+        },
+        deleteMany: ({
+          where,
+        }: {
+          where: { id: number; status: { in: string[] } };
+        }) => {
+          state.beforeDeleteMany?.();
+          const before = state.requests.length;
+          state.requests = state.requests.filter(
+            (r) => r.id !== where.id || !where.status.in.includes(r.status),
+          );
+          return Promise.resolve({ count: before - state.requests.length });
         },
       },
       bookEdition: {
@@ -276,6 +290,7 @@ installMediaRequestNotificationMock();
 const {
   createRequest,
   approveRequest,
+  deleteRequest,
   denyRequest,
   notifyRequestAvailable,
   notifyBookRequestAvailable,
@@ -301,6 +316,7 @@ beforeEach(() => {
   state.defaultProfiles = { movie: null, show: null };
   state.failLibraryAdd = false;
   state.searchQueued = [];
+  state.beforeDeleteMany = null;
 });
 
 describe("createRequest", () => {
@@ -698,6 +714,79 @@ describe("denyRequest", () => {
     expect(state.notifications).toEqual([
       { userId: "u1", type: "request_decided" },
     ]);
+  });
+});
+
+describe("deleteRequest", () => {
+  function seed(status: string) {
+    state.requests = [
+      {
+        id: 1,
+        tmdbId: 9,
+        type: "movie",
+        status,
+        requestedById: "u1",
+        libraryMediaId: null,
+        title: "X",
+      },
+    ];
+  }
+
+  for (const status of ["pending", "denied"]) {
+    it(`lets the requester delete their own ${status} request`, async () => {
+      seed(status);
+      expect(await deleteRequest(1, "u1", false)).toEqual({ ok: true });
+      expect(state.requests).toEqual([]);
+    });
+
+    it(`lets an admin delete someone else's ${status} request`, async () => {
+      seed(status);
+      expect(await deleteRequest(1, "admin-1", true)).toEqual({ ok: true });
+      expect(state.requests).toEqual([]);
+    });
+  }
+
+  for (const status of ["approved", "available"]) {
+    it(`refuses to delete an ${status} request, even for an admin`, async () => {
+      seed(status);
+      expect(await deleteRequest(1, "u1", false)).toEqual({
+        ok: false,
+        reason: "not_deletable",
+      });
+      expect(await deleteRequest(1, "admin-1", true)).toEqual({
+        ok: false,
+        reason: "not_deletable",
+      });
+      expect(state.requests).toHaveLength(1);
+    });
+  }
+
+  it("hides another user's request from a non-admin as not found", async () => {
+    seed("pending");
+    expect(await deleteRequest(1, "u2", false)).toEqual({
+      ok: false,
+      reason: "not_found",
+    });
+    expect(state.requests).toHaveLength(1);
+  });
+
+  it("reports a missing request as not found", async () => {
+    expect(await deleteRequest(1, "admin-1", true)).toEqual({
+      ok: false,
+      reason: "not_found",
+    });
+  });
+
+  it("keeps a request approved between the read and the delete", async () => {
+    seed("pending");
+    state.beforeDeleteMany = () => {
+      state.requests[0].status = "approved";
+    };
+    expect(await deleteRequest(1, "u1", false)).toEqual({
+      ok: false,
+      reason: "not_deletable",
+    });
+    expect(state.requests[0].status).toBe("approved");
   });
 });
 
