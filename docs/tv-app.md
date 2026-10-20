@@ -50,8 +50,8 @@ The first launch asks for your Rawkoon address, then adds the first profile:
 3. The TV finishes on its own: it reads your account, connects to the Jellyfin
    server Rawkoon names, and signs in to it through Quick Connect.
 
-No Jellyfin password and no second server address. **Sign in with email and
-password** on the code screen is the fallback when a phone is not at hand. A
+No Jellyfin password and no second server address. **Email and password** on
+the code screen is the fallback when a phone is not at hand. A
 code expires after 10 minutes; the TV offers a new one.
 
 The TV gets a normal Rawkoon session, listed in **Settings → Sessions &
@@ -61,14 +61,18 @@ Tokens** and revocable there like any other.
 
 **Who's watching?** opens on every launch. **Add** signs in another Rawkoon
 account the same way, so everyone in the house gets their own Continue
-watching, requests and settings for their home rows. **Manage profiles** sets
-or clears a profile's PIN, or removes the profile from the TV (**Remove this
-profile**). With a single
-profile and no PIN, **Settings → Skip "Who's watching?" with one profile**
-opens it straight away.
+watching, requests and home rows. **Manage profiles** sets or clears a
+profile's PIN (at least 4 digits), or removes the profile from the TV
+(**Remove this profile**).
 
-Updating from RawkoonTV 2.x turns its signed-in users into profiles, so nobody
-signs in again.
+**Settings → Skip "Who's watching?" with one profile** is off by default. When
+it is on and the TV has exactly one profile without a PIN, the app opens that
+profile straight away; otherwise the picker shows as usual.
+
+Updating from RawkoonTV 2.x turns its Jellyfin users into profiles, with their
+PINs. The Rawkoon sign-in goes to the user it belonged to; the other profiles
+are asked to link their Rawkoon account, with a new code, the first time they
+open Discover or their requests.
 
 ## What's in it
 
@@ -119,11 +123,19 @@ mode; on the others the setting has no effect.
 
 | Message | Cause and fix |
 | --- | --- |
-| Rawkoon has no Jellyfin integration | Set up Jellyfin in **Settings → Integrations**. |
-| This Jellyfin account is not linked to Rawkoon | An administrator links your account in **Settings → Users**. |
-| The media server forgot the sign-in code | Quick Connect codes are short-lived, or Quick Connect is off. Turn it on in Jellyfin and try again. |
-| Could not reach the media server | The TV cannot reach the Jellyfin address Rawkoon gave it. Jellyfin's **Website URL** in Rawkoon must be reachable from the TV. |
-| Your Rawkoon session ended | The session was revoked or expired. Sign in again; the server address is kept. |
+| Can't reach the server. Check the address and the network. | The TV can't reach Rawkoon, or the Jellyfin server Rawkoon names. Check the address; Jellyfin's **Website URL** in Rawkoon must be reachable from the TV. |
+| That address isn't valid. | Enter the full address, starting with `https://` or `http://`. |
+| Wrong email or password. | Check them, or sign in with the code instead. |
+| Too many attempts. Wait a moment, then try again. | Rawkoon limits sign-in attempts. Wait, then try again. |
+| The sign-in was refused on the other device. | The code was denied at `/device`. Start again and approve it. |
+| This Rawkoon server has no Jellyfin set up. | Set up Jellyfin in **Settings → Integrations**. |
+| Ask an admin to link your Jellyfin account in Rawkoon. | An administrator links your account in **Settings → Users**. |
+| Something went wrong (…) | The part in brackets says what failed. If it happens while connecting to Jellyfin, check that Quick Connect is on. |
+| This profile's Jellyfin session ended. Remove the profile and add it again. | The Jellyfin token was revoked or expired. Remove the profile in **Manage profiles** and add it again. |
+
+When a profile's Rawkoon session ends (revoked in **Settings → Sessions &
+Tokens**, or expired), Discover and requests ask to link the account again with
+a new code; the profile and its Jellyfin sign-in stay.
 
 Report RawkoonTV bugs to
 [rawkoon-tv](https://github.com/samuelloranger/rawkoon-tv/issues).
