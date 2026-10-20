@@ -200,6 +200,14 @@ struct RequestsView: View {
         }
         .padding(.vertical, 4)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if let action = RequestDeleteAction.action(
+                status: req.status, requesterId: req.requestedBy?.id, userId: model.userId, isAdmin: model.isAdmin
+            ) {
+                Button(action.label, action: OfflineFeedback.gate(model.isOffline) {
+                    Task { await delete(request: req) }
+                })
+                .tint(Theme.terracotta)
+            }
             if model.isAdmin, req.status == "pending" {
                 Button("Deny", role: .destructive, action: OfflineFeedback.gate(model.isOffline) {
                     denyTarget = req
@@ -406,6 +414,8 @@ struct RequestsView: View {
             await load()
         } catch APIError.unauthorized {
             adminNote = String(localized: "Admin only.")
+        } catch let error where Self.isWithdrawn(error) {
+            await noteWithdrawn()
         } catch {
             adminNote = String(localized: "Couldn't approve that request.")
         }
@@ -420,80 +430,39 @@ struct RequestsView: View {
             await load()
         } catch APIError.unauthorized {
             adminNote = String(localized: "Admin only.")
+        } catch let error where Self.isWithdrawn(error) {
+            await noteWithdrawn()
         } catch {
             adminNote = String(localized: "Couldn't deny that request.")
         }
     }
-}
 
-/// A quality profile choice for the approve dialog — unifies `QualityProfile`
-/// (movie/show) and `BookQualityProfile` (book) behind the id/name the picker needs.
-private struct ApprovalProfileOption: Identifiable {
-    let id: Int
-    let name: String
-    let detail: String?
-}
-
-/// Approve flow's profile picker. A sheet, not an alert/action-sheet: the list
-/// can be long and each row carries a resolution/size detail line.
-private struct ProfilePickerSheet: View {
-    let options: [ApprovalProfileOption]
-    let onSelect: (ApprovalProfileOption) -> Void
-    @Environment(AppModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                ForEach(options) { option in
-                    Button {
-                        onSelect(option)
-                        dismiss()
-                    } label: {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(option.name)
-                                .font(.display(16))
-                                .foregroundStyle(Theme.textStrong)
-                            if let detail = option.detail {
-                                Text(detail)
-                                    .font(.system(.caption, design: .monospaced))
-                                    .foregroundStyle(Theme.muted)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .requiresConnection(model.isOffline)
-                    .listRowBackground(Theme.raised)
-                }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .readableWidth()
-            .background(Theme.base)
-            .navigationTitle("Choose a quality profile")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
+    private func delete(request: MediaRequest) async {
+        guard let client = model.api() else { return }
+        adminNote = nil
+        busyRequestId = request.id
+        defer { busyRequestId = nil }
+        do {
+            try await client.deleteRequest(id: request.id)
+            requests.removeAll { $0.id == request.id }
+            await load()
+        } catch let error where Self.isWithdrawn(error) {
+            await noteWithdrawn()
+        } catch {
+            adminNote = String(localized: "Couldn't remove that request.")
         }
-        .presentationDetents([.medium, .large])
-        .presentationBackground(Theme.base)
     }
-}
 
-/// What a request row's trailing slot shows; mirrors the slot's branch order.
-nonisolated enum RequestRowFace: Equatable {
-    case busy, moderate
-    case status(String)
-
-    static func face(busy: Bool, canModerate: Bool, status: String) -> Self {
-        if busy {
-            return .busy
+    /// A 404 on a listed request means its requester withdrew it meanwhile.
+    private static func isWithdrawn(_ error: Error) -> Bool {
+        switch error as? APIError {
+        case .server(404, _), .http(404): true
+        default: false
         }
-        return canModerate ? .moderate : .status(status)
+    }
+
+    private func noteWithdrawn() async {
+        adminNote = String(localized: "This request was withdrawn.")
+        await load()
     }
 }

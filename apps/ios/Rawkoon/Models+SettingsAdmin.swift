@@ -216,6 +216,7 @@ nonisolated struct SystemVersion: Decodable, Sendable {
 }
 
 nonisolated struct SessionUser: Decodable, Sendable {
+    let id: String?
     let email: String?
     let name: String?
     let firstName: String?

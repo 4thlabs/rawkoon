@@ -23,6 +23,13 @@
     "qualityPlaceholder": "Profil de qualité",
     "approve": "Approuver",
     "deny": "Refuser",
+    "withdraw": "Retirer",
+    "dismiss": "Effacer",
+    "delete": "Supprimer",
+    "confirmWithdraw": "Retirer ?",
+    "confirmDismiss": "Effacer ?",
+    "confirmDelete": "Supprimer ?",
+    "withdrawn": "Cette demande a été retirée",
     "status": {
       "pending": "En attente",
       "approved": "Approuvée",
