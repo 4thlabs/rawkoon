@@ -31,6 +31,24 @@ export interface MediaRequest {
   decided_at: string | null;
 }
 
+/** GET /api/requests/status: where one title stands, for a title page. */
+export interface RequestTitleStatusResponse {
+  library: {
+    id: number;
+    status: string;
+    episode_count: number | null;
+    downloaded_episode_count: number | null;
+  } | null;
+  request: {
+    id: number;
+    status: MediaRequestStatus;
+    /** Only for the caller's own request, or to an admin. */
+    deny_reason: string | null;
+    /** True when the caller made the request. */
+    mine: boolean;
+  } | null;
+}
+
 export interface MediaRequestsResponse {
   requests: MediaRequest[];
 }

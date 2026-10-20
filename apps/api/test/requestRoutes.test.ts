@@ -254,4 +254,10 @@ describe("requestRoutes", () => {
     expect(res.status).toBe(400);
     expect(requestRows).toHaveLength(1);
   });
+
+  it("DELETE /:id 404s on a non-numeric id", async () => {
+    const res = await requestRoutes.request("/abc", { method: "DELETE" });
+    expect(res.status).toBe(404);
+    expect(requestRows).toHaveLength(1);
+  });
 });

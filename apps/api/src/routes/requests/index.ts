@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { prisma } from "@rawkoon/api/db";
 import { badRequest, conflict, notFound, ok } from "@rawkoon/api/errors";
+import type { RequestTitleStatusResponse } from "@rawkoon/shared/types";
 import type { Env } from "@rawkoon/api/honoEnv";
 import { requireAdmin, requireUser } from "@rawkoon/api/middleware/hono/auth";
 import { jsonV, queryV } from "@rawkoon/api/middleware/validate";
@@ -11,6 +12,12 @@ import {
   deleteRequest,
   denyRequest,
 } from "@rawkoon/api/services/mediaRequests";
+
+/** A non-numeric id can't match a request, so it reads as not found. */
+function requestId(raw: string): number | null {
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
 
 /** Newest requests returned to the requests screen. */
 const REQUEST_LIST_LIMIT = 500;
@@ -111,7 +118,7 @@ export const requestRoutes = new Hono<Env>()
           where: { tmdbId_type: { tmdbId, type } },
         }),
       ]);
-      return ok({
+      const body: RequestTitleStatusResponse = {
         library:
           media && media.type === type
             ? {
@@ -133,7 +140,8 @@ export const requestRoutes = new Hono<Env>()
               mine: request.requestedById === user.id,
             }
           : null,
-      });
+      };
+      return ok(body);
     },
   )
   // POST /api/requests — any logged-in user creates a request
@@ -179,8 +187,10 @@ export const requestRoutes = new Hono<Env>()
     requireAdmin,
     jsonV(z.object({ quality_profile_id: z.number() })),
     async (c) => {
+      const id = requestId(c.req.param("id"));
+      if (id == null) return notFound("Request not found");
       const result = await approveRequest(
-        parseInt(c.req.param("id"), 10),
+        id,
         c.req.valid("json").quality_profile_id,
         c.get("user").id,
       );
@@ -198,8 +208,10 @@ export const requestRoutes = new Hono<Env>()
     requireAdmin,
     jsonV(z.object({ deny_reason: z.string().optional() })),
     async (c) => {
+      const id = requestId(c.req.param("id"));
+      if (id == null) return notFound("Request not found");
       const result = await denyRequest(
-        parseInt(c.req.param("id"), 10),
+        id,
         c.get("user").id,
         c.req.valid("json").deny_reason,
       );
@@ -214,12 +226,10 @@ export const requestRoutes = new Hono<Env>()
   // DELETE /api/requests/:id — requesters withdraw their own pending or denied
   // requests; admins delete anyone's.
   .delete("/:id", async (c) => {
+    const id = requestId(c.req.param("id"));
+    if (id == null) return notFound("Request not found");
     const user = c.get("user");
-    const result = await deleteRequest(
-      parseInt(c.req.param("id"), 10),
-      user.id,
-      !!user.is_admin,
-    );
+    const result = await deleteRequest(id, user.id, !!user.is_admin);
     if (!result.ok) {
       return result.reason === "not_found"
         ? notFound("Request not found")
