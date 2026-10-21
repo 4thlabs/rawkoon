@@ -33,6 +33,7 @@ const state: {
   failLibraryAdd: boolean;
   searchQueued: number[];
   beforeDeleteMany: (() => void) | null;
+  deletedLibrary: string[];
 } = {
   library: [],
   libraryBooks: [],
@@ -49,6 +50,7 @@ const state: {
   failLibraryAdd: false,
   searchQueued: [],
   beforeDeleteMany: null,
+  deletedLibrary: [],
 };
 
 function installMediaRequestDbMock() {
@@ -71,8 +73,16 @@ function installMediaRequestDbMock() {
           );
         },
         update: () => Promise.resolve({}),
+        delete: ({ where }: { where: { id: number } }) => {
+          state.deletedLibrary.push(`media:${where.id}`);
+          return Promise.resolve({});
+        },
       },
       libraryBook: {
+        delete: ({ where }: { where: { id: number } }) => {
+          state.deletedLibrary.push(`book:${where.id}`);
+          return Promise.resolve({});
+        },
         findUnique: ({ where }: { where: { googleVolumeId: string } }) =>
           Promise.resolve(
             state.libraryBooks.find(
@@ -158,12 +168,27 @@ function installMediaRequestDbMock() {
         deleteMany: ({
           where,
         }: {
-          where: { id: number; status: { in: string[] } };
+          where: {
+            id?: number;
+            status?: { in: string[] };
+            libraryMediaId?: number;
+            libraryBookId?: number;
+          };
         }) => {
           state.beforeDeleteMany?.();
+          if (where.libraryMediaId != null || where.libraryBookId != null)
+            state.deletedLibrary.push("requests");
           const before = state.requests.length;
           state.requests = state.requests.filter(
-            (r) => r.id !== where.id || !where.status.in.includes(r.status),
+            (r) =>
+              !(
+                (where.id == null || r.id === where.id) &&
+                (where.status == null || where.status.in.includes(r.status)) &&
+                (where.libraryMediaId == null ||
+                  r.libraryMediaId === where.libraryMediaId) &&
+                (where.libraryBookId == null ||
+                  r.libraryBookId === where.libraryBookId)
+              ),
           );
           return Promise.resolve({ count: before - state.requests.length });
         },
@@ -203,7 +228,10 @@ function installMediaRequestDbMock() {
             defaultShowQualityProfileId: state.defaultProfiles.show,
           }),
       },
-      $transaction: (promises: Promise<any>[]) => Promise.all(promises),
+      $transaction: (promises: Promise<any>[]) => {
+        state.deletedLibrary.push("transaction");
+        return Promise.all(promises);
+      },
     },
   }));
 }
@@ -290,6 +318,8 @@ installMediaRequestNotificationMock();
 const {
   createRequest,
   approveRequest,
+  deleteLibraryBookWithRequests,
+  deleteLibraryMediaWithRequests,
   deleteRequest,
   denyRequest,
   notifyRequestAvailable,
@@ -317,6 +347,7 @@ beforeEach(() => {
   state.failLibraryAdd = false;
   state.searchQueued = [];
   state.beforeDeleteMany = null;
+  state.deletedLibrary = [];
 });
 
 describe("createRequest", () => {
@@ -787,6 +818,43 @@ describe("deleteRequest", () => {
       reason: "not_deletable",
     });
     expect(state.requests[0].status).toBe("approved");
+  });
+});
+
+describe("deleting a library title", () => {
+  const req = (over: Partial<Req>): Req => ({
+    id: 1,
+    tmdbId: 9,
+    type: "movie",
+    status: "approved",
+    requestedById: "u1",
+    libraryMediaId: null,
+    ...over,
+  });
+
+  it("removes a movie or show's request with it", async () => {
+    state.requests = [
+      req({ id: 1, libraryMediaId: 5 }),
+      req({ id: 2, tmdbId: 10, status: "pending" }),
+    ];
+    await deleteLibraryMediaWithRequests(5);
+    expect(state.requests.map((r) => r.id)).toEqual([2]);
+    // Requests go first: the title's delete would otherwise null their link.
+    expect(state.deletedLibrary).toEqual([
+      "requests",
+      "media:5",
+      "transaction",
+    ]);
+  });
+
+  it("removes a book's request with it", async () => {
+    state.requests = [
+      req({ id: 1, type: "book", tmdbId: null, libraryBookId: 7 }),
+      req({ id: 2, type: "book", tmdbId: null, libraryBookId: 8 }),
+    ];
+    await deleteLibraryBookWithRequests(7);
+    expect(state.requests.map((r) => r.id)).toEqual([2]);
+    expect(state.deletedLibrary).toEqual(["requests", "book:7", "transaction"]);
   });
 });
 
