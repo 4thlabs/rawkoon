@@ -21,10 +21,9 @@ workflows whose file sits on the default branch.
 **Current state: no code patches.** Every fix this fork carried has been
 merged upstream (see [Upstreamed patches](#upstreamed-patches)), so `main` is
 `upstream/main` plus the fork-only scaffolding below. The patched-release
-pipeline refuses to build in that state ("no patches to apply") on purpose: a
-`-patched` image with nothing patched would be upstream's release under a
-misleading name. Until a new patch lands, run upstream's own image
-(`ghcr.io/samuelloranger/rawkoon:latest`).
+pipeline still publishes in that state: `<x.y.z>-patched` is then upstream's
+release unchanged, which keeps the homelab on `:patched` whether or not a
+patch is carried, instead of switching image sources back and forth.
 
 **Environment note:** this fork's homelab download client is
 [rdt-client](https://github.com/rogerfar/rdt-client) (a Real-Debrid proxy
@@ -36,7 +35,8 @@ before assuming any qBittorrent bug report is about real qBittorrent.
 
 ### ci: publish a patched image of the latest upstream release
 
-- Commits: `18d7000` (initial pipeline), `6a74f8a` (SemVer-correct app version)
+- Commits: `18d7000` (initial pipeline), `6a74f8a` (SemVer-correct app
+  version), and `abcb13b` (build even with no patch)
 - Files: `.github/workflows/patched-release.yml` (new)
 - Purpose: **fork-only infrastructure, not meant for upstream.** Lets this
   fork run upstream's latest release with our fixes on top, in a homelab,
@@ -44,8 +44,8 @@ before assuming any qBittorrent bug report is about real qBittorrent.
   (`workflow_dispatch`): it fetches upstream's tags, branches off the newest
   `v<x.y.z>`, cherry-picks the bug-fix patches onto it, runs the tests, and
   pushes `ghcr.io/4thlabs/rawkoon:<x.y.z>-patched` plus a rolling `patched`
-  tag. Point the homelab `docker-compose.yml` at `:patched` while a patch is
-  carried.
+  tag. Point the homelab `docker-compose.yml` at `:patched`. With no patch to
+  apply it builds the tag unchanged rather than failing.
 - The patch set is computed, not listed: commits in
   `upstream/main..$GITHUB_SHA` touching something outside `.github/` and
   `FORK_PATCHES.md`. Landing a fix on `main` is enough for it to ship; CI
@@ -89,9 +89,9 @@ If this fork ever needs to be rebuilt from scratch:
 
 1. Fork `samuelloranger/rawkoon` on GitHub, clone it, add both remotes as
    described above.
-2. Cherry-pick `18d7000` and `6a74f8a` (CI — always needed since they're
-   fork-only), then any code patch listed under "Patches" above. Try the bug
-   fixes upstream first; skip any already merged there.
+2. Cherry-pick `18d7000`, `6a74f8a` and `abcb13b` (CI — always needed
+   since they're fork-only), then any code patch listed under "Patches"
+   above. Try the bug fixes upstream first; skip any already merged there.
 3. Re-add repo secrets used by the workflows: `GITHUB_TOKEN` is automatic;
    `DEPLOYER_WEBHOOK_URL`/`DEPLOYER_WEBHOOK_SECRET` are optional (see
    `docker-publish.yml`) and only needed if a deploy webhook is wired up.
