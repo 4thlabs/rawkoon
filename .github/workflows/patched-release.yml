@@ -52,7 +52,12 @@ jobs:
             git show --pretty= --name-only "$c" \
               | grep -qvE '^(\.github/|FORK_PATCHES\.md$)' && PATCHES="$PATCHES $c"
           done
-          [ -n "$PATCHES" ] || { echo "no patches to apply"; exit 1; }
+          # Still publish when every patch has been upstreamed, so the homelab
+          # keeps pulling :patched instead of switching image sources.
+          if [ -z "$PATCHES" ]; then
+            echo "no patches to apply, building $TAG unchanged"
+            exit 0
+          fi
 
           echo "applying:"; git log --oneline --no-walk $PATCHES
           git cherry-pick $PATCHES
