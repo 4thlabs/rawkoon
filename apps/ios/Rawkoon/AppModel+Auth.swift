@@ -96,6 +96,7 @@ extension AppModel {
 
     func makeAPIClient(baseURL: URL, token: String?) -> APIClient {
         serverStateStore.clear()
+        PosterCache.authorize(server: baseURL, token: token)
         return APIClient(
             baseURL: baseURL,
             token: token,
@@ -138,6 +139,11 @@ extension AppModel {
         wipeResponseCache()
 
         apiClient = nil
+        PosterCache.authorize(server: nil, token: nil)
+        // Images the server serves were fetched with this account's token; an
+        // in-flight prefetch would write them back after the wipe.
+        prefetchTask?.cancel()
+        PosterCache.removeAll()
         isLoggedIn = false
         isAdmin = false
         userId = nil
